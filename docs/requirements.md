@@ -52,7 +52,7 @@ This requirements file is the authoritative functional scope for the docs that f
 - **Surgery Set Type**: the template definition of which items/quantities a set is expected to contain.
 - **Set Instance / Surgery Case**: one real event (one dispatch to a client location for a surgery) that results in consumption + return.
 - **Client Location Group**: a physical delivery/usage location identity used for stock tracking.
-  - Defined as a (Doctor Client) + (Hospital) + (Hospital Branch) combination when applicable.
+  - Defined as a (Client / Customer) + (optional Hospital) + (Hospital Branch) combination when applicable.
   - Each Client Location Group has its own warehouse under `Clients - WH`.
 - **Company-owned at client location**: items physically at a client location that are still owned by the company.
   - This includes both pending-return surgery cases and permanent on-site sets.

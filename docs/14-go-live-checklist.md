@@ -41,7 +41,7 @@ Go-live is allowed only if:
 - You can run **one complete surgery case** end-to-end (dispatch → deliver → return pickup → returns verification → usage derived → invoice used) with correct batch/serial behavior.
 - If any client location uses a permanent on-site set model, you can run **one complete permanent set replenishment cycle** end-to-end (usage posting → invoice used → replenish stock into the correct client location warehouse).
 - Directors can see:
-  - open approvals (discounts, purchase approvals)
+  - open approvals (discounts, purchase approvals, write-off approvals)
   - clients above debt threshold
   - received payments pending payment distribution
 - Purchasing can see a reorder list grouped by supplier (even if thresholds are basic initially).
@@ -138,8 +138,10 @@ Operational check:
 Confirm you can answer:
 - Stock at Main vs in transit vs in returns backlog
 - Items currently at each client location (surgery flow)
+- Items currently assigned to each driver (derived from Tasks) while stock is in the in-transit warehouses
 - Unpaid invoices per client and aging
 - Unallocated customer advances (payments received but not yet allocated)
+- Prepaid orders awaiting delivery (clients paid upfront but delivery is still pending)
 - Clients exceeding debt threshold
 - Open Debt Collection tasks
 - Low stock list grouped by supplier
@@ -181,6 +183,7 @@ Pricing override check (if you have any special-price clients):
 
 Upfront payment (prepaid) check (if you support prepaid deliveries):
 - Record an upfront payment as a customer advance for Client A.
+- Ensure the Payment Entry is linked to the intended Sales Order (Payment Entry → References row where Reference Doctype = `Sales Order`).
 - Confirm dispatch/delivery for this order can be gated on Accounting confirmation (policy-dependent).
 - If you allow partial prepaid (deposit model), record a partial upfront amount and confirm dispatch is still gated on the required upfront amount for that order.
 - Deliver the items later.
