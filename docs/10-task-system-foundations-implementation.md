@@ -113,6 +113,10 @@ Attachment permissions:
 ### 5.1A How to assign exactly one Task owner (required operational rule)
 Doc 10 requires “one task = one accountable owner”.
 
+Important ERPNext behavior:
+- You must `Save` a new Task once before you can assign it.
+- The governance script in section 6 enforces that a Task cannot be moved to `Working` or `Completed` unless it has exactly one assignee.
+
 When creating or reviewing any operational Task:
 1) Open the Task.
 2) In the top-right menu, click `Assign`.

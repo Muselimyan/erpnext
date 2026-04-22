@@ -7,7 +7,7 @@ This implementation guide configures:
 - Custom DocTypes needed for the workflow (`Surgery Case` and its child table)
 - Workflow (role-based, sequential; no status jumps)
 - Task linking + assignment to a specific delivery person
-- Mandatory pickup photo enforcement
+- Mandatory Task photo enforcement (implemented once in Doc 10A)
 - Optional linking fields on Stock Entry / Sales Invoice
 - Stock Settings needed for **Option A** (backdated pickup-time stock entries)
 - Automated debt-threshold monitoring that creates/updates a director debt-collection Task
@@ -25,6 +25,21 @@ You should do this as a user with:
 - `System Manager`
 - `Stock Manager`
 - `Accounts Manager`
+
+Do not start Doc 12A until these are done:
+- Doc 03A — roles and permissions exist (Ops roles).
+- Doc 04A — clients are modeled as `Customer` (no separate Doctor master) and context fields exist.
+- Doc 05A — warehouse model exists:
+  - `Main - WH`
+  - `Delivery In-Transit - WH`
+  - `Clients - WH` group + client-location leaf warehouses
+  - `Return Pickup In-Transit - WH`
+  - `Returns - WH`
+- Doc 06A — item tracking is configured (serial/batch/expiry) and FEFO warning exists.
+- Doc 10A — Task system exists (Task Kind + Task Access Policy) and mandatory photo enforcement exists:
+  - `Delivery` requires `Warehouse Pickup Photo`
+  - `Return drop-off at warehouse` requires `Warehouse Drop-off Photo`
+- Doc 11A — `Surgery Set Type` templates exist.
 
 You will also need access to:
 - `DocType` (to create custom DocTypes)
@@ -62,8 +77,12 @@ Key idea:
 Validation:
 - Create a test `Surgery Case Item` row inside any parent table (later) and confirm columns show in list view.
 
-### 3.1.1 (Optional) Create the child table: `Surgery Case Serial Exception`
-If you want strict tool accountability, you need a place to record “this serial did not come back, and why”.
+### 3.1.1 Create the child table: `Surgery Case Serial Exception` (required for tool accountability)
+Doc 12 requires that the system blocks closing a case until all dispatched serial-tracked tools are either:
+- returned, or
+- explicitly recorded as missing/damaged.
+
+This child table is where you record those missing/damaged serials.
 
 1) Open `DocType`.
 2) Click `New`.
@@ -87,15 +106,20 @@ If you want strict tool accountability, you need a place to record “this seria
    - `Name`: `Surgery Case`
    - Ensure `Is Child Table` is **unchecked**
 4) Add fields (recommended minimum):
-   - `hospital` (Link) → Options: `Customer` → Req
-   - `hospital_warehouse` (Link) → Options: `Warehouse` → Req
-   - `doctor` (Link) → Options: `Doctor` → Req
+   - `client` (Link) → Options: `Customer` → Req
+   - `hospital` (Link) → Options: `Customer` → optional
+   - `hospital_branch` (Data) → Req
+   - `client_location_warehouse` (Link) → Options: `Warehouse` → Req
+   - `doctor_name` (Data) → optional
    - `surgery_date` (Date) → Req
    - `surgery_set_type` (Link) → Options: `Surgery Set Type` → Req
    - `dispatch_group_id` (Data) → optional
    - `delivery_person` (Link) → Options: `User` → optional
    - `return_pickup_delivery_person` (Link) → Options: `User` → optional
    - `notes` (Small Text) → optional
+
+Read-only warning field (recommended so shortages are visible on the case):
+- `shortage_note` (Long Text) → Read Only
 
 Fields for optional barcode scanning (soft capture; not enforced):
 - `packed_scan_log` (Long Text)
@@ -111,8 +135,9 @@ Fields to support automation (strongly recommended):
   - `sales_invoice` (Link → Sales Invoice)
   - `delivery_task` (Link → Task)
   - `return_pickup_task` (Link → Task)
+  - `return_dropoff_task` (Link → Task)
 
-Optional fields for strict tool return (serial accountability):
+Field for strict tool return (serial accountability):
 - `tool_serial_exceptions` (Table) → Options: `Surgery Case Serial Exception`
 
 5) Add the workflow state field (required for Workflow):
@@ -145,15 +170,16 @@ Validation:
 
 ## 3.3 Locking rules to prevent repeated data entry
 Doc 12 requires:
-- Dispatched Qty is only editable in `Draft`.
+- Dispatched Qty is editable in `Draft`.
+- A controlled reduction is allowed in `Dispatch Picking` if stock became insufficient (partial dispatch).
 - Returned Qty is only editable by Returns Team during the returns receiving step.
 
 Implementation approach:
 - Use `Client Script` on `Surgery Case` to set fields read-only based on workflow state.
 
 Minimum locking behavior (recommended):
-- If `workflow_state != "Draft"` then make `case_items.dispatched_qty` read-only.
-- If `workflow_state` is not `Returns Verification` or `Returns Received` then make `case_items.returned_qty` read-only.
+- If `workflow_state` is not `Draft` or `Dispatch Picking`, make `case_items.dispatched_qty` read-only.
+- If `workflow_state` is not `Return Pickup In Transit` or `Returns Verification`, make `case_items.returned_qty` read-only.
 
 ### 3.3.1 Create the Client Script (step-by-step)
 1) Open `Client Script`.
@@ -168,11 +194,11 @@ Suggested script:
 ```javascript
 frappe.ui.form.on('Surgery Case', {
   refresh(frm) {
-    const is_draft = frm.doc.workflow_state === 'Draft';
-    const can_edit_returns = ['Returns Verification', 'Returns Received'].includes(frm.doc.workflow_state);
+    const can_edit_dispatch_qty = ['Draft', 'Dispatch Picking'].includes(frm.doc.workflow_state);
+    const can_edit_returns = ['Return Pickup In Transit', 'Returns Verification'].includes(frm.doc.workflow_state);
 
     // Lock dispatch qty after Draft
-    frm.fields_dict.case_items.grid.update_docfield_property('dispatched_qty', 'read_only', !is_draft);
+    frm.fields_dict.case_items.grid.update_docfield_property('dispatched_qty', 'read_only', !can_edit_dispatch_qty);
 
     // Lock returned qty except during returns receiving step
     frm.fields_dict.case_items.grid.update_docfield_property('returned_qty', 'read_only', !can_edit_returns);
@@ -260,20 +286,14 @@ Operational result:
 ---
 
 ## 6) Create roles (recommended)
-Create roles so permissions and workflow transitions can be controlled.
-
-Suggested roles:
-- `Surgery Case - Order`
-- `Surgery Case - Preparing`
-- `Surgery Case - Delivery Coordinator`
-- `Surgery Case - Returns`
-- `Surgery Case - Accounting`
+Doc 12 uses the standard Ops roles (Doc 03A). Confirm these roles exist:
+- `Ops - Order Accepting`
+- `Ops - Inventory`
+- `Ops - Delivery`
+- `Ops - Returns`
+- `Ops - Accounting`
+- `Ops - Directors`
 - `Delivery Driver`
-
-Create roles:
-1) Open `Role`.
-2) Click `New`.
-3) Create each role above.
 
 ---
 
@@ -282,11 +302,11 @@ Create roles:
 1) Open `Role Permission Manager`.
 2) Select DocType: `Surgery Case`.
 3) Grant permissions by role (typical starting point):
-   - `Surgery Case - Order`: Read, Write, Create
-   - `Surgery Case - Preparing`: Read, Write
-   - `Surgery Case - Delivery Coordinator`: Read, Write
-   - `Surgery Case - Returns`: Read, Write
-   - `Surgery Case - Accounting`: Read, Write
+   - `Ops - Order Accepting`: Read, Write, Create
+   - `Ops - Inventory`: Read, Write
+   - `Ops - Delivery`: Read, Write
+   - `Ops - Returns`: Read, Write
+   - `Ops - Accounting`: Read, Write
    - `Delivery Driver`: (no access) or Read-only if you want them to see case info
 
 Note:
@@ -341,17 +361,17 @@ For each state:
 Create transitions so **only the next step** is possible.
 
 Recommended transitions (minimum):
-- Draft → Preparing (Allowed Role: `Surgery Case - Order`)
-- Preparing → Dispatch Picking (Allowed Role: `Surgery Case - Preparing`)
-- Dispatch Picking → Dispatched (Allowed Role: `Surgery Case - Preparing`)
-- Dispatched → Delivered (Allowed Role: `Surgery Case - Delivery Coordinator`)
-- Delivered → Return Pickup Scheduled (Allowed Role: `Surgery Case - Order`)
-- Return Pickup Scheduled → Return Pickup In Transit (Allowed Role: `Surgery Case - Delivery Coordinator`)
-- Return Pickup In Transit → Returns Verification (Allowed Role: `Surgery Case - Returns`)
-- Returns Verification → Returns Received (Allowed Role: `Surgery Case - Returns`)
-- Returns Received → Usage Derived (Allowed Role: `Surgery Case - Returns`)
-- Usage Derived → Invoiced (Allowed Role: `Surgery Case - Accounting`)
-- Invoiced → Closed (Allowed Role: `Surgery Case - Order` or `Surgery Case - Accounting`)
+- Draft → Preparing (Allowed Role: `Ops - Order Accepting`)
+- Preparing → Dispatch Picking (Allowed Role: `Ops - Inventory`)
+- Dispatch Picking → Dispatched (Allowed Role: `Ops - Inventory`)
+- Dispatched → Delivered (Allowed Role: `Ops - Delivery`)
+- Delivered → Return Pickup Scheduled (Allowed Role: `Ops - Order Accepting`)
+- Return Pickup Scheduled → Return Pickup In Transit (Allowed Role: `Ops - Delivery`)
+- Return Pickup In Transit → Returns Verification (Allowed Role: `Ops - Returns`)
+- Returns Verification → Returns Received (Allowed Role: `Ops - Returns`)
+- Returns Received → Usage Derived (Allowed Role: `Ops - Returns`)
+- Usage Derived → Invoiced (Allowed Role: `Ops - Accounting`)
+- Invoiced → Closed (Allowed Role: `Ops - Order Accepting` or `Ops - Accounting`)
 
 Validation:
 - Log in as a user from each team and verify they only see the workflow actions intended for them.
@@ -366,25 +386,30 @@ When users click a workflow action on a Surgery Case, automation will create rec
 
 Target behavior (minimum):
 - `Preparing` → `Dispatch Picking`
-  - Gate: block if stock is insufficient in `Main - WH`
+  - Gate: if planned Dispatched Qty is more than what is available in `Main - WH`, block and tell the user to reduce quantities (partial dispatch is allowed)
   - Create Stock Entry as Draft: `Main - WH` → `Delivery In-Transit - WH`
   - Warehouse selects serials/batches (for tracked items) and submits
 - `Dispatch Picking` → `Dispatched`
   - Gate: block if dispatch Stock Entry is not submitted
 - `Dispatched` → `Delivered`
-  - Create + submit Stock Entry: `Delivery In-Transit - WH` → `HOSP - <Hospital> - WH`
+  - Gate: block unless the `Delivery` task is completed (Warehouse Pickup Photo required by Doc 10A)
+  - Create + submit Stock Entry: `Delivery In-Transit - WH` → `Client Location Warehouse`
   - Must copy the same serials/batches that were submitted on the dispatch Stock Entry
 - `Delivered` → `Return Pickup Scheduled`
   - Create (or update) a Pickup Returns Task assigned to the selected return pickup delivery person
+  - Create (or update) a Return drop-off at warehouse Task assigned to the same person
+- `Return Pickup Scheduled` → `Return Pickup In Transit`
+  - Gate: block unless Pickup Returns task is completed
 - `Return Pickup In Transit` → `Returns Verification`
-  - Create Stock Entry #1 as Draft (backdated to pickup time): `HOSP - <Hospital> - WH` → `Return Pickup In-Transit - WH`
+  - Gate: block unless Return drop-off at warehouse task is completed (Warehouse Drop-off Photo required by Doc 10A)
+  - Create Stock Entry #1 as Draft (backdated to pickup time): `Client Location Warehouse` → `Return Pickup In-Transit - WH`
   - Create Stock Entry #2 as Draft (receipt time): `Return Pickup In-Transit - WH` → `Returns - WH`
   - Returns Team selects returned serials/batches (for tracked items) and submits
 - `Returns Verification` → `Returns Received`
   - Gate: block if return Stock Entries are not submitted
 - `Returns Received` → `Usage Derived`
   - Compute Used Qty per line and write into Case Items `used_qty`
-  - Create + submit Consumption Stock Entry (Material Issue) from `HOSP - <Hospital> - WH` for the used quantities
+  - Create + submit Consumption Stock Entry (Material Issue) from `Client Location Warehouse` for the used quantities
 - `Usage Derived` → `Invoiced`
   - Create a draft Sales Invoice from Used Qty (do not submit)
 
@@ -410,48 +435,22 @@ We will use a Task field to store the pickup completion timestamp.
 3) Ensure these custom fields exist (add if missing):
    - `dispatch_group_id` (Data) — Label: `Dispatch Group ID`
    - `surgery_case` (Link → `Surgery Case`) — Label: `Surgery Case`
-   - `task_kind` (Select) — Label: `Task Kind` — Options:
-     - Delivery
-     - Pickup Returns
-   - `pickup_photo` (Attach) — Label: `Pickup Photo`
+   - `task_kind` (Select) — Label: `Task Kind`
+   - `warehouse_pickup_photo` (Attach) — Label: `Warehouse Pickup Photo`
+   - `warehouse_dropoff_photo` (Attach) — Label: `Warehouse Drop-off Photo`
    - `completed_at` (Datetime) — Label: `Completed At` — Read Only
 4) Save.
 
-### 8.4.4 Task automation (set completion time + enforce pickup photo)
-Create a server-side validation so your process does not depend on drivers remembering rules.
+### 8.4.4 Task governance prerequisites (required)
+Doc 12 relies on the Task governance rules implemented in **Doc 10A**.
 
-1) Open `Server Script`.
-2) Click `New`.
-3) Set:
-   - `Script Type`: `DocType Event`
-   - `Reference DocType`: `Task`
-   - `DocType Event`: `Before Save`
-4) Paste a script that:
-   - blocks completion of Pickup Returns tasks without a photo
-   - sets `completed_at` the first time a task is completed
+Do not create new Task scripts here.
 
-Suggested script (adjust fieldnames if you used different ones):
-```python
-from frappe.utils import now_datetime
-
-before = doc.get_doc_before_save()
-before_status = before.status if before else None
-
-is_becoming_completed = (doc.status == "Completed" and before_status != "Completed")
-
-if doc.task_kind == "Pickup Returns" and is_becoming_completed:
-    if not doc.pickup_photo:
-        frappe.throw("Pickup Photo is required to complete this task")
-
-if is_becoming_completed and not doc.completed_at:
-    doc.completed_at = now_datetime()
-```
-
-Validation:
-- Create a Pickup Returns task.
-- Try to mark it Completed without a photo (must fail).
-- Attach a photo and complete (must succeed).
-- Confirm `completed_at` is filled.
+Confirm Doc 10A is implemented and working:
+- `Delivery` tasks cannot be completed without `Warehouse Pickup Photo`.
+- `Return drop-off at warehouse` tasks cannot be completed without `Warehouse Drop-off Photo`.
+- `completed_at` is set when a Task becomes Completed.
+- Tasks have exactly one assignee (Doc 10: one accountable owner).
 
 ### 8.4.5 Surgery Case automation (create stock entries, tasks, usage, invoice)
 We implement this as a `Server Script` on Surgery Case that runs on each save and reacts to workflow state changes.
@@ -477,6 +476,13 @@ MAIN_WH = "Main - WH"
 DELIVERY_TRANSIT_WH = "Delivery In-Transit - WH"
 RETURN_TRANSIT_WH = "Return Pickup In-Transit - WH"
 RETURNS_WH = "Returns - WH"
+
+def split_serials(serial_no_field):
+    if not serial_no_field:
+        return []
+    if isinstance(serial_no_field, str):
+        return [s.strip() for s in serial_no_field.split("\n") if (s or "").strip()]
+    return []
 
 def get_actual_qty(item_code, warehouse):
     return frappe.db.get_value("Bin", {"item_code": item_code, "warehouse": warehouse}, "actual_qty") or 0
@@ -519,6 +525,47 @@ after_state = doc.workflow_state
 
 state_changed = (before_state != after_state)
 
+# Step 0 helper: auto-load template into Case Items (Draft only)
+if after_state == "Draft" and doc.surgery_set_type:
+    if not (doc.case_items or []):
+        st = frappe.get_doc("Surgery Set Type", doc.surgery_set_type)
+        for r in (st.items or []):
+            if not r.item:
+                continue
+            qty = float(getattr(r, "default_qty", 0) or 0)
+            if qty <= 0:
+                continue
+
+            doc.append(
+                "case_items",
+                {
+                    "item": r.item,
+                    "dispatched_qty": qty,
+                    "returned_qty": 0,
+                    "lost_damaged_qty": 0,
+                    "used_qty": 0,
+                },
+            )
+
+    # Draft-only warning: show shortages from Main - WH without blocking Draft.
+    warnings = []
+    for row in (doc.case_items or []):
+        planned = float(row.dispatched_qty or 0)
+        if planned <= 0:
+            continue
+        actual = float(get_actual_qty(row.item, MAIN_WH) or 0)
+        if actual < planned:
+            warnings.append(f"{row.item}: planned {planned}, available {actual}, missing {planned - actual}")
+
+    if warnings:
+        text = "Draft stock warning (Main - WH):\n" + "\n".join(warnings)
+        if hasattr(doc, "shortage_note"):
+            doc.shortage_note = text
+        frappe.msgprint(text, title="Stock warning (Draft)")
+    else:
+        if hasattr(doc, "shortage_note"):
+            doc.shortage_note = ""
+
 # Build dispatch item list from Case Items (Dispatched Qty)
 dispatch_items = []
 for row in (doc.case_items or []):
@@ -530,28 +577,54 @@ for row in (doc.case_items or []):
     if row.returned_qty and row.returned_qty > 0:
         returned_items.append({"item_code": row.item, "qty": row.returned_qty})
 
+if not doc.client_location_warehouse:
+    frappe.throw("Client Location Warehouse is required.")
+
+CLIENT_LOCATION_WH = doc.client_location_warehouse
+
 # Ensure delivery/pickup Tasks exist when the coordinator fills assignees
 if after_state in ("Dispatched", "Delivered") and doc.delivery_person and not doc.delivery_task:
     t = frappe.new_doc("Task")
     t.subject = f"Deliver — {doc.name}"
     t.task_kind = "Delivery"
+    t.task_access_policy = "Delivery"
     t.surgery_case = doc.name
+    if hasattr(t, "customer"):
+        t.customer = doc.client
     if doc.dispatch_group_id:
         t.dispatch_group_id = doc.dispatch_group_id
     t.insert()
     add_assignment({"assign_to": [doc.delivery_person], "doctype": "Task", "name": t.name})
     frappe.db.set_value("Surgery Case", doc.name, "delivery_task", t.name, update_modified=False)
 
-if after_state == "Return Pickup Scheduled" and doc.return_pickup_delivery_person and not doc.return_pickup_task:
-    t = frappe.new_doc("Task")
-    t.subject = f"Pickup Returns — {doc.name}"
-    t.task_kind = "Pickup Returns"
-    t.surgery_case = doc.name
-    if doc.dispatch_group_id:
-        t.dispatch_group_id = doc.dispatch_group_id
-    t.insert()
-    add_assignment({"assign_to": [doc.return_pickup_delivery_person], "doctype": "Task", "name": t.name})
-    frappe.db.set_value("Surgery Case", doc.name, "return_pickup_task", t.name, update_modified=False)
+if after_state == "Return Pickup Scheduled" and doc.return_pickup_delivery_person:
+    if not doc.return_pickup_task:
+        t = frappe.new_doc("Task")
+        t.subject = f"Pickup Returns — {doc.name}"
+        t.task_kind = "Pickup Returns"
+        t.task_access_policy = "Pickup Returns"
+        t.surgery_case = doc.name
+        if hasattr(t, "customer"):
+            t.customer = doc.client
+        if doc.dispatch_group_id:
+            t.dispatch_group_id = doc.dispatch_group_id
+        t.insert()
+        add_assignment({"assign_to": [doc.return_pickup_delivery_person], "doctype": "Task", "name": t.name})
+        frappe.db.set_value("Surgery Case", doc.name, "return_pickup_task", t.name, update_modified=False)
+
+    if not doc.return_dropoff_task:
+        t = frappe.new_doc("Task")
+        t.subject = f"Return drop-off — {doc.name}"
+        t.task_kind = "Return drop-off at warehouse"
+        t.task_access_policy = "Return drop-off at warehouse"
+        t.surgery_case = doc.name
+        if hasattr(t, "customer"):
+            t.customer = doc.client
+        if doc.dispatch_group_id:
+            t.dispatch_group_id = doc.dispatch_group_id
+        t.insert()
+        add_assignment({"assign_to": [doc.return_pickup_delivery_person], "doctype": "Task", "name": t.name})
+        frappe.db.set_value("Surgery Case", doc.name, "return_dropoff_task", t.name, update_modified=False)
 
 if not state_changed:
     return
@@ -565,7 +638,11 @@ if before_state == "Preparing" and after_state == "Dispatch Picking":
         if actual < it["qty"]:
             shortages.append(f"{it['item_code']}: need {it['qty']}, have {actual}")
     if shortages:
-        frappe.throw("Insufficient stock in Main - WH:\n" + "\n".join(shortages))
+        frappe.throw(
+            "Insufficient stock in Main - WH for the planned Dispatched Qty.\n"
+            "Reduce Dispatched Qty lines (partial dispatch is allowed) and try again.\n\n"
+            + "\n".join(shortages)
+        )
 
     if not doc.dispatch_stock_entry:
         se = make_material_transfer(dispatch_items, MAIN_WH, DELIVERY_TRANSIT_WH, posting_dt=now_datetime())
@@ -581,6 +658,12 @@ if before_state == "Dispatch Picking" and after_state == "Dispatched":
 
 # Transition: Dispatched -> Delivered (delivery Stock Entry)
 if before_state == "Dispatched" and after_state == "Delivered":
+    if not doc.delivery_task:
+        frappe.throw("Delivery Task is required before moving to Delivered.")
+    delivery_task_status = frappe.db.get_value("Task", doc.delivery_task, "status")
+    if delivery_task_status != "Completed":
+        frappe.throw("Delivery Task must be completed (with Warehouse Pickup Photo) before moving to Delivered.")
+
     if not doc.delivery_stock_entry:
         if not doc.dispatch_stock_entry:
             frappe.throw("Dispatch Stock Entry is missing")
@@ -601,7 +684,7 @@ if before_state == "Dispatched" and after_state == "Delivered":
                 "item_code": it.item_code,
                 "qty": it.qty,
                 "s_warehouse": DELIVERY_TRANSIT_WH,
-                "t_warehouse": doc.hospital_warehouse,
+                "t_warehouse": CLIENT_LOCATION_WH,
                 "batch_no": getattr(it, "batch_no", None),
                 "serial_no": getattr(it, "serial_no", None),
             })
@@ -615,8 +698,23 @@ if before_state == "Dispatched" and after_state == "Delivered":
         delivery_se.submit()
         doc.delivery_stock_entry = delivery_se.name
 
-# Transition: Return Pickup In Transit -> Returns Verification (draft return Stock Entries)
+# Transition: Return Pickup Scheduled -> Return Pickup In Transit
+if before_state == "Return Pickup Scheduled" and after_state == "Return Pickup In Transit":
+    if not doc.return_pickup_task:
+        frappe.throw("Pickup Returns Task is required before moving to Return Pickup In Transit.")
+    pickup_task_status = frappe.db.get_value("Task", doc.return_pickup_task, "status")
+    if pickup_task_status != "Completed":
+        frappe.throw("Pickup Returns Task must be completed before moving to Return Pickup In Transit.")
+
+# Transition: Return Pickup In Transit -> Returns Verification (drop-off gate + draft return Stock Entries)
 if before_state == "Return Pickup In Transit" and after_state == "Returns Verification":
+    if not doc.return_dropoff_task:
+        frappe.throw("Return drop-off at warehouse Task is required before starting returns processing.")
+
+    dropoff_task_status = frappe.db.get_value("Task", doc.return_dropoff_task, "status")
+    if dropoff_task_status != "Completed":
+        frappe.throw("Return drop-off at warehouse Task must be completed (with Warehouse Drop-off Photo) before starting returns processing.")
+
     pickup_completed_at = None
     if doc.return_pickup_task:
         pickup_completed_at = frappe.db.get_value("Task", doc.return_pickup_task, "completed_at")
@@ -625,7 +723,7 @@ if before_state == "Return Pickup In Transit" and after_state == "Returns Verifi
     receipt_dt = now_datetime()
 
     if not doc.return_pickup_stock_entry:
-        se1 = make_material_transfer(returned_items, doc.hospital_warehouse, RETURN_TRANSIT_WH, posting_dt=pickup_dt)
+        se1 = make_material_transfer(returned_items, CLIENT_LOCATION_WH, RETURN_TRANSIT_WH, posting_dt=pickup_dt)
         doc.return_pickup_stock_entry = se1.name
 
     if not doc.return_receive_stock_entry:
@@ -649,24 +747,40 @@ if before_state == "Returns Received" and after_state == "Usage Derived":
         l = row.lost_damaged_qty or 0
         row.used_qty = d - r - l
 
+        if row.used_qty < 0:
+            frappe.throw(f"Used Qty became negative for item {row.item}. Check dispatched/returned/lost quantities.")
+
     # Recommended: create Consumption Stock Entry (Material Issue) so invoices can remain batch-less.
-    # For batch-tracked items: derive used-by-batch = delivered-by-batch − returned-by-batch.
+    # Stock reduction is posted for everything that did NOT return to the warehouse:
+    # - Used quantities
+    # - Lost/Damaged quantities
+    # For batch-tracked items: derive (used+lost)-by-batch = delivered-by-batch − returned-by-batch.
     if not doc.consumption_stock_entry:
-        if not doc.delivery_stock_entry or not doc.return_receive_stock_entry:
+        if not doc.delivery_stock_entry or not doc.return_pickup_stock_entry:
             frappe.throw("Delivery and Return Stock Entries are required before consumption posting")
 
         delivered = frappe.get_doc("Stock Entry", doc.delivery_stock_entry)
-        returned = frappe.get_doc("Stock Entry", doc.return_receive_stock_entry)
+        returned = frappe.get_doc("Stock Entry", doc.return_pickup_stock_entry)
 
         delivered_by_key = {}
+        delivered_serials = {}
         for it in delivered.items:
             key = (it.item_code, getattr(it, "batch_no", None))
             delivered_by_key[key] = delivered_by_key.get(key, 0) + (it.qty or 0)
 
+            serials = split_serials(getattr(it, "serial_no", None))
+            if serials:
+                delivered_serials.setdefault(it.item_code, set()).update(serials)
+
         returned_by_key = {}
+        returned_serials = {}
         for it in returned.items:
             key = (it.item_code, getattr(it, "batch_no", None))
             returned_by_key[key] = returned_by_key.get(key, 0) + (it.qty or 0)
+
+            serials = split_serials(getattr(it, "serial_no", None))
+            if serials:
+                returned_serials.setdefault(it.item_code, set()).update(serials)
 
         cons = frappe.new_doc("Stock Entry")
         cons.stock_entry_type = "Material Issue"
@@ -678,11 +792,51 @@ if before_state == "Returns Received" and after_state == "Usage Derived":
             cons.posting_time = now_datetime().time()
 
         for row in (doc.case_items or []):
-            if not row.used_qty or row.used_qty <= 0:
+            issue_qty = float((row.dispatched_qty or 0) - (row.returned_qty or 0))
+            if issue_qty <= 0:
                 continue
 
+            # Serial-tracked items: issue missing serials (delivered - returned).
+            missing_serials = sorted(list((delivered_serials.get(row.item, set()) - returned_serials.get(row.item, set())) or []))
+            if missing_serials:
+                exceptions_rows = doc.get("tool_serial_exceptions") or []
+                exceptions = set([r.serial_no for r in exceptions_rows if getattr(r, "serial_no", None)])
+                not_recorded = [s for s in missing_serials if s not in exceptions]
+                if not_recorded:
+                    frappe.throw(
+                        "Missing serials must be recorded in Tool Serial Exceptions before usage can be derived.\n"
+                        + "\n".join(not_recorded)
+                    )
+
+                cons.append(
+                    "items",
+                    {
+                        "item_code": row.item,
+                        "qty": len(missing_serials),
+                        "s_warehouse": CLIENT_LOCATION_WH,
+                        "serial_no": "\n".join(missing_serials),
+                    },
+                )
+                continue
+
+            # Batch tracking gate: if the item was delivered with batch numbers and any qty was returned,
+            # the return Stock Entry must record the returned quantities by batch.
+            delivered_batch_total = sum(
+                [qty for (ic, bn), qty in delivered_by_key.items() if ic == row.item and bn]
+            )
+            if delivered_batch_total > 0 and float(row.returned_qty or 0) > 0:
+                returned_batch_total = sum(
+                    [qty for (ic, bn), qty in returned_by_key.items() if ic == row.item and bn]
+                )
+
+                if abs(returned_batch_total - float(row.returned_qty or 0)) > 0.0001:
+                    frappe.throw(
+                        f"Returned Qty for batch-tracked item '{row.item}' must be recorded by batch numbers on the Return Pickup Stock Entry. "
+                        f"Case Returned Qty={float(row.returned_qty or 0)}, returned-by-batch={returned_batch_total}."
+                    )
+
             # Batch-tracked items: consume by batch based on delivered-returned.
-            used_remaining = row.used_qty
+            used_remaining = issue_qty
             batch_keys = [k for k in delivered_by_key.keys() if k[0] == row.item]
 
             if batch_keys:
@@ -697,7 +851,7 @@ if before_state == "Returns Received" and after_state == "Usage Derived":
                     cons.append("items", {
                         "item_code": row.item,
                         "qty": take,
-                        "s_warehouse": doc.hospital_warehouse,
+                        "s_warehouse": CLIENT_LOCATION_WH,
                         "batch_no": key[1],
                     })
                     used_remaining -= take
@@ -710,8 +864,8 @@ if before_state == "Returns Received" and after_state == "Usage Derived":
                 # Non-batch item: consume by qty only
                 cons.append("items", {
                     "item_code": row.item,
-                    "qty": row.used_qty,
-                    "s_warehouse": doc.hospital_warehouse,
+                    "qty": issue_qty,
+                    "s_warehouse": CLIENT_LOCATION_WH,
                 })
 
         if hasattr(cons, "surgery_case"):
@@ -727,10 +881,18 @@ if before_state == "Returns Received" and after_state == "Usage Derived":
 if before_state == "Usage Derived" and after_state == "Invoiced":
     if not doc.sales_invoice:
         inv = frappe.new_doc("Sales Invoice")
-        inv.customer = doc.hospital
+        inv.customer = doc.client
         inv.update_stock = 0
         if hasattr(inv, "surgery_case"):
             inv.surgery_case = doc.name
+
+        if hasattr(inv, "hospital"):
+            inv.hospital = doc.hospital
+        if hasattr(inv, "hospital_branch"):
+            inv.hospital_branch = doc.hospital_branch
+        if hasattr(inv, "doctor_name"):
+            inv.doctor_name = doc.doctor_name
+
         for row in (doc.case_items or []):
             if row.used_qty and row.used_qty > 0:
                 inv.append("items", {
@@ -739,6 +901,42 @@ if before_state == "Usage Derived" and after_state == "Invoiced":
                 })
         inv.insert()
         doc.sales_invoice = inv.name
+
+# Transition: Invoiced -> Closed (serial accountability gate)
+if before_state == "Invoiced" and after_state == "Closed":
+    if not doc.delivery_stock_entry or not doc.return_pickup_stock_entry:
+        frappe.throw("Delivery and Return Stock Entries are required before closing.")
+
+    delivered = frappe.get_doc("Stock Entry", doc.delivery_stock_entry)
+    returned = frappe.get_doc("Stock Entry", doc.return_pickup_stock_entry)
+
+    delivered_serials = {}
+    for it in delivered.items:
+        serials = split_serials(getattr(it, "serial_no", None))
+        if serials:
+            delivered_serials.setdefault(it.item_code, set()).update(serials)
+
+    returned_serials = {}
+    for it in returned.items:
+        serials = split_serials(getattr(it, "serial_no", None))
+        if serials:
+            returned_serials.setdefault(it.item_code, set()).update(serials)
+
+    exceptions_rows = doc.get("tool_serial_exceptions") or []
+    exceptions = set([r.serial_no for r in exceptions_rows if getattr(r, "serial_no", None)])
+
+    missing_all = []
+    for item_code, serials in delivered_serials.items():
+        missing = sorted(list((serials - returned_serials.get(item_code, set())) or []))
+        for s in missing:
+            if s not in exceptions:
+                missing_all.append(f"{item_code}: {s}")
+
+    if missing_all:
+        frappe.throw(
+            "Cannot close case: dispatched serial-tracked tools are missing and not recorded in Tool Serial Exceptions.\n"
+            + "\n".join(missing_all)
+        )
 ```
 
 Notes for beginners:
@@ -748,33 +946,148 @@ Notes for beginners:
 
 ---
 
+## 8.5) Sample data (required to test end-to-end)
+Create one sample Surgery Case so you can test that automation + stock movement works.
+
+Prerequisite sample masters (from earlier docs):
+- Customer: `D001 — Dr. A. Petrosyan`
+- Hospital context Customer: `H001 — Erebuni MC`
+- Client location warehouse (leaf under `Clients - WH`):
+  - `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
+- Surgery Set Type: `Ortho Basic Set (Sample)` (Doc 11A)
+- Items exist with tracking:
+  - `TOOL-001` (serial-tracked)
+  - `IMP-001` (batch-tracked)
+  - `CONS-001` (batch or non-tracked, depending on your catalog)
+
+### 8.5.1 Create the sample Surgery Case
+1) Open `Surgery Case`.
+2) Click `New`.
+3) Fill:
+   - Client: `D001 — Dr. A. Petrosyan`
+   - Hospital: `H001 — Erebuni MC`
+   - Hospital Branch: `Main`
+   - Client Location Warehouse: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
+   - Doctor Name: (leave empty; optional)
+   - Surgery Date: today + 2 days (example)
+   - Surgery Set Type: `Ortho Basic Set (Sample)`
+   - Dispatch Group ID: `DG-0001` (sample)
+4) In `Case Items` enter your planned dispatch quantities:
+   - `TOOL-001` dispatched_qty = `1`
+   - `IMP-001` dispatched_qty = `2`
+   - `CONS-001` dispatched_qty = `5`
+5) Save.
+
+Expected result:
+- Case is saved in `Draft`.
+- Dispatched Qty is editable.
+
+---
+
+## 8.6) Standard operating procedure (per-surgery case)
+This section is the step-by-step daily procedure that Doc 12 defines. It assumes the Workflow + automation script from section 8.4.5 are installed.
+
+### 8.6.1 Step 0 — Create the case (Order Team)
+1) Create the `Surgery Case` (as in section 8.5).
+2) Ensure `Case Items.dispatched_qty` reflects what you intend to send.
+3) Save.
+
+### 8.6.2 Step 2 — Preparing
+1) Open the case.
+2) Use the Workflow action to move it from `Draft` → `Preparing`.
+3) Pack the items listed in `Case Items`.
+
+### 8.6.3 Step 3 — Dispatch picking + submit dispatch stock entry
+1) Use the Workflow action to move the case from `Preparing` → `Dispatch Picking`.
+2) Expected result:
+   - Draft `dispatch_stock_entry` is created: `Main - WH` → `Delivery In-Transit - WH`.
+3) Open the draft dispatch Stock Entry.
+4) Select actual serial numbers / batch numbers for tracked items.
+5) Submit the Stock Entry.
+6) Use the Workflow action to move the case from `Dispatch Picking` → `Dispatched`.
+
+### 8.6.4 Step 4–5 — Delivery
+1) On the Surgery Case, set `delivery_person` (a User).
+2) Save.
+3) Expected result:
+   - `delivery_task` is created and assigned to that delivery person.
+4) Driver completes the Delivery task (Warehouse Pickup Photo required).
+5) Delivery Coordinator uses the Workflow action to move the case `Dispatched` → `Delivered`.
+6) Expected result:
+   - `delivery_stock_entry` is created/submitted:
+     - `Delivery In-Transit - WH` → `client_location_warehouse`
+     - same batches/serials as dispatch
+
+### 8.6.5 Step 7–8 — Return pickup + drop-off at warehouse
+1) When client requests pickup, set `return_pickup_delivery_person`.
+2) Use the Workflow action to move the case `Delivered` → `Return Pickup Scheduled`.
+3) Expected result:
+   - `return_pickup_task` (Pickup Returns) is created/assigned
+   - `return_dropoff_task` (Return drop-off at warehouse) is created/assigned
+4) Driver completes Pickup Returns task.
+5) Delivery Coordinator moves the case `Return Pickup Scheduled` → `Return Pickup In Transit`.
+6) Driver completes Return drop-off at warehouse task (Warehouse Drop-off Photo required).
+
+### 8.6.6 Step 9 — Returns receiving + posting return stock entries
+1) Returns Team opens the case.
+2) Enter `Case Items.returned_qty` based on counted items.
+3) If any serial tool is missing/damaged, record serials in `tool_serial_exceptions`.
+4) Move the case `Return Pickup In Transit` → `Returns Verification`.
+5) Expected result:
+   - Draft return Stock Entries are created:
+     - `client_location_warehouse` → `Return Pickup In-Transit - WH` (posting time = pickup task time)
+     - `Return Pickup In-Transit - WH` → `Returns - WH` (receipt time)
+6) Returns Team opens the return Stock Entries, selects returned serials/batches, and submits them.
+7) Move the case `Returns Verification` → `Returns Received`.
+
+### 8.6.7 Step 10 — Usage derived + consumption posting
+1) Move the case `Returns Received` → `Usage Derived`.
+2) Expected result:
+   - `used_qty` is computed per line
+   - `consumption_stock_entry` is created/submitted from the client location warehouse
+
+### 8.6.8 Step 11 — Invoice used items
+1) Move the case `Usage Derived` → `Invoiced`.
+2) Expected result:
+   - Draft Sales Invoice is created for Used Qty only.
+3) Accounting reviews and submits the Sales Invoice.
+
+### 8.6.9 Step 12 — Close
+1) Move the case `Invoiced` → `Closed`.
+2) Gate:
+   - If any dispatched serial-tracked tool did not return, it must be present in `tool_serial_exceptions`.
+
 ## 9) Task setup (assignment to a specific delivery person)
-We use standard ERPNext `Task` to assign work to one person.
+Doc 12 relies on the Task system from **Doc 10A**.
 
-### 9.1 Add linking fields to Task (recommended)
-1) Open `Customize Form`.
-2) Select DocType: `Task`.
-3) Add custom fields:
-   - `dispatch_group_id` (Data) — Label: `Dispatch Group ID`
-   - `surgery_case` (Link → `Surgery Case`) — Label: `Surgery Case` (optional for single-case tasks)
-   - `task_kind` (Select) — Label: `Task Kind` — Options:
-     - Delivery
-     - Pickup Returns
-4) Save.
+Do not re-implement Task fields/scripts here.
 
-### 9.2 Enforce “pickup photo required to complete”
-Goal: prevent closing a pickup task without a photo.
+### 9.1 Confirm Task Kinds needed for Doc 12 exist
+In Doc 10A, confirm `Task Kind` includes these values:
+- `Delivery`
+- `Pickup Returns`
+- `Return drop-off at warehouse`
 
-Implementation approach:
-- Add an Attach field to Task
-- Add a validation rule (Server Script recommended) that blocks completion if missing
+### 9.2 Confirm Task visibility model exists (Task Access Policy)
+Doc 12 assumes:
+- Every operational Task has `task_access_policy` set (Doc 10A auto-fills it from Task Kind).
+- Users can only see Tasks whose Task Access Policies they are granted.
 
-1) In `Customize Form` → `Task`, add:
-   - Field: `pickup_photo` (Attach) — Label: `Pickup Photo`
-2) Create the server-side validation described in section **8.4.4**.
+Minimum go-live visibility recommendation:
+- Delivery drivers:
+  - `Delivery`
+  - `Pickup Returns`
+  - `Return drop-off at warehouse`
+- Coordinators (`Ops - Delivery`) and Directors:
+  - all Task Access Policies
 
-Validation:
-- Create a Pickup Returns task, try to complete without photo (must fail), then attach photo and complete (must succeed).
+### 9.3 Confirm mandatory attachment rules (Doc 10A)
+Required at go-live:
+- `Delivery` task completion requires `Warehouse Pickup Photo`.
+- `Return drop-off at warehouse` task completion requires `Warehouse Drop-off Photo`.
+
+Important:
+- `Pickup Returns` does **not** require a photo in this operating model.
 
 ---
 
@@ -782,10 +1095,23 @@ Validation:
 Recommended driver operating procedure:
 - Driver only uses:
   - `Task` list filtered to “Assigned to me”
-- For pickup:
-  - open task
-  - attach photo
-  - click complete
+
+Driver actions (Doc 12):
+1) Delivery
+   - Open the `Delivery` task
+   - Attach `Warehouse Pickup Photo`
+   - Deliver
+   - Add a short handover note (Task description)
+   - Complete the task
+
+2) Return pickup
+   - Open the `Pickup Returns` task
+   - Complete the task (no photo required)
+
+3) Return drop-off at warehouse
+   - Open the `Return drop-off at warehouse` task
+   - Attach `Warehouse Drop-off Photo`
+   - Complete the task
 
 No driver access to:
 - Stock Entry
@@ -795,57 +1121,15 @@ No driver access to:
 ---
 
 ## 11) Automated debt threshold task (directors)
-Doc 12 requires that debt monitoring is automated:
-- if a hospital exceeds its threshold and there is no open task, create one for directors
-- if it already exists, update it with the latest debt
+Doc 12 includes debt threshold alerting, but this is a **shared** automation used across multiple flows.
 
-### 11.1 Store the debt threshold per hospital
-Recommended implementation (simple):
-1) Open `Customize Form`.
-2) Select DocType: `Customer`.
-3) Add a custom field:
-   - Label: `Debt Threshold`
-   - Fieldname: `debt_threshold`
-   - Fieldtype: `Currency`
-   - Options: `Company:default_currency` (if your ERPNext version supports it)
-4) Save.
+Implementation rule:
+- Implement debt automation once (Doc 09A section 9), and reuse it.
 
-Operational rule:
-- If the threshold is empty, treat it as “no threshold” or use a company default (choose one policy and apply consistently).
-
-### 11.2 Task structure for debt collection
-Use standard `Task` with:
-- Subject convention (recommended): `Debt Collection — <Hospital Name>`
-- Assigned to: a director user (or a director group policy)
-- Status: keep it Open until resolved
-
-Recommended additional Task fields (optional):
-- `customer` (Link → Customer)
-- `current_debt` (Currency)
-
-### 11.3 Automation method (recommended)
-Use a scheduled automation that runs periodically (for example, hourly or daily).
-
-Implementation options:
-- **Server Script (Scheduled)**, if enabled in your ERPNext
-- A small custom app (more robust; best long-term)
-
-Core logic (behavior):
-1) For each hospital Customer with a threshold:
-   - compute current outstanding debt
-2) If debt exceeds threshold:
-   - find an existing open Task for that hospital (by `customer` field or by subject naming convention)
-   - if not found, create it and assign to directors
-   - if found, update `current_debt` (and description) to the latest value
-3) If debt is below threshold:
-   - do nothing (or optionally close the task if you want auto-close behavior; define policy)
-
-Validation:
-- Set one hospital threshold low for testing.
-- Create an unpaid invoice to push the debt above threshold.
-- Run the scheduled automation and confirm:
-  - a director task is created
-  - when debt changes, the existing task is updated (not duplicated)
+Checklist:
+1) Confirm `Customer.debt_threshold_amd` exists (Doc 04A).
+2) Confirm the **Scheduled Server Script** from Doc 09A is enabled and running hourly.
+3) Confirm it creates/updates exactly one open `Debt Collection` task per Customer when thresholds are exceeded.
 
 ---
 
@@ -871,41 +1155,74 @@ Expected system behavior:
 Next:
 1) Use the workflow action to move the case to `Usage Derived`.
 2) Confirm Used Qty is computed in the Case Items grid.
-3) Confirm Consumption Stock Entry exists (stock reduced from hospital warehouse for used quantities).
+3) Confirm Consumption Stock Entry exists (stock reduced from the client location warehouse for not-returned quantities).
 
 ---
 
-## 13) Implementation validation checklist
-### 13.1 Workflow / permissions
+## 13) Permanent on-site sets (alternative model)
+Some client locations keep a surgery set permanently on-site. Doc 12 requires that you still maintain location-truth in the stock ledger.
+
+Implementation rule:
+- Permanent on-site sets are represented as stock in the client location warehouse under `Clients - WH`.
+
+### 13.1 Initial placement (one-time)
+Goal: place the baseline stock into the client location warehouse.
+
+1) Create Stock Entry (Material Transfer):
+   - From Warehouse: `Main - WH`
+   - To Warehouse: `Delivery In-Transit - WH`
+   - Include the items/qty being placed
+2) Submit.
+3) Create Stock Entry (Material Transfer):
+   - From Warehouse: `Delivery In-Transit - WH`
+   - To Warehouse: the client location warehouse
+4) Submit.
+
+### 13.2 Replenishment cycle (repeat after usage)
+1) After surgery usage, Returns/Warehouse posts a Stock Entry (Material Issue) from the client location warehouse for the used/missing quantities.
+2) Accounting invoices the used quantities (standard selling documents).
+3) Warehouse replenishes stock back into the client location warehouse using the same staging pattern:
+   - `Main - WH` → `Delivery In-Transit - WH` → client location warehouse.
+
+---
+
+## 14) Implementation validation checklist
+### 14.1 Workflow / permissions
 - Users cannot jump statuses
 - Each team sees only their allowed workflow actions
 - Case cannot move to `Dispatched` unless dispatch Stock Entry is submitted
 - Case cannot move to `Returns Received` unless return Stock Entries are submitted
 
-### 13.2 Task controls
+### 14.2 Task controls
 - Dispatch/Pickup tasks can be assigned to a specific delivery person
-- Pickup Returns task cannot be completed without a photo
+- Delivery task cannot be completed without a Warehouse Pickup Photo
+- Return drop-off at warehouse task cannot be completed without a Warehouse Drop-off Photo
 
-### 13.3 Stock control
+### 14.3 Stock control
 - Drivers cannot access Stock Entry
 - Returns team can backdate Stock Entry to pickup time
 
-### 13.4 End-to-end test
+### 14.4 End-to-end test
 Run one test case:
 - Create Surgery Case
 - Move to Dispatch Picking; confirm draft dispatch Stock Entry is created
 - Select serials/batches on dispatch Stock Entry and submit; move to Dispatched
-- Deliver to hospital WH
-- Schedule pickup (move to `Return Pickup Scheduled`) and confirm the pickup Task is created; complete it with a photo
+- Complete the Delivery task (with Warehouse Pickup Photo), then move case to Delivered and confirm delivery Stock Entry posts into the Client Location Warehouse
+- Schedule pickup (move to `Return Pickup Scheduled`) and confirm:
+  - Pickup Returns task is created and assigned
+  - Return drop-off at warehouse task is created and assigned
+- Complete Pickup Returns task (no photo required), move case to Return Pickup In Transit
+- Complete Return drop-off at warehouse task (with Warehouse Drop-off Photo)
 - Receive returns: move to Returns Verification; confirm draft return Stock Entries exist
 - Select returned serials/batches and submit return Stock Entries; move to Returns Received
 - Derive usage
 - Confirm Consumption Stock Entry was created/submitted
 - Invoice used items (draft)
-- Close case
+- Try to close case with a missing serial tool that is not recorded in Tool Serial Exceptions: it must be blocked
+- Record missing serial(s) in Tool Serial Exceptions and close case: it must succeed
 
-### 13.5 Debt automation test
-- Set a hospital debt threshold
+### 14.5 Debt automation test
+- Set a customer debt threshold (`debt_threshold_amd`)
 - Create unpaid invoices above threshold
 - Confirm a single director debt-collection Task is created
 - Change debt amount and confirm the same Task is updated

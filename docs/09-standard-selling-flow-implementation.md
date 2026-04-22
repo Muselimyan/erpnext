@@ -349,10 +349,50 @@ Policy implemented:
 4) Paste:
 
 ```python
+import json
+
 import frappe
-from frappe.desk.form.assign_to import add as add_assignment
 
 DIRECTOR_ROLE = "Ops - Directors"
+
+def assign_single_owner(task_name, user):
+    # Doc 10: one accountable owner.
+    # Use direct DB updates so assignment works even when Task edits are restricted by Doc 10A.
+    frappe.db.set_value("Task", task_name, "_assign", json.dumps([user]), update_modified=False)
+
+    # Cancel any other open ToDo assignments for this Task.
+    other_todos = frappe.get_all(
+        "ToDo",
+        filters={
+            "reference_type": "Task",
+            "reference_name": task_name,
+            "allocated_to": ["!=", user],
+            "status": "Open",
+        },
+        pluck="name",
+    )
+
+    for td in (other_todos or []):
+        frappe.db.set_value("ToDo", td, "status", "Cancelled")
+
+    # Ensure an open ToDo exists for the assignee.
+    if not frappe.db.exists(
+        "ToDo",
+        {
+            "reference_type": "Task",
+            "reference_name": task_name,
+            "allocated_to": user,
+            "status": "Open",
+        },
+    ):
+        todo = frappe.new_doc("ToDo")
+        todo.status = "Open"
+        todo.allocated_to = user
+        todo.reference_type = "Task"
+        todo.reference_name = task_name
+        todo.description = frappe.db.get_value("Task", task_name, "subject") or task_name
+        todo.assigned_by = frappe.session.user
+        todo.insert(ignore_permissions=True)
 
 def user_has_role(role):
     return bool(frappe.db.exists("Has Role", {"parent": frappe.session.user, "role": role}))
@@ -422,12 +462,21 @@ if not discount_present:
     )
 
     for tname in (open_tasks or []):
-        try:
-            t = frappe.get_doc("Task", tname)
-            t.status = "Cancelled"
-            t.save(ignore_permissions=True)
-        except Exception:
-            pass
+        # Use db updates (not Task.save) to avoid being blocked by Doc 10A team-edit enforcement.
+        desc = frappe.db.get_value("Task", tname, "description") or ""
+        note = "Cancelled automatically: discount removed from Sales Order."
+        if note not in desc:
+            desc = (desc + "\n" if desc else "") + note
+            frappe.db.set_value("Task", tname, "description", desc)
+        frappe.db.set_value("Task", tname, "status", "Cancelled")
+
+        todos = frappe.get_all(
+            "ToDo",
+            filters={"reference_type": "Task", "reference_name": tname, "status": "Open"},
+            pluck="name",
+        )
+        for td in (todos or []):
+            frappe.db.set_value("ToDo", td, "status", "Cancelled")
 
     return
 
@@ -491,15 +540,25 @@ task.customer = doc.customer
 
 task.insert(ignore_permissions=True)
 
-# Assign to directors
+# Assign to exactly one director (Doc 10: one accountable owner)
 director_users = frappe.get_all(
     "Has Role",
     filters={"role": DIRECTOR_ROLE},
     pluck="parent",
 )
 director_users = sorted(list(set(director_users or [])))
-for u in director_users:
-    add_assignment({"assign_to": [u], "doctype": "Task", "name": task.name})
+
+director_users = [
+    u
+    for u in director_users
+    if u not in ("Administrator", "Guest") and int(frappe.db.get_value("User", u, "enabled") or 0) == 1
+]
+
+if not director_users:
+    frappe.throw(f"No director users found. Create at least one User with role '{DIRECTOR_ROLE}'.")
+
+assigned_director = director_users[0]
+assign_single_owner(task.name, assigned_director)
 
 doc.discount_approval_task = task.name
 ```
@@ -780,10 +839,46 @@ Implementation decision:
 4) Paste:
 
 ```python
+import json
+
 import frappe
-from frappe.desk.form.assign_to import add as add_assignment
 
 DIRECTOR_ROLE = "Ops - Directors"
+
+def assign_single_owner(task_name, user):
+    frappe.db.set_value("Task", task_name, "_assign", json.dumps([user]), update_modified=False)
+
+    other_todos = frappe.get_all(
+        "ToDo",
+        filters={
+            "reference_type": "Task",
+            "reference_name": task_name,
+            "allocated_to": ["!=", user],
+            "status": "Open",
+        },
+        pluck="name",
+    )
+
+    for td in (other_todos or []):
+        frappe.db.set_value("ToDo", td, "status", "Cancelled")
+
+    if not frappe.db.exists(
+        "ToDo",
+        {
+            "reference_type": "Task",
+            "reference_name": task_name,
+            "allocated_to": user,
+            "status": "Open",
+        },
+    ):
+        todo = frappe.new_doc("ToDo")
+        todo.status = "Open"
+        todo.allocated_to = user
+        todo.reference_type = "Task"
+        todo.reference_name = task_name
+        todo.description = frappe.db.get_value("Task", task_name, "subject") or task_name
+        todo.assigned_by = frappe.session.user
+        todo.insert(ignore_permissions=True)
 
 def get_director_users():
     users = frappe.get_all(
@@ -819,6 +914,20 @@ if not company:
     return
 
 director_users = get_director_users()
+
+if not director_users:
+    return
+
+director_users = [
+    u
+    for u in director_users
+    if u not in ("Administrator", "Guest") and int(frappe.db.get_value("User", u, "enabled") or 0) == 1
+]
+
+if not director_users:
+    return
+
+assigned_director = director_users[0]
 
 customers = frappe.get_all(
     "Customer",
@@ -857,9 +966,8 @@ for c in customers:
         task.customer = c.name
         task.insert(ignore_permissions=True)
 
-        # Assign to all directors
-        for u in director_users:
-            add_assignment({"assign_to": [u], "doctype": "Task", "name": task.name})
+        # Assign to exactly one director (Doc 10: one accountable owner)
+        assign_single_owner(task.name, assigned_director)
 
     task.current_debt_amd = debt
     task.debt_threshold_amd = threshold
@@ -888,9 +996,46 @@ Implementation decision:
 4) Paste:
 
 ```python
+import json
+
 import frappe
 
 DIRECTOR_ROLE = "Ops - Directors"
+
+def assign_single_owner(task_name, user):
+    frappe.db.set_value("Task", task_name, "_assign", json.dumps([user]), update_modified=False)
+
+    other_todos = frappe.get_all(
+        "ToDo",
+        filters={
+            "reference_type": "Task",
+            "reference_name": task_name,
+            "allocated_to": ["!=", user],
+            "status": "Open",
+        },
+        pluck="name",
+    )
+
+    for td in (other_todos or []):
+        frappe.db.set_value("ToDo", td, "status", "Cancelled")
+
+    if not frappe.db.exists(
+        "ToDo",
+        {
+            "reference_type": "Task",
+            "reference_name": task_name,
+            "allocated_to": user,
+            "status": "Open",
+        },
+    ):
+        todo = frappe.new_doc("ToDo")
+        todo.status = "Open"
+        todo.allocated_to = user
+        todo.reference_type = "Task"
+        todo.reference_name = task_name
+        todo.description = frappe.db.get_value("Task", task_name, "subject") or task_name
+        todo.assigned_by = frappe.session.user
+        todo.insert(ignore_permissions=True)
 
 # Only for customer receipts
 if doc.party_type != "Customer":
@@ -906,6 +1051,20 @@ director_users = frappe.get_all(
 )
 
 director_users = sorted(list(set(director_users or [])))
+
+if not director_users:
+    return
+
+director_users = [
+    u
+    for u in director_users
+    if u not in ("Administrator", "Guest") and int(frappe.db.get_value("User", u, "enabled") or 0) == 1
+]
+
+if not director_users:
+    return
+
+assigned_director = director_users[0]
 
 existing = frappe.get_all(
     "Task",
@@ -931,8 +1090,7 @@ task.customer = doc.party
 
 task.insert(ignore_permissions=True)
 
-for u in director_users:
-    add_assignment({"assign_to": [u], "doctype": "Task", "name": task.name})
+assign_single_owner(task.name, assigned_director)
 ```
 
 5) Save.
@@ -1064,4 +1222,4 @@ Operational steps:
 
 ### 13.5 Distribute Payment tasks
 - Submit a Customer Payment Entry (Receive).
-- Confirm a Distribute Payment task is created and assigned to directors.
+- Confirm a Distribute Payment task is created and assigned to exactly one director user (the task is still visible to all directors via Task Access Policy).
