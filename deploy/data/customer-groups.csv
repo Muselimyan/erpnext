@@ -1,0 +1,6 @@
+﻿"name","owner","creation","modified","modified_by","docstatus","idx","customer_group_name","is_group","lft","rgt","old_parent","doctype","accounts","credit_limits"
+"All Customer Groups","Administrator","2026-04-19 23:12:09.814742","2026-04-19 23:12:09.814742","Administrator","0","0","All Customer Groups","1","1","10","","Customer Group","",""
+"Individual","Administrator","2026-04-19 23:12:09.841041","2026-04-19 23:12:09.841041","Administrator","0","3","Individual","0","2","3","All Customer Groups","Customer Group","",""
+"Commercial","Administrator","2026-04-19 23:12:09.851188","2026-04-19 23:12:09.851188","Administrator","0","0","Commercial","0","4","5","All Customer Groups","Customer Group","",""
+"Non Profit","Administrator","2026-04-19 23:12:09.860728","2026-04-19 23:12:09.860728","Administrator","0","0","Non Profit","0","6","7","All Customer Groups","Customer Group","",""
+"Government","Administrator","2026-04-19 23:12:09.869310","2026-04-19 23:12:09.869310","Administrator","0","0","Government","0","8","9","All Customer Groups","Customer Group","",""

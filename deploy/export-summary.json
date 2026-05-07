@@ -1,0 +1,39 @@
+﻿{
+    "exported_at":  "2026-05-06T17:18:04Z",
+    "base_url":  "https://erpnext.am",
+    "schema":  {
+                   "custom-fields":  26,
+                   "notifications":  4,
+                   "client-scripts":  1,
+                   "server-scripts":  2,
+                   "workflows":  0,
+                   "property-setters":  115,
+                   "role-profiles":  6,
+                   "workspaces":  19,
+                   "print-formats":  1,
+                   "reports":  0
+               },
+    "data":  {
+                 "company":  1,
+                 "users":  10,
+                 "roles":  55,
+                 "warehouses":  162,
+                 "item-groups":  15,
+                 "items":  20,
+                 "uoms":  200,
+                 "customers":  20,
+                 "customer-groups":  5,
+                 "territories":  3,
+                 "suppliers":  2,
+                 "supplier-groups":  8,
+                 "price-lists":  2,
+                 "item-prices":  0,
+                 "brands":  1
+             },
+    "gaps_count":  3,
+    "gaps":  [
+                 "Workflow : none configured",
+                 "Report : none configured",
+                 "Item Price : no records"
+             ]
+}

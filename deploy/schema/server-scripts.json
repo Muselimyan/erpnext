@@ -1,0 +1,43 @@
+﻿{
+    "count":  2,
+    "records":  [
+                    {
+                        "name":  "Task-before-save-policy",
+                        "owner":  "ai-agent@internal.com",
+                        "creation":  "2026-05-06 16:50:37.699535",
+                        "modified":  "2026-05-06 16:56:54.956940",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "script_type":  "DocType Event",
+                        "event_frequency":  "All",
+                        "doctype_event":  "Before Save",
+                        "allow_guest":  0,
+                        "disabled":  0,
+                        "script":  "before = doc.get_doc_before_save()\nbefore_status = before.status if before else None\n\nis_becoming_completed = (doc.status == \"Completed\" and before_status != \"Completed\")\n\n# 1) Always set Task Access Policy from Task Kind\nif doc.task_kind:\n    if frappe.db.exists(\"Task Access Policy\", doc.task_kind):\n        doc.task_access_policy = doc.task_kind\n    else:\n        frappe.throw(f\"Missing Task Access Policy record for Task Kind \u0027{doc.task_kind}\u0027\")\n\n# 2) Enforce that only owning team can complete each Task Kind\nTASK_KIND_REQUIRED_ROLE = {\n    \"Order entry\": \"Ops - Order Accepting\",\n    \"Pack / prepare items\": \"Ops - Inventory\",\n    \"Dispatch picking / hand-off\": \"Ops - Delivery\",\n    \"Delivery\": [\"Delivery Driver\", \"Ops - Delivery\"],\n    \"Pickup Returns\": [\"Delivery Driver\", \"Ops - Delivery\"],\n    \"Return drop-off at warehouse\": [\"Delivery Driver\", \"Ops - Delivery\"],\n    \"Returns processing / verification\": [\"Ops - Returns\", \"Ops - Inventory\"],\n    \"Invoice preparation / create invoice\": \"Ops - Accounting\",\n    \"Debt Collection\": \"Ops - Directors\",\n    \"Distribute Payment\": \"Ops - Directors\",\n    \"Discount Approval\": \"Ops - Directors\",\n    \"Purchase Approval\": \"Ops - Directors\",\n    \"Write-off Approval\": \"Ops - Directors\",\n}\n\nrequired_role = TASK_KIND_REQUIRED_ROLE.get(doc.task_kind)\nif is_becoming_completed and required_role:\n    user_roles = set(frappe.get_roles(frappe.session.user))\n\n    if \"Ops - Directors\" not in user_roles:\n        allowed_roles = required_role if isinstance(required_role, list) else [required_role]\n        if not any(r in user_roles for r in allowed_roles):\n            if isinstance(required_role, list):\n                roles_text = \", \".join([f\"\u0027{r}\u0027\" for r in required_role])\n                frappe.throw(f\"Only users with roles {roles_text} can complete Task Kind \u0027{doc.task_kind}\u0027\")\n            else:\n                frappe.throw(f\"Only users with role \u0027{required_role}\u0027 can complete Task Kind \u0027{doc.task_kind}\u0027\")\n\n# 3) Fill Completed At timestamp\nif is_becoming_completed and not doc.completed_at:\n    doc.completed_at = frappe.utils.now_datetime()",
+                        "enable_rate_limit":  0,
+                        "rate_limit_count":  5,
+                        "rate_limit_seconds":  86400,
+                        "doctype":  "Server Script"
+                    },
+                    {
+                        "name":  "Customer-before-save-governance",
+                        "owner":  "ai-agent@internal.com",
+                        "creation":  "2026-05-06 17:11:54.375873",
+                        "modified":  "2026-05-06 17:11:54.375873",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "script_type":  "DocType Event",
+                        "event_frequency":  "All",
+                        "doctype_event":  "Before Save",
+                        "allow_guest":  0,
+                        "disabled":  0,
+                        "script":  "before = doc.get_doc_before_save()\n\nuser_roles = set(frappe.get_roles(frappe.session.user))\nis_privileged = (\n    \"Ops - Accounting\" in user_roles or\n    \"Ops - Directors\" in user_roles or\n    \"System Manager\" in user_roles\n)\n\nif before and before.client_code != doc.client_code and not is_privileged:\n    frappe.throw(\"Only Accounting/Directors can change Client Code\")\n\nif before and before.is_provisional and not doc.is_provisional and not is_privileged:\n    frappe.throw(\"Only Accounting/Directors can mark a client as non-provisional\")",
+                        "enable_rate_limit":  0,
+                        "rate_limit_count":  5,
+                        "rate_limit_seconds":  86400,
+                        "doctype":  "Server Script"
+                    }
+                ]
+}
