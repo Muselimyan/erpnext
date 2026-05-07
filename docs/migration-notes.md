@@ -94,3 +94,46 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - Prod item count at migration: **246 items** across 7 leaf groups (local `deploy/data/items.csv` contains only a 20-item sample — the full catalog is live in ERPNext only).
 - Item Attributes are infrastructure for future variant templates; existing items are all standalone (individual item codes per spec) — this is correct per Doc 06 §5.2.
 - The FEFO script fires on `Before Submit` of Stock Entry; it is a warning (`msgprint`) not a hard block — consistent with go-live policy.
+
+---
+
+## Doc 07 — Suppliers & Procurement (Basic P2P)
+
+### Completed (2026-05-07)
+
+**Custom Fields — Task** (3 added):
+- `purchase_order` — Link → Purchase Order; links an approval task to its PO.
+- `approval_outcome` — Select (Approved / Rejected); Director's decision.
+- `approval_note` — Small Text; Director's written justification.
+
+**Custom Fields — Purchase Order** (7 added, all read-only except the two required entry fields):
+- `purchase_reason` — Select (Reorder / Ad-hoc demand / Replacement / Emergency); **required**.
+- `requested_by` — Link → User; **required**.
+- `director_approval_status` — Select (Pending / Approved / Rejected); default `Pending`; read-only.
+- `director_approved_by` — Link → User; read-only.
+- `director_approved_at` — Datetime; read-only.
+- `director_approval_task` — Link → Task; read-only.
+- `director_approval_note` — Small Text; read-only.
+
+**Server Scripts** (6 added, all enabled):
+- `Task-purchase-approval-writeback` — Task / Before Save: when a `Purchase Approval` task is completed, writes `approval_outcome` and director identity back to the linked PO.
+- `Purchase Order-before-submit-director-approval` — Purchase Order / Before Submit: hard-blocks submission unless `director_approval_status = Approved`.
+- `Purchase Order-validate-one-supplier` — Purchase Order / Before Save: enforces that every PO line item belongs exclusively to the PO's supplier (Doc 07 one-supplier-per-PO rule).
+- `Purchase Order-before-save-clear-approval` — Purchase Order / Before Save: if a draft PO's header or lines change after approval, resets approval to `Pending`.
+- `Purchase Receipt-before-submit-main-inmed-expiry` — Purchase Receipt / Before Submit: enforces all rows land in `Main - Inmed`; for batch+expiry-tracked items, requires `batch_no` with a non-null `expiry_date`.
+- `Purchase Invoice-before-submit-no-update-stock` — Purchase Invoice / Before Submit: hard-blocks submission when `update_stock = 1` (receiving must go through Purchase Receipt).
+
+### Pending / To-Do
+- **[ ]** Smoke-test the full approval flow end-to-end: draft PO → blocked submit → Purchase Approval task → Director completes as Approved → PO submit succeeds.
+- **[ ]** Verify re-approval trigger: edit an approved draft PO line (qty or rate) and confirm `director_approval_status` resets to `Pending`.
+- **[ ]** Test Purchase Receipt destination block: attempt submit with a non-`Main - Inmed` warehouse row and confirm hard error.
+- **[ ]** Test Purchase Invoice `update_stock` block: attempt submit with `Update Stock = ON` and confirm hard error.
+- **[ ]** Set `purchase_reason` and `requested_by` on any existing draft Purchase Orders before users next try to save them (new required fields will block saves on existing drafts).
+- **[ ]** Confirm `Task Access Policy` record named `Purchase Approval` exists (prerequisite for the Task governance script to accept `task_kind = Purchase Approval`).
+
+### Notes / Known Issues
+- Deployment script: `deploy/doc07a-deploy.ps1` — idempotent, reads credentials from `export.ps1`. Run with `-Mode Check` to verify state, `-Mode Deploy` to create/update.
+- The `Purchase Order-validate-one-supplier` script is registered as `Before Save` (not `Validate`) because `Validate` is not an accepted `doctype_event` value in this ERPNext instance.
+- `Main - WH` placeholder used in Doc 07 documentation maps to `Main - Inmed` in production — scripts use the production name.
+- Supplier master at deployment time: **2 suppliers** (`ZMD`, `CHUNLI`). 245 items → `ZMD`, 1 item → `CHUNLI`. No new suppliers were added as part of Doc 07A.
+- Production snapshot updated post-deployment: `deploy/schema/custom-fields.json` (37 records), `deploy/schema/server-scripts.json` (9 records).

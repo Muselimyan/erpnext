@@ -1,11 +1,11 @@
 ﻿{
-    "exported_at":  "2026-05-06T17:18:04Z",
+    "exported_at":  "2026-05-07T11:34:33Z",
     "base_url":  "https://erpnext.am",
     "schema":  {
-                   "custom-fields":  26,
+                   "custom-fields":  37,
                    "notifications":  4,
                    "client-scripts":  1,
-                   "server-scripts":  2,
+                   "server-scripts":  9,
                    "workflows":  0,
                    "property-setters":  115,
                    "role-profiles":  6,
@@ -17,7 +17,7 @@
                  "company":  1,
                  "users":  10,
                  "roles":  55,
-                 "warehouses":  162,
+                 "warehouses":  206,
                  "item-groups":  15,
                  "items":  20,
                  "uoms":  200,
