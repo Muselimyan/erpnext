@@ -158,6 +158,9 @@ export-schema "Print Format" "print-formats" "" { param($r) $r.standard -ne "Yes
 # Reports – non-standard (custom) only
 export-schema "Report" "reports" '[["Report","is_standard","=","No"]]'
 
+# Custom DocTypes only (Surgery Set Type, Surgery Set Type Item, Task Access Policy, etc.)
+export-schema "DocType" "custom-doctypes" '[["DocType","custom","=",1]]'
+
 # ==============================================================
 # DATA EXPORTS
 # ==============================================================
@@ -170,16 +173,17 @@ export-data "User"           "users"            50
 export-data "Role"           "roles"           200
 export-data "Warehouse"      "warehouses"      500
 export-data "Item Group"     "item-groups"     200
-export-data "Item"           "items"            20
-export-data "UOM"            "uoms"            200
-export-data "Customer"       "customers"        20
-export-data "Customer Group" "customer-groups" 200
-export-data "Territory"      "territories"     200
-export-data "Supplier"       "suppliers"        50
-export-data "Supplier Group" "supplier-groups" 200
-export-data "Price List"     "price-lists"      50
-export-data "Item Price"     "item-prices"      20
-export-data "Brand"          "brands"           50
+export-data "Item"                "items"               500
+export-data "UOM"                 "uoms"                200
+export-data "Customer"            "customers"           500
+export-data "Customer Group"      "customer-groups"     200
+export-data "Territory"           "territories"         200
+export-data "Supplier"            "suppliers"           500
+export-data "Supplier Group"      "supplier-groups"     200
+export-data "Price List"          "price-lists"         500
+export-data "Item Price"          "item-prices"         500
+export-data "Brand"               "brands"              500
+export-data "Task Access Policy"  "task-access-policies" 100
 
 # ==============================================================
 # SUMMARY
