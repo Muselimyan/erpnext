@@ -1,4 +1,4 @@
 ﻿"name","owner","creation","modified","modified_by","docstatus","idx","territory_name","is_group","lft","rgt","old_parent","doctype","targets"
 "All Territories","Administrator","2026-04-19 23:12:09.730096","2026-04-19 23:12:09.730096","Administrator","0","0","All Territories","1","1","6","","Territory",""
-"Armenia","Administrator","2026-04-19 23:12:09.748580","2026-04-19 23:12:09.748580","Administrator","0","12","Armenia","0","2","3","All Territories","Territory",""
+"Armenia","Administrator","2026-04-19 23:12:09.748580","2026-04-19 23:12:09.748580","Administrator","0","13","Armenia","0","2","3","All Territories","Territory",""
 "Rest Of The World","Administrator","2026-04-19 23:12:09.763719","2026-04-19 23:12:09.763719","Administrator","0","0","Rest Of The World","0","4","5","All Territories","Territory",""
