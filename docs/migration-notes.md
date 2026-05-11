@@ -177,6 +177,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - Reorder governance script uses `reorder_levels` as the Item Reorder child table fieldname (standard ERPNext). If fieldname differs in this instance, update `REORDER_FIELDNAME` in the script.
 - `Ops - Inventory` item write permissions are **unchanged** — that is a separate open item tracked under Doc 06 pending D1/D2.
 - `purchase_reason` on Purchase Order already includes `Reorder (Doc 08)` as first option (deployed in Doc 07A).
+- **2026-05-08 cleanup**: A second deployment pass (unaware of the 2026-05-07 deployment) created two duplicate artifacts — `Item-before-save-reorder-change-reason` server script (370 chars, weaker logic) and Custom DocPerm `j08rtbhkr0` (Ops - Purchasing Lead, Read+Write). Both were cleaned up: the duplicate script was disabled (`disabled=1`), the duplicate DocPerm was deleted. Canonical artifacts are `Item-before-save-reorder-governance` and `rs7iid2a2s`.
 
 ---
 
