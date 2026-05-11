@@ -85,12 +85,12 @@ Go-live is allowed only if:
 
 ## 5) Warehouse and stock integrity readiness
 ### 5.1 Warehouse tree exists and matches the operational model (Doc 05)
-- `Main - WH` exists and is used as sellable stock.
-- `Delivery In-Transit - WH` exists.
-- `Return Pickup In-Transit - WH` exists.
-- `Returns - WH` exists.
-- `Clients - WH` exists as group only.
-- Each active client location group has its own leaf warehouse under `Clients - WH`.
+- `Main - Inmed` exists and is used as sellable stock.
+- `Delivery In-Transit - Inmed` exists.
+- `Return Pickup In-Transit - Inmed` exists.
+- `Returns - Inmed` exists.
+- `Clients - Inmed` exists as group only.
+- Each active client location group has its own leaf warehouse under `Clients - Inmed`.
 
 ### 5.2 Stock movement invariants understood by staff
 - Staff understands the allowed movement patterns (Doc 05 section 6).
@@ -128,8 +128,8 @@ Operational check:
 - Purchase orders require director approval before being sent/submitted (Doc 07).
 
 ### 7.3 Debt threshold escalation
-- Debt threshold exceedance triggers a director-owned Debt Collection task (requirements / Doc 09 / Doc 10).
-- Policy confirmed: exceedance does not automatically block delivery; directors review via task.
+- Debt threshold exceedance triggers a Debt Collection task assigned to Finance Team (`Ops - Finance`) (Doc 16 §6.10).
+- Policy confirmed: exceedance does not automatically block delivery; Finance team tracks and records payments via task.
 
 ---
 

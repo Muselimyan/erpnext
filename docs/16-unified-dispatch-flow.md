@@ -353,7 +353,7 @@ Templates are not mandatory — the items table can be filled manually.
 
 **Kind:** `Invoice preparation / create invoice`
 **Default assignee:** Accounting Team
-**Created by:** completion of Task 6.3 (no-return path) or Task 6.7 (return path)
+**Created by:** completion of Task 6.4 (Delivery task, Delivered state — no-return path) or Task 6.7 (return path)
 
 **Contains:**
 - Subject: `Invoice: [Case ID] — [Customer]`

@@ -442,10 +442,10 @@ Red flags:
 
 ## 4.13 Near-expiry stock risk (Main warehouse)
 What it answers:
-- “Which expiry-tracked items in `Main - WH` are approaching expiry and require attention?”
+- “Which expiry-tracked items in `Main - Inmed` are approaching expiry and require attention?”
 
 Primary truth:
-- Batch/expiry-aware stock view (batch numbers with expiry dates) for `Main - WH`.
+- Batch/expiry-aware stock view (batch numbers with expiry dates) for `Main - Inmed`.
 
 Interpretation:
 - These items represent potential write-off risk and should drive:
@@ -461,10 +461,10 @@ Red flags:
 These are high-value “sanity checks” you can run routinely.
 
 ### 5.1 In-transit stuck check
-- Any stock in `Delivery In-Transit - WH` or `Return Pickup In-Transit - WH` older than your normal delivery/pickup window must have an owner and a task.
+- Any stock in `Delivery In-Transit - Inmed` or `Return Pickup In-Transit - Inmed` older than your normal delivery/pickup window must have an owner and a task.
 
 ### 5.2 Returns backlog check
-- Stock in `Returns - WH` is a workload queue.
+- Stock in `Returns - Inmed` is a workload queue.
 - If it grows continuously, returns verification is the bottleneck.
 
 ### 5.3 Client stock vs open Dispatch Cases check

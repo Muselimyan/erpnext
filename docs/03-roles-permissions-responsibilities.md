@@ -132,14 +132,30 @@ Can do:
 - Trigger and close invoice-related tasks.
 - Maintain the Price Override List (negotiated/special client prices) according to governance policy.
 
-### 4.6 Directors
+### 4.6 Finance Team
+Purpose:
+- Record incoming payments; manage debt collection per customer.
+
+Can do:
+- Record payments on Debt Collection tasks (triggers Payment Entry auto-creation).
+- Complete Distribute Payment and Payment Received tasks.
+- View Sales Invoices (read).
+
+### 4.7 Order Creating Team
+Purpose:
+- Create and submit Dispatch Cases from Order entry tasks.
+
+Can do:
+- Create and submit Dispatch Case records.
+- Complete Order entry tasks.
+
+### 4.8 Directors
 Purpose:
 - Approvals and escalations.
 
 Can do:
 - Approve / reject with notes.
-- Resolve debt-collection escalations.
-- Complete `Distribute Payment` tasks after payments are received (payment distribution/assignment control).
+- Monitor debt-collection escalations (Finance team owns task completion; Directors review board).
 - Approve special pricing/price override changes when required by policy.
 
 ---
@@ -169,10 +185,14 @@ Task Kind ownership (baseline):
   - Owner: Returns / Inventory team
 - `Invoice preparation / create invoice`
   - Owner: Accounting
+- `Returns restocking`
+  - Owner: Returns / Inventory team
 - `Debt Collection`
-  - Owner: Directors
+  - Owner: Finance Team (`Ops - Finance`)
 - `Distribute Payment`
-  - Owner: Directors
+  - Owner: Finance Team (`Ops - Finance`)
+- `Payment Received`
+  - Owner: Finance Team (`Ops - Finance`)
 - `Discount Approval`, `Purchase Approval`, `Write-off Approval`
   - Owner: Directors
 
@@ -197,8 +217,10 @@ Recommended: create one Task Access Policy per Task Kind:
 - `Return drop-off at warehouse`
 - `Returns processing / verification`
 - `Invoice preparation / create invoice`
+- `Returns restocking`
 - `Debt Collection`
 - `Distribute Payment`
+- `Payment Received`
 - `Discount Approval`
 - `Purchase Approval`
 - `Write-off Approval`
@@ -229,6 +251,12 @@ This is the default recommendation to match your examples:
   - `Invoice preparation / create invoice`
   - optionally `Returns processing / verification` (to understand timing dependencies)
 
+- **Finance Team** can see:
+  - `Debt Collection`
+  - `Distribute Payment`
+  - `Payment Received`
+  - `Invoice preparation / create invoice` (to understand invoice status for payment)
+
 - **Directors** can see:
   - everything
 
@@ -237,36 +265,18 @@ Rule:
 
 ---
 
-## 7) Surgery Case workflow ownership (Doc 12 alignment)
-Doc 12 defines the surgery-case flow and requires role-based sequential transitions.
+## 7) Dispatch Case workflow ownership (Doc 16 alignment)
 
-Operational ownership by stage (summary):
-- Create case (`Draft`)
-  - Owner: Order team
-- Prepare (`Preparing`)
-  - Owner: Inventory / Preparing
-- Dispatch checkpoint (`Dispatch Picking` → `Dispatched`)
-  - Owner: Inventory does packing; delivery coordination ensures dispatch is finalized
-  - Gate: dispatch Stock Entry must be submitted with serial/batch where required
-- Deliver (`Dispatched` → `Delivered`)
-  - Owner: Delivery coordinator + driver task completion
-- Schedule return pickup (`Delivered` → `Return Pickup Scheduled`)
-  - Owner: Coordinator
-- Pickup returns (driver completes `Pickup Returns` task)
-  - Owner: Delivery
-- Return drop-off (driver completes `Return drop-off at warehouse` task)
-  - Owner: Delivery
-  - Gate: warehouse drop-off photo evidence is mandatory
-- Returns verification (`Returns Verification` → `Returns Received`)
-  - Owner: Returns team
-  - Gate: return Stock Entries must be submitted with returned serials/batches
-- Usage derived (`Usage Derived`)
-  - Owner: Returns team
-  - Gate: reconciliation must be acceptable
-- Invoiced (`Invoiced`)
-  - Owner: Accounting
-- Closed
-  - Owner: Coordinator / Accounting (only when stock + invoice are correct)
+**The Surgery Case workflow (Doc 12) has been replaced by the Dispatch Case workflow (Doc 16). For current role ownership by workflow stage, see Doc 16 §11 (what each role sees daily) and Doc 16 §12 (Task kind → owning team).**
+
+Summary of stage ownership:
+- Create case → Order Creating Team (`Ops - Order Creating`)
+- Pack / prepare → Inventory Team
+- Deliver → Delivery Team (driver completes)
+- Returns → Delivery Team (driver), then Returns Team (verification)
+- Invoice → Accounting Team
+- Debt collection / payment → Finance Team
+- Approvals (discount / write-off / purchase) → Directors
 
 ---
 

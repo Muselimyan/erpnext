@@ -73,8 +73,8 @@ Alternative (if the client is a hospital with no named doctor):
 
 ### 3.2 Client location warehouses (important clarification)
 The client location warehouse concept exists to support company-owned stock that is physically at a client location group:
-- surgery-set cases (Doc 11/12)
-- permanent on-site surgery sets (consignment-like baseline stock kept at the client location)
+- Dispatch Cases with `return_expected = Yes` (Doc 16)
+- permanent on-site surgery sets (consignment-like baseline stock kept at the client location, Doc 11 — template concept retained)
 
 Operational rule:
 - If an item is physically at a client location and is still considered company-owned, it must be in that client location warehouse in ERPNext.
@@ -85,12 +85,12 @@ Note:
 
 Operational simplification:
 - Client location warehouses are primarily for:
-  - surgery cases
-  - permanent on-site sets (consignment-like)
+  - Dispatch Cases with `return_expected = Yes` (Doc 16)
+  - permanent on-site sets (consignment-like, Doc 11)
 - Normal sales should not create long-lived “company-owned at client” positions.
 
 Policy:
-- Client location warehouses are used for company-owned at-client stock only (surgery cases and permanent on-site sets).
+- Client location warehouses are used for company-owned at-client stock only (Dispatch Cases return-expected path and permanent on-site sets).
 - Standard sales must not move stock into client location warehouses.
 
 ---

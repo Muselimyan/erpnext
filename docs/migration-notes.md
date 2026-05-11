@@ -519,3 +519,58 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 - **[ ]** Run Scenario A–F in a staging/test environment and sign off each.
 - **[ ]** Confirm all "⬜" items in the table above are resolved or formally deferred with an owner + date.
 - **[ ]** Confirm Doc 13A reporting views are usable by each team before first real transaction.
+
+---
+
+## Doc 15A — Reporting Requirements: Phase 1–4
+
+**Deployed:** 2026-05-12  
+**Scripts:** `deploy/doc15a-deploy.ps1`, `deploy/doc15b-deploy.ps1`, `deploy/doc15c-deploy.ps1`  
+**Mode:** `Check` then `Deploy` (all three in sequence)
+
+### What was deployed
+
+**1 Custom Field:**
+
+| DocType | Fieldname | Type | Default | Purpose |
+|---|---|---|---|---|
+| `Item Reorder` | `buffer_percentage` | Float | 0.20 | Safety stock buffer for norm calculation (§7.1). Extends Doc 08 static threshold system. |
+
+**18 new Query Reports:**
+
+| Report name | Ref DocType | Roles | Script |
+|---|---|---|---|
+| `RPT — Stock — Balance Multi-Select` | Bin | All Ops + Directors | doc15a |
+| `RPT — Stock — Batch and Expiry Balance` | Stock Ledger Entry | Inventory, Returns, Directors | doc15a |
+| `RPT — Stock — Expiry Classification` | Item | Inventory, Purchasing, Directors | doc15a |
+| `RPT — Stock — Entries by Period` | Stock Entry | All Ops + Directors | doc15a |
+| `RPT — Stock — Warehouse Movement` | Stock Entry | Inventory, Order Accepting, Returns, Driver, Directors | doc15a |
+| `RPT — Sales — Sold Items Detail` | Sales Invoice | **Directors only** (profit columns) | doc15a |
+| `RPT — Accounting — Sales Documents and Payments` | Sales Invoice | Accounting, Directors | doc15a |
+| `RPT — Accounting — Debt Status Board` | Sales Invoice | Accounting, Directors | doc15b |
+| `RPT — Accounting — Income by Period` | Sales Invoice | **Directors only** | doc15b |
+| `RPT — Purchasing — Norm and Reorder` | Item | Purchasing, Directors | doc15b |
+| `RPT — Sales — Top Products` | Sales Invoice | All Ops + Directors | doc15b |
+| `RPT — Sales — Top Customers` | Sales Invoice | Order Accepting, Accounting, Directors | doc15b |
+| `RPT — Sales — Comparative Periods` | Sales Invoice | **Directors only** | doc15c |
+| `RPT — Stock — Slow-Moving Products` | Bin | Inventory, Purchasing, Directors | doc15c |
+| `RPT — Stock — Near Expiry Value at Risk` | Stock Ledger Entry | Inventory, Accounting, Directors | doc15c |
+| `RPT — Data Quality — Missing Doctor or Hospital` | Sales Invoice | Order Creating, Accounting, Directors | doc15c |
+| `RPT — Data Quality — Negative Stock` | Bin | Inventory, Directors | doc15c |
+| `RPT — Purchasing — Supplier Performance` | Purchase Order | Purchasing, Directors | doc15c |
+
+**Workspace updated:** `Ops — Reporting Pack` — expanded from 28 to 46 shortcuts (all new reports added; existing shortcuts preserved).
+
+### Notes
+
+- `buffer_percentage` field defaults to `0.20` (20%) when null — the Norm and Reorder report uses `coalesce(ir.buffer_percentage, 0.20)`.
+- `RPT — Sales — Sold Items Detail` joins `tabItem Price` (price_list = `Standard Buying`) for gross profit. Profit columns will show 0 until Standard Buying prices are populated (Doc 06 pending item).
+- `RPT — Stock — Near Expiry Value at Risk` similarly shows `value_at_risk = 0` until buying prices exist.
+- Reports excluded from this deployment (New Scope / Phase 3+ deferred): Global Statistics Dashboard (§8.4), Return/Refund Money function (§6.6), Task auto-escalation (§8.2 auto). These are tracked in `docs/15a-reporting-requirements-implementation.md`.
+
+### To-Do (Doc 15A)
+
+- **[ ]** Validate `RPT — Purchasing — Norm and Reorder` once `Item Reorder` rows have `buffer_percentage` values entered by purchasing team.
+- **[ ]** Validate profit columns in `RPT — Sales — Sold Items Detail` and `RPT — Stock — Near Expiry Value at Risk` after Standard Buying prices are populated.
+- **[ ]** Confirm `RPT — Sales — Comparative Periods` filter date ranges are intuitive for directors.
+- **[ ]** Review workspace shortcut order with operations lead — reorder if needed via doc15c re-run.

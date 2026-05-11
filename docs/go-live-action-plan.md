@@ -19,7 +19,7 @@ Last updated: 2026-05-08
 | # | Item | Priority | Why |
 |---|---|---|---|
 | 1.1 | Replace the 7 `@example.com` sample users with real staff emails + secure passwords | 🔴 | Sample accounts have known credentials; leaving them open is a security risk |
-| 1.2 | Assign staff to **all** operational roles: `Ops - Order Accepting`, `Ops - Inventory`, `Ops - Returns`, `Ops - Delivery`, `Ops - Accounting`, `Ops - Directors`, `Delivery Driver` | 🔴 | The Task governance script enforces owning-team edit rights — tasks will be uneditable if no real users are in the correct roles |
+| 1.2 | Assign staff to **all** operational roles: `Ops - Order Accepting`, `Ops - Inventory`, `Ops - Returns`, `Ops - Delivery`, `Ops - Accounting`, `Ops - Directors`, `Delivery Driver`, `Ops - Order Creating`, `Ops - Finance` | 🔴 | The Task governance script enforces owning-team edit rights — tasks will be uneditable if no real users are in the correct roles |
 | 1.3 | Assign staff to `Ops - Purchasing` and `Ops - Purchasing Lead` | 🟡 | Required before any Purchase Order is created |
 | 1.4 | Create `director.tv@internal` user with `Directors TV` role + strong password | 🟢 | Needed for the TV wallboard only; not blocking sales |
 | 1.5 | Verify `server_script_enabled = 1` after every bench restart or Frappe upgrade | 🔴 | All gates (dispatch, debt, discount approval etc.) run as Server Scripts — if disabled, all gates silently disappear |
@@ -67,6 +67,9 @@ These cannot be set via the REST API and were not deployed by any script. Go to:
 | `Stock Entry` | `Delivery Driver` | No access |
 | `Sales Invoice` | `Ops - Accounting` | Read, Write, Create, Submit, Cancel |
 | `Payment Entry` | `Ops - Accounting` | Read, Write, Create, Submit, Cancel |
+| `Payment Entry` | `Ops - Finance` | Read, Write, Create, Submit, Cancel |
+| `Task` | `Ops - Finance` | Read, Write (own tasks — enforced by Task governance script) |
+| `Sales Invoice` | `Ops - Finance` | Read |
 | `Item`, `Item Group`, `Item Attribute`, `UOM` | `Ops - Inventory`, `Ops - Directors` | Write, Create (others: Read only) |
 | `Workspace: Ops — Reporting Pack` | `Ops - Order Accepting`, `Ops - Inventory`, `Accounting`, `Director` | Read / accessible |
 

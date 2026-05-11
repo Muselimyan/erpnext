@@ -229,9 +229,16 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
   - Minimum viable setup checklist
   - Test scenarios checklist
 
-### 15 — Standard Sale Workflow Gap Analysis *(Historical — Superseded by Doc 16)*
-**File**: `15-standard-sale-workflow-gap-analysis.md`
-> **⚠️ This document captured the gaps between the old standard sale flow (Doc 09) and the stated requirement of fully automated task chains. All gaps identified here were resolved by the Unified Dispatch Flow (Doc 16). Retained for historical reference only.**
+### 15 — Reporting Requirements Review
+**File**: `15-reporting-requirements-review.md`
+- **Purpose**: Consolidates the 20 requested reports/functions into 26 implementation-ready ERPNext specifications. Documents all confirmed decisions (financial definitions, access control, debt rules, norm calculation). Cross-references Doc 13/13A for already-built reports. Proposes 4 phased implementation phases.
+- **Status**: Planning approved — Phase 1 (9 reports) is highest priority. Phase 2 items (task auto-escalation, dashboards, `buffer_percentage` field, `payment_verification_status` field) require additional scoping before implementation.
+
+### 15A — Reporting Requirements: Implementation Status and Build Plan
+**File**: `15a-reporting-requirements-implementation.md`
+- **Purpose**: Gap analysis between Doc 15 specs and current production state. Classifies all 26 reports as EXISTS / PARTIAL / NATIVE / MISSING. Provides naming convention, access control table, custom fields to deploy, and phased build order.
+- **Snapshot date**: 2026-05-11
+- **Key findings**: 3 reports already exist (§9.3, §9.4, §9.7); 6 are partially covered; 2 need config only; 15 must be built. 5 new-scope items (auto-escalation, dashboards, `buffer_percentage`, `urgency_description`) tracked separately.
 
 ### 16 — Unified Dispatch Flow *(Current — Replaces Docs 09, 11, 12)*
 **File**: `16-unified-dispatch-flow.md`
@@ -253,11 +260,18 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 
 ---
 
+### 17 — Purchase Flow with Costing and Valuation
+**File**: `17-purchase-cost-and-valuation.md`
+- **Prod status (2026-05-11):** FIFO valuation ✅, PR/PO scripts ✅ | `hs_code`/`import_tax_rate` fields ❌ | LCV client script ❌ | Item prices 0 records ❌
+
+### 17A — Purchase Flow with Costing and Valuation (Implementation)
+**File**: `17a-purchase-cost-and-valuation-implementation.md`
+- **Purpose**: Step-by-step ERPNext setup — Item hs_code/import_tax_rate fields, LCV import-duty pre-fill client script, operating procedures for PR/LCV/PI, deploy script skeleton, and smoke tests. Full prod state analysis included.
+
+---
+
 ## 4) Future phase documents (explicitly deferred)
 These docs are planned later (not required for initial go-live):
-
-### F1 — Costing and Other Expenses (Landed Cost, etc.)
-**Planned file**: `F3-costing-and-expenses.md`
 
 ## 5) Status / workflow rule
 We will draft and modify individual process docs (Doc 11, Doc 12, etc.) only when you explicitly approve.

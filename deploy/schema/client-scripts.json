@@ -1,5 +1,5 @@
 ﻿{
-    "count":  4,
+    "count":  5,
     "records":  [
                     {
                         "name":  "GS1 Barcode Parser",
@@ -55,6 +55,20 @@
                         "view":  "Form",
                         "enabled":  1,
                         "script":  "frappe.ui.form.on(\"Dispatch Case\", {\n    surgery_set_type: function(frm) {\n        if (!frm.doc.surgery_set_type) return;\n        frappe.call({\n            method: \"frappe.client.get\",\n            args: { doctype: \"Surgery Set Type\", name: frm.doc.surgery_set_type },\n            callback: function(r) {\n                if (!r.message) return;\n                frm.clear_table(\"case_items\");\n                (r.message.items || []).forEach(function(row) {\n                    var nr = frm.add_child(\"case_items\");\n                    nr.item_code = row.item;\n                    nr.dispatched_qty = row.qty || 1;\n                    nr.unit_price = row.rate || 0;\n                });\n                frm.refresh_field(\"case_items\");\n            }\n        });\n    }\n});",
+                        "doctype":  "Client Script"
+                    },
+                    {
+                        "name":  "LCV-import-duty-prefill",
+                        "owner":  "ai-agent@internal.com",
+                        "creation":  "2026-05-11 23:11:10.761653",
+                        "modified":  "2026-05-11 23:11:10.761653",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "dt":  "Landed Cost Voucher",
+                        "view":  "Form",
+                        "enabled":  1,
+                        "script":  "frappe.ui.form.on(\u0027Landed Cost Voucher\u0027, {\n    refresh: function(frm) {\n        if (frm.doc.docstatus === 0) {\n            frm.add_custom_button(__(\u0027Pre-fill Import Duty\u0027), function() {\n                prefill_import_duty(frm);\n            }, __(\u0027Tools\u0027));\n        }\n    }\n});\n\nfunction prefill_import_duty(frm) {\n    var items = frm.doc.items || [];\n    if (!items.length) {\n        frappe.msgprint(__(\u0027No items loaded. Add Purchase Receipts and click \"Get Items from Purchase Receipts\" first.\u0027));\n        return;\n    }\n\n    var item_codes = [];\n    items.forEach(function(r) { if (r.item_code \u0026\u0026 item_codes.indexOf(r.item_code) === -1) item_codes.push(r.item_code); });\n\n    frappe.call({\n        method: \u0027frappe.client.get_list\u0027,\n        args: {\n            doctype: \u0027Item\u0027,\n            filters: [[\u0027item_code\u0027, \u0027in\u0027, item_codes]],\n            fields: [\u0027item_code\u0027, \u0027import_tax_rate\u0027],\n            limit_page_length: 500\n        },\n        callback: function(r) {\n            if (!r.message) return;\n\n            var rate_map = {};\n            (r.message || []).forEach(function(row) {\n                rate_map[row.item_code] = flt(row.import_tax_rate) || 0;\n            });\n\n            var total_duty = 0;\n            items.forEach(function(row) {\n                var rate = rate_map[row.item_code] || 0;\n                total_duty += flt(row.amount) * rate / 100.0;\n            });\n            total_duty = Math.round(total_duty * 100) / 100;\n\n            if (total_duty \u003c= 0) {\n                frappe.msgprint(__(\u0027Import duty calculated as 0. Ensure import_tax_rate is set on the Item records in this receipt.\u0027));\n                return;\n            }\n\n            // Update existing Import Duty row or insert a new one\n            var taxes = frm.doc.taxes || [];\n            var existing = null;\n            for (var i = 0; i \u003c taxes.length; i++) {\n                if (taxes[i].description === \u0027Import Duty\u0027) { existing = taxes[i]; break; }\n            }\n\n            if (existing) {\n                frappe.model.set_value(existing.doctype, existing.name, \u0027amount\u0027, total_duty);\n            } else {\n                var row = frm.add_child(\u0027taxes\u0027);\n                row.description = \u0027Import Duty\u0027;\n                row.amount = total_duty;\n            }\n            frm.refresh_field(\u0027taxes\u0027);\n\n            frappe.show_alert({\n                message: __(\u0027Import Duty pre-filled: {0} AMD. Set Expense Account and confirm before submitting.\u0027, [format_number(total_duty)]),\n                indicator: \u0027green\u0027\n            }, 8);\n        }\n    });\n}",
                         "doctype":  "Client Script"
                     }
                 ]

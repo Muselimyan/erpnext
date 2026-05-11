@@ -23,9 +23,9 @@
    - **Reason:** Products have either REF or model names, both counted as REF
    - **Impact:** Affects all sales reports showing REF numbers
 
-3. **Who can change payment status to "Approved"** ✅ ANSWERED
-   - **Decision:** Only admins (changed from admins + accountants)
-   - **Impact:** Affects payment approval workflow and security
+3. **Payment "Approved" status** ✅ RESOLVED — NOT NEEDED
+   - **Decision:** No custom "Approved" status required. Payment Entry is only created after bank verification, so ERPNext's standard "Paid" already means verified.
+   - **Impact:** No new custom field needed on Sales Invoice — use standard payment status only.
 
 4. **Refund process for damaged/opened/expired products** ✅ ANSWERED
    - **Damaged products:** Count as used (customer's responsibility, no refund)
@@ -77,6 +77,7 @@
      - **Original task owner notified** when task is escalated
    - **Benefits:** Directors stay informed, prevents tasks from being forgotten, maintains accountability
    - **Note:** Can be adjusted later if too many escalations occur
+   - **⚠️ New Scope:** Auto-escalation does not yet exist. Requires a new Scheduled Script — not in current go-live action plan. Add to Phase 2 work plan.
 
 10. **Which KPIs are most important for daily/weekly review?** ✅ ANSWERED
     - **Decision:** Confirmed KPIs for daily and weekly dashboards
@@ -100,6 +101,7 @@
     
     - **Implementation:** Create 2 separate dashboards
     - **Note:** Final list subject to review with colleague, can be adjusted
+    - **⚠️ New Scope:** Daily and weekly ERPNext Dashboard objects do not yet exist. Add to Phase 2 work plan.
 
 ---
 
@@ -124,8 +126,7 @@
 - **Debt calculation:** GL net receivable (includes invoices, payments, credits, advances)
 - **Unallocated advances:** Reduce debt automatically (net debt approach)
 - **Debt reports:** Show net debt (outstanding minus advances minus credits)
-- **Payment status flow:** Unpaid → Paid (unverified) → Approved (verified in bank)
-- **Payment status implementation:** Custom field or standard + verified checkbox (to be decided)
+- **Payment status flow:** Unpaid → Partly Paid → Paid (Payment Entry created only after bank verification; Paid = verified by definition)
 
 ### Doctor and Hospital Data
 - **Doctor/Client structure:** Doctor as Customer + client-location warehouse (recommended Option A)
@@ -152,8 +153,8 @@
 
 ### Access Control
 - **Cost reports:** Everyone can see
-- **Profit reports:** Admins and accountants only
-- **Buying price:** Admins and accountants only
+- **Profit reports:** Directors only
+- **Buying price:** Directors only (may extend to accountants later)
 - **Debt reports:** Admins and accountants only
 
 ### Task Urgency
@@ -201,7 +202,7 @@ Current warehouse flow:
 - `Clients - Inmed` group with client-location warehouses
 
 Current workflows:
-- Surgery Case workflow links dispatch, delivery, return pickup, return verification, usage derivation, and invoicing.
+- Dispatch Case workflow (Doc 16) links dispatch, delivery, return pickup, return verification, usage derivation, and invoicing.
 - Tasks are used for operational queues and approvals.
 - Batch/serial/expiry tracking must be configured per item before transactions.
 - Payment allocation affects debt reporting.
@@ -217,7 +218,7 @@ Consequence:
 |---:|---|---|
 | 1, 2, 3 | Stock balance with expiry/batch visibility | One base stock report + separate expiry filter report |
 | 4, 5 | Product entries and quantity by day | One incoming-stock report with detail/summary modes |
-| 8, 9, 18 | Debts, unpaid, paid, partly paid, approved | One receivables/debt pack with status filters |
+| 8, 9, 18 | Debts, unpaid, paid, partly paid | One receivables/debt pack with status filters |
 | 10, 16, 17 | Income, profit, global statistics, sales totals | Separate financial KPI reports sharing definitions |
 | 7, 17 | Sold products with warehouse/product/client/lot/expiry | One detailed sold-items report |
 | 12, 13 | Norm/reorder and nomenclature/prices | Keep separate but share Item/Price/Supplier data |
@@ -318,7 +319,7 @@ Consequence:
 
 **Summary columns:** Posting Date, Item Code, Item Name, Warehouse, Total Qty In
 
-**Question:** Should client returns count as "entered" or only supplier purchases?
+**Answered:** Client returns count as incoming stock. ✅ See §10.2.
 
 ---
 
@@ -337,10 +338,9 @@ Consequence:
 - Target Warehouse (multi-select)
 - Item (multi-select)
 - Movement Type: Transfer / Delivery / Return / Consumption / All
-- Related Surgery Case
-- Related Sales Order/Invoice
+- Related Dispatch Case
 
-**Columns:** Posting Date, Time, Stock Entry No, Entry Type, Source Warehouse, Target Warehouse, Item Code, Item Name, Qty, Batch/LOT, Serial No, Related SO, Related Surgery Case, Created By, Remarks
+**Columns:** Posting Date, Time, Stock Entry No, Entry Type, Source Warehouse, Target Warehouse, Item Code, Item Name, Qty, Batch/LOT, Serial No, Related Dispatch Case, Created By, Remarks
 
 ---
 
@@ -386,17 +386,14 @@ Consequence:
 - Sales Invoice
 - Payment Status: All / Paid / Unpaid / Partly Paid
 
-**Columns:** Sales Invoice, Invoice Date, Delivery Note, Customer, Hospital, Doctor, Source Warehouse, Client Warehouse, Item Code, Item Name, REF Number, Batch/LOT, Serial No, Expiry Date, Qty Sold, Selling Rate, Selling Amount, Buying Cost, Gross Profit, Invoice Total, Outstanding Amount, Payment Status
+**Columns:** Sales Invoice, Invoice Date, Dispatch Case, Customer, Hospital, Doctor, Source Warehouse, Client Warehouse, Item Code, Item Name, REF Number, Batch/LOT, Serial No, Expiry Date, Qty Sold, Selling Rate, Selling Amount, Buying Cost, Gross Profit, Invoice Total, Outstanding Amount, Payment Status
 
 **Color coding:**
 - Red: unpaid
 - Yellow: partly paid
 - Green: fully paid
 
-**Questions:**
-- Where is REF number stored: Item Code, custom field, barcode, or supplier part number?
-- Which buying cost to use: standard buying price, last purchase price, valuation rate, or FIFO actual cost?
-- Should "profit" mean gross profit (selling - buying cost)?
+**Answered:** REF = Item Code (§10.1); buying cost = standard buying price (§10.3); profit = income minus buying cost (§10.3). ✅
 
 ---
 
@@ -415,7 +412,7 @@ Consequence:
 - Sales Invoice
 - Payment Status: Unpaid / Partly Paid / Paid / Overdue / All
 
-**Columns:** Customer, Sales Invoice, Invoice Date, Due Date, Grand Total, Paid Amount, Outstanding Amount, Payment Status, Payment Entry, Payment Date, Days Overdue, Linked Sales Order, Linked Surgery Case
+**Columns:** Customer, Sales Invoice, Invoice Date, Due Date, Grand Total, Paid Amount, Outstanding Amount, Payment Status, Payment Entry, Payment Date, Days Overdue, Linked Sales Order, Linked Dispatch Case
 
 ---
 
@@ -447,14 +444,13 @@ Consequence:
 **Type:** Query Report with status filter or dashboard with sections
 
 **Status categories:**
-- Not paid
-- Paid 100%
-- Paid partly
-- Approved (needs clarification)
+- Unpaid
+- Partly Paid
+- Paid
 
-**Columns:** Customer, Sales Invoice, Invoice Date, Grand Total, Paid Amount, Outstanding Amount, Payment Status, Approved By, Approval Date, Approval Reason, Debt Collection Task
+**Columns:** Customer, Sales Invoice, Invoice Date, Grand Total, Paid Amount, Outstanding Amount, Payment Status, Debt Collection Task
 
-**Question:** What does "Approved" mean for debt: director-approved delayed payment, approved exception, or approved write-off?
+**Answered:** Uses ERPNext standard payment status (Unpaid / Partly Paid / Paid). "Paid" = bank-verified by definition — Payment Entry is only posted after bank confirmation. No custom field needed. ✅
 
 ---
 
@@ -477,7 +473,7 @@ Consequence:
 
 **Columns:** Date/Period, Customer, Sales Invoice, Net Total, Taxes, Grand Total, Paid Amount, Outstanding Amount
 
-**Question:** Should "income" mean invoiced sales revenue, cash received, or profit after buying cost?
+**Answered:** Income = total sales revenue; profit = income minus buying cost. ✅ See §10.3.
 
 ---
 
@@ -496,13 +492,9 @@ Consequence:
 - Stock Entry for returned stock
 - Task for approval and execution
 
-**Required columns for refund queue:** Customer, Original Sales Order/Invoice, Surgery Case, Cancellation Reason, Amount to Refund, Refund Status, Payment Entry/Credit Note, Stock Return Status, Approved By, Created By
+**Required columns for refund queue:** Customer, Original Sales Order/Invoice, Dispatch Case, Cancellation Reason, Amount to Refund, Refund Status, Payment Entry/Credit Note, Stock Return Status, Approved By, Created By
 
-**Questions:**
-- Should refund require director approval always or only above threshold?
-- Should refund happen before or after returned products are physically verified?
-- Are partial refunds allowed?
-- What happens if product was already opened/used/expired/damaged?
+**Answered:** Refund process fully defined. ✅ See §10.6.
 
 ---
 
@@ -530,12 +522,7 @@ Consequence:
 - Generate purchase/reorder list
 - Later phase: optionally create draft Purchase Order from selected rows
 
-**Questions:**
-- Should norm be manually entered per item/warehouse or calculated from historical usage?
-- Should norm calculation use sales usage only, surgery case usage, transfers, or all outgoing stock movements?
-- Which period to use for average usage calculation: last 30/60/90 days?
-- Who receives notifications: Purchasing Lead, Inventory Lead, Directors, or all?
-- Should notification be daily, weekly, or real-time when threshold is crossed?
+**Answered:** Norm calculation fully defined. ✅ See §10.7.
 
 **Suggestion:** Add "critical shortage" flag for items that are completely out of stock or below safety level.
 
@@ -558,9 +545,7 @@ Consequence:
 
 **Columns:** Item Code, REF Number, Item Name, Brand, Item Group, Supplier, Standard Buying Price, Last Purchase Price, Standard Selling Price, Currency, UOM, Has Batch No, Has Serial No, Has Expiry Date
 
-**Questions:**
-- Should buying price be standard buying price, latest supplier purchase price, valuation rate, or average cost?
-- Where is REF number stored today?
+**Answered:** REF = Item Code; buying price = standard buying price. ✅ See §10.1 and §10.3.
 
 **Suggestion:** Add "price change history" to track when buying/selling prices were last updated and by whom.
 
@@ -590,9 +575,7 @@ Consequence:
 
 **Top Doctors columns:** Rank, Doctor, Customer/Hospital, Total Qty Purchased, Total Sales Amount, Number of Sales Documents, Average Purchase Amount
 
-**Questions:**
-- Is doctor stored as Customer, custom doctor field on Sales Invoice, free text doctor name, or separate DocType?
-- Should ranking be by quantity, sales amount, or number of transactions?
+**Answered:** Doctor = Customer + client-location warehouse. Ranking: all criteria available, user selects. ✅ See §10.5.
 
 **Suggestion:** Add "trending products" showing items with increasing sales compared to previous period.
 
@@ -616,7 +599,7 @@ Consequence:
 - Approval tasks (discount, purchase, write-off)
 - Purchase/reorder tasks
 
-**Columns:** Task, Task Kind, Status, Priority, Due Date, Assigned To, Customer, Related Sales Order/Invoice/Surgery Case, Age (days open)
+**Columns:** Task, Task Kind, Status, Priority, Due Date, Assigned To, Customer, Related Dispatch Case, Age (days open)
 
 **Urgency color coding:**
 - Red: overdue or blocker
@@ -624,9 +607,7 @@ Consequence:
 - Green: normal/open
 - Grey: waiting/on hold
 
-**Questions:**
-- Which statuses/priorities should define "urgent" for your team?
-- Should overdue tasks automatically escalate to directors?
+**Answered:** Urgency levels defined (see Answered Questions). Auto-escalation confirmed. ✅ See Critical Decisions §9.
 
 **Suggestion:** Add task aging alerts (e.g., tasks open > 7 days without update).
 
@@ -685,10 +666,7 @@ Consequence:
 - Sales by customer type/segment
 - Inventory turnover ratio
 
-**Questions:**
-- Should this be one dashboard, several separate reports, or both?
-- Which KPIs are most important for daily/weekly review?
-- Should dashboard auto-refresh or be manually refreshed?
+**Answered:** Two separate dashboards (daily auto-refresh + weekly manual). KPIs confirmed. ✅ See Critical Decisions §10.
 
 **Suggestion:** Add "alerts" section showing critical issues: stock-outs, overdue debts, expired stock, stuck deliveries.
 
@@ -746,7 +724,7 @@ Consequence:
 
 **Why useful:** Doctor statistics will be wrong if this data is not entered consistently.
 
-**Columns:** Sales Invoice, Surgery Case, Customer, Posting Date, Missing Doctor, Missing Hospital, Created By
+**Columns:** Sales Invoice, Dispatch Case, Customer, Posting Date, Missing Doctor, Missing Hospital, Created By
 
 ---
 
@@ -815,7 +793,7 @@ Consequence:
 1. "Profit" means: **Net profit after buying cost (Income - Buying cost)** (confirmed)
 2. "Income" means: **Total sales revenue (all money received from sales)** (confirmed)
 3. Buying cost to use: **Standard buying price + FEFO for expiry-tracked items** (confirmed, flexible for future changes)
-4. Profit reports visibility: **Admins and accountants only** (confirmed)
+4. Profit reports visibility: **Directors only** (confirmed)
 
 ---
 
@@ -824,9 +802,8 @@ Consequence:
 **Answers:**
 1. Debt calculation: **GL net receivable** (includes invoices, payments, credits, advances) (confirmed)
 2. Unallocated advances: **Yes, reduce debt automatically** (net debt approach) (confirmed)
-3. "Approved" debt means: **Payment verified in bank account** (payment status flow: Unpaid → Paid → Approved) (confirmed)
-4. Who approves payment to "Approved" status: **Only admins** (confirmed)
-5. Debt reports show: **Net debt** (outstanding minus advances minus credits) (confirmed)
+3. Payment verification: **Payment Entry created only after bank confirmation — ERPNext "Paid" status means verified. No separate "Approved" step or custom field needed.** (confirmed)
+4. Debt reports show: **Net debt** (outstanding minus advances minus credits) (confirmed)
 
 ---
 
@@ -876,10 +853,11 @@ Consequence:
 
 **Answers:**
 1. Cost reports: **Everyone can see** (confirmed)
-2. Buying price: **Admins and accountants only** (confirmed)
-3. Debt and profit: **Admins and accountants only** (confirmed)
-4. Director-only reports: **6 reports restricted to directors** (confirmed - see Critical Decisions section for list)
-5. Customer-restricted reports: **No restriction - sales staff can see all customers** (confirmed)
+2. Buying price: **Directors only** (updated decision — may extend to accountants later)
+3. Debt reports: **Admins and accountants only** (confirmed)
+4. Profit reports: **Directors only** (confirmed — see Critical Decisions §7)
+5. Director-only reports: **6 reports restricted to directors** (confirmed - see Critical Decisions section for list)
+6. Customer-restricted reports: **No restriction - sales staff can see all customers** (confirmed)
 
 **Additional note:** Users with multiple roles should have access to all functions their roles allow.
 
@@ -1052,7 +1030,7 @@ If the team wants a clean final list without repetitions:
 - Create **Customer** records for both doctors and hospitals
 - Create **client-location warehouse** for each doctor (e.g., "Dr. Smith Location - Inmed")
 - Link warehouse to customer via custom field or naming convention
-- Use existing Surgery Case workflow which already supports this structure
+- Use existing Dispatch Case workflow (Doc 16) which already supports this structure
 
 **Advantages:**
 - Supports debt tracking per hospital with drill-down to doctors
@@ -1069,22 +1047,11 @@ If the team wants a clean final list without repetitions:
 
 ---
 
-### Payment Status "Approved" Implementation (Recommended Approach)
+### Payment Status Implementation
 
-**Option A — Custom Payment Status Field (Recommended):**
-- Add custom field `payment_verification_status` on Sales Invoice
-- Values: "Unverified" / "Verified" / "Approved"
-- Workflow:
-  1. Invoice created → Unverified
-  2. Client says paid → Create Payment Entry → Invoice becomes "Paid" but still "Unverified"
-  3. Money confirmed in bank → Admin changes to "Approved" (only admins have this permission)
+**Decision:** Use ERPNext standard payment status only (Unpaid / Partly Paid / Paid). No custom field needed.
 
-**Option B — Use Standard Status + Verified Checkbox:**
-- Use standard ERPNext payment status (Unpaid / Partly Paid / Paid)
-- Add custom checkbox `payment_verified` on Sales Invoice
-- Simpler but less visible in reports
-
-**Recommendation:** Use Option A for better visibility in debt reports.
+**Reasoning:** Payment Entry is created only after bank verification is confirmed. Therefore "Paid" = verified by definition. The `outstanding_amount` from GL (net receivable approach) provides full debt visibility in reports.
 
 ---
 
@@ -1094,9 +1061,9 @@ If the team wants a clean final list without repetitions:
 ```
 For each item:
 1. Get sales quantity for selected period (30/60/90 days)
-2. Exclude cancelled surgery cases (returned stock)
+2. Exclude cancelled dispatch cases (returned stock)
 3. Calculate average daily usage = total sales qty / days in period
-4. Get user-configured buffer % for this item (default 20%)
+4. Get user-configured buffer % from the item's `Item Reorder` row for this warehouse (default 20%)
 5. Norm = (average daily usage × planning days) × (1 + buffer %)
 6. If current stock < norm → flag as "below norm"
 ```
@@ -1104,7 +1071,7 @@ For each item:
 **Features to implement:**
 - Daily automatic recalculation (scheduled job)
 - On-demand "Recalculate Now" button
-- Per-item buffer % configuration (custom field on Item)
+- Per-item buffer % configuration (custom field `buffer_percentage` on `Item Reorder` child table) ✅ *Deployed 2026-05-12 via `doc15a-deploy.ps1`*
 - Notification when stock falls below norm
 - One-click "Create Purchase Order" from reorder list
 
@@ -1120,7 +1087,7 @@ For each item:
 **Implementation:**
 - Use ERPNext Priority field (Low/Medium/High)
 - Use Due Date field
-- Add custom field `urgency_description` (Long Text) for office manager notes
+- Use existing Task `description` field for office manager notes (no custom field needed)
 - Color coding in list view using custom script or indicator field
 
 ---
@@ -1172,12 +1139,12 @@ ORDER BY net_receivable_amd DESC
 
 ### Multi-Role User Access
 
-**Scenario:** User has roles: Inventory Staff + Accountant
+**Scenario:** User has roles: `Ops - Inventory` + `Ops - Accounting`
 
 **Access:**
-- Can see buying price (because Accountant role allows it)
-- Can see profit reports (because Accountant role allows it)
-- Can see all inventory reports (because Inventory Staff role allows it)
+- Can see all inventory reports (because `Ops - Inventory` role allows it)
+- Can see accounting reports — debt, payments, invoices (because `Ops - Accounting` role allows it)
+- Cannot see buying price or profit reports (Directors only — requires `Ops - Directors` role)
 
 **Implementation:** Use ERPNext standard role permissions - no special handling needed.
 
