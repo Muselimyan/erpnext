@@ -13,3 +13,5 @@
 "Purchase Approval","ai-agent@internal.com","2026-05-06 16:50:20.312946","2026-05-07 19:30:49.142590","ai-agent@internal.com","0","0","Purchase Approval","Task Access Policy"
 "Write-off Approval","ai-agent@internal.com","2026-05-06 16:50:20.426577","2026-05-07 19:30:49.326572","ai-agent@internal.com","0","0","Write-off Approval","Task Access Policy"
 "Return to warehouse (aborted delivery / cancelled order)","ai-agent@internal.com","2026-05-07 19:30:47.376560","2026-05-07 19:30:47.376560","ai-agent@internal.com","0","0","Return to warehouse (aborted delivery / cancelled order)","Task Access Policy"
+"Payment Received","ai-agent@internal.com","2026-05-11 07:48:42.359540","2026-05-11 07:53:07.442704","ai-agent@internal.com","0","0","Payment Received","Task Access Policy"
+"Returns restocking","ai-agent@internal.com","2026-05-11 07:48:42.687687","2026-05-11 07:53:07.655703","ai-agent@internal.com","0","0","Returns restocking","Task Access Policy"

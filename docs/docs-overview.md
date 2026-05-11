@@ -134,8 +134,9 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 **File**: `08-reorder-and-ordering-by-supplier-implementation.md`
 - **Purpose**: Step-by-step ERPNext setup for item reorder thresholds (including variants), reorder visibility, and governance controls.
 
-### 09 — Selling: Standard Orders (No Return Expected)
+### 09 — Selling: Standard Orders (No Return Expected) *(Superseded by Doc 16)*
 **File**: `09-standard-selling-flow.md`
+> **⚠️ This document describes the old Sales Order–based flow. It is superseded by Doc 16 — Unified Dispatch Flow, which replaces both standard sales and surgery cases with the Dispatch Case DocType. Retained for historical reference only.**
 - **Purpose**: Client orders items; you deliver; you invoice; they pay later.
 - **Outputs**:
   - Sales order capture rules
@@ -145,8 +146,9 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
   - Optional hospital/doctor context capture on Sales Order and Sales Invoice
   - Discount entry + approval points (order team applies; director approves)
 
-### 09A — Selling: Standard Orders (Implementation)
+### 09A — Selling: Standard Orders (Implementation) *(Superseded by Doc 16A)*
 **File**: `09-standard-selling-flow-implementation.md`
+> **⚠️ Superseded by Doc 16A — Unified Dispatch Flow (Implementation). Retained for historical reference only.**
 - **Purpose**: Step-by-step ERPNext setup for standard sales flow, dispatch staging via `Delivery In-Transit - WH`, discount approval gate, prepaid gate, debt escalation tasks, and payment distribution tasks.
 
 ### 09.1 — Discounts and Approvals
@@ -185,15 +187,17 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 **File**: `10.1-directors-task-dashboard-implementation.md`
 - **Purpose**: Step-by-step ERPNext setup for the directors TV wallboard (TV user, permissions, Task Access Policy visibility, saved Task list views, Workspace shortcuts, kiosk setup).
 
-### 11 — Surgery Set Model (How sets are represented)
+### 11 — Surgery Set Model (How sets are represented) *(Superseded by Doc 16)*
 **File**: `11-surgery-set-model.md`
+> **⚠️ The Surgery Set DocType and its operational workflow are superseded by Doc 16 — Unified Dispatch Flow, which uses the Dispatch Case DocType with `return_expected = Yes` for cases where items come back. The `Surgery Set Type` item template concept is retained as a template source for Dispatch Cases. Retained for historical reference only.**
 - **Purpose**: Define set templates + inventory representation at client locations.
 - **Key decisions embedded**:
   - Custom DocType `Surgery Set Type`
-  - Client-level warehouses for “items at client location”
+  - Client-level warehouses for "items at client location”
 
-### 12 — Surgery Set Operational Workflow (End-to-End)
+### 12 — Surgery Set Operational Workflow (End-to-End) *(Superseded by Doc 16)*
 **File**: `12-surgery-set-operational-workflow.md`
+> **⚠️ This document describes the old Surgery Case workflow. It is superseded by Doc 16 — Unified Dispatch Flow (Dispatch Case with `return_expected = Yes`). Retained for historical reference only.**
 - **Purpose**: Step-by-step procedure from order → prepare → dispatch → wait usage info → pickup returns (photo) → returns processing → invoice used items.
 - **Outputs**:
   - Document sequence in ERPNext
@@ -201,8 +205,9 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
   - Task creation/ownership rules per step
   - Reconciliation rules: Delivered = Used + Returned
 
-### 12A — Surgery Set Operational Workflow (Implementation)
+### 12A — Surgery Set Operational Workflow (Implementation) *(Superseded by Doc 16A)*
 **File**: `12-surgery-set-operational-workflow-implementation.md`
+> **⚠️ Superseded by Doc 16A — Unified Dispatch Flow (Implementation). Retained for historical reference only.**
 - **Purpose**: Step-by-step ERPNext setup for implementing Doc 12 (custom DocTypes/fields, workflows, permissions, scripts/automation, and validation gates).
 
 ### 13 — Reporting Pack
@@ -210,7 +215,7 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 - **Purpose**: Provide the “how to see everything” views:
   - Items currently at each client location
   - Items currently with each delivery person (outgoing in-transit and return pickup in-transit)
-  - Aging of open surgery cases (once defined)
+  - Aging of open Dispatch Cases (by status / stuck detection)
   - Unpaid invoices
   - Clients exceeding their debt threshold
   - Open Debt Collection tasks (per client) with current debt
@@ -223,6 +228,30 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 - **Outputs**:
   - Minimum viable setup checklist
   - Test scenarios checklist
+
+### 15 — Standard Sale Workflow Gap Analysis *(Historical — Superseded by Doc 16)*
+**File**: `15-standard-sale-workflow-gap-analysis.md`
+> **⚠️ This document captured the gaps between the old standard sale flow (Doc 09) and the stated requirement of fully automated task chains. All gaps identified here were resolved by the Unified Dispatch Flow (Doc 16). Retained for historical reference only.**
+
+### 16 — Unified Dispatch Flow *(Current — Replaces Docs 09, 11, 12)*
+**File**: `16-unified-dispatch-flow.md`
+- **Purpose**: Single unified flow for all client deliveries. Replaces the separate standard sale (Doc 09) and surgery case (Doc 12) flows with a single `Dispatch Case` DocType. The `return_expected` flag on the case selects the path: **No** = stock flows all the way through to consumption; **Yes** = stock is delivered to client warehouse, returned after use, inspected, and invoiced for used quantities only.
+- **Key concepts**:
+  - Dispatch Case DocType with full automated task chain
+  - 14 case states from Draft → Closed
+  - Stock entries auto-submitted at each transition
+  - Roles: `Ops - Order Creating`, `Ops - Order Accepting`, `Ops - Inventory`, `Delivery Driver`, `Ops - Returns`, `Ops - Accounting`, `Ops - Finance`
+  - Debt Collection and Distribute Payment tasks integrated
+
+### 16A — Unified Dispatch Flow (Implementation)
+**File**: `16a-unified-dispatch-flow-implementation.md`
+- **Purpose**: Step-by-step ERPNext setup for Dispatch Case DocType, child tables, custom fields, server scripts, client scripts, roles, and Task Access Policies.
+
+### 16B — Unified Dispatch Flow Gap Analysis
+**File**: `16b-unified-dispatch-flow-gap-analysis.md`
+- **Purpose**: Deployment gap analysis — what was needed vs. what existed, deployment progress, and final state after `doc16a-deploy.ps1`.
+
+---
 
 ## 4) Future phase documents (explicitly deferred)
 These docs are planned later (not required for initial go-live):

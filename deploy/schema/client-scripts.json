@@ -1,5 +1,5 @@
 ﻿{
-    "count":  2,
+    "count":  4,
     "records":  [
                     {
                         "name":  "GS1 Barcode Parser",
@@ -27,6 +27,34 @@
                         "view":  "Form",
                         "enabled":  1,
                         "script":  "frappe.ui.form.on(\u0027Surgery Case\u0027, {\n    refresh(frm) {\n        const s = frm.doc.workflow_state || \u0027Draft\u0027;\n        const dispatch_editable = [\u0027Draft\u0027, \u0027Preparing\u0027, \u0027Dispatch Picking\u0027].includes(s);\n        const returns_editable  = [\u0027Return Pickup In Transit\u0027, \u0027Returns Verification\u0027].includes(s);\n        frm.fields_dict.case_items.grid.update_docfield_property(\u0027dispatched_qty\u0027,   \u0027read_only\u0027, dispatch_editable ? 0 : 1);\n        frm.fields_dict.case_items.grid.update_docfield_property(\u0027returned_qty\u0027,     \u0027read_only\u0027, returns_editable  ? 0 : 1);\n        frm.fields_dict.case_items.grid.update_docfield_property(\u0027lost_damaged_qty\u0027, \u0027read_only\u0027, returns_editable  ? 0 : 1);\n        frm.fields_dict.case_items.grid.update_docfield_property(\u0027used_qty\u0027,         \u0027read_only\u0027, 1);\n        frm.refresh_fields();\n    }\n});",
+                        "doctype":  "Client Script"
+                    },
+                    {
+                        "name":  "SO-customer-autofill",
+                        "owner":  "Administrator",
+                        "creation":  "2026-05-10 17:07:59.065842",
+                        "modified":  "2026-05-10 17:32:20.709625",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "dt":  "Sales Order",
+                        "view":  "Form",
+                        "enabled":  1,
+                        "script":  "frappe.ui.form.on(\u0027Sales Order\u0027, {\n    customer(frm) {\n        if (!frm.doc.customer) {\n            frm.set_value(\u0027hospital\u0027, \u0027\u0027);\n            frm.set_value(\u0027doctor_name\u0027, \u0027\u0027);\n            return;\n        }\n        frappe.db.get_value(\u0027Customer\u0027, frm.doc.customer,\n            [\u0027client_kind\u0027, \u0027hospital\u0027, \u0027doctor_name\u0027],\n            (r) =\u003e {\n                if (!r) return;\n                if (r.client_kind === \u0027Hospital\u0027) {\n                    frm.set_value(\u0027hospital\u0027,    frm.doc.customer);\n                    frm.set_value(\u0027doctor_name\u0027, \u0027\u0027);\n                } else {\n                    frm.set_value(\u0027hospital\u0027,    r.hospital    || \u0027\u0027);\n                    frm.set_value(\u0027doctor_name\u0027, r.doctor_name || \u0027\u0027);\n                }\n            }\n        );\n    }\n});",
+                        "doctype":  "Client Script"
+                    },
+                    {
+                        "name":  "Dispatch Case-Form",
+                        "owner":  "ai-agent@internal.com",
+                        "creation":  "2026-05-11 07:53:20.596787",
+                        "modified":  "2026-05-11 07:53:20.596787",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "dt":  "Dispatch Case",
+                        "view":  "Form",
+                        "enabled":  1,
+                        "script":  "frappe.ui.form.on(\"Dispatch Case\", {\n    surgery_set_type: function(frm) {\n        if (!frm.doc.surgery_set_type) return;\n        frappe.call({\n            method: \"frappe.client.get\",\n            args: { doctype: \"Surgery Set Type\", name: frm.doc.surgery_set_type },\n            callback: function(r) {\n                if (!r.message) return;\n                frm.clear_table(\"case_items\");\n                (r.message.items || []).forEach(function(row) {\n                    var nr = frm.add_child(\"case_items\");\n                    nr.item_code = row.item;\n                    nr.dispatched_qty = row.qty || 1;\n                    nr.unit_price = row.rate || 0;\n                });\n                frm.refresh_field(\"case_items\");\n            }\n        });\n    }\n});",
                         "doctype":  "Client Script"
                     }
                 ]

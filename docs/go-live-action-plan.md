@@ -59,12 +59,12 @@ These cannot be set via the REST API and were not deployed by any script. Go to:
 
 | DocType | Role | Needed permissions |
 |---|---|---|
-| `Sales Order` | `Ops - Order Accepting` | Read, Write, Create, Submit, Cancel |
-| `Sales Order` | `Ops - Accounting` | Read |
-| `Sales Order` | `Ops - Directors` | Read, Cancel |
-| `Stock Entry` | `Ops - Inventory`, `Ops - Delivery` | Read, Write, Create, Submit |
+| `Dispatch Case` | `Ops - Order Creating` | Read, Write, Create, Submit |
+| `Dispatch Case` | `Ops - Order Accepting` | Read |
+| `Dispatch Case` | `Ops - Accounting`, `Ops - Inventory`, `Ops - Returns`, `Delivery Driver` | Read |
+| `Dispatch Case` | `Ops - Directors` | Read, Cancel |
+| `Stock Entry` | `Ops - Inventory`, `Ops - Delivery`, `Ops - Returns` | Read, Write, Create, Submit |
 | `Stock Entry` | `Delivery Driver` | No access |
-| `Delivery Note` | `Ops - Inventory`, `Ops - Delivery` | Read, Write, Create, Submit |
 | `Sales Invoice` | `Ops - Accounting` | Read, Write, Create, Submit, Cancel |
 | `Payment Entry` | `Ops - Accounting` | Read, Write, Create, Submit, Cancel |
 | `Item`, `Item Group`, `Item Attribute`, `UOM` | `Ops - Inventory`, `Ops - Directors` | Write, Create (others: Read only) |
@@ -94,12 +94,12 @@ These cannot be deployed via the REST API (per-user saved views) or require ERPN
 | `Items — Active Stock` | Item list | Disabled = No, Is Stock Item = Yes | Purchasing |
 | `Reorder — Main - Inmed` | Stock Reorder tool | Warehouse = `Main - Inmed` | Purchasing Lead |
 | `Price Overrides — by Client` | Item Price list | Price List = Standard Selling, Customer ≠ blank | Accounting, Directors |
-| `Surgery Set Types — Readiness` | Surgery Set Type list | (all active) | Ops - Inventory |
+| `Surgery Set Types — Readiness` | Surgery Set Type list | (all active, used as Dispatch Case templates) | Ops - Inventory |
 | Directors wallboard Task views (5) | Task list | per role / status filters | Directors TV |
-| Surgery Case state views (4) | Surgery Case list | `workflow_state` = Delivered / Pickup In Transit / Returns Received / Usage Derived | Ops leads |
+| Dispatch Case state views | Dispatch Case list | `status` = Confirmed / Packed / In Transit / Awaiting Return Pickup / Return In Transit / Invoice Pending | Ops leads |
 | Task queue views (6) | Task list | per `task_kind` + status not Completed/Cancelled | per team |
 
-**Workaround already in place:** The `Ops — Reporting Pack` workspace shortcuts include DocType shortcuts with pre-set `stats_filter` for the Surgery Case state views and Task queues — clicking them from the workspace behaves identically to a saved named view. Only missing piece is saving them as a named view per-user.
+**Workaround already in place:** The `Ops — Reporting Pack` workspace shortcuts include DocType shortcuts with pre-set `stats_filter` for the Dispatch Case state views and Task queues — clicking them from the workspace behaves identically to a saved named view. Only missing piece is saving them as a named view per-user.
 
 ---
 
@@ -109,17 +109,18 @@ Run these in the staging environment or on the first real test case. Sign off ea
 
 | Test | What to verify |
 |---|---|
-| **Discount approval gate** | Create SO with line discount → Discount Approval task auto-created → Director marks Completed as Approved → `discount_approval_status` = Approved → dispatch staging now allowed |
-| **Dispatch gate (no SO link)** | Submit Stock Entry (`Main → Delivery In-Transit`) without a `sales_order` → hard block |
-| **Dispatch gate (no pickup photo)** | Submit Stock Entry with SO but no Delivery Task photo → hard block |
-| **Prepaid gate** | Flag SO as `is_prepaid`, attempt dispatch without a submitted Payment Entry → hard block |
-| **Delivery Note source gate** | Submit Delivery Note with a non-`Delivery In-Transit - Inmed` source row → hard block |
-| **Debt threshold escalation** | Set a low `debt_threshold_amd` on a Customer with outstanding invoices → trigger hourly scheduler manually → Debt Collection task appears assigned to a director |
+| **Discount approval gate** | Create Dispatch Case with Discount % > 0 on a Case Item → Discount Approval task auto-created on Submit → Case status = `Awaiting Approval` → Director marks task Completed as Approved → status → `Confirmed` → Pack task auto-created |
+| **Pack gate (serial/batch)** | Complete Pack task with serial/batch-tracked Case Items that have no `serial_no`/`batch_no` filled → hard block |
+| **Delivery gate (no photo)** | Set Delivery Status to `Delivered` on Delivery task without a delivery photo attached → hard block |
+| **Delivery gate (no handover note)** | Set Delivery Status to `Delivered` without `Driver Handover Note` filled → hard block |
+| **Return drop-off gate** | Set Pickup Status to `Returned to Warehouse` on Return Pickup task without drop-off photo → hard block |
+| **Debt threshold escalation** | Set a low `debt_threshold_amd` on a Customer with outstanding invoices → trigger hourly scheduler manually → Debt Collection task appears assigned to Finance team |
 | **PO approval gate** | Create draft PO → attempt submit → blocked (status = Pending) → Purchase Approval task → Director approves → PO submits |
 | **PO re-approval** | Edit a line on an Approved draft PO → `director_approval_status` resets to Pending |
 | **Purchase Receipt gate** | Submit Purchase Receipt with row targeting non-`Main - Inmed` warehouse → hard block |
 | **Reorder governance** | Ops - Inventory (not Purchasing Lead) tries to change reorder levels → blocked; Purchasing Lead changes without reason → blocked |
-| **Surgery Case full E2E** | Draft → Preparing → Dispatch Picking → Dispatched → Delivered → Return Pickup Scheduled → Return Pickup In Transit → Returns Verification → Returns Received → Usage Derived → Invoiced → Closed |
+| **Dispatch Case no-return E2E** | Order entry task → Dispatch Case (`return_expected = No`) Submit → Pack → Delivery (Picked Up → Delivered) → Invoice Preparation → Debt Collection → Closed; verify all stock entries auto-submitted and stock ledger correct |
+| **Dispatch Case return-expected E2E** | Order entry task → Dispatch Case (`return_expected = Yes`) Submit → Pack → Delivery (Picked Up → Delivered) → Return Waiting → Return Pickup (Picked Up → Returned to WH) → Returns Inspection → Restock + Invoice Preparation (parallel) → Debt Collection → Closed; verify `dispatched = used + returned` reconciliation |
 
 ---
 
@@ -137,15 +138,15 @@ Run these in the staging environment or on the first real test case. Sign off ea
 
 These are architectural decisions baked into server scripts. Breaking them silently corrupts data.
 
-1. **All deliveries must go `Main → Delivery In-Transit → Client Location`.** Never issue stock directly from Main to a client warehouse — the Delivery Note gate will block it, and more importantly it bypasses the dispatch audit trail.
+1. **All deliveries must go `Main → Delivery In-Transit → Client Location`.** Never post stock manually from Main to a client warehouse — the Dispatch Case automation manages all stock entries; manual entries bypass the audit trail and break case reconciliation.
 
-2. **All returns must go `Client Location → Return Pickup In-Transit → Returns → Main`.** Do not skip the in-transit step; the Surgery Case server script validates this path.
+2. **All returns must go `Client Location → Return Pickup In-Transit → Returns → Main`.** Do not skip the in-transit step; the Dispatch Case server scripts validate and auto-submit entries at each transition.
 
-3. **Never enable `Update Stock` on a Sales Invoice.** The `Purchase Invoice-before-submit-no-update-stock` script blocks this on Purchase Invoices; there is an equivalent assumption on the Sales side — receiving/issuing must always go through Stock Entry or Delivery Note, never through an invoice.
+3. **Never enable `Update Stock` on a Sales Invoice.** The `Purchase Invoice-before-submit-no-update-stock` script blocks this on Purchase Invoices; the same rule applies on the Sales side — all stock movements are handled automatically by Dispatch Case stock entries, never through an invoice.
 
-4. **Never post stock directly to a client-location warehouse via a Stock Entry that has a Sales Order link.** The `no-client-wh` gate blocks this. Client warehouse stock must always arrive via the two-step delivery flow.
+4. **Never post stock manually to a client-location warehouse.** Client warehouse stock must always arrive via the Dispatch Case delivery automation (return-expected path). Manual Stock Entries targeting client warehouses bypass the case reconciliation and break `used + returned = dispatched` accounting.
 
-5. **Never bypass the Surgery Case workflow by manually editing `workflow_state`.** The server script checks `doc.workflow_state` transitions — jumping states directly will skip stock entries and task creation.
+5. **Never bypass the Dispatch Case state machine by manually editing `status`.** The server scripts check state transitions on Before Save/After Save/Before Submit — jumping states directly will skip auto-submitted stock entries and auto-created tasks, leaving the case in an inconsistent state.
 
 6. **Serial/batch tracking flags must be set before the first stock entry for that item.** Once a `Stock Ledger Entry` exists for an item, ERPNext will not allow enabling tracking retroactively. This is a one-way door.
 

@@ -46,9 +46,9 @@ Directors should be able to answer:
 ### 3.2 Operations leads (daily)
 Operations should be able to answer:
 - What is in transit right now?
-- What company-owned stock is sitting at client locations (surgery flow and/or permanent sets)?
+- What company-owned stock is sitting at client locations (Dispatch Case return-expected path and/or permanent sets)?
 - What is waiting in `Returns - WH` to be processed?
-- Which surgery set templates are currently short on inventory?
+- Which item templates (Surgery Set Types) are currently short on inventory?
 
 ### 3.3 Purchasing leads (daily/weekly)
 Purchasing should be able to answer:
@@ -88,11 +88,11 @@ How to view / filter:
 Interpretation:
 - Any quantity here is company-owned stock physically at the client location.
 - It may represent either:
-  - surgery cases pending return/usage reconciliation (Doc 12), and/or
-  - permanent on-site surgery sets (baseline on-site sets) (Doc 11).
+  - Dispatch Cases (return-expected path) pending return/usage reconciliation (Doc 16), and/or
+  - permanent on-site sets (Doc 11).
 
 Red flags:
-- Large/old quantities at a client location with no active surgery cases and no permanent-set policy
+- Large/old quantities at a client location with no open Dispatch Cases and no permanent-set policy
 - Serial-tracked tools sitting at a client location long after expected return
 
 What it usually means:
@@ -120,7 +120,7 @@ Red flags:
 - Items stuck here overnight / multiple days
 
 Additional red flag (cancellations):
-- Items in `Delivery In-Transit - WH` where the related Sales Order is cancelled
+- Items in `Delivery In-Transit - WH` where the related Dispatch Case is cancelled
   - usually means an aborted delivery package was not returned through the returns checkpoint.
 
 What it usually means:
@@ -174,8 +174,8 @@ What it answers:
 
 Primary truth:
 - Stock is still stored by warehouse (`Delivery In-Transit - WH`, `Return Pickup In-Transit - WH`).
-- “By person” is derived from:
-  - dispatch/pickup assignment records and/or tasks linked to the dispatch group/case (Doc 10 / Doc 12).
+- "by person" is derived from:
+  - dispatch/pickup assignment records and/or tasks linked to the Dispatch Case (Doc 10 / Doc 16).
 
 How to interpret:
 - This view is only as good as the discipline of always assigning a delivery person.
@@ -189,26 +189,30 @@ What it usually means:
 
 ---
 
-## 4.6 Aging of open surgery cases (operational WIP)
+## 4.6 Aging of open Dispatch Cases (operational WIP)
 What it answers:
-- “Which surgery cases are stuck, and where?”
+- "Which Dispatch Cases are stuck, and where?"
 
 Primary truth:
-- Surgery Case list (status) plus task queues (Doc 12 + Doc 10)
+- Dispatch Case list (status) plus task queues (Doc 16 + Doc 10)
 
 Operational breakdown:
-- Cases delivered but not return-picked up
-- Cases return-picked up but not returns-received
-- Cases returns-received but not usage-derived
-- Cases usage-derived but not invoiced
+- Cases in `Confirmed` (Pack task not completed)
+- Cases in `Packed` (Delivery task not started)
+- Cases in `In Transit` (Delivery task not completed)
+- Cases in `Awaiting Return Pickup` (Return Waiting task not completed) — return-expected only
+- Cases in `Return Pickup Scheduled` or `Return In Transit` (Return Pickup task in progress) — return-expected only
+- Cases in `Returns Received` (Returns Inspection task not completed) — return-expected only
+- Cases in `Invoice Pending` (Invoice Preparation task not completed)
+- Cases in `Payment Pending` (Debt Collection task open)
 
 Red flags:
 - Cases sitting in one status beyond your normal cycle time
 
 What it usually means:
 - Missing task completion
-- Missing stock movements (dispatch/return/consumption)
-- Waiting for usage info (if applicable)
+- Missing stock movements (auto-submitted by Dispatch Case scripts; if missing, check server script is enabled)
+- Blocking gate not cleared (e.g. photo not attached, batch not filled)
 
 ---
 
@@ -261,16 +265,16 @@ What it answers:
 - “Which prepaid orders are at risk of being forgotten/stuck?”
 
 Primary truth (derived):
-- Sales Orders not yet delivered/fulfilled
+- Dispatch Cases not yet `Closed`
 - Payment Entries recorded as client advances
 
 Interpretation:
 - This is an operational queue, not a receivables queue.
 - If you support prepaid deliveries, you must be able to list:
-  - the order
+  - the Dispatch Case
   - the delivery timing promise
   - the amount received (advance)
-  - whether the order is fully prepaid or partially prepaid (deposit)
+  - whether the case is fully prepaid or partially prepaid (deposit)
   - any remaining required upfront amount before dispatch (if applicable)
   - whether delivery has happened
 
@@ -346,7 +350,7 @@ Interpretation:
 
 Red flags:
 - Return-to-warehouse tasks stuck open for long periods
-- Cancelled Sales Orders with no corresponding return-to-warehouse task (package integrity risk)
+- Cancelled Dispatch Cases with no corresponding return-to-warehouse task (package integrity risk)
 
 ---
 
@@ -386,9 +390,9 @@ Interpretation:
   - Valid-from/valid-to (if you choose to use time validity)
 
 Red flags:
-- Many Sales Orders where the price differs from both:
+- Many Dispatch Cases where the Unit Price differs from both:
   - the standard base price list, and
-  - the client’s override list
+  - the client's override list
   (usually means manual pricing is happening without a controlled record)
 - Overrides with no review cadence (prices that are outdated but still being used)
 
@@ -396,7 +400,7 @@ Fast cross-check (recommended):
 - Periodically pick a few high-volume items and compare:
   - base price list rate
   - override list rate (if any)
-  - actual Sales Order rates used in the last 30 days
+  - actual Dispatch Case Unit Prices used in the last 30 days
   - investigate any unexplained deviations.
 
 ---
@@ -418,23 +422,23 @@ Red flags:
 
 ---
 
-## 4.12 Surgery Set Type readiness (templates that are short on inventory)
+## 4.12 Item template readiness (Surgery Set Types used as Dispatch Case templates)
 What it answers:
-- “Which surgery set templates can we currently fill from inventory, and which are short?”
+- “Which item templates (Surgery Set Types) can we currently fill for a Dispatch Case, and which are short?”
 
 Primary truth:
-- Template definitions: `Surgery Set Type` item rows (Doc 11)
-- Stock availability signal: stock in `Main - WH` (Doc 05)
+- Template definitions: `Surgery Set Type` item rows (Doc 11 — template concept retained)
+- Stock availability signal: stock in `Main - Inmed` (Doc 05)
 
 Interpretation:
-- A template is “ready” only if each required item has enough availability to meet the template default quantity.
-- If a template is short, operations can still proceed by preparing a partial set (Doc 12), but the shortage should be visible.
+- A template is "ready" only if each required item has enough stock in `Main - Inmed` to meet the template default quantity.
+- If a template is short, the Dispatch Case can still be submitted with available items, but the shortage should be visible before dispatch.
 
 Red flags:
 - High-volume templates frequently short on stock
 - Templates short on the same item repeatedly (indicates reorder threshold issues)
 
-
+---
 
 ## 4.13 Near-expiry stock risk (Main warehouse)
 What it answers:
@@ -463,8 +467,8 @@ These are high-value “sanity checks” you can run routinely.
 - Stock in `Returns - WH` is a workload queue.
 - If it grows continuously, returns verification is the bottleneck.
 
-### 5.3 Client stock vs open cases check (surgery flow)
-- If a client location warehouse shows significant stock but there are no active/open cases:
+### 5.3 Client stock vs open Dispatch Cases check
+- If a client location warehouse shows significant stock but there are no active open Dispatch Cases (return-expected) for that client:
   - If the client location uses permanent on-site sets (Doc 11), treat it as normal baseline stock.
   - Otherwise investigate why stock is still company-owned at that client location.
 
@@ -474,7 +478,7 @@ These are high-value “sanity checks” you can run routinely.
 ### 5.5 Pricing override hygiene check (recommended)
 - Periodically review:
   - price override list changes (what changed, by whom, why)
-  - Sales Orders with manual rate edits (prices not matching base/override)
+  - Dispatch Case items with manual Unit Price edits (prices not matching base/override)
 - Purpose:
   - prevent slow drift into uncontrolled manual pricing
   - keep negotiated pricing explicit and auditable
