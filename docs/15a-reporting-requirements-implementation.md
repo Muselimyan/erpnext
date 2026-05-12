@@ -100,6 +100,7 @@
 |---|---|---|
 | Query Report | ✅ DEPLOYED | `RPT — Stock — Entries by Period` — deployed 2026-05-12 |
 | Filters | — | From Date, To Date, Warehouse, Item Code, Item Group, Entry Type |
+| Columns | — | Includes `dispatch_group_id` as Dispatch Case identifier; `surgery_case` column removed |
 | Roles | — | All Ops roles + Directors |
 
 ### 3.5 Stock Movement — Warehouse to Warehouse (§5.5)
@@ -108,7 +109,7 @@
 |---|---|---|
 | Query Report | ✅ DEPLOYED | `RPT — Stock — Warehouse Movement` — deployed 2026-05-12 |
 | Filters | — | From Date, To Date, From Warehouse, To Warehouse, Item Code, Dispatch Case |
-| Notes | — | Dispatch Case filter uses `se.dispatch_group_id` (Data field on Stock Entry, deployed by Doc 16A) |
+| Notes | — | Dispatch Case filter uses `se.dispatch_group_id` (Data field on Stock Entry, deployed by Doc 16A); `surgery_case` column removed |
 | Roles | — | Inventory, Order Accepting, Returns, Delivery Driver, Directors |
 
 ### 3.6 Sales — Sold Items Detail (§6.1)
@@ -116,7 +117,8 @@
 | Item | Status | Notes |
 |---|---|---|
 | Query Report | ✅ DEPLOYED | `RPT — Sales — Sold Items Detail` — new report deployed 2026-05-12 |
-| Columns | — | Full set: customer, hospital, doctor, payment status, dispatch case, qty, selling price, buying price, gross profit, batch, serial, sales order |
+| Columns | — | Full set: customer, hospital, doctor, payment status, qty, selling price, buying price, gross profit, batch, serial, sales order |
+| Note | — | `surgery_case` column removed; no `dispatch_case` field exists on Sales Invoice |
 | Buying cost | — | Joined from `tabItem Price` (`price_list = 'Standard Buying'`). Returns 0 until Standard Buying prices populated. |
 | Access | — | **Directors only** — profit column |
 
@@ -292,6 +294,7 @@
 | Query Report | ✅ DEPLOYED | `RPT — Data Quality — Missing Doctor or Hospital` — deployed 2026-05-12 |
 | Logic | — | Submitted invoices where both `hospital` and `doctor_name` fields are null/empty |
 | Filters | — | From Date, To Date |
+| Note | — | `surgery_case` column removed; shows: invoice, date, customer, grand total, status |
 | Roles | — | Order Creating, Accounting, Directors |
 
 ### 6.4 Stock — Negative or Impossible Stock (§9.6)

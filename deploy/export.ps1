@@ -158,7 +158,7 @@ export-schema "Print Format" "print-formats" "" { param($r) $r.standard -ne "Yes
 # Reports – non-standard (custom) only
 export-schema "Report" "reports" '[["Report","is_standard","=","No"]]'
 
-# Custom DocTypes only (Surgery Set Type, Surgery Set Type Item, Task Access Policy, etc.)
+# Custom DocTypes only (Collection Set, Collection Set Item, Task Access Policy, etc.)
 export-schema "DocType" "custom-doctypes" '[["DocType","custom","=",1]]'
 
 # ==============================================================

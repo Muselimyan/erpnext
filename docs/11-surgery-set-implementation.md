@@ -7,9 +7,9 @@ Scope of this implementation doc:
 - Confirm required warehouses exist (including delivery/return staging warehouses)
 - Confirm client modeling prerequisites (Customers + client-location warehouses under `Clients - WH`)
 - Implement the custom DocType:
-  - `Surgery Set Type`
-  - `Surgery Set Type Item` (child table)
-- Create sample `Surgery Set Type` templates
+  - `Collection Set`
+  - `Collection Set Item` (child table)
+- Create sample `Collection Set` templates
 - Add a readiness warning (warning-only) so users see when a template cannot be fully filled from `Main - WH`
 - Validation checks
 
@@ -54,7 +54,7 @@ If any of those are missing, complete those implementation docs first.
 Important model rule (Doc 11):
 - A surgery set/box is **not** a single stock item.
 - It is a collection of normal items.
-- `Surgery Set Type` is a **template only**.
+- `Collection Set` is a **template only**.
 - Actual dispatched quantities and batch/serial selection happen per case/workflow in Doc 12.
 
 ---
@@ -90,13 +90,13 @@ If none exist:
 ---
 
 ## 5) Create the Surgery Set template DocTypes
-Doc 11 requires a template DocType (`Surgery Set Type`) and a child table (`Surgery Set Type Item`).
+Doc 11 requires a template DocType (`Collection Set`) and a child table (`Collection Set Item`).
 
-### 5.1 Create child table: `Surgery Set Type Item`
+### 5.1 Create child table: `Collection Set Item`
 1) Open `DocType` list.
 2) Click `New`.
 3) Set:
-   - `Name`: `Surgery Set Type Item`
+   - `Name`: `Collection Set Item`
    - Check: `Is Child Table`
 4) Add fields:
    - `item` (Link) — Options: `Item` — Req: Yes
@@ -115,11 +115,11 @@ Doc 11 requires a template DocType (`Surgery Set Type`) and a child table (`Surg
    - `notes` (Small Text) — optional
 5) Click `Save`.
 
-### 5.2 Create parent DocType: `Surgery Set Type`
+### 5.2 Create parent DocType: `Collection Set`
 1) Open `DocType` list.
 2) Click `New`.
 3) Set:
-   - `Name`: `Surgery Set Type`
+   - `Name`: `Collection Set`
    - Ensure it is **not** a child table
    - `Autoname`: `field:set_name`
 4) Add fields:
@@ -132,11 +132,11 @@ Doc 11 requires a template DocType (`Surgery Set Type`) and a child table (`Surg
      - Short
      - Critical Short
    - `readiness_note` (Small Text) — Read Only
-   - `items` (Table) — Options: `Surgery Set Type Item`
+   - `items` (Table) — Options: `Collection Set Item`
 5) Click `Save`.
 
 Validation:
-- Open `Surgery Set Type` list.
+- Open `Collection Set` list.
 - Create a new Set Type and confirm you can add multiple item rows.
 
 ### 5.3 Permissions (Role Permission Manager) for surgery set templates
@@ -147,7 +147,7 @@ Goal:
 
 1) Open `Role Permission Manager`.
 
-For DocType: `Surgery Set Type`
+For DocType: `Collection Set`
 - `Ops - Inventory`:
   - Read, Write, Create
 - `Ops - Directors`:
@@ -157,13 +157,13 @@ For DocType: `Surgery Set Type`
 - `Delivery Driver`:
   - No access
 
-For DocType: `Surgery Set Type Item`
+For DocType: `Collection Set Item`
 - It is a child table; permissions follow the parent DocType.
 
 ### 5.4 Create a readiness list view (recommended)
 Doc 11 recommends that it is easy to see which templates are not currently fillable.
 
-1) Open `Surgery Set Type` list.
+1) Open `Collection Set` list.
 2) Click `List View Settings` (or the three-dot menu) → `Fields` / `Columns`.
 3) Ensure these columns are visible:
    - Set Name
@@ -174,24 +174,24 @@ Doc 11 recommends that it is easy to see which templates are not currently filla
    - Is Active = checked
 5) Sort:
    - Sort by `Readiness Status` (so `Critical Short` / `Short` float to the top)
-6) Save the view as: `Surgery Set Types — Readiness`.
+6) Save the view as: `Collection Sets — Readiness`.
 
 
 ---
 
-## 6) (Recommended) Add readiness warning automation on `Surgery Set Type`
+## 6) (Recommended) Add readiness warning automation on `Collection Set`
 Doc 11 requires that a Set Type can be used as a practical preparation checklist.
 
 This implementation adds a go-live-safe warning:
 - if a template cannot be fully filled from `Main - WH`, the user sees a warning and the set is marked `Short` / `Critical Short`
 - this is **warning-only** (does not hard-block)
 
-### 6.1 Create a Server Script for `Surgery Set Type`
+### 6.1 Create a Server Script for `Collection Set`
 1) Open `Server Script`.
 2) Click `New`.
 3) Set:
    - Script Type: `DocType Event`
-   - Reference DocType: `Surgery Set Type`
+   - Reference DocType: `Collection Set`
    - DocType Event: `Validate`
 4) Paste:
 
@@ -231,11 +231,11 @@ for row in (doc.items or []):
 if critical_missing:
     doc.readiness_status = "Critical Short"
     doc.readiness_note = "Critical shortages:\n" + "\n".join(critical_missing)
-    frappe.msgprint(doc.readiness_note, title="Surgery Set Type readiness warning")
+    frappe.msgprint(doc.readiness_note, title="Collection Set readiness warning")
 elif missing:
     doc.readiness_status = "Short"
     doc.readiness_note = "Shortages:\n" + "\n".join(missing)
-    frappe.msgprint(doc.readiness_note, title="Surgery Set Type readiness warning")
+    frappe.msgprint(doc.readiness_note, title="Collection Set readiness warning")
 else:
     doc.readiness_status = "Ready"
     doc.readiness_note = ""
@@ -277,9 +277,9 @@ If this warehouse does not exist:
 
 ---
 
-## 8) Create a sample `Surgery Set Type` record (template)
+## 8) Create a sample `Collection Set` record (template)
 ### 8.1 Create the template
-1) Open `Surgery Set Type` list.
+1) Open `Collection Set` list.
 2) Click `New`.
 3) Fill:
    - Set Name: `Ortho Basic Set (Sample)`
@@ -309,11 +309,11 @@ Expected result:
 - `Returns - WH` exists
 
 ### 9.2 DocTypes
-- `Surgery Set Type Item` exists and is a child table
-- `Surgery Set Type` exists and has an Items table
+- `Collection Set Item` exists and is a child table
+- `Collection Set` exists and has an Items table
 
 ### 9.3 Readiness warning automation
-- Create a Surgery Set Type where you know one item is out of stock in `Main - WH`
+- Create a Collection Set where you know one item is out of stock in `Main - WH`
 - Save
 - Confirm `Readiness Status` becomes `Short` or `Critical Short`
 - Confirm a warning popup appears listing missing items

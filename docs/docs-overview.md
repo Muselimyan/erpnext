@@ -1,4 +1,4 @@
-# ERPNext Documentation Set — Overview (Medical Supplier, Armenia)
+﻿# ERPNext Documentation Set — Overview (Medical Supplier, Armenia)
 
 ## 1) Purpose
 This document defines the full documentation set we will produce for implementing ERPNext for your medical supplier business in Armenia.
@@ -189,10 +189,10 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 
 ### 11 — Surgery Set Model (How sets are represented) *(Superseded by Doc 16)*
 **File**: `11-surgery-set-model.md`
-> **⚠️ The Surgery Set DocType and its operational workflow are superseded by Doc 16 — Unified Dispatch Flow, which uses the Dispatch Case DocType with `return_expected = Yes` for cases where items come back. The `Surgery Set Type` item template concept is retained as a template source for Dispatch Cases. Retained for historical reference only.**
+> **⚠️ The Surgery Set DocType and its operational workflow are superseded by Doc 16 — Unified Dispatch Flow, which uses the Dispatch Case DocType with `return_expected = Yes` for cases where items come back. The `Collection Set` item template concept is retained as a template source for Dispatch Cases. Retained for historical reference only.**
 - **Purpose**: Define set templates + inventory representation at client locations.
 - **Key decisions embedded**:
-  - Custom DocType `Surgery Set Type`
+  - Custom DocType `Collection Set`
   - Client-level warehouses for "items at client location”
 
 ### 12 — Surgery Set Operational Workflow (End-to-End) *(Superseded by Doc 16)*

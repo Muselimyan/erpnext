@@ -1,4 +1,4 @@
-# Doc 12 — Surgery Set Operational Workflow (End-to-End)
+﻿# Doc 12 — Surgery Set Operational Workflow (End-to-End)
 
 ## 1) Purpose
 Define the day-to-day operational workflow for **surgery set/box** cases from request → dispatch → usage → return pickup → returns receiving → invoicing.
@@ -92,7 +92,7 @@ Control rule:
 
 ### 2.7 Stock availability policy (allow Draft, allow partial)
 - You may create/save Surgery Cases in `Draft` even if stock is currently insufficient.
-- The workflow must allow partial fulfillment of the Surgery Set Type template when stock is insufficient:
+- The workflow must allow partial fulfillment of the Collection Set template when stock is insufficient:
   - dispatch whatever is available
   - skip missing items
   - show a clear warning that some items were missing (including which items and missing quantities)
@@ -136,7 +136,7 @@ Minimum fields on `Surgery Case`:
 - Hospital (Link → Customer) (optional)
 - Doctor Name (Data) (optional)
 - Surgery Date (Date)
-- Surgery Set Type (Link → Surgery Set Type)
+- Collection Set (Link → Collection Set)
 - Status (Select)
 - Delivery Person (Link → User)
 - Return Pickup Delivery Person (Link → User)
@@ -272,9 +272,9 @@ Important:
    - Hospital Branch
    - Doctor Name (optional)
    - Surgery Date
-   - Surgery Set Type
+   - Collection Set
 3) Load the template and decide the **planned dispatch quantities** now (single source of truth):
-   - Use the linked `Surgery Set Type` as a suggested checklist.
+   - Use the linked `Collection Set` as a suggested checklist.
    - If stock is insufficient to fill the template fully:
      - set Dispatched Qty to what is available
      - omit/skip missing items
@@ -321,7 +321,7 @@ When: after the case is approved to proceed.
 
 1) Open the `Surgery Case`.
 2) Set Status = `Preparing`.
-3) Use the linked `Surgery Set Type` as a checklist for packing.
+3) Use the linked `Collection Set` as a checklist for packing.
 4) Pack exactly what is listed in **Case Items** (Dispatched Qty).
    - If the template was short, missing items are not packed.
 5) Optional: scan barcodes into the case’s Packed Scan Log.

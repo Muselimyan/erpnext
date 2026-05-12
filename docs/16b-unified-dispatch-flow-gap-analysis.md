@@ -1,4 +1,4 @@
-# Doc 16B — Unified Dispatch Flow: Gap Analysis (What Needs to Be Deployed)
+﻿# Doc 16B — Unified Dispatch Flow: Gap Analysis (What Needs to Be Deployed)
 
 ## 0. Deployment Progress
 
@@ -203,7 +203,7 @@ Current custom DocTypes in prod (6 total, all Surgery Case family):
 | `Sales Order-before-save-discount-approval` | ✅ KEEP | Old Sales Order flow — keep until retired |
 | `Scheduled-debt-collection` | ✅ KEEP | Still monitors debt thresholds for old flow — keep |
 | `Payment Entry-after-submit-distribute-payment` | ✅ KEEP | Old payment distribution — review for overlap with new flow |
-| `Surgery-Set-Type-validate-readiness` | ✅ KEEP | Still valid — Surgery Set Types used as templates |
+| `Surgery-Set-Type-validate-readiness` | ✅ KEEP | Still valid — Collection Sets used as templates |
 | `Surgery-Case-before-save` | ✅ KEEP | Old Surgery Case scripts — keep for existing cases in flight |
 | *(2 remaining scripts)* | ✅ KEEP | Old flow scripts from doc09b |
 
@@ -225,7 +225,7 @@ Current custom DocTypes in prod (6 total, all Surgery Case family):
 
 | Script | Status |
 |---|---|
-| Dispatch Case form — `Load from Template` (auto-fill items from Surgery Set Type on field change) | ✅ EXISTS |
+| Dispatch Case form — `Load from Template` (auto-fill items from Collection Set on field change) | ✅ EXISTS |
 
 ---
 

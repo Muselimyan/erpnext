@@ -1,4 +1,4 @@
-# Doc 13A — Reporting Pack (Implementation / ERPNext Setup Guide)
+﻿# Doc 13A — Reporting Pack (Implementation / ERPNext Setup Guide)
 
 ## 1) Purpose
 This is a **step-by-step ERPNext setup guide** to implement the reporting pack defined in:
@@ -28,7 +28,7 @@ Do not start Doc 13A until these are done:
 - Doc 06A — item tracking flags are correct (serial/batch/expiry) + FEFO warning is implemented.
 - Doc 08A — reorder setup exists (reorder levels on Items + reorder list views).
 - Doc 10A — Task system exists (Task Kind, Task Access Policy, mandatory photo enforcement).
-- Doc 11A — Surgery Set Type templates exist.
+- Doc 11A — Collection Set templates exist.
 - Doc 16A — Dispatch Case workflow deployed (Dispatch Case DocType, all server scripts, roles, task kinds, task access policies).
 
 You should do Doc 13A as a user with:
@@ -50,7 +50,7 @@ Important: do not rename views created by earlier implementation docs.
 These names are already used elsewhere and must remain stable:
 - Doc 08A: `Stock Balance — Main - Inmed` (saved Stock Balance report)
 - `Price Overrides — by Client` (Item Price saved list view)
-- Doc 11A: `Surgery Set Types — Readiness` (Surgery Set Type saved list view)
+- Doc 11A: `Collection Sets — Readiness` (Collection Set saved list view)
 
 Examples:
 - `RPT — Stock — Delivery In-Transit`
@@ -103,7 +103,7 @@ Then add shortcuts (you will add these after creating the reports in section 5):
 - `VIEW — Tasks — Purchase Approval (Open)`
 - `VIEW — Tasks — Write-off Approval (Open)`
 - `Price Overrides — by Client`
-- `Surgery Set Types — Readiness`
+- `Collection Sets — Readiness`
 - `VIEW — Dispatch Cases — Awaiting Return Pickup`
 - `VIEW — Dispatch Cases — Return In Transit`
 - `VIEW — Dispatch Cases — Returns Received`
@@ -699,16 +699,16 @@ Daily use:
 
 ---
 
-### 5.17 Surgery Set Type readiness (Doc 13 §4.12)
+### 5.17 Collection Set readiness (Doc 13 §4.12)
 Doc 11A already implements readiness warning behavior.
 
 Required deliverable:
-- A `Surgery Set Type` list view that shows the readiness signal fields used by your Doc 11A implementation.
+- A `Collection Set` list view that shows the readiness signal fields used by your Doc 11A implementation.
 
 Implementation steps:
-1) Open `Surgery Set Type` list.
+1) Open `Collection Set` list.
 2) Add the readiness columns you created in Doc 11A (example: readiness warning / readiness note).
-3) Save view as: `Surgery Set Types — Readiness`.
+3) Save view as: `Collection Sets — Readiness`.
 
 ---
 

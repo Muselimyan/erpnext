@@ -93,7 +93,7 @@ $SurgCaseDocBody = [ordered]@{
         [ordered]@{ fieldname="client_location_warehouse";     fieldtype="Link";       label="Client Location Warehouse"; options="Warehouse"; reqd=1 },
         [ordered]@{ fieldname="doctor_name";                   fieldtype="Data";       label="Doctor Name" },
         [ordered]@{ fieldname="surgery_date";                  fieldtype="Date";       label="Surgery Date";              reqd=1; in_list_view=1 },
-        [ordered]@{ fieldname="surgery_set_type";              fieldtype="Link";       label="Surgery Set Type";          options="Surgery Set Type"; reqd=1 },
+        [ordered]@{ fieldname="surgery_set_type";              fieldtype="Link";       label="Collection Set";             options="Collection Set"; reqd=1 },
         [ordered]@{ fieldname="workflow_state";                fieldtype="Select";     label="Status";                    options=$WfOpts; default="Draft"; read_only=1; in_list_view=1 },
         [ordered]@{ fieldname="dispatch_group_id";             fieldtype="Data";       label="Dispatch Group ID" },
         [ordered]@{ fieldname="delivery_person";               fieldtype="Link";       label="Delivery Person";           options="User" },
@@ -249,7 +249,7 @@ def _run():
 
     # Auto-load template items on new case
     if after_state == "Draft" and doc.surgery_set_type and not (doc.case_items or []):
-        st = frappe.get_doc("Surgery Set Type", doc.surgery_set_type)
+        st = frappe.get_doc("Collection Set", doc.surgery_set_type)
         for r in (st.items or []):
             if r.item and float(r.default_qty or 0) > 0:
                 doc.append("case_items", {"item": r.item, "dispatched_qty": float(r.default_qty),

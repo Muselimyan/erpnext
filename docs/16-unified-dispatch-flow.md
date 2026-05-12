@@ -58,7 +58,7 @@ Every state change in a Dispatch Case is triggered by a task completion or state
 | `client_location_warehouse` | Link → Warehouse | Client-side warehouse for returnable items |
 | `return_expected` | Checkbox | Whether items are expected to come back |
 | `surgery_date` | Date | For surgery cases; optional for standard sales |
-| `surgery_set_type` | Link → Surgery Set Type | Optional template; populates Case Items when selected |
+| `surgery_set_type` | Link → Collection Set | Optional template; populates Case Items when selected |
 | `status` | Select | Current state (see Section 10) |
 | `order_entry_task` | Link → Task | The originating Order entry task |
 | `discount_approval_task` | Link → Task | Director approval task (if discount present) |
@@ -107,7 +107,7 @@ Each row represents one item in the dispatch. Columns:
 
 ## 5. Item Templates
 
-The Dispatch Case has a **"Load from Template"** button that populates the Case Items table from a Surgery Set Type. The template defines default items and quantities. Templates are used for surgery sets and for any frequently-ordered product bundles.
+The Dispatch Case has a **"Load from Template"** button that populates the Case Items table from a Collection Set. The template defines default items and quantities. Templates are used for surgery sets and for any frequently-ordered product bundles.
 
 After loading, the Order Creation person can:
 - Adjust quantities

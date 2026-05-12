@@ -1,4 +1,4 @@
-# Doc 13 — Reporting Pack (Operational)
+﻿# Doc 13 — Reporting Pack (Operational)
 
 ## 1) Purpose
 This document defines the “how to see everything” reporting pack: the minimum set of views that let you run operations and management.
@@ -48,7 +48,7 @@ Operations should be able to answer:
 - What is in transit right now?
 - What company-owned stock is sitting at client locations (Dispatch Case return-expected path and/or permanent sets)?
 - What is waiting in `Returns - WH` to be processed?
-- Which item templates (Surgery Set Types) are currently short on inventory?
+- Which item templates (Collection Sets) are currently short on inventory?
 
 ### 3.3 Purchasing leads (daily/weekly)
 Purchasing should be able to answer:
@@ -422,12 +422,12 @@ Red flags:
 
 ---
 
-## 4.12 Item template readiness (Surgery Set Types used as Dispatch Case templates)
+## 4.12 Item template readiness (Collection Sets used as Dispatch Case templates)
 What it answers:
-- “Which item templates (Surgery Set Types) can we currently fill for a Dispatch Case, and which are short?”
+- “Which item templates (Collection Sets) can we currently fill for a Dispatch Case, and which are short?”
 
 Primary truth:
-- Template definitions: `Surgery Set Type` item rows (Doc 11 — template concept retained)
+- Template definitions: `Collection Set` item rows (Doc 11 — template concept retained)
 - Stock availability signal: stock in `Main - Inmed` (Doc 05)
 
 Interpretation:

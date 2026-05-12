@@ -1,4 +1,4 @@
-# Implementation Questions (Data Required to Fully Configure the System)
+﻿# Implementation Questions (Data Required to Fully Configure the System)
 
 ## Doc 03 / Doc 03A — Roles, Permissions, and Task Visibility
 
@@ -1087,8 +1087,8 @@ Recommendation:
   - for each hospital: flag `uses_surgery_set_flow` (`yes/no`)
   - classify hospitals as surgery-only vs mixed vs not in scope
 
-2) Surgery Set Type list (go-live dataset)
-- Question: What are the Surgery Set Types you want to define as templates?
+2) Collection Set list (go-live dataset)
+- Question: What are the Collection Sets you want to define as templates?
 - Data needed (per set type):
   - set name
   - set code (if used)
@@ -1102,7 +1102,7 @@ Recommendation:
   - who is responsible for maintaining set codes
 
 4) Set template items dataset
-- Question: For each Surgery Set Type, what is the default item list?
+- Question: For each Collection Set, what is the default item list?
 - Data needed (per template line):
   - item (exact Item/Variant)
   - default quantity
@@ -1186,14 +1186,14 @@ Recommendation:
   - format rules (uppercase? Latin only?)
 
 14) Master data dependencies required before set templates can be created
-- Question: What must be in place before staff can create Surgery Set Types?
+- Question: What must be in place before staff can create Collection Sets?
 - Data needed:
   - item catalog completeness for set items/variants
   - UOM list
   - hospital list (if templates are hospital-specific)
 
 15) Governance: who can create/edit set templates
-- Question: Who is allowed to create and edit Surgery Set Types and their item lists?
+- Question: Who is allowed to create and edit Collection Sets and their item lists?
 - Data needed:
   - role(s)/names
   - change control rule (approval needed for changes? versioning?)

@@ -1,4 +1,4 @@
-# Doc 02 — Navigation & Naming Conventions (Operational)
+﻿# Doc 02 — Navigation & Naming Conventions (Operational)
 
 ## 1) Purpose
 This document defines a simple, consistent way to:
@@ -150,7 +150,7 @@ If you use variants:
 ## 9) Surgery Set naming
 This section defines names for surgery-set records so they are searchable.
 
-### 9.1 Surgery Set Type
+### 9.1 Collection Set
 Recommended pattern:
 - `<Specialty> — <Set Name> — v<Version>`
 

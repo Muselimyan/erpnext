@@ -1,4 +1,4 @@
-# ERPNext Implementation Requirements (Medical Supplier, Armenia)
+﻿# ERPNext Implementation Requirements (Medical Supplier, Armenia)
 
 ## 1) Background
 You are a medical supplier company in Armenia. You purchase products from international suppliers and distribute them to clients (mostly doctors, and a smaller number of hospitals/clinics).
@@ -22,7 +22,7 @@ This requirements file is the authoritative functional scope for the docs that f
   - Surgery sets (partial consumption + return)
   - Task/work workflow spanning multiple teams
   - Reporting required for day-to-day operations
-- Light customization is allowed when needed for fit (confirmed: **custom DocType for Surgery Set Type**).
+- Light customization is allowed when needed for fit (confirmed: **custom DocType for Collection Set**).
 
 ## 3) Out of Scope (for now)
 - Server/VPS/Docker operations
@@ -49,7 +49,7 @@ This requirements file is the authoritative functional scope for the docs that f
 ## 5) Core Operational Concepts / Glossary
 - **Standard Order**: predictable delivery; no partial return expected.
 - **Surgery Set (Box)**: a physical box of various items.
-- **Surgery Set Type**: the template definition of which items/quantities a set is expected to contain.
+- **Collection Set**: the template definition of which items/quantities a set is expected to contain.
 - **Set Instance / Surgery Case**: one real event (one dispatch to a client location for a surgery) that results in consumption + return.
 - **Client Location Group**: a physical delivery/usage location identity used for stock tracking.
   - Defined as a (Client / Customer) + (optional Hospital) + (Hospital Branch) combination when applicable.
@@ -67,7 +67,7 @@ To know “what items are currently at which client location group” at any tim
 - Stock transfers to/from client location warehouses will be used to represent dispatch and returns.
 
 ### 6.2 Surgery set template representation
-- **Decision**: implement **Option A** = a **custom DocType** for `Surgery Set Type` containing a child table of items and default quantities.
+- **Decision**: implement **Option A** = a **custom DocType** for `Collection Set` containing a child table of items and default quantities.
 
 ### 6.3 Ready-to-go set storage
 - **Decision**: **no dedicated “Ready Sets” warehouse**.
@@ -298,13 +298,13 @@ High-level requirements:
   - which items/qty were consumed vs returned
 
 **Template shortage handling requirement (new)**
-- When using a Surgery Set Type template to prepare a case, if there is not enough inventory to fill the template fully, the system must allow preparing a partial set:
+- When using a Collection Set template to prepare a case, if there is not enough inventory to fill the template fully, the system must allow preparing a partial set:
   - fill the case with whatever quantities are available
   - skip items that are completely missing
   - show a clear warning that some items were missing (including which items and the missing quantities)
 
 **Template readiness visibility (new)**
-- In the Surgery Set Type list, users should be able to see which templates are currently not fully fillable from inventory.
+- In the Collection Set list, users should be able to see which templates are currently not fully fillable from inventory.
 - The system should provide a view/report that indicates per template:
   - whether it is fully fillable
   - which items are short (and by how much)

@@ -1,4 +1,4 @@
-# Doc 12A — Surgery Set Workflow (Implementation / ERPNext Setup Guide)
+﻿# Doc 12A — Surgery Set Workflow (Implementation / ERPNext Setup Guide)
 
 ## 1) Purpose
 This is a **step-by-step setup guide** to implement the workflow described in **Doc 12 — Surgery Set Operational Workflow**.
@@ -39,7 +39,7 @@ Do not start Doc 12A until these are done:
 - Doc 10A — Task system exists (Task Kind + Task Access Policy) and mandatory photo enforcement exists:
   - `Delivery` requires `Warehouse Pickup Photo`
   - `Return drop-off at warehouse` requires `Warehouse Drop-off Photo`
-- Doc 11A — `Surgery Set Type` templates exist.
+- Doc 11A — `Collection Set` templates exist.
 
 You will also need access to:
 - `DocType` (to create custom DocTypes)
@@ -112,7 +112,7 @@ This child table is where you record those missing/damaged serials.
    - `client_location_warehouse` (Link) → Options: `Warehouse` → Req
    - `doctor_name` (Data) → optional
    - `surgery_date` (Date) → Req
-   - `surgery_set_type` (Link) → Options: `Surgery Set Type` → Req
+   - `surgery_set_type` (Link) → Options: `Collection Set` → Req
    - `dispatch_group_id` (Data) → optional
    - `delivery_person` (Link) → Options: `User` → optional
    - `return_pickup_delivery_person` (Link) → Options: `User` → optional
@@ -528,7 +528,7 @@ state_changed = (before_state != after_state)
 # Step 0 helper: auto-load template into Case Items (Draft only)
 if after_state == "Draft" and doc.surgery_set_type:
     if not (doc.case_items or []):
-        st = frappe.get_doc("Surgery Set Type", doc.surgery_set_type)
+        st = frappe.get_doc("Collection Set", doc.surgery_set_type)
         for r in (st.items or []):
             if not r.item:
                 continue
@@ -954,7 +954,7 @@ Prerequisite sample masters (from earlier docs):
 - Hospital context Customer: `H001 — Erebuni MC`
 - Client location warehouse (leaf under `Clients - WH`):
   - `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
-- Surgery Set Type: `Ortho Basic Set (Sample)` (Doc 11A)
+- Collection Set: `Ortho Basic Set (Sample)` (Doc 11A)
 - Items exist with tracking:
   - `TOOL-001` (serial-tracked)
   - `IMP-001` (batch-tracked)
@@ -970,7 +970,7 @@ Prerequisite sample masters (from earlier docs):
    - Client Location Warehouse: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
    - Doctor Name: (leave empty; optional)
    - Surgery Date: today + 2 days (example)
-   - Surgery Set Type: `Ortho Basic Set (Sample)`
+   - Collection Set: `Ortho Basic Set (Sample)`
    - Dispatch Group ID: `DG-0001` (sample)
 4) In `Case Items` enter your planned dispatch quantities:
    - `TOOL-001` dispatched_qty = `1`

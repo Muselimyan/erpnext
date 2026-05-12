@@ -194,7 +194,7 @@ $WsShortcuts = @(
     [ordered]@{ label="Manual Rate Edits";                type="Report";  link_to="RPT ${EM} Pricing ${EM} Sales Orders With Manual Rate Edits" },
     [ordered]@{ label="Near Expiry Stock";                type="Report";  link_to="RPT ${EM} Stock ${EM} Near Expiry (Main - Inmed)" },
     [ordered]@{ label="Tracked Items Missing Identifiers"; type="Report"; link_to="RPT ${EM} Data Quality ${EM} Tracked Items Missing Identifiers" },
-    [ordered]@{ label="Surgery Set Types Readiness";      type="DocType"; link_to="Surgery Set Type"; doc_view="List" },
+    [ordered]@{ label="Collection Sets Readiness";         type="DocType"; link_to="Collection Set"; doc_view="List" },
     [ordered]@{ label="Price Overrides by Client";        type="DocType"; link_to="Item Price"; doc_view="List"; stats_filter='[["selling","=","1"],["customer","!=",""]]' }
 )
 $WsBody = [ordered]@{

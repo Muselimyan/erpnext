@@ -1,4 +1,4 @@
-# Doc 16A — Unified Dispatch Flow (Implementation / ERPNext Setup Guide)
+﻿# Doc 16A — Unified Dispatch Flow (Implementation / ERPNext Setup Guide)
 
 ## 1) Purpose
 
@@ -31,7 +31,7 @@ Do **not** start Doc 16A until these are done:
   - Client-location leaf warehouses under `Clients - Inmed`
 - **Doc 06A** — Item tracking configured (serial / batch / expiry, FEFO warning)
 - **Doc 10A** — Task system exists (`task_kind` field, `Task Access Policy`, single-owner enforcement)
-- **Doc 11A** — `Surgery Set Type` templates exist (used as item templates for Dispatch Case)
+- **Doc 11A** — `Collection Set` templates exist (used as item templates for Dispatch Case)
 
 You need access to:
 - `System Manager` role
@@ -342,7 +342,7 @@ Add a **Section Break** with label `Record Payment`, then:
 | `client_location_warehouse` | Client Location Warehouse | Link → `Warehouse` | Req |
 | `return_expected` | Return Expected | Check | Default 0 |
 | `surgery_date` | Surgery / Delivery Date | Date | Optional |
-| `surgery_set_type` | Item Template | Link → `Surgery Set Type` | Optional |
+| `surgery_set_type` | Item Template | Link → `Collection Set` | Optional |
 | `status` | Status | Select | See options below — Read Only (set by scripts) |
 | `notes` | Notes | Small Text | Optional |
 
@@ -435,7 +435,7 @@ frappe.ui.form.on('Dispatch Case', {
         }
         frappe.call({
             method: 'frappe.client.get',
-            args: { doctype: 'Surgery Set Type', name: frm.doc.surgery_set_type },
+            args: { doctype: 'Collection Set', name: frm.doc.surgery_set_type },
             callback: function(r) {
                 if (!r.message) return;
                 frm.clear_table('case_items');
@@ -452,7 +452,7 @@ frappe.ui.form.on('Dispatch Case', {
 });
 ```
 
-Note: Adjust `r.message.items`, `row.item`, `row.qty`, and `row.rate` field names to match the actual `Surgery Set Type` child table field names from Doc 11A.
+Note: Adjust `r.message.items`, `row.item`, `row.qty`, and `row.rate` field names to match the actual `Collection Set` child table field names from Doc 11A.
 
 ---
 
@@ -1442,7 +1442,7 @@ Work through this checklist in order after completing all setup steps.
 
 2. **Account names in payment scripts** — The `_get_account_for_method()` helper uses `Cash - Inmed` and `Bank - Inmed`. Verify these match your actual ERPNext account names.
 
-3. **Surgery Set Type child table field names** — The `Load from Template` client script uses `items`, `item`, `qty`, `rate`. Confirm these match the actual field names in `Surgery Set Type` from Doc 11A.
+3. **Collection Set child table field names** — The `Load from Template` client script uses `items`, `item`, `qty`, `rate`. Confirm these match the actual field names in `Collection Set` from Doc 11A.
 
 4. **Stock Entry valuation** — The SE helper does not set `valuation_rate`. ERPNext will use the item's configured rate (FIFO/FEFO moving average). This is correct; do not set manual rates.
 

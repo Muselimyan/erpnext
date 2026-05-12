@@ -2,9 +2,9 @@
 <#
 .SYNOPSIS
     Doc 11A — Surgery Set Setup deployment script.
-    Verifies the 5 required warehouses exist, creates the Surgery Set Type Item (child
-    table) and Surgery Set Type (parent) DocTypes with their fields and permissions,
-    and creates the readiness-warning server script on Surgery Set Type.
+    Verifies the 5 required warehouses exist, creates the Collection Set Item (child
+    table) and Collection Set (parent) DocTypes with their fields and permissions,
+    and creates the readiness-warning server script on Collection Set.
 
 .PARAMETER Mode
     Check  — report current state without making changes (default)
@@ -77,7 +77,7 @@ $RequiredWarehouses = @(
 # 2) DOCTYPES
 # ---------------------------------------------------------------------------
 
-# --- 2a) Child table: Surgery Set Type Item ---
+# --- 2a) Child table: Collection Set Item ---
 $ChildTableFields = @(
     [ordered]@{ fieldname = "item";            fieldtype = "Link";       label = "Item";            options = "Item";                        reqd = 1; in_list_view = 1 },
     [ordered]@{ fieldname = "default_qty";     fieldtype = "Float";      label = "Default Qty";                                              reqd = 1; in_list_view = 1 },
@@ -96,7 +96,7 @@ $ChildTableBody = [ordered]@{
     fields  = $ChildTableFields
 }
 
-# --- 2b) Parent DocType: Surgery Set Type ---
+# --- 2b) Parent DocType: Collection Set ---
 $ParentFields = @(
     [ordered]@{ fieldname = "set_name";         fieldtype = "Data";       label = "Set Name";         reqd = 1; unique = 1; in_list_view = 1 },
     [ordered]@{ fieldname = "set_code";         fieldtype = "Data";       label = "Set Code";         in_list_view = 1 },
@@ -104,7 +104,7 @@ $ParentFields = @(
     [ordered]@{ fieldname = "notes";            fieldtype = "Small Text"; label = "Notes" },
     [ordered]@{ fieldname = "readiness_status"; fieldtype = "Select";     label = "Readiness Status"; options = "`nReady`nShort`nCritical Short"; read_only = 1; in_list_view = 1 },
     [ordered]@{ fieldname = "readiness_note";   fieldtype = "Small Text"; label = "Readiness Note";   read_only = 1 },
-    [ordered]@{ fieldname = "items";            fieldtype = "Table";      label = "Items";            options = "Surgery Set Type Item" }
+    [ordered]@{ fieldname = "items";            fieldtype = "Table";      label = "Items";            options = "Collection Set Item" }
 )
 
 $ParentPermissions = @(
@@ -157,20 +157,20 @@ for row in (doc.items or []):
 if critical_lines:
     doc.readiness_status = "Critical Short"
     doc.readiness_note = "Critical shortages:\n" + "\n".join(critical_lines)
-    frappe.msgprint(doc.readiness_note, title="Surgery Set Type readiness warning")
+    frappe.msgprint(doc.readiness_note, title="Collection Set readiness warning")
 elif missing_lines:
     doc.readiness_status = "Short"
     doc.readiness_note = "Shortages:\n" + "\n".join(missing_lines)
-    frappe.msgprint(doc.readiness_note, title="Surgery Set Type readiness warning")
+    frappe.msgprint(doc.readiness_note, title="Collection Set readiness warning")
 else:
     doc.readiness_status = "Ready"
     doc.readiness_note = ""
 '@
 
 $ServerScript = [pscustomobject]@{
-    name              = "Surgery-Set-Type-validate-readiness"
+    name              = "Collection-Set-validate-readiness"
     script_type       = "DocType Event"
-    reference_doctype = "Surgery Set Type"
+    reference_doctype = "Collection Set"
     doctype_event     = "Before Save"
     event_frequency   = "All"
     allow_guest       = 0
@@ -200,7 +200,7 @@ if ($Mode -eq "Check") {
         }
     }
 
-    foreach ($Dt in @("Surgery Set Type Item", "Surgery Set Type")) {
+    foreach ($Dt in @("Collection Set Item", "Collection Set")) {
         $E = Get-ErpDoc -DocType "DocType" -Name $Dt
         $Report.doctypes += [pscustomobject]@{
             name   = $Dt
@@ -239,30 +239,30 @@ foreach ($W in $RequiredWarehouses) {
     }
 }
 
-# -- Surgery Set Type Item (child table) --
-$ChildDoc = Get-ErpDoc -DocType "DocType" -Name "Surgery Set Type Item"
+# -- Collection Set Item (child table) --
+$ChildDoc = Get-ErpDoc -DocType "DocType" -Name "Collection Set Item"
 if ($null -ne $ChildDoc) {
     if (-not $ChildDoc.istable) {
         # Was created without istable=1; fix it
-        $Updated = (Invoke-ErpRequest -Method Put -Path "/api/resource/DocType/$(Enc 'Surgery Set Type Item')" -Body ([ordered]@{ istable = 1 })).data
+        $Updated = (Invoke-ErpRequest -Method Put -Path "/api/resource/DocType/$(Enc 'Collection Set Item')" -Body ([ordered]@{ istable = 1 })).data
         $Results.doctypes += [pscustomobject]@{ action = "fixed-istable"; name = $Updated.name }
     } else {
-        $Results.doctypes += [pscustomobject]@{ action = "exists"; name = "Surgery Set Type Item" }
+        $Results.doctypes += [pscustomobject]@{ action = "exists"; name = "Collection Set Item" }
     }
 } else {
-    $ChildTableBody.name = "Surgery Set Type Item"
+    $ChildTableBody.name = "Collection Set Item"
     $Created = (Invoke-ErpRequest -Method Post -Path "/api/resource/DocType" -Body $ChildTableBody).data
     $Results.doctypes += [pscustomobject]@{ action = "created"; name = $Created.name }
 }
 Start-Sleep -Seconds 2
 
-# -- Surgery Set Type (parent) —
+# -- Collection Set (parent) —
 # Must be created AFTER the child table exists
-$ParentExists = $null -ne (Get-ErpDoc -DocType "DocType" -Name "Surgery Set Type")
+$ParentExists = $null -ne (Get-ErpDoc -DocType "DocType" -Name "Collection Set")
 if ($ParentExists) {
-    $Results.doctypes += [pscustomobject]@{ action = "exists"; name = "Surgery Set Type" }
+    $Results.doctypes += [pscustomobject]@{ action = "exists"; name = "Collection Set" }
 } else {
-    $ParentDocTypeBody.name = "Surgery Set Type"
+    $ParentDocTypeBody.name = "Collection Set"
     $Created = (Invoke-ErpRequest -Method Post -Path "/api/resource/DocType" -Body $ParentDocTypeBody).data
     $Results.doctypes += [pscustomobject]@{ action = "created"; name = $Created.name }
 }
@@ -294,7 +294,7 @@ foreach ($W in $RequiredWarehouses) {
     $Snapshot.warehouses += [pscustomobject]@{ name = $W.name; exists = ($null -ne $E) }
 }
 
-foreach ($Dt in @("Surgery Set Type Item", "Surgery Set Type")) {
+foreach ($Dt in @("Collection Set Item", "Collection Set")) {
     $E = Get-ErpDoc -DocType "DocType" -Name $Dt
     $Snapshot.doctypes += [pscustomobject]@{ name = $Dt; exists = ($null -ne $E) }
 }

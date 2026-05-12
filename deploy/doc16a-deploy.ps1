@@ -239,7 +239,7 @@ $DispatchCaseBody = [ordered]@{
         [ordered]@{ fieldname="client_location_warehouse";  fieldtype="Link";       label="Client Location Warehouse";   options="Warehouse"; reqd=1 },
         [ordered]@{ fieldname="return_expected";            fieldtype="Check";      label="Return Expected";             default="0" },
         [ordered]@{ fieldname="surgery_date";               fieldtype="Date";       label="Surgery / Delivery Date" },
-        [ordered]@{ fieldname="surgery_set_type";           fieldtype="Link";       label="Item Template";               options="Surgery Set Type" },
+        [ordered]@{ fieldname="surgery_set_type";           fieldtype="Link";       label="Item Template";               options="Collection Set" },
         [ordered]@{ fieldname="status";                     fieldtype="Select";     label="Status";                      options=$StatusOpts; default="Draft"; read_only=1; allow_on_submit=1; in_list_view=1 },
         [ordered]@{ fieldname="notes";                      fieldtype="Small Text"; label="Notes" },
         # Items
@@ -806,7 +806,7 @@ frappe.ui.form.on("Dispatch Case", {
         if (!frm.doc.surgery_set_type) return;
         frappe.call({
             method: "frappe.client.get",
-            args: { doctype: "Surgery Set Type", name: frm.doc.surgery_set_type },
+            args: { doctype: "Collection Set", name: frm.doc.surgery_set_type },
             callback: function(r) {
                 if (!r.message) return;
                 frm.clear_table("case_items");

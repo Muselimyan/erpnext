@@ -506,7 +506,7 @@
                                               "docstatus":  0,
                                               "idx":  27,
                                               "type":  "DocType",
-                                              "link_to":  "Surgery Set Type",
+                                              "link_to":  "Collection Set",
                                               "doc_view":  "List",
                                               "label":  "Surgery Set Types Readiness",
                                               "parent":  "Ops — Reporting Pack",

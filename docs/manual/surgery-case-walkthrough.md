@@ -1,4 +1,4 @@
-# Dispatch Case — Surgery / Return Case Walkthrough
+﻿# Dispatch Case — Surgery / Return Case Walkthrough
 
 **Purpose:** Step-by-step test script to verify the complete unified dispatch flow for a return-expected case (surgery sets, equipment loans, or any dispatch where items are expected to come back). Covers all 14 states. Run as a smoke test after deployment or after any server script changes.
 
@@ -8,7 +8,7 @@
 
 **Prerequisites:**
 - At least one Customer exists
-- At least one **Surgery Set Type** exists with at least one item (optional — you can fill items manually)
+- At least one **Collection Set** exists with at least one item (optional — you can fill items manually)
 - Stock of those items is available in `Main - Inmed`
 - A **Client Location Warehouse** exists linked to the test customer
 - Users exist for each role below
@@ -63,7 +63,7 @@
    - **Return Expected:** **checked** ← critical for this scenario
    - **Client Location Warehouse:** select the client's warehouse (e.g. `Dr. Smith WH - Inmed`)
    - **Surgery Date:** the surgery/delivery date
-   - **Item Template (Surgery Set Type):** select if applicable — click **Load from Template** to auto-fill Case Items
+   - **Item Template (Collection Set):** select if applicable — click **Load from Template** to auto-fill Case Items
 3. In the **Case Items** table, verify or add items:
    - **Item Code, Dispatched Qty, Unit Price** — fill for each item
    - **Discount %:** `0` for the no-discount scenario (see Step 2a if discount needed)

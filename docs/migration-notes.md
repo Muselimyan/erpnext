@@ -1,4 +1,4 @@
-# Migration Notes
+﻿# Migration Notes
 
 Running log of post-migration cleanup tasks, known issues, and data-quality notes.
 Updated after each doc implementation. Human action items are marked **[ ]**.
@@ -299,15 +299,15 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - `Return Pickup In-Transit - Inmed` (leaf, is_group=0)
 - `Returns - Inmed` (leaf, is_group=0)
 
-**DocType — `Surgery Set Type Item`** (child table, custom):
+**DocType — `Collection Set Item`** (child table, custom):
 - Fields: `item` (Link→Item, reqd), `default_qty` (Float, reqd), `uom` (Link→UOM), `group` (Select: Tools/Instruments, Screws, Nails, Plates), `return_behavior` (Select: Expected Return/May Be Used), `is_optional` (Check), `is_critical` (Check), `notes` (Small Text)
 - `istable = 1`; module = Custom
 
-**DocType — `Surgery Set Type`** (parent, custom, autoname by `set_name`):
-- Fields: `set_name` (Data, reqd+unique), `set_code` (Data), `is_active` (Check, default 1), `notes` (Small Text), `readiness_status` (Select read-only: Ready/Short/Critical Short), `readiness_note` (Small Text read-only), `items` (Table → Surgery Set Type Item)
+**DocType — `Collection Set`** (parent, custom, autoname by `set_name`):
+- Fields: `set_name` (Data, reqd+unique), `set_code` (Data), `is_active` (Check, default 1), `notes` (Small Text), `readiness_status` (Select read-only: Ready/Short/Critical Short), `readiness_note` (Small Text read-only), `items` (Table → Collection Set Item)
 - Permissions: `Ops - Inventory` (Read/Write/Create), `Ops - Directors` (Read/Write/Create), `Ops - Delivery` (Read)
 
-**Server Script — `Surgery-Set-Type-validate-readiness`** (DocType Event: Before Save on Surgery Set Type):
+**Server Script — `Surgery-Set-Type-validate-readiness`** (DocType Event: Before Save on Collection Set):
 - Loops over each item row; queries `Bin` for projected stock in `Main - Inmed`.
 - Sets `readiness_status = "Critical Short"` if any `is_critical` item is short.
 - Sets `readiness_status = "Short"` if any non-critical item is short.
@@ -317,7 +317,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 
 ### Pending / To-Do
 - **[ ]** Configure Item masters: serial number tracking ON for tools where individual instruments have unique identity; batch number tracking ON for implants/consumables; expiry date on batches for expiry-tracked items (FEFO).
-- **[ ]** Create real `Surgery Set Type` records for each set the company uses (templates only; actual per-case dispatching is in Doc 12).
+- **[ ]** Create real `Collection Set` records for each set the company uses (templates only; actual per-case dispatching is in Doc 12).
 - **[ ]** Verify `Ops - Inventory` and `Ops - Delivery` roles are assigned to the correct staff before using Set Type editing.
 - **[ ]** `Surgery Case` DocType and full dispatch/return/invoice workflow deferred to Doc 12.
 - **[ ]** `Task-surgery_case` field on Task (Link → Surgery Case) deferred to Doc 12 when Surgery Case DocType exists.
@@ -326,7 +326,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - Deployment script: `deploy/doc11a-deploy.ps1` — idempotent, `-Mode Check` / `-Mode Deploy`.
 - **`istable` vs `is_child_table`**: Frappe's REST API uses the internal field name `istable = 1` for child tables. The GUI label "Is Child Table" maps to the `istable` column. Using `is_child_table` in the POST body is silently ignored and the DocType is created as a regular (non-child) table — blocked the first deploy attempt.
 - **`"Validate"` event removed**: This Frappe version does not accept `"Validate"` as a valid `doctype_event` for Server Scripts. The correct event is `"Before Save"` (runs after built-in validation, before the database write — equivalent behaviour for field-stamping scripts).
-- The `Surgery Set Type Item` child table was initially created without `istable = 1` (wrong field name). The deploy script detects this and auto-fixes it via a PUT with `{ istable: 1 }` on the subsequent run.
+- The `Collection Set Item` child table was initially created without `istable = 1` (wrong field name). The deploy script detects this and auto-fixes it via a PUT with `{ istable: 1 }` on the subsequent run.
 - The readiness script uses `frappe.db.get_value("Bin", ...)` to check projected stock — no `import frappe` needed (global in safe_exec).
 
 ---
@@ -344,7 +344,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - Fields: `item` (Link→Item, reqd), `serial_no` (Data, reqd), `exception_type` (Select: Missing/Damaged/Not Serialized, reqd), `notes` (Small Text)
 
 **DocType — `Surgery Case`** (parent, custom, autoname: `SC-.YYYY.-.#####`):
-- 26 fields including: `client` (Link→Customer), `hospital` (Link→Customer), `hospital_branch` (Data), `client_location_warehouse` (Link→Warehouse, reqd), `doctor_name` (Data), `surgery_date` (Date), `surgery_set_type` (Link→Surgery Set Type), `workflow_state` (Select, read-only), `dispatch_group_id` (Data), `delivery_person` / `return_pickup_delivery_person` (Link→User), `shortage_note` (Long Text, read-only), `packed_scan_log` / `returned_scan_log` (Long Text), 5 Stock Entry link fields (read-only), `sales_invoice` (Link, read-only), 3 Task link fields (read-only), `case_items` (Table→Surgery Case Item), `tool_serial_exceptions` (Table→Surgery Case Serial Exception)
+- 26 fields including: `client` (Link→Customer), `hospital` (Link→Customer), `hospital_branch` (Data), `client_location_warehouse` (Link→Warehouse, reqd), `doctor_name` (Data), `surgery_date` (Date), `surgery_set_type` (Link→Collection Set), `workflow_state` (Select, read-only), `dispatch_group_id` (Data), `delivery_person` / `return_pickup_delivery_person` (Link→User), `shortage_note` (Long Text, read-only), `packed_scan_log` / `returned_scan_log` (Long Text), 5 Stock Entry link fields (read-only), `sales_invoice` (Link, read-only), 3 Task link fields (read-only), `case_items` (Table→Surgery Case Item), `tool_serial_exceptions` (Table→Surgery Case Serial Exception)
 - Permissions: `Ops - Order Accepting` (R/W/Create), `Ops - Inventory` (R/W), `Ops - Delivery` (R/W), `Ops - Returns` (R/W), `Ops - Accounting` (R/W), `Delivery Driver` (R)
 
 **Custom Fields on existing DocTypes:**
@@ -370,7 +370,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 | Closed | System Manager | (terminal) |
 
 **Server Script — `Surgery-Case-before-save`** (DocType Event: Before Save on Surgery Case):
-- On first save in Draft: auto-loads `case_items` from the linked `Surgery Set Type` template.
+- On first save in Draft: auto-loads `case_items` from the linked `Collection Set` template.
 - While in Draft: runs non-blocking stock availability check against `Main - Inmed`, writes `shortage_note`.
 - Auto-creates Delivery Task (kind: "Delivery") when `delivery_person` is set after Dispatch Picking — idempotent.
 - Auto-creates Return Pickup + Return Drop-off Tasks when `return_pickup_delivery_person` is set in "Return Pickup Scheduled" state — idempotent.
@@ -438,7 +438,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 | `RPT — Pricing — Sales Orders With Manual Rate Edits` | Sales Order | — |
 
 **1 Workspace** (`Ops — Reporting Pack`, Public):  
-- 28 shortcuts: all 16 reports + 4 DocType shortcuts for Surgery Case state views + 6 Task queue DocType shortcuts + 2 legacy views (Surgery Set Types, Price Overrides)
+- 28 shortcuts: all 16 reports + 4 DocType shortcuts for Surgery Case state views + 6 Task queue DocType shortcuts + 2 legacy views (Collection Sets, Price Overrides)
 
 ### Warehouse names in SQL
 All queries use `- Inmed` suffix (e.g., `'Main - Inmed'`, `'Clients - Inmed'`), not `- WH` as shown in the doc template.
@@ -457,7 +457,7 @@ Named saved list views cannot be shared across users via the REST API in Frappe 
 - `VIEW — Tasks — Purchase Approval (Open)` — filter: `task_kind = Purchase Approval`
 - `VIEW — Tasks — Write-off Approval (Open)` — filter: `task_kind = Write-off Approval`
 - `Price Overrides — by Client` — Item Price list, filter: `selling=1, customer != ""`
-- `Surgery Set Types — Readiness` — Surgery Set Type list with readiness columns
+- `Collection Sets — Readiness` — Collection Set list with readiness columns
 
 **Workaround**: The `Ops — Reporting Pack` workspace shortcuts include DocType shortcuts with `stats_filter` JSON for the same queues — these are clickable from the workspace and behave like the named views.
 
@@ -496,7 +496,7 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 | Reorder setup (Doc 08A) | ⬜ | Thresholds need per-item review |
 | Debt threshold automation (Doc 09A) | ✅ | Scheduled script deployed |
 | Task system (Doc 10A) | ✅ | Deployed |
-| Surgery Set Type templates (Doc 11A) | ✅ | Deployed |
+| Collection Set templates (Doc 11A) | ✅ | Deployed |
 | Surgery Case workflow (Doc 12A) | ✅ | Deployed |
 | Reporting pack (Doc 13A) | ✅ | Deployed |
 | Staff assigned to operational roles | ⬜ | Pending |

@@ -379,7 +379,7 @@ $WsShortcuts = @(
     [ordered]@{ label="Missing Doctor or Hospital";         type="Report";  link_to="RPT ${EM} Data Quality ${EM} Missing Doctor or Hospital" },
     [ordered]@{ label="Negative Stock";                     type="Report";  link_to="RPT ${EM} Data Quality ${EM} Negative Stock" },
     # --- Catalog ---
-    [ordered]@{ label="Surgery Set Types Readiness";        type="DocType"; link_to="Surgery Set Type"; doc_view="List" }
+    [ordered]@{ label="Collection Sets Readiness";           type="DocType"; link_to="Collection Set"; doc_view="List" }
 )
 
 $WorkspaceBody = [ordered]@{

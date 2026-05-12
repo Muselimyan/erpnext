@@ -1,4 +1,4 @@
-# Doc 11 — Surgery Set Model (How sets are represented)
+﻿# Doc 11 — Surgery Set Model (How sets are represented)
 
 ## 1) Purpose
 Define a model for surgery sets/boxes that guarantees:
@@ -106,17 +106,17 @@ Clarification (based on your operations):
 - The exact composition can vary per surgery case based on the clinical request (example: only certain sizes).
 
 ### 5.2 Set Type vs Set Instance
-- **Surgery Set Type**: the template definition of a set (what it usually contains)
+- **Collection Set**: the template definition of a set (what it usually contains)
 - **Surgery Set Instance / Case**: a specific surgery event for a specific client location/date (with optional hospital/doctor context)
 
 Doc 11 defines the Set Type template. Doc 12 defines the Case/Instance workflow and documents.
 
-## 6) Custom DocType: `Surgery Set Type`
+## 6) Custom DocType: `Collection Set`
 ### 6.1 Purpose
 A reusable template that helps the preparing team build the box consistently.
 
 ### 6.2 Fields (minimum)
-Create a custom DocType: `Surgery Set Type`
+Create a custom DocType: `Collection Set`
 
 Header fields:
 - `set_name` (Data) — required
@@ -124,7 +124,7 @@ Header fields:
 - `is_active` (Check) — default 1
 - `notes` (Small Text) — optional
 
-Child table: `Surgery Set Type Item`
+Child table: `Collection Set Item`
 - `item` (Link → Item) — required
 - `default_qty` (Float) — required
 - `uom` (Link → UOM) — optional (usually derived from item)
@@ -152,7 +152,7 @@ Template shortage rule:
   - the user sees a clear warning listing missing items and missing quantities
 
 Template readiness visibility (recommended):
-- In the Surgery Set Type list, it should be possible to see which templates are currently not fully fillable from inventory.
+- In the Collection Set list, it should be possible to see which templates are currently not fully fillable from inventory.
 
 Important:
 - Because doctors may request “only sizes X/Y/Z”, the template should load a *suggested* list, but the case can remove or add items.
@@ -281,7 +281,7 @@ Doc 12 alignment note:
 ## Checklist (Doc 11 complete when)
 - Warehouses structure exists (`Main - WH`, `Delivery In-Transit - WH`, `Clients - WH`, per-location WH, `Return Pickup In-Transit - WH`, `Returns - WH`)
 - Client Customers exist (at least 1 test client)
-- `Surgery Set Type` DocType exists with child table
+- `Collection Set` DocType exists with child table
 - Item masters are configured with correct tracking:
   - Tools: serial numbers enabled where applicable
   - Consumables/implants: batch numbers enabled, expiry on batches where applicable

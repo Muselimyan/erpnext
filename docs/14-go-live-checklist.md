@@ -1,4 +1,4 @@
-# Doc 14 — Go-Live Readiness Checklist (Functional)
+﻿# Doc 14 — Go-Live Readiness Checklist (Functional)
 
 ## 1) Purpose
 This document is a functional readiness checklist for go-live.
@@ -146,7 +146,7 @@ Confirm you can answer:
 - Clients exceeding debt threshold
 - Open Debt Collection tasks
 - Low stock list grouped by supplier
-- Surgery Set Type readiness (templates that are short on inventory)
+- Collection Set readiness (templates that are short on inventory)
 
 Red-flag readiness:
 - You have at least one “stuck workflow” detector:
@@ -246,7 +246,7 @@ Driver evidence checks:
 - Return Pickup task: drop-off photo required before `Returned to Warehouse`.
 
 Template check:
-- If tested with a Surgery Set Type template, confirm **Load from Template** on the Dispatch Case auto-fills Case Items from the template.
+- If tested with a Collection Set template, confirm **Load from Template** on the Dispatch Case auto-fills Case Items from the template.
 
 ### 9.7 Scenario G — Permanent on-site set replenishment (if used)
 Pass criteria:

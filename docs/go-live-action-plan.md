@@ -1,4 +1,4 @@
-# Go-Live Action Plan
+﻿# Go-Live Action Plan
 
 Distilled from `migration-notes.md`. Only open items are listed here. Items that are completed or that have been formally superseded are omitted.
 
@@ -97,7 +97,7 @@ These cannot be deployed via the REST API (per-user saved views) or require ERPN
 | `Items — Active Stock` | Item list | Disabled = No, Is Stock Item = Yes | Purchasing |
 | `Reorder — Main - Inmed` | Stock Reorder tool | Warehouse = `Main - Inmed` | Purchasing Lead |
 | `Price Overrides — by Client` | Item Price list | Price List = Standard Selling, Customer ≠ blank | Accounting, Directors |
-| `Surgery Set Types — Readiness` | Surgery Set Type list | (all active, used as Dispatch Case templates) | Ops - Inventory |
+| `Collection Sets — Readiness` | Collection Set list | (all active, used as Dispatch Case templates) | Ops - Inventory |
 | Directors wallboard Task views (5) | Task list | per role / status filters | Directors TV |
 | Dispatch Case state views | Dispatch Case list | `status` = Confirmed / Packed / In Transit / Awaiting Return Pickup / Return In Transit / Invoice Pending | Ops leads |
 | Task queue views (6) | Task list | per `task_kind` + status not Completed/Cancelled | per team |
