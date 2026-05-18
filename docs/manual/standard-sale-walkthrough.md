@@ -1,4 +1,4 @@
-# Dispatch Case — Standard Sale (No Return) Walkthrough
+﻿# Dispatch Case — Standard Sale (No Return) Walkthrough
 
 **Purpose:** Step-by-step test script to verify the complete unified dispatch flow for a standard sale (no items expected to return). Run as a smoke test after deployment or after any server script changes.
 
@@ -31,7 +31,7 @@
 
 **Login as:** `Ops - Order Accepting`
 
-1. Open the **Task** list and click **New**.
+1. Search for `Task`, open the **Task** list, and click **New**.
 2. Fill in:
    - **Task Kind:** `Order entry`
    - **Subject:** `Order: [Customer name] — [brief description]`
@@ -86,7 +86,7 @@
 
 **Login as:** `Ops - Directors`
 
-1. Open the **Task** list and filter: **Task Kind = Discount Approval**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Discount Approval**, **Status = Open**.
 2. Open the Discount Approval task for your case.
 3. Review the discount. Set **Approval Outcome** to `Approved`.
 4. Change Status to `Completed` and Save.
@@ -106,7 +106,7 @@
 
 **Login as:** `Ops - Inventory`
 
-1. Open the **Task** list, filter: **Task Kind = Pack / prepare items**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Pack / prepare items**, **Status = Open**.
 2. Find the task with Subject `Pack: DC-YYYY-NNNNN — [Customer]`.
 
 **✅ Expected task fields:**
@@ -135,7 +135,7 @@
 
 **Login as:** `Delivery Driver`
 
-1. Open the **Task** list, filter: **Task Kind = Delivery**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Delivery**, **Status = Open**.
 2. Find the task `Deliver: DC-YYYY-NNNNN — [Customer]`.
 
 ### Sub-step 4a — Mark as Picked Up
@@ -171,7 +171,7 @@
 
 **Login as:** `Ops - Accounting`
 
-1. Open the **Task** list, filter: **Task Kind = Invoice preparation / create invoice**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Invoice preparation / create invoice**, **Status = Open**.
 2. Find the task `Invoice: DC-YYYY-NNNNN — [Customer]`.
 3. Open the linked **Sales Invoice** (in Draft).
 4. Verify:
@@ -196,7 +196,7 @@
 
 **Login as:** `Ops - Finance`
 
-1. Open the **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
 2. Find the task for your customer.
 3. On the task, fill in the **Record Payment** section:
    - **New Payment Amount:** the amount received
@@ -231,7 +231,7 @@ Open the Dispatch Case `DC-YYYY-NNNNN` and verify:
 | Case Items — used_qty | = dispatched_qty for all rows |
 | outstanding_amount | 0 |
 
-Go to **Stock Ledger** and filter by test item. Confirm the full movement chain:
+Search for `Stock Ledger` and open the **Stock Ledger** report and filter by test item. Confirm the full movement chain:
 - Deduction from `Main - Inmed` (Pack SE) ✓
 - Addition to `Delivery In-Transit - Inmed` (Pack SE) ✓
 - Transfer to Client WH (Delivery SE) ✓

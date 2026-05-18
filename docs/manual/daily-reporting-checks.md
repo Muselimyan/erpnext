@@ -1,4 +1,4 @@
-# Daily Reporting Checks — Morning Routine by Role
+﻿# Daily Reporting Checks — Morning Routine by Role
 
 **Purpose:** Reference card for each role's daily checks in ERPNext. Run these every morning (or at the start of each shift) to catch problems early and keep operations moving.
 
@@ -13,7 +13,7 @@
 ### Check 1 — Pending approvals
 *Time: 2–5 minutes*
 
-Open **Task** list, filter: **Status = Open**, then check each approval type:
+Search for `Task` and open the **Task** list, filter: **Status = Open**, then check each approval type:
 
 - **Task Kind = Discount Approval** — Dispatch Cases waiting for your approval on discounted pricing. Act on these first: an unapproved case is blocking the whole dispatch chain.
 - **Task Kind = Purchase Approval** — Purchase Orders waiting for approval. Check supplier, quantities, and reason before approving.
@@ -26,7 +26,7 @@ Open **Task** list, filter: **Status = Open**, then check each approval type:
 ### Check 2 — Clients over debt threshold
 *Time: 3–5 minutes*
 
-Open **Accounts Receivable** report (Accounts → Reports → Accounts Receivable):
+Search for `Accounts Receivable` and open the **Accounts Receivable** report (Accounts → Reports → Accounts Receivable):
 - Filter by Party Type = Customer
 - Sort by Outstanding Amount descending
 - Compare each client's outstanding balance against their `Debt Threshold (AMD)` on their Customer record
@@ -38,7 +38,7 @@ Any client where `Outstanding Amount > Debt Threshold` needs attention — conta
 ### Check 3 — Stuck Dispatch Cases (operational WIP)
 *Time: 3–5 minutes*
 
-Open **Dispatch Case** list. Filter: **Status ≠ Closed, Status ≠ Cancelled**. Sort by creation date ascending (oldest first).
+Search for `Dispatch Case` and open the **Dispatch Case** list. Filter: **Status ≠ Closed, Status ≠ Cancelled**. Sort by creation date ascending (oldest first).
 
 Watch for cases sitting in the same status for longer than expected:
 
@@ -58,7 +58,7 @@ Watch for cases sitting in the same status for longer than expected:
 ### Check 4 — Pending Distribute Payment tasks
 *Time: 1–2 minutes*
 
-Open **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
 
 These tasks represent received client payments that still need physical handling (cash deposited, transfer confirmed). Each one should be completed promptly by the Finance team.
 
@@ -69,7 +69,7 @@ These tasks represent received client payments that still need physical handling
 ### Check 5 — Open Debt Collection tasks summary
 *Time: 2–3 minutes*
 
-Open **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
 
 Review how many clients have active collection tasks and what the outstanding balances are. Focus on:
 - Clients with the highest outstanding amounts
@@ -84,7 +84,7 @@ Review how many clients have active collection tasks and what the outstanding ba
 ### Check 1 — Delivery in-transit (outgoing)
 *Time: 2 minutes*
 
-Open **Stock Balance** report (Stock → Reports → Stock Balance):
+Search for `Stock Balance` and open the **Stock Balance** report (Stock → Reports → Stock Balance):
 - Filter Warehouse: `Delivery In-Transit - Inmed`
 
 Any items showing here are packed and with delivery, not yet delivered. Items sitting here more than 1–2 days are a problem.
@@ -120,7 +120,7 @@ Items here are returned to the warehouse but not yet inspected/processed. This i
 ### Check 4 — Pack tasks queue
 *Time: 1 minute*
 
-Open **Task** list, filter: **Task Kind = Pack / prepare items**, **Status = Open**.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Pack / prepare items**, **Status = Open**.
 
 Each open Pack task corresponds to a Dispatch Case in `Confirmed` status waiting to be packed. Work through these in priority order (check surgery date on the linked case).
 
@@ -129,7 +129,7 @@ Each open Pack task corresponds to a Dispatch Case in `Confirmed` status waiting
 ### Check 5 — Near-expiry stock risk
 *Time: 2–3 minutes, weekly or when prompted*
 
-Open **Batch-Wise Balance History** report (Stock → Reports → Batch-Wise Balance History):
+Search for `Batch-Wise Balance History` and open the **Batch-Wise Balance History** report (Stock → Reports → Batch-Wise Balance History):
 - Filter Warehouse: `Main - Inmed`
 - Review batches with expiry dates within the next 30 days
 
@@ -146,7 +146,7 @@ Items in this window need FEFO priority (pick them first for dispatch) or a writ
 ### Check 1 — Reorder list
 *Time: 5–10 minutes*
 
-Open **Itemwise Recommended Reorder Level** report (Stock → Reports → Itemwise Recommended Reorder Level):
+Search for `Itemwise Recommended Reorder Level` and open the **Itemwise Recommended Reorder Level** report (Stock → Reports → Itemwise Recommended Reorder Level):
 - Filter Warehouse: `Main - Inmed`
 
 Items where Current Stock ≤ Reorder Level need action. Group by Supplier column to identify which suppliers need a PO today.
@@ -158,7 +158,7 @@ Items where Current Stock ≤ Reorder Level need action. Group by Supplier colum
 ### Check 2 — Open Purchase Orders (ordered but not yet received)
 *Time: 2–3 minutes*
 
-Open **Purchase Order** list, filter: **Status = Submitted** (i.e. not fully received).
+Search for `Purchase Order` and open the **Purchase Order** list, filter: **Status = Submitted** (i.e. not fully received).
 
 For each open PO:
 - Is the expected delivery date approaching or overdue?
@@ -171,7 +171,7 @@ For each open PO:
 ### Check 3 — Purchase Approval tasks (pending your action)
 *Time: 1 minute*
 
-Open **Task** list, filter: **Task Kind = Purchase Approval**, **Status = Open**.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Purchase Approval**, **Status = Open**.
 
 These are your draft POs waiting for Director approval. Follow up with the Director if any have been waiting more than 1 day.
 
@@ -184,11 +184,11 @@ These are your draft POs waiting for Director approval. Follow up with the Direc
 ### Check 1 — Dispatch Cases awaiting invoice
 *Time: 3–5 minutes*
 
-Open **Dispatch Case** list, filter: **Status = Invoice Pending**.
+Search for `Dispatch Case` and open the **Dispatch Case** list, filter: **Status = Invoice Pending**.
 
 Each case here has an auto-created draft Sales Invoice waiting to be reviewed and submitted.
 
-Open **Task** list, filter: **Task Kind = Invoice preparation / create invoice**, **Status = Open** — work through these tasks.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Invoice preparation / create invoice**, **Status = Open** — work through these tasks.
 
 **Action:** Open each task → open the linked draft Sales Invoice → verify quantities and prices → submit. See `standard-sale-walkthrough.md` Step 5 or `surgery-case-walkthrough.md` Step 11 for details.
 
@@ -197,7 +197,7 @@ Open **Task** list, filter: **Task Kind = Invoice preparation / create invoice**
 ### Check 2 — Accounts Receivable aging
 *Time: 3–5 minutes*
 
-Open **Accounts Receivable** report (Accounts → Reports → Accounts Receivable):
+Search for `Accounts Receivable` and open the **Accounts Receivable** report (Accounts → Reports → Accounts Receivable):
 - Filter Party Type: Customer
 - Review the aging buckets: 0–30, 31–60, 61–90, 90+ days
 
@@ -221,7 +221,7 @@ Check the **Batch-Wise Balance History** for `Main - Inmed` batches expiring wit
 ### Check 1 — Open Debt Collection tasks
 *Time: 3–5 minutes*
 
-Open **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
 
 For each task:
 - Has any payment come in since last check?
@@ -233,7 +233,7 @@ For each task:
 ### Check 2 — Distribute Payment tasks
 *Time: 2 minutes*
 
-Open **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
+Search for `Task` and open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
 
 Each task here is a payment that was recorded in the system but the physical action (depositing cash, confirming transfer) has not been confirmed as done. Complete these promptly.
 
@@ -242,7 +242,7 @@ Each task here is a payment that was recorded in the system but the physical act
 ### Check 3 — Unallocated customer advances
 *Time: 2 minutes, weekly*
 
-Open **Accounts Receivable** report and check for clients who have unallocated advances (credit balance). If a client shows as owing money but also has unallocated credit, the credit should be allocated to reduce the net outstanding.
+Search for `Accounts Receivable` and open the **Accounts Receivable** report and check for clients who have unallocated advances (credit balance). If a client shows as owing money but also has unallocated credit, the credit should be allocated to reduce the net outstanding.
 
 ---
 

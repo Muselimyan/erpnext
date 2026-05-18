@@ -1,6 +1,86 @@
-# Operations Manual Index
+﻿# ERPNext Operations Testing Manual
 
-**Purpose:** Master list of all step-by-step operation walkthroughs, ordered by importance. Each entry explains who uses it, how often, and what it covers.
+**Purpose:** Use this file as the main testing roadmap for the ERPNext setup. It tells you which manual to open, what business process you are testing, which ERPNext screens must be searchable, which role/user should perform the test, and what result proves that the setup works.
+
+---
+
+## How to use this manual during testing
+
+Do not read every file from top to bottom before starting. Test one business flow at a time.
+
+For each test:
+
+1. Open the manual file shown in the **File** column.
+2. Login as a test/example user with the role shown in the **Role/user** column.
+3. Search ERPNext for the exact screen names shown in the **ERPNext screens to confirm first** column.
+4. If a screen is missing, stop and record it as a permission/setup blocker.
+5. Complete the steps in the manual.
+6. Compare the result with the **Pass condition** column.
+
+---
+
+## Fast testing order
+
+Use this order to test the new ERPNext setup quickly:
+
+| Order | File | What you are testing | Role/user | ERPNext screens to confirm first | Pass condition |
+|---|---|---|---|---|---|
+| 1 | `new-supplier-setup.md` | Supplier master data can be created and used for buying | `Ops - Purchasing` | `Supplier`, `Contact`, `Payment Terms Template`, `Item` | Supplier exists, has contact/payment terms, and linked items can be used on a Purchase Order |
+| 2 | `new-item-setup.md` | A product can be created with supplier, UOM, tracking, and price | `Ops - Inventory` / `Ops - Accounting` | `Item`, `Item Group`, `UOM`, `Item Price`, `Supplier` | Item saves successfully and is ready for purchase/sale testing |
+| 3 | `new-customer-onboarding.md` | Customer and client warehouse can be created | `Ops - Order Creating`, `Ops - Inventory`, `Ops - Accounting` | `Customer`, `Warehouse` | Customer is active/non-provisional and warehouse exists under `Clients - Inmed` |
+| 4 | `purchase-walkthrough.md` | Buying flow works end-to-end | `Ops - Purchasing`, `Ops - Directors`, `Ops - Inventory`, `Ops - Accounting` | `Purchase Order`, `Task`, `Purchase Receipt`, `Landed Cost Voucher`, `Purchase Invoice`, `Payment Entry` | Purchase Order is approved, goods are received, landed cost/invoice are recorded |
+| 5 | `standard-sale-walkthrough.md` | Simple sale with no return works | `Ops - Order Accepting`, `Ops - Order Creating`, `Ops - Inventory`, `Delivery Driver`, `Ops - Accounting` | `Task`, `Dispatch Case`, `Stock Entry`, `Delivery Note`, `Sales Invoice` | Case moves through delivery and invoicing without return steps |
+| 6 | `surgery-case-walkthrough.md` | Full return-expected case works | Order, Inventory, Driver, Returns, Accounting, Finance roles | `Task`, `Dispatch Case`, `Stock Entry`, `Sales Invoice`, `Payment Entry` | Case completes dispatch, return, inspection, restock, invoice, and payment/debt steps |
+| 7 | `debt-collection-and-payment.md` | Finance can record customer payment and close debt | `Ops - Finance` | `Task`, `Payment Entry`, `Accounts Receivable`, `Dispatch Case` | Payment reduces outstanding amount and closes the case when fully paid |
+
+Use these only when the matching situation happens:
+
+- `discount-approval-walkthrough.md` — only when testing discounted Dispatch Cases.
+- `supplier-prepayment-allocation.md` — only when testing advance supplier payments.
+- `stock-adjustment-writeoff.md` — only when testing stock count corrections, expired goods, or damaged goods.
+- `cancellation-and-corrections.md` — only when testing mistakes and corrections.
+- `daily-reporting-checks.md` — use after test transactions exist, to confirm reports and task queues.
+- `delivery-driver-guide.md` — use for training/testing the Delivery Driver role only.
+- `collection-set-setup.md` — use before surgery case testing if Collection Sets are missing or need updates.
+
+---
+
+## Before testing with role users
+
+When a manual says **Login as:** `Ops - Purchasing`, `Ops - Inventory`, or another role, it means login as a test/example user that has that role. The username does not need to match the role name.
+
+Before continuing each flow, confirm that the test user can search for and open the main ERPNext screen named in the step. Search for the exact DocType/report/tool name, such as `Supplier`, `Item`, `Customer`, `Warehouse`, `Purchase Order`, `Task`, or `Stock Balance`.
+
+If the expected screen does not appear in search, stop and record it as a setup/permission blocker. Do not spend time trying to work around it inside the walkthrough. A System Manager should check the user's role assignment, Role Permission Manager settings, and any User Permission restrictions.
+
+Known setup items that may affect testing:
+
+- `Ops - Purchasing` must have access to `Supplier` before `new-supplier-setup.md` can be tested as the purchasing user.
+- `Ops - Inventory` must have create/write access to `Item`, `Item Group`, `Item Attribute`, and `UOM` before `new-item-setup.md` can be tested as the inventory user.
+- Current ERPNext Supplier Groups are `Distributor`, `Local`, `Raw Material`, `Services`, `Pharmaceutical`, `Hardware`, and `Electrical`. Do not use old documentation names such as `Manufacturers`, `Distributors`, or `Local Vendors` unless those groups are created later.
+- Current supplier master data for `ZMD` and `CHUNLI` is ready for purchasing tests: Supplier Group = `Distributor`, Default Currency = `USD`, Payment Terms = `Prepayment 100%`.
+- `Payment Terms Template` records `Prepayment 100%` and `Prepayment 50/50` exist.
+- Existing item prices may still be empty, so selling/purchase tests may require creating test `Item Price` records first.
+- Existing item batch/expiry/serial tracking may not be finalized, so use a controlled test item when testing stock receipt or dispatch.
+- The real client warehouse group name is `Clients - Inmed`.
+
+---
+
+## What to write down when something fails
+
+When a test does not work, record the issue in this format:
+
+| Field | What to write |
+|---|---|
+| Manual file | Example: `new-supplier-setup.md` |
+| Step number | Example: Step 1 |
+| Logged-in user | Email/username of the test user |
+| Expected screen/action | Example: Search `Supplier`, open **Supplier** list, click **New** |
+| What actually happened | Example: only supplier performance report appeared |
+| Likely category | Permission, missing setup data, script error, unclear manual, or user mistake |
+| Next action | Example: System Manager must check `Supplier` permissions for `Ops - Purchasing` |
+
+This prevents testing from becoming confusing. If a permission/setup blocker appears, do not spend time trying random screens.
 
 ---
 
@@ -29,7 +109,7 @@
 **Status:** ✅ Written
 **Who:** `Ops - Purchasing`
 **Frequency:** Daily or weekly scan
-**What it covers:** How to open the ERPNext reorder report, interpret the reorder list, group items by supplier, build a Draft Purchase Order per supplier, and hand off to the director approval flow (Doc 07). Prevents stockouts and ensures the purchasing team has a repeatable daily routine.
+**What it covers:** How to search for `Itemwise Recommended Reorder Level` and open the ERPNext reorder report, interpret the reorder list, group items by supplier, build a Draft Purchase Order per supplier, and hand off to the director approval flow (Doc 07). Prevents stockouts and ensures the purchasing team has a repeatable daily routine.
 
 ---
 

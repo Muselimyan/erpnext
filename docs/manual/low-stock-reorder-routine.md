@@ -1,4 +1,4 @@
-# Low-Stock Check and Reorder Routine
+﻿# Low-Stock Check and Reorder Routine
 
 **Purpose:** Daily/weekly routine for the Purchasing team to check what is low in stock, decide what to order, and build Draft Purchase Orders ready for director approval. This is the operational bridge between ERPNext's reorder signals and the formal purchase flow (Doc 07).
 
@@ -31,11 +31,11 @@ For the approval and submission steps, follow the **Purchase Walkthrough** (`pur
 
 **Login as:** `Ops - Purchasing`
 
-1. Use the search bar (top of screen) to open **Reorder Report** or navigate to:
-   - **Stock** → **Reports** → **Itemwise Recommended Reorder Level**
+1. Search for `Itemwise Recommended Reorder Level` and open the **Itemwise Recommended Reorder Level** report.
+   - Alternative path: **Stock** → **Reports** → **Itemwise Recommended Reorder Level**
    - Alternatively: **Stock** → **Reports** → **Stock Projected Qty** (gives a broader view including open POs)
 
-The primary tool for daily reorder decisions is **Itemwise Recommended Reorder Level** or the built-in **Stock → Reorder** tool. Use whichever your team has been configured to use.
+The primary report for daily reorder decisions is **Itemwise Recommended Reorder Level**. If your ERPNext setup uses the built-in **Stock Reorder** tool instead, search for `Stock Reorder` and follow the saved team view.
 
 **What each column means:**
 
@@ -93,7 +93,7 @@ For each supplier that needs a PO:
 
 **Login as:** `Ops - Purchasing`
 
-1. Open **Purchase Order** and click **New**.
+1. Search for `Purchase Order`, open the **Purchase Order** list, and click **New**.
 2. Fill in the header:
    - **Supplier:** the supplier for this batch of items
    - **Schedule Date:** your best estimate of when goods will arrive (based on usual lead time)
@@ -143,16 +143,16 @@ Once a week, go beyond the immediate reorder signals:
 Some items move slowly but eventually hit the threshold — catch them before they become urgent.
 
 ### Review items recently used in surgery cases
-After a surgery case is closed and stock is consumed, check if the used items have dipped below threshold. The standard reorder report will show this automatically, but it is worth a deliberate scan after any large surgery case week.
+After a surgery case is closed and stock is consumed, check whether the used items have dipped below threshold. Search for `Itemwise Recommended Reorder Level` and open the **Itemwise Recommended Reorder Level** report; it should show items below their reorder level automatically.
 
 ### Check items currently at client locations
 Items dispatched to a client but not yet returned (awaiting return, in transit) are company-owned but not usable. If you expect a high return rate for an item, factor that into your reorder decision — you may not need to buy as much.
 
-Open **Stock Balance** report → filter by warehouse `Clients - Inmed` (group) to see what is out with clients.
+Search for `Stock Balance` and open the **Stock Balance** report → filter by warehouse `Clients - Inmed` (group) to see what is out with clients.
 
 ### Review and adjust thresholds (purchasing lead only)
 If an item's reorder threshold no longer reflects reality (demand has increased, lead times have changed):
-1. Open the **Item** record
+1. Search for `Item`, open the **Item** list, and open the item record
 2. Go to the **Reorder Levels** tab
 3. Adjust the Reorder Level (Min) and/or Reorder Qty values
 4. Save
@@ -176,8 +176,8 @@ Threshold changes must be traceable — note the reason in the Item's Notes or i
 
 | Symptom | Likely cause |
 |---|---|
-| Item not appearing on reorder report | Reorder Level not set on the Item → open Item → Reorder Levels tab and add a row |
-| Supplier column blank on reorder report | Item Supplier table is empty → open Item → Purchasing tab and add the supplier |
+| Item not appearing on reorder report | Reorder Level not set on the Item → search for `Item`, open the item record, go to Reorder Levels tab, and add a row |
+| Supplier column blank on reorder report | Item Supplier table is empty → search for `Item`, open the item record, go to Purchasing tab, and add the supplier |
 | Cannot add item to PO (supplier mismatch error) | Item's default supplier does not match the PO's Supplier field |
 | PO shows supplier A but item belongs to supplier B | Each item must have exactly one supplier; fix the Item Supplier table |
 | Stock shows in `Main - Inmed` but items cannot be picked | Check if there are pending Dispatch Cases consuming that stock — confirm with the Inventory team |

@@ -1,4 +1,4 @@
-# Renamed — see collection-set-setup.md
+﻿# Renamed — see collection-set-setup.md
 
 This file has been renamed. See `collection-set-setup.md` for the current version.
 
@@ -43,7 +43,7 @@ A Surgery Set Type also shows a **Readiness Status** — the system checks wheth
 
 **Login as:** `Ops - Inventory`
 
-1. Open **Surgery Set Type** (use the search bar) and click **New**.
+1. Search for `Surgery Set Type`, open the **Surgery Set Type** list, and click **New**.
 2. Fill in the header:
    - **Set Name:** a clear, descriptive name — e.g. `Ortho Basic Set`, `Spine Fusion Set — Large`, `ENT Endoscopy Kit`
    - **Set Code:** a short internal code for quick reference — e.g. `ORTHO-BASIC`, `SPINE-LG`, `ENT-ENDO` (optional but recommended)
@@ -102,7 +102,7 @@ When a product line changes (new item replaces an old one, quantities are revise
 
 **Login as:** `Ops - Inventory`
 
-1. Open the **Surgery Set Type** record.
+1. Search for `Surgery Set Type`, open the **Surgery Set Type** list, and open the record.
 2. Make your changes:
    - **Add a new item:** click Add Row in the Items table
    - **Remove an item:** delete the row (use the row-level delete button)
@@ -132,7 +132,7 @@ Do **not** delete Surgery Set Types — they may be referenced in historical Dis
 
 Before a period of heavy surgical activity (e.g. a week with many scheduled surgeries):
 
-1. Open the **Surgery Set Type** list.
+1. Search for `Surgery Set Type` and open the **Surgery Set Type** list.
 2. Check the **Readiness Status** column for each active template.
 3. Any template showing `Short` or `Critical Short` needs purchasing attention.
 4. For short items: cross-reference with the **Reorder List** (see `low-stock-reorder-routine.md`) and initiate a Purchase Order if needed.

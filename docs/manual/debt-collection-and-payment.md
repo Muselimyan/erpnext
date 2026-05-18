@@ -1,4 +1,4 @@
-# Debt Collection and Client Payment Walkthrough
+﻿# Debt Collection and Client Payment Walkthrough
 
 **Purpose:** Standalone guide for the Finance team on how to record payments received from clients, track outstanding balances, and handle the Distribute Payment task. This flow is triggered automatically after a Sales Invoice is submitted for any Dispatch Case with a non-zero outstanding balance.
 
@@ -34,7 +34,7 @@
 
 **Login as:** `Ops - Finance`
 
-1. Open the **Task** list.
+1. Search for `Task` and open the **Task** list.
 2. Filter: **Task Kind = Debt Collection**, **Status = Open**.
 3. Find the task for the customer you have received payment from.
    - The task Subject follows the pattern: `Collect payment: [Customer Name]`
@@ -72,7 +72,7 @@ After each payment is recorded, a **Distribute Payment task** is automatically c
 
 **Login as:** `Ops - Finance`
 
-1. Open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
 2. Find the task related to this payment.
 3. Perform the physical action:
    - **Cash:** count and deposit the cash amount
@@ -106,7 +106,7 @@ When the total outstanding balance for the customer reaches **zero**:
 - No manual action required to close the task
 
 **How to confirm a case is fully closed:**
-1. Open the **Dispatch Case**
+1. Search for `Dispatch Case`, open the **Dispatch Case** list, and open the case
 2. Confirm Status = `Closed` and `outstanding_amount` = 0
 3. Confirm the Sales Invoice shows Paid = full amount, Outstanding = 0
 
@@ -116,8 +116,8 @@ When the total outstanding balance for the customer reaches **zero**:
 
 To see everything a client currently owes across all cases and invoices:
 
-1. Open the **Accounts Receivable** report:
-   - Go to **Accounts** → **Reports** → **Accounts Receivable**
+1. Search for `Accounts Receivable` and open the **Accounts Receivable** report:
+   - Alternative path: **Accounts** → **Reports** → **Accounts Receivable**
 2. Filter: **Party Type = Customer**, **Party = [customer name]**
 3. The report shows all open Sales Invoices with their outstanding amounts and ages
 

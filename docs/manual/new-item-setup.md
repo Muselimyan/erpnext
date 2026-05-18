@@ -1,10 +1,16 @@
-# New Item Setup Walkthrough
+﻿# New Item Setup Walkthrough
 
 **Purpose:** Step-by-step guide for adding a new product to the ERPNext item catalog so it is ready for purchasing, receiving, and dispatch. Run this whenever a new product line is introduced or a new variant family is needed.
 
 **Estimated time:** 15–45 minutes depending on whether variants are needed
 
 **Use case:** InMED sources a new implant, instrument, or consumable. Before it can be purchased or dispatched, it must exist in the system with the correct tracking settings, UOM, supplier, and price.
+
+**What this test proves:** Inventory and accounting users can create or verify an Item that is usable in Purchase Orders, stock receipts, dispatch cases, and invoices.
+
+**ERPNext screens used:** `Item`, `Item Group`, `UOM`, `Supplier`, `Item Price`.
+
+**Pass condition:** The Item saves successfully, has the correct tracking/UOM/supplier/price setup, and can be selected in later purchasing or dispatch tests.
 
 **Prerequisites:**
 - The Item Group for this product category already exists
@@ -48,12 +54,16 @@ Answer these questions before creating the item:
 
 **Login as:** `Ops - Inventory`
 
-1. Open **Item** and click **New**.
+**Why this matters:** Every stock, purchase, dispatch, and invoice transaction depends on the Item master. Wrong Item setup causes errors later in receiving, pricing, stock tracking, and reports.
+
+1. Search for `Item`, open the **Item** list, and click **New**.
+   - If you do not see the **Item** DocType, or you can open it but cannot click **New** or **Save**, stop here: the test user is missing Item master permissions. Ask a System Manager to check `Item`, `Item Group`, `Item Attribute`, and `UOM` permissions for `Ops - Inventory`, or test this setup step with a System Manager user.
 2. Fill in the core fields:
    - **Item Code:** use the internal SKU (must be stable — do not change after it is used in transactions)
    - **Item Name:** follow the naming convention: `[Brand] — [Product Name] — [Key Spec]`
      - Example: `Stryker — Bone Screw — 3.5mm x 20mm`
    - **Item Group:** select the correct category (e.g. `Implants`, `Instruments / Tools`, `Consumables / Disposables`)
+     - If the expected Item Group does not exist, stop and ask a System Manager or inventory lead to confirm the correct group. Do not create a new group unless it is part of the approved item structure.
    - **Stock UOM:** the unit you physically count and pick (usually `Nos` for implants/instruments; `Box` for bulk consumables that are never broken)
    - **Pack Breaking Policy:** `Pack-breakable` or `Never break packs` (required field — see decision above)
 3. Click **Save** (keep as Draft while filling the remaining sections below).
@@ -63,6 +73,8 @@ Answer these questions before creating the item:
 ## Step 2 — Set tracking flags
 
 On the same Item form, scroll to the **Inventory** section:
+
+**Why this matters:** Tracking settings must be correct before real stock transactions are posted. After transactions exist, changing batch/serial tracking can become difficult or unsafe.
 
 **For batch + expiry tracked items (implants, consumables):**
 - Check **Has Batch No** ✓
@@ -99,6 +111,8 @@ This means: on Purchase Receipts you can enter `2 Box` and ERPNext will book `20
 
 Every item must have exactly one supplier (Doc 07 policy).
 
+**Why this matters:** Purchase Orders are validated by supplier. If an Item is linked to the wrong Supplier, it will not be allowed on the intended Purchase Order.
+
 1. On the Item form, scroll to the **Purchasing** tab or the **Supplier** section.
 2. In the **Supplier** table, click **Add Row**:
    - **Supplier:** select the supplier for this item
@@ -126,7 +140,10 @@ These fields are used to auto-fill the import duty charge when creating a Landed
 
 The selling price goes into the **Standard Selling** price list.
 
-1. Open **Item Price** (use global search) and click **New**, or open it from the Item's **Sales** section via the **Sales Price** shortcut.
+**Why this matters:** Selling flows need a price source. If Item Price is missing, staff may need to type prices manually on Dispatch Cases, which increases testing time and risk of mistakes.
+
+1. Search for `Item Price`, open the **Item Price** list, and click **New**.
+   - If `Item Price` is not visible, stop and ask a System Manager to check whether `Ops - Inventory` or `Ops - Accounting` has Item Price access.
 2. Fill in:
    - **Item Code:** this item
    - **Price List:** `Standard Selling`
@@ -155,7 +172,7 @@ The selling price goes into the **Standard Selling** price list.
 *Only relevant for product families with multiple sizes/configurations (e.g. screws by diameter + length).*
 
 ### If the template already exists:
-1. Open the **Item Template** (e.g. `SCREW-BONE-3.5MM-TPL`).
+1. Search for `Item`, open the **Item** list, and open the template item (e.g. `SCREW-BONE-3.5MM-TPL`).
 2. Click **Create Variants** (button at the top of the form).
 3. Select the attribute values for the new variant (e.g. Diameter = `4.0mm`, Length = `25mm`).
 4. Click **Create**.
@@ -179,7 +196,7 @@ Before using the item in a purchase or dispatch:
 
 | Check | How |
 |---|---|
-| Item saves without error | Open item → confirm no missing required fields |
+| Item saves without error | Search for `Item`, open the item record, and confirm no missing required fields |
 | Pack Breaking Policy is filled | Visible on item form |
 | Tracking flags match intent | `Has Batch No`, `Has Expiry Date`, `Has Serial No` as planned |
 | UOM conversion rows exist (if pack-breakable) | Item form → UOM Conversions table |

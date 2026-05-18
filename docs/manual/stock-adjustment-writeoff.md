@@ -1,4 +1,4 @@
-# Stock Adjustment and Write-Off Walkthrough
+﻿# Stock Adjustment and Write-Off Walkthrough
 
 **Purpose:** Guide for the Inventory team on how to correct stock quantities when the physical count does not match the system, and how to write off items that are damaged, expired, or otherwise unfit for sale. Covers the governance rule requiring director approval before significant write-offs are executed.
 
@@ -53,7 +53,7 @@ This record is important for audit and for the Director review.
 
 **Login as:** `Ops - Inventory`
 
-1. Open **Stock Reconciliation** and click **New**.
+1. Search for `Stock Reconciliation`, open the **Stock Reconciliation** list, and click **New**.
 2. Fill in:
    - **Purpose:** `Stock Reconciliation`
    - **Posting Date:** today's date
@@ -76,7 +76,7 @@ This record is important for audit and for the Director review.
 
 Reducing stock (writing down inventory) has financial and operational consequences. Director visibility is required.
 
-1. Open **Task** and click **New**.
+1. Search for `Task`, open the **Task** list, and click **New**.
 2. Fill in:
    - **Subject:** `Write-off Approval — Stock Recon [date], Item: [Item Code]`
    - **Task Kind:** `Write-off Approval`
@@ -112,7 +112,7 @@ Write-offs reduce inventory value and must be approved before execution.
 
 **Login as:** `Ops - Inventory`
 
-1. Open **Task** and click **New**.
+1. Search for `Task`, open the **Task** list, and click **New**.
 2. Fill in:
    - **Subject:** `Write-off Approval — [reason, e.g. Expired Batch LOT-2024-00012, Item IMP-001]`
    - **Task Kind:** `Write-off Approval`
@@ -138,7 +138,7 @@ Write-offs reduce inventory value and must be approved before execution.
 
 Only proceed after Director approval.
 
-1. Open **Stock Entry** and click **New**.
+1. Search for `Stock Entry`, open the **Stock Entry** list, and click **New**.
 2. Fill in:
    - **Stock Entry Type:** `Material Issue`
    - **Posting Date:** today's date

@@ -1,4 +1,4 @@
-# Collection Set Setup and Maintenance
+﻿# Collection Set Setup and Maintenance
 
 **Purpose:** Guide for creating and maintaining Collection Set records — the item templates loaded via the "Load from Template" button on Dispatch Cases. Every surgery/return-expected case can be pre-filled from a template instead of entered line by line.
 
@@ -39,7 +39,7 @@ A Collection Set also shows a **Readiness Status** — the system checks whether
 
 **Login as:** `Ops - Inventory`
 
-1. Open **Collection Set** (use the search bar) and click **New**.
+1. Search for `Collection Set`, open the **Collection Set** list, and click **New**.
 2. Fill in the header:
    - **Set Name:** a clear, descriptive name — e.g. `Ortho Basic Set`, `Spine Fusion Set — Large`, `ENT Endoscopy Kit`
    - **Set Code:** a short internal code for quick reference — e.g. `ORTHO-BASIC`, `SPINE-LG`, `ENT-ENDO` (optional but recommended)
@@ -98,7 +98,7 @@ When a product line changes (new item replaces an old one, quantities are revise
 
 **Login as:** `Ops - Inventory`
 
-1. Open the **Collection Set** record.
+1. Search for `Collection Set`, open the **Collection Set** list, and open the record.
 2. Make your changes:
    - **Add a new item:** click Add Row in the Items table
    - **Remove an item:** delete the row (use the row-level delete button)
@@ -128,7 +128,7 @@ Do **not** delete Collection Sets — they may be referenced in historical Dispa
 
 Before a period of heavy surgical activity (e.g. a week with many scheduled surgeries):
 
-1. Open the **Collection Set** list.
+1. Search for `Collection Set` and open the **Collection Set** list.
 2. Check the **Readiness Status** column for each active template.
 3. Any template showing `Short` or `Critical Short` needs purchasing attention.
 4. For short items: cross-reference with the **Reorder List** (see `low-stock-reorder-routine.md`) and initiate a Purchase Order if needed.

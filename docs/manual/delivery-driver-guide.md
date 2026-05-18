@@ -1,4 +1,4 @@
-# Delivery Driver Guide
+﻿# Delivery Driver Guide
 
 **Purpose:** Simple step-by-step reference for the Delivery Driver role. Covers everything you need to do in ERPNext for deliveries and return pickups. You only ever work from your Task inbox — you do not need to open any other part of the system.
 
@@ -22,7 +22,7 @@ You will see two types of tasks:
 
 ### Step 1 — Find your Delivery task
 
-1. Open **Task** list → filter **Task Kind = Delivery**, **Status = Open**.
+1. Search for `Task` and open the **Task** list → filter **Task Kind = Delivery**, **Status = Open**.
 2. Find the task with your name in the **Assigned To** field.
    - If no tasks are assigned to you personally, look for tasks assigned to `Delivery Team` — ask your coordinator which one is yours.
 3. Open the task. Read the **Subject** to confirm the customer and Case ID (e.g. `Deliver: DC-2026-00042 — Dr. A. Petrosyan`).
@@ -80,7 +80,7 @@ You will see **two stages** on a Return Pickup task: first you pick items up at 
 
 ### Step 4 — Find your Return Pickup task
 
-1. Open **Task** list → filter **Task Kind = Pickup Returns**, **Status = Open**.
+1. Search for `Task` and open the **Task** list → filter **Task Kind = Pickup Returns**, **Status = Open**.
 2. Find the task assigned to you: `Pickup Returns: DC-2026-NNNNN — [Customer]`.
 3. The task shows:
    - Customer name and location (where to go to collect the items)

@@ -39,7 +39,7 @@
 
 **Login as:** `Ops - Order Accepting`
 
-1. Open the **Task** list and click **New**.
+1. Search for `Task`, open the **Task** list, and click **New**.
 2. Fill in:
    - **Task Kind:** `Order entry`
    - **Subject:** `Order: [Customer name] — [brief description, e.g. Surgery set Dr. Smith 15/06]`
@@ -60,7 +60,7 @@
 1. Open your Order entry task. Open a new tab: search for `Dispatch Case` and click **New**.
 2. Fill in:
    - **Customer:** select the test customer
-   - **Return Expected:** **checked** ← critical for this scenario
+   - **Return Expected:** **checked** — critical for this scenario
    - **Client Location Warehouse:** select the client's warehouse (e.g. `Dr. Smith WH - Inmed`)
    - **Surgery Date:** the surgery/delivery date
    - **Item Template (Collection Set):** select if applicable — click **Load from Template** to auto-fill Case Items
@@ -77,7 +77,7 @@
 - Pack task auto-created for Inventory Team
 - Case receives autoname `DC-YYYY-NNNNN`
 
-5. Back on the Order entry task: link the **Dispatch Case** field → change Status to `Completed` → Save.
+5. Back on the Order entry task: link the **Dispatch Case** field, change Status to `Completed`, and Save.
 
 ---
 
@@ -85,10 +85,11 @@
 
 **Login as:** `Ops - Directors`
 
-1. Task list → **Task Kind = Discount Approval**, Status = `Open` → open the task for your case.
-2. Set **Approval Outcome** to `Approved`. Change Status to `Completed` → Save.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Discount Approval**, **Status = Open**.
+2. Open the Discount Approval task for your case.
+3. Set **Approval Outcome** to `Approved`. Change Status to `Completed` and Save.
 
-**✅ Expected:** Dispatch Case status → `Confirmed`, Pack task auto-created.
+**✅ Expected:** Dispatch Case status changes to `Confirmed`, Pack task auto-created.
 
 **On Rejection:** Dispatch Case stays `Draft`. A new `Order entry` task is auto-created for Order Creation Team. Order Creation person revises pricing on the Dispatch Case, saves again.
 
@@ -98,21 +99,22 @@
 
 **Login as:** `Ops - Inventory`
 
-1. Task list → **Task Kind = Pack / prepare items**, Status = `Open` → find `Pack: DC-YYYY-NNNNN — [Customer]`.
-2. Open the linked Dispatch Case. In **Case Items**:
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Pack / prepare items**, **Status = Open**.
+2. Find `Pack: DC-YYYY-NNNNN — [Customer]`.
+3. Open the linked Dispatch Case. In **Case Items**:
    - Fill `serial_no` for each serial-tracked item
    - Fill `batch_no` for each batch-tracked item (FEFO: select earliest-expiry batch)
    - Save the Dispatch Case.
-3. Back on the task: Status → `Completed` → Save.
+4. Back on the task: change Status to `Completed` and Save.
 
 **✅ Expected:**
 - **Dispatch Stock Entry** auto-created and submitted: `Main - Inmed → Delivery In-Transit - Inmed`
-- Dispatch Case status → `Packed`
+- Dispatch Case status changes to `Packed`
 - Delivery task auto-created for Delivery Team
 
 **❌ Should NOT happen:**
-- Error "Serial No required" → fill `serial_no` on the Case Item row first
-- Error "Batch No required" → fill `batch_no` first
+- Error "Serial No required" — fill `serial_no` on the Case Item row first
+- Error "Batch No required" — fill `batch_no` first
 
 ---
 
@@ -120,11 +122,12 @@
 
 **Login as:** `Delivery Driver`
 
-1. Task list → **Task Kind = Delivery**, Status = `Open` → find `Deliver: DC-YYYY-NNNNN`.
-2. Set **Delivery Status** to `Picked Up` → Save.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Delivery**, **Status = Open**.
+2. Find `Deliver: DC-YYYY-NNNNN`.
+3. Set **Delivery Status** to `Picked Up` and Save.
 
 **✅ Expected:**
-- Dispatch Case status → `In Transit`
+- Dispatch Case status changes to `In Transit`
 - No Stock Entry fires at this stage (items already in Delivery In-Transit)
 
 ---
@@ -136,16 +139,16 @@
 1. Still on the Delivery task (or reopen it).
 2. Attach a **delivery photo** (required).
 3. Fill **Driver Handover Note** (who received at client location).
-4. Set **Delivery Status** to `Delivered` → Save.
+4. Set **Delivery Status** to `Delivered` and Save.
 
 **✅ Expected:**
 - **Delivery Stock Entry** auto-submitted: `Delivery In-Transit - Inmed → Client Location WH`
-- Dispatch Case status → `Awaiting Return Pickup`
+- Dispatch Case status changes to `Awaiting Return Pickup`
 - **Return Waiting task** (Kind: `Pickup Returns`) auto-created for Returns Team
 
 **❌ Should NOT happen (gate blocks — correct behavior):**
-- Error "Delivery photo is required" → attach photo first
-- Error "Handover Note is required" → fill the note first
+- Error "Delivery photo is required" — attach photo first
+- Error "Handover Note is required" — fill the note first
 
 ---
 
@@ -153,14 +156,15 @@
 
 **Login as:** `Ops - Returns`
 
-1. Task list → **Task Kind = Pickup Returns**, Status = `Open` → find `Wait for return call: DC-YYYY-NNNNN`.
-2. Fill in:
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Pickup Returns**, **Status = Open**.
+2. Find `Wait for return call: DC-YYYY-NNNNN`.
+3. Fill in:
    - **Return Pickup Driver:** select the driver who will collect the items
    - **Scheduled Return Date:** the agreed pickup date
-3. Change Status to `Completed` → Save.
+4. Change Status to `Completed` and Save.
 
 **✅ Expected:**
-- Dispatch Case status → `Return Pickup Scheduled`
+- Dispatch Case status changes to `Return Pickup Scheduled`
 - **Return Pickup task** (Kind: `Pickup Returns`) auto-created, assigned to the named driver, with due date = Scheduled Return Date
 
 ---
@@ -169,13 +173,14 @@
 
 **Login as:** `Delivery Driver` (the driver set in Step 6)
 
-1. Task list → **Task Kind = Pickup Returns**, Status = `Open` → find `Pickup Returns: DC-YYYY-NNNNN`.
-2. Fill **Driver Handover Note** (who handed items at client location).
-3. Set **Pickup Status** to `Picked Up` → Save.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Pickup Returns**, **Status = Open**.
+2. Find `Pickup Returns: DC-YYYY-NNNNN`.
+3. Fill **Driver Handover Note** (who handed items at client location).
+4. Set **Pickup Status** to `Picked Up` and Save.
 
 **✅ Expected:**
 - **Return Pickup Stock Entry** auto-submitted: `Client Location WH → Return Pickup In-Transit - Inmed`
-- Dispatch Case status → `Return In Transit`
+- Dispatch Case status changes to `Return In Transit`
 
 ---
 
@@ -185,15 +190,15 @@
 
 1. Still on the Return Pickup task.
 2. Attach a **drop-off photo** (required — photo of items handed in at the warehouse).
-3. Set **Pickup Status** to `Returned to Warehouse` → Save.
+3. Set **Pickup Status** to `Returned to Warehouse` and Save.
 
 **✅ Expected:**
 - **Return Receive Stock Entry** auto-submitted: `Return Pickup In-Transit - Inmed → Returns - Inmed`
-- Dispatch Case status → `Returns Received`
+- Dispatch Case status changes to `Returns Received`
 - **Returns Inspection task** auto-created for Returns Team
 
 **❌ Should NOT happen:**
-- Error "Drop-off photo is required" → attach photo first
+- Error "Drop-off photo is required" — attach photo first
 
 ---
 
@@ -201,23 +206,24 @@
 
 **Login as:** `Ops - Returns`
 
-1. Task list → **Task Kind = Returns processing / verification**, Status = `Open` → find `Inspect returns: DC-YYYY-NNNNN`.
-2. Open the linked **Dispatch Case**. In **Case Items**, for each item:
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Returns processing / verification**, **Status = Open**.
+2. Find `Inspect returns: DC-YYYY-NNNNN`.
+3. Open the linked **Dispatch Case**. In **Case Items**, for each item:
    - Fill **Returned Qty** — how many physically came back (can be 0)
    - Fill **Lost / Damaged Qty** — any items missing or damaged
    - `used_qty` is auto-computed: `dispatched_qty - returned_qty - lost_damaged_qty`
-3. Save the Dispatch Case.
-4. Back on the task: Status → `Completed` → Save.
+4. Save the Dispatch Case.
+5. Back on the task: change Status to `Completed` and Save.
 
 **✅ Expected:**
 - **Consumption Stock Entry** auto-submitted: `Client Location WH → Material Issue` for `used_qty` of each item
 - Draft **Sales Invoice** auto-created for used quantities and prices
-- Dispatch Case status → `Invoice Pending`
+- Dispatch Case status changes to `Invoice Pending`
 - **Restock task** auto-created for Returns Team (if any `returned_qty > 0`)
 - **Invoice Preparation task** auto-created for Accounting Team
 
 **❌ Should NOT happen:**
-- Error "Used Qty cannot be negative for item X" → returned + lost/damaged exceeds dispatched; fix the quantities
+- Error "Used Qty cannot be negative for item X" — returned + lost/damaged exceeds dispatched; fix the quantities
 
 ---
 
@@ -225,9 +231,10 @@
 
 **Login as:** `Ops - Returns`
 
-1. Task list → **Task Kind = Returns restocking**, Status = `Open` → find `Restock returns: DC-YYYY-NNNNN`.
-2. Physically move items from `Returns - Inmed` shelf back to `Main - Inmed` shelf locations.
-3. Status → `Completed` → Save.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Returns restocking**, **Status = Open**.
+2. Find `Restock returns: DC-YYYY-NNNNN`.
+3. Physically move items from `Returns - Inmed` shelf back to `Main - Inmed` shelf locations.
+4. Change Status to `Completed` and Save.
 
 **✅ Expected:**
 - **Restock Stock Entry** auto-submitted: `Returns - Inmed → Main - Inmed` for all items with `returned_qty > 0`
@@ -240,23 +247,24 @@
 
 **Login as:** `Ops - Accounting`
 
-1. Task list → **Task Kind = Invoice preparation / create invoice**, Status = `Open` → find `Invoice: DC-YYYY-NNNNN`.
-2. Open the linked draft **Sales Invoice**.
-3. Verify:
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Invoice preparation / create invoice**, **Status = Open**.
+2. Find `Invoice: DC-YYYY-NNNNN`.
+3. Open the linked draft **Sales Invoice**.
+4. Verify:
    - Items and quantities match `used_qty` from Case Items
    - **Update Stock** is **unchecked** (stock moved by Consumption SE)
    - Prices and taxes are correct
-4. Click **Submit** on the Sales Invoice.
-5. Back on the task: Status → `Completed` → Save.
+5. Click **Submit** on the Sales Invoice.
+6. Back on the task: change Status to `Completed` and Save.
 
 **✅ Expected:**
 - Sales Invoice submitted
-- Dispatch Case status → `Invoiced` → `Payment Pending` (if outstanding > 0)
+- Dispatch Case status changes to `Invoiced`, then to `Payment Pending` (if outstanding > 0)
 - **Debt Collection task** auto-created or updated for Finance Team
-- If fully prepaid: Dispatch Case → `Closed`
+- If fully prepaid: Dispatch Case changes to `Closed`
 
 **❌ Should NOT happen:**
-- Update Stock = checked → uncheck before submitting
+- Update Stock = checked — uncheck before submitting
 
 ---
 
@@ -264,13 +272,14 @@
 
 **Login as:** `Ops - Finance`
 
-1. Task list → **Task Kind = Debt Collection**, Status = `Open` → find the task for your customer.
-2. The task shows the **Open Invoices** table (all outstanding invoices for this customer across cases).
-3. Fill in the **Record Payment** section:
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Debt Collection**, **Status = Open**.
+2. Find the task for your customer.
+3. The task shows the **Open Invoices** table (all outstanding invoices for this customer across cases).
+4. Fill in the **Record Payment** section:
    - **New Payment Amount:** amount received
    - **Payment Method:** Cash / Bank Transfer / Card
    - **Payment Reference:** transaction ID or receipt number
-4. Save the task.
+5. Save the task.
 
 **✅ Expected after Save:**
 - **Payment Entry** auto-created (Receive type), allocated FIFO across oldest invoices first
@@ -279,32 +288,32 @@
 
 **On full payment (outstanding = 0):**
 - Debt Collection task auto-completes
-- Dispatch Case status → `Closed`
+- Dispatch Case status changes to `Closed`
 
 ---
 
 ## Final state verification
 
-Open the Dispatch Case `DC-YYYY-NNNNN` and verify:
+Search for `Dispatch Case`, open `DC-YYYY-NNNNN`, and verify:
 
 | Field | Expected value |
 |---|---|
 | Status | `Closed` |
-| Dispatch Stock Entry | Submitted ✓ |
-| Delivery Stock Entry | Submitted ✓ |
-| Return Pickup Stock Entry | Submitted ✓ |
-| Return Receive Stock Entry | Submitted ✓ |
-| Consumption Stock Entry | Submitted ✓ |
-| Restock Stock Entry | Submitted ✓ |
-| Sales Invoice | Submitted ✓ |
+| Dispatch Stock Entry | Submitted |
+| Delivery Stock Entry | Submitted |
+| Return Pickup Stock Entry | Submitted |
+| Return Receive Stock Entry | Submitted |
+| Consumption Stock Entry | Submitted |
+| Restock Stock Entry | Submitted |
+| Sales Invoice | Submitted |
 | outstanding_amount | 0 |
 
-Go to **Stock Ledger**, filter by the test item:
-- `Main - Inmed`: net deduction = `used_qty` (dispatched minus returned) ✓
-- `Delivery In-Transit - Inmed`: net zero ✓
-- `Client Location WH`: net zero ✓
-- `Return Pickup In-Transit - Inmed`: net zero ✓
-- `Returns - Inmed`: credit then debit (returned → restocked), net zero ✓
+Search for `Stock Ledger` and open the **Stock Ledger** report, then filter by the test item:
+- `Main - Inmed`: net deduction = `used_qty` (dispatched minus returned)
+- `Delivery In-Transit - Inmed`: net zero
+- `Client Location WH`: net zero
+- `Return Pickup In-Transit - Inmed`: net zero
+- `Returns - Inmed`: credit then debit (returned then restocked), net zero
 
 ---
 
@@ -312,17 +321,17 @@ Go to **Stock Ledger**, filter by the test item:
 
 ```
 Order entry task (manual)
-  └─► Dispatch Case created & submitted
-        └─► [Discount Approval task — only if discount > 0]
-        └─► Pack task (Inventory)
-              └─► Delivery task (Driver) — Todo → Picked Up → Delivered
-                    └─► Return Waiting task (Returns) — schedule driver
-                          └─► Return Pickup task (Driver) — Todo → Picked Up → Returned to WH
-                                └─► Returns Inspection task (Returns)
-                                      ├─► Restock task (Returns) ← parallel
-                                      └─► Invoice Preparation task (Accounting)
-                                            └─► Debt Collection task (Finance)
-                                                  └─► Distribute Payment task (Finance)
+  -> Dispatch Case created & submitted
+        -> [Discount Approval task — only if discount > 0]
+        -> Pack task (Inventory)
+              -> Delivery task (Driver) — Todo -> Picked Up -> Delivered
+                    -> Return Waiting task (Returns) — schedule driver
+                          -> Return Pickup task (Driver) — Todo -> Picked Up -> Returned to WH
+                                -> Returns Inspection task (Returns)
+                                      -> Restock task (Returns) — parallel
+                                      -> Invoice Preparation task (Accounting)
+                                            -> Debt Collection task (Finance)
+                                                  -> Distribute Payment task (Finance)
 ```
 
 ---

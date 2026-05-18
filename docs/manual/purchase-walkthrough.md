@@ -1,4 +1,4 @@
-# Purchase Flow Walkthrough — PO → Receipt → LCV → Invoice
+﻿# Purchase Flow Walkthrough — PO → Receipt → LCV → Invoice
 
 **Purpose:** Step-by-step guide for recording a complete purchase cycle: from creating the Purchase Order through director approval, receiving goods, computing landed cost, and recording the supplier invoice. Run this any time you are making a purchase from a supplier.
 
@@ -11,6 +11,13 @@
 - The Items you are ordering already exist in the catalog with correct supplier assignment (Doc 06A)
 - Director users exist and can see `Purchase Approval` tasks
 - For import items: `hs_code` and `import_tax_rate` are filled on each Item
+- The purchasing test user can search for and open `Purchase Order`
+- The purchasing test user can select the intended Supplier. Current known suppliers are `ZMD` and `CHUNLI`.
+- The intended Supplier has its Default Currency filled. If currency does not auto-fill, stop and fix the Supplier record before continuing.
+- If supplier payment terms are required for the test, use the existing `Payment Terms Template` records: `Prepayment 100%` or `Prepayment 50/50`.
+- The director test user can search for and open `Task`
+- The inventory test user can search for and open `Purchase Receipt`
+- The accounting test user can search for and open `Payment Entry`, `Landed Cost Voucher`, and `Purchase Invoice`
 
 ---
 
@@ -34,13 +41,14 @@
 
 **Login as:** `Ops - Purchasing`
 
-1. Open **Purchase Order** and click **New**.
+1. Search for `Purchase Order`, open the **Purchase Order** list, and click **New**.
+   - If you do not see the **Purchase Order** DocType, or you can open it but cannot click **New** or **Save**, stop here: the test user is missing Purchase Order permissions. Ask a System Manager to check permissions for `Ops - Purchasing`.
 2. Fill in the header:
-   - **Supplier:** select exactly one supplier (do not mix suppliers on one PO)
+   - **Supplier:** select exactly one supplier, such as `ZMD` or `CHUNLI` for current testing (do not mix suppliers on one PO)
    - **Schedule Date:** your best estimate of when goods will arrive
    - **Purchase Reason:** choose the reason — `Reorder (Doc 08)`, `Ad-hoc demand`, `Replacement`, or `Emergency`
    - **Requested By:** select the person requesting this purchase
-   - **Currency:** defaults from Supplier (usually `USD` or `EUR`) — confirm it is correct
+   - **Currency:** should default from Supplier (usually `USD` or `EUR`) — if it stays blank or wrong, stop and fix the Supplier record before continuing
 3. In the **Items** table, add rows:
    - **Item Code:** select the item (only items whose supplier matches this PO's supplier)
    - **Qty:** the quantity you intend to order
@@ -63,7 +71,7 @@
 
 **Login as:** `Ops - Purchasing`
 
-1. Open **Task** and click **New**.
+1. Search for `Task`, open the **Task** list, and click **New**.
 2. Fill in:
    - **Subject:** `Purchase Approval — [PO name, e.g. PO-2026-00042]`
    - **Task Kind:** `Purchase Approval`
@@ -81,7 +89,7 @@
 
 **Login as:** `Ops - Directors`
 
-1. Open the **Task** list, filter: **Task Kind = Purchase Approval**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Purchase Approval**, **Status = Open**.
 2. Open the task for this PO.
 3. Review the linked Purchase Order (click the `Purchase Order` link to open and review items, quantities, and prices).
 4. Set **Approval Outcome**:
@@ -113,7 +121,7 @@
 Current policy: most suppliers require 100% advance payment before shipping.
 
 1. Confirm the PO's `Director Approval Status` = `Approved` before sending any payment.
-2. Open **Payment Entry** and click **New**.
+2. Search for `Payment Entry`, open the **Payment Entry** list, and click **New**.
 3. Fill in:
    - **Payment Type:** `Pay`
    - **Party Type:** `Supplier`
@@ -188,7 +196,7 @@ Goods have physically arrived at the warehouse.
 
 For import purchases, you must record all charges beyond the supplier price to compute the true unit cost.
 
-1. Open **Landed Cost Voucher** and click **New**.
+1. Search for `Landed Cost Voucher`, open the **Landed Cost Voucher** list, and click **New**.
 2. In the **Purchase Receipts** table, click **Add Row**:
    - **Receipt Document Type:** `Purchase Receipt`
    - **Receipt Document:** select the Purchase Receipt from Step 6
@@ -231,7 +239,7 @@ For import purchases, you must record all charges beyond the supplier price to c
 
 **Login as:** `Ops - Accounting`
 
-1. Open the **Purchase Receipt** from Step 6.
+1. Search for `Purchase Receipt`, open the **Purchase Receipt** list, and open the Purchase Receipt from Step 6.
 2. Click **Create** → **Purchase Invoice**.
 3. On the Purchase Invoice:
    - Enter the **Supplier Invoice No** (from the supplier's paper/PDF invoice)

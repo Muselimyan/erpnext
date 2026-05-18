@@ -1,4 +1,4 @@
-# New Customer / Client Onboarding Walkthrough
+﻿# New Customer / Client Onboarding Walkthrough
 
 **Purpose:** Step-by-step guide for registering a new client (doctor or hospital) in the system so they can be used on Dispatch Cases, sales invoices, and debt tracking. Run this every time a new client relationship starts.
 
@@ -6,8 +6,14 @@
 
 **Use case:** A new doctor or hospital starts using InMED's products. Before any Dispatch Case can be created for them, their Customer record, client location warehouse, and credit threshold must exist.
 
+**What this test proves:** Order, inventory, accounting, and director roles can prepare a customer so sales, surgery cases, debt tracking, and client-location stock flows can work.
+
+**ERPNext screens used:** `Customer`, `Warehouse`, `Dispatch Case`.
+
+**Pass condition:** Customer exists with unique client code and debt threshold, is reviewed as non-provisional, and the client location warehouse exists under `Clients - Inmed`.
+
 **Prerequisites:**
-- The `Clients - WH` group warehouse already exists (created once during go-live)
+- The `Clients - Inmed` group warehouse already exists (created once during go-live)
 - You know the client's full name, type (doctor or hospital), debt threshold, and the hospital location they work at (for doctors)
 
 ---
@@ -28,7 +34,10 @@
 
 All clients — whether doctors or hospitals — are recorded as **Customer** records in ERPNext.
 
-1. Open **Customer** and click **New**.
+**Why this matters:** Dispatch Cases, Sales Invoices, debt tracking, and reports all depend on the Customer record. If the client code or debt threshold is wrong, later testing will be confusing.
+
+1. Search for `Customer`, open the **Customer** list, and click **New**.
+   - If you do not see the **Customer** DocType, or you can open it but cannot click **New** or **Save**, stop here: the test user is missing Customer permissions. Ask a System Manager to check permissions for `Ops - Order Accepting` / `Ops - Order Creating`, or test this setup step with a System Manager user.
 2. Fill in:
    - **Customer Name:** follow the naming convention:
      - For a doctor: `D### — Dr. [Full Name]` — e.g. `D017 — Dr. A. Petrosyan`
@@ -60,6 +69,8 @@ All clients — whether doctors or hospitals — are recorded as **Customer** re
 
 This warehouse is required for **any Dispatch Case where Return Expected = Yes** (surgery cases, equipment loans). It represents company-owned stock physically sitting at the client's location.
 
+**Why this matters:** Return-expected flows move company-owned stock from `Main - Inmed` to the client's location and then back. Without the client warehouse, surgery/loan testing cannot represent where the stock physically is.
+
 For clients who will only ever receive standard sales (no returns), this warehouse is still recommended to create proactively — it is needed the moment a surgery case is ever dispatched to them.
 
 ### Warehouse naming pattern
@@ -74,7 +85,8 @@ Examples:
 
 ### Steps
 
-1. Open **Warehouse** and click **New**.
+1. Search for `Warehouse`, open the **Warehouse** list, and click **New**.
+   - If you do not see the **Warehouse** DocType, or you can open it but cannot click **New** or **Save**, stop here: the test user is missing Warehouse permissions. Ask a System Manager to check Warehouse permissions for `Ops - Inventory`, or test this setup step with a System Manager user.
 2. Fill in:
    - **Warehouse Name:** follow the naming pattern above
    - **Parent Warehouse:** `Clients - Inmed` (the top-level group warehouse for all client locations)
@@ -106,8 +118,10 @@ To make the warehouse easy to find:
 
 New clients start as `Is Provisional = Yes`. This is a control flag that signals the record has not been fully reviewed.
 
+**Why this matters:** This separates quick order entry from final approval of client data. It prevents unreviewed clients from silently becoming permanent master data.
+
 Before the client is used for real transactions in a live setting:
-1. Open the **Customer** record.
+1. Search for `Customer`, open the **Customer** list, and open the customer record.
 2. Verify:
    - **Customer Name** follows the naming convention
    - **Client Code** is correct and unique
@@ -132,11 +146,11 @@ Run this quick check before creating the first Dispatch Case for this client:
 | Check | How to verify |
 |---|---|
 | Customer exists | Search for the client in **Customer** list |
-| Client Code is set | Open the Customer → confirm `client_code` field is filled |
-| Debt Threshold > 0 | Open the Customer → confirm `debt_threshold_amd` is not 0 |
-| Is Provisional = No | Open the Customer → confirm checkbox is unchecked |
+| Client Code is set | Search for `Customer`, open the customer record → confirm `client_code` field is filled |
+| Debt Threshold > 0 | Search for `Customer`, open the customer record → confirm `debt_threshold_amd` is not 0 |
+| Is Provisional = No | Search for `Customer`, open the customer record → confirm checkbox is unchecked |
 | Client location warehouse exists | Search in **Warehouse** list, filter by the client code |
-| Warehouse is under `Clients - Inmed` | Open the warehouse → confirm Parent Warehouse |
+| Warehouse is under `Clients - Inmed` | Search for `Warehouse`, open the warehouse record → confirm Parent Warehouse |
 
 ---
 
@@ -159,4 +173,4 @@ These fields do not affect stock or financial flow — they are for reporting an
 | Cannot uncheck Is Provisional | Logged in as Order team role; ask Accounting/Directors to do it |
 | Client Code already exists | Another customer has the same code; check the list and pick the next available number |
 | Warehouse not visible in Dispatch Case dropdown | Warehouse is not under `Clients - Inmed`, or company is set incorrectly on the warehouse |
-| Debt threshold is 0 | Was left blank during creation; open the Customer and set the correct threshold |
+| Debt threshold is 0 | Was left blank during creation; search for `Customer`, open the customer record, and set the correct threshold |

@@ -1,4 +1,4 @@
-# Cancellation and Correction Procedures
+﻿# Cancellation and Correction Procedures
 
 **Purpose:** Guide for all roles on what to do when a submitted document needs to be corrected or reversed. Covers which documents can be cancelled, who can cancel, the mandatory order to cancel chained documents, and the rule that every cancellation must have a written reason.
 
@@ -161,7 +161,7 @@ Dispatch Case
 
 Amending creates a corrected version that links back to the cancelled original — the preferred approach when the same document needs to be re-submitted with corrections.
 
-1. Open the **Cancelled** document.
+1. Search for the document type you cancelled, open its list, and open the cancelled document.
 2. Click **Amend** (button at top).
 3. A new Draft is created with the same data.
 4. Correct the fields that were wrong.

@@ -1,4 +1,4 @@
-# Discount Approval Walkthrough
+﻿# Discount Approval Walkthrough
 
 **Purpose:** Focused guide for the discount approval sub-flow that occurs whenever a Dispatch Case contains a line item with a Discount % greater than zero. This is a reference for the Order Creation team and Directors. The full dispatch flows are documented separately in `standard-sale-walkthrough.md` and `surgery-case-walkthrough.md`.
 
@@ -58,7 +58,7 @@ When **Discount % = 0** on all rows:
 
 **Login as:** `Ops - Directors`
 
-1. Open the **Task** list, filter: **Task Kind = Discount Approval**, **Status = Open**.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Discount Approval**, **Status = Open**.
 2. Open the Discount Approval task for the relevant case.
 3. Click the **Dispatch Case** link on the task to open and review:
    - Which items have a discount
@@ -76,7 +76,7 @@ When **Discount % = 0** on all rows:
 
 **Login as:** `Ops - Order Creating`
 
-1. Open the **Dispatch Case** (status should now be `Draft` — the approval unlocked it).
+1. Search for `Dispatch Case`, open the **Dispatch Case** list, and open the case (status should now be `Draft` — the approval unlocked it).
 2. Confirm the case items still look correct.
 3. Click **Submit**.
 
@@ -91,7 +91,7 @@ When **Discount % = 0** on all rows:
 
 **Login as:** `Ops - Order Creating`
 
-1. Open the **Dispatch Case** — its status remains `Draft`.
+1. Search for `Dispatch Case`, open the **Dispatch Case** list, and open the case — its status remains `Draft`.
 2. A new **Order entry task** has been auto-created and assigned to the Order Creation Team with a note indicating the discount was rejected. Check that task for the Director's reason.
 3. On the Dispatch Case, update the **Case Items** table:
    - Reduce or remove the `Discount %` as directed
