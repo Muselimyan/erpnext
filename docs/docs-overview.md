@@ -9,6 +9,60 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 - Primary reader: a new worker who is sharp but new to ERPNext
 - Secondary readers: you / director team for approvals and review
 
+## 2.1) Documentation completion status
+**Last reviewed:** 2026-05-21
+
+### Fully finished / ready for colleague review
+| File | Status |
+|---|---|
+| `02-navigation-and-naming.md` | ✅ Finished |
+| `03-roles-permissions-responsibilities.md` | ✅ Finished |
+| `03-roles-permissions-responsibilities-implementation.md` | ✅ Finished |
+| `04-customers-and-doctors.md` | ✅ Finished |
+| `04-customers-and-doctors-implementation.md` | ✅ Finished |
+| `05-warehouses-and-stock-rules.md` | ✅ Finished |
+| `05-warehouses-and-stock-rules-implementation.md` | ✅ Finished |
+| `06-items-variants-uoms.md` | ✅ Finished |
+| `06-items-variants-uoms-implementation.md` | ✅ Finished |
+| `07-suppliers-and-procurement-basic.md` | ✅ Finished |
+| `07-suppliers-and-procurement-basic-implementation.md` | ✅ Finished |
+| `08-reorder-and-ordering-by-supplier.md` | ✅ Finished |
+| `08-reorder-and-ordering-by-supplier-implementation.md` | ✅ Finished |
+| `10-task-system-foundations.md` | ✅ Finished |
+| `10-task-system-foundations-implementation.md` | ✅ Finished |
+| `10.1-directors-task-dashboard.md` | ✅ Finished |
+| `10.1-directors-task-dashboard-implementation.md` | ✅ Finished |
+| `13-reporting-pack.md` | ✅ Finished |
+| `13-reporting-pack-implementation.md` | ✅ Finished |
+| `14-go-live-checklist.md` | ✅ Finished |
+| `15-reporting-requirements-review.md` | ✅ Finished |
+| `15a-reporting-requirements-implementation.md` | ✅ Finished |
+| `16-unified-dispatch-flow.md` | ✅ Finished |
+| `16a-unified-dispatch-flow-implementation.md` | ✅ Finished |
+| `16b-unified-dispatch-flow-gap-analysis.md` | ✅ Finished |
+| `17-purchase-cost-and-valuation.md` | ✅ Finished |
+| `17a-purchase-cost-and-valuation-implementation.md` | ✅ Finished |
+| `ERPNext Barcode/FIXES_DOCUMENTATION.md` | ✅ Finished |
+| `ERPNext Barcode/IMPLEMENTATION_READY.md` | ✅ Finished as implementation-ready; live deployment still needs verification |
+| `go-live-action-plan.md` | ✅ Finished, but older than `GO-LIVE-STATUS.md` / `GO-LIVE-HANDOVER-SUMMARY.md` |
+
+### Finished but superseded / historical reference only
+| File | Status |
+|---|---|
+| `09-standard-selling-flow.md` | ✅ Finished, superseded by Doc 16 |
+| `09-standard-selling-flow-implementation.md` | ✅ Finished, superseded by Doc 16A |
+| `11-surgery-set-model.md` | ✅ Finished, superseded by Doc 16 |
+| `11-surgery-set-implementation.md` | ✅ Finished, superseded by Doc 16A |
+| `12-surgery-set-operational-workflow.md` | ✅ Finished, superseded by Doc 16 |
+| `12-surgery-set-operational-workflow-implementation.md` | ✅ Finished, superseded by Doc 16A |
+
+### Not final / reference / requires external confirmation
+| File | Status |
+|---|---|
+| `implementation-questions.md` | 🟡 Reference / open inputs list |
+| `ai-agent-api-access-guide.md` | 🟡 Reference |
+| `docs-overview.md` | 🟡 Index / status tracker |
+
 ## 3) Document sequence (recommended)
 ### 01 — Requirements
 **File**: `requirements.md`

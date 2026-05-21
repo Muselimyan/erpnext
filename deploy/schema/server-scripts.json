@@ -1,5 +1,5 @@
 ﻿{
-    "count":  30,
+    "count":  31,
     "records":  [
                     {
                         "name":  "Task-before-save-policy",
@@ -595,6 +595,26 @@
                         "allow_guest":  0,
                         "disabled":  0,
                         "script":  "if not doc.case_items:\n    frappe.throw(\"Add at least one item before submitting.\")\nif doc.status not in (\"Draft\", \"Confirmed\"):\n    frappe.throw(\"Cannot submit a Dispatch Case in status: \" + doc.status)\nif doc.status == \"Draft\":\n    doc.status = \"Confirmed\"\nexisting_pack = frappe.db.exists(\"Task\", {\"dispatch_case\": doc.name, \"task_kind\": \"Pack / prepare items\", \"status\": [\"not in\", [\"Completed\", \"Cancelled\"]]})\nif not existing_pack:\n    items_txt = \"\\n\".join(f\"- {r.item_code} x{r.dispatched_qty}\" for r in doc.case_items)\n    t = frappe.get_doc({\n        \"doctype\": \"Task\",\n        \"subject\": f\"Pack: {doc.name} â€” {doc.customer}\",\n        \"task_kind\": \"Pack / prepare items\",\n        \"task_access_policy\": \"Pack / prepare items\",\n        \"dispatch_case\": doc.name,\n        \"customer\": doc.customer,\n        \"description\": f\"Pack for delivery to: {doc.customer}\\nDest: {doc.client_location_warehouse}\\n\\n{items_txt}\",\n        \"_assign\": frappe.as_json([\"inventory.team@example.com\"]),\n    })\n    t.flags.ignore_permissions = True\n    t.insert()\n    doc.pack_task = t.name",
+                        "enable_rate_limit":  0,
+                        "rate_limit_count":  5,
+                        "rate_limit_seconds":  86400,
+                        "doctype":  "Server Script"
+                    },
+                    {
+                        "name":  "Collection-Set-validate-readiness",
+                        "owner":  "ai-agent@internal.com",
+                        "creation":  "2026-05-18 11:24:28.658972",
+                        "modified":  "2026-05-18 11:24:28.658972",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "script_type":  "DocType Event",
+                        "reference_doctype":  "Collection Set",
+                        "event_frequency":  "All",
+                        "doctype_event":  "Before Save",
+                        "allow_guest":  0,
+                        "disabled":  0,
+                        "script":  "MAIN_WH = \"Main - Inmed\"\r\n\r\nmissing_lines = []\r\ncritical_lines = []\r\n\r\nfor row in (doc.items or []):\r\n    item_code = row.item\r\n    required_qty = float(row.default_qty or 0)\r\n    if item_code and required_qty \u003e 0:\r\n        bin_row = frappe.db.get_value(\r\n            \"Bin\",\r\n            {\"item_code\": item_code, \"warehouse\": MAIN_WH},\r\n            [\"projected_qty\"],\r\n            as_dict=True,\r\n        )\r\n\r\n        projected = float((bin_row or {}).get(\"projected_qty\") or 0)\r\n        shortage = required_qty - projected\r\n\r\n        if shortage \u003e 0:\r\n            line = (\r\n                str(item_code) + \": need \" + str(required_qty)\r\n                + \", projected \" + str(projected)\r\n                + \", short \" + str(shortage)\r\n            )\r\n            missing_lines.append(line)\r\n            if int(row.is_critical or 0) == 1:\r\n                critical_lines.append(line)\r\n\r\nif critical_lines:\r\n    doc.readiness_status = \"Critical Short\"\r\n    doc.readiness_note = \"Critical shortages:\\n\" + \"\\n\".join(critical_lines)\r\n    frappe.msgprint(doc.readiness_note, title=\"Collection Set readiness warning\")\r\nelif missing_lines:\r\n    doc.readiness_status = \"Short\"\r\n    doc.readiness_note = \"Shortages:\\n\" + \"\\n\".join(missing_lines)\r\n    frappe.msgprint(doc.readiness_note, title=\"Collection Set readiness warning\")\r\nelse:\r\n    doc.readiness_status = \"Ready\"\r\n    doc.readiness_note = \"\"",
                         "enable_rate_limit":  0,
                         "rate_limit_count":  5,
                         "rate_limit_seconds":  86400,

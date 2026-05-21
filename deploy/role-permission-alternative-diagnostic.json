@@ -1,0 +1,131 @@
+﻿{
+    "checked_at":  "2026-05-18 18:48:36",
+    "permission_manager_results":  [
+                                       {
+                                           "doctype":  "Dispatch Case",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Stock Entry",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Sales Invoice",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Payment Entry",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Task",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Item",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Item Group",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "Item Attribute",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       },
+                                       {
+                                           "doctype":  "UOM",
+                                           "api_ok":  false,
+                                           "row_count":  0,
+                                           "target_role_rows":  0,
+                                           "error":  "The remote server returned an error: (403) Forbidden."
+                                       }
+                                   ],
+    "relevant_custom_docperm":  {
+
+                                },
+    "relevant_standard_docperm":  [
+
+                                  ],
+    "ops_roles":  [
+                      {
+                          "name":  "Delivery Driver",
+                          "role_name":  "Delivery Driver",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Accounting",
+                          "role_name":  "Ops - Accounting",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Delivery",
+                          "role_name":  "Ops - Delivery",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Directors",
+                          "role_name":  "Ops - Directors",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Finance",
+                          "role_name":  "Ops - Finance",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Inventory",
+                          "role_name":  "Ops - Inventory",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Order Accepting",
+                          "role_name":  "Ops - Order Accepting",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Order Creating",
+                          "role_name":  "Ops - Order Creating",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Purchasing",
+                          "role_name":  "Ops - Purchasing",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Purchasing Lead",
+                          "role_name":  "Ops - Purchasing Lead",
+                          "disabled":  0
+                      },
+                      {
+                          "name":  "Ops - Returns",
+                          "role_name":  "Ops - Returns",
+                          "disabled":  0
+                      }
+                  ]
+}

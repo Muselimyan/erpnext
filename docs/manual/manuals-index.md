@@ -2,6 +2,29 @@
 
 **Purpose:** Use this file as the main testing roadmap for the ERPNext setup. It tells you which manual to open, what business process you are testing, which ERPNext screens must be searchable, which role/user should perform the test, and what result proves that the setup works.
 
+**Manual set status:** ✅ Finished for colleague review as of 2026-05-21. Live ERPNext smoke testing and real-user signoff are still separate go-live activities.
+
+## Finished manual files
+| File | Status |
+|---|---|
+| `cancellation-and-corrections.md` | ✅ Finished |
+| `collection-set-setup.md` | ✅ Finished |
+| `daily-reporting-checks.md` | ✅ Finished |
+| `debt-collection-and-payment.md` | ✅ Finished |
+| `delivery-driver-guide.md` | ✅ Finished |
+| `discount-approval-walkthrough.md` | ✅ Finished |
+| `erpnext-manual-setup-checklist.md` | ✅ Finished |
+| `low-stock-reorder-routine.md` | ✅ Finished |
+| `new-customer-onboarding.md` | ✅ Finished |
+| `new-item-setup.md` | ✅ Finished |
+| `new-supplier-setup.md` | ✅ Finished |
+| `purchase-walkthrough.md` | ✅ Finished |
+| `standard-sale-walkthrough.md` | ✅ Finished |
+| `stock-adjustment-writeoff.md` | ✅ Finished |
+| `supplier-prepayment-allocation.md` | ✅ Finished |
+| `surgery-case-walkthrough.md` | ✅ Finished |
+| `surgery-set-type-setup.md` | ✅ Finished |
+
 ---
 
 ## How to use this manual during testing

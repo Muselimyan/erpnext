@@ -1,0 +1,146 @@
+﻿[
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Ops - Order Creating",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit"
+    },
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Ops - Order Accepting",
+        "status":  "ISSUE",
+        "issue":  "missing_read"
+    },
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Ops - Accounting",
+        "status":  "ISSUE",
+        "issue":  "missing_read"
+    },
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Ops - Inventory",
+        "status":  "ISSUE",
+        "issue":  "missing_read"
+    },
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Ops - Returns",
+        "status":  "ISSUE",
+        "issue":  "missing_read"
+    },
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Delivery Driver",
+        "status":  "ISSUE",
+        "issue":  "missing_read"
+    },
+    {
+        "doctype":  "Dispatch Case",
+        "role":  "Ops - Directors",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_cancel"
+    },
+    {
+        "doctype":  "Stock Entry",
+        "role":  "Ops - Inventory",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit"
+    },
+    {
+        "doctype":  "Stock Entry",
+        "role":  "Ops - Delivery",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit"
+    },
+    {
+        "doctype":  "Stock Entry",
+        "role":  "Ops - Returns",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit"
+    },
+    {
+        "doctype":  "Stock Entry",
+        "role":  "Delivery Driver",
+        "status":  "OK",
+        "issue":  ""
+    },
+    {
+        "doctype":  "Sales Invoice",
+        "role":  "Ops - Accounting",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit, missing_cancel"
+    },
+    {
+        "doctype":  "Sales Invoice",
+        "role":  "Ops - Finance",
+        "status":  "ISSUE",
+        "issue":  "missing_read"
+    },
+    {
+        "doctype":  "Payment Entry",
+        "role":  "Ops - Accounting",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit, missing_cancel"
+    },
+    {
+        "doctype":  "Payment Entry",
+        "role":  "Ops - Finance",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create, missing_submit, missing_cancel"
+    },
+    {
+        "doctype":  "Task",
+        "role":  "Ops - Finance",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write"
+    },
+    {
+        "doctype":  "Item",
+        "role":  "Ops - Inventory",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "Item",
+        "role":  "Ops - Directors",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "Item Group",
+        "role":  "Ops - Inventory",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "Item Group",
+        "role":  "Ops - Directors",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "Item Attribute",
+        "role":  "Ops - Inventory",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "Item Attribute",
+        "role":  "Ops - Directors",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "UOM",
+        "role":  "Ops - Inventory",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    },
+    {
+        "doctype":  "UOM",
+        "role":  "Ops - Directors",
+        "status":  "ISSUE",
+        "issue":  "missing_read, missing_write, missing_create"
+    }
+]

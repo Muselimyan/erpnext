@@ -1,0 +1,96 @@
+﻿{
+    "timestamp":  "2026-05-18 11:39:38",
+    "checks":  {
+                   "example_users":  {
+                                         "total_found":  8,
+                                         "users":  [
+                                                       {
+                                                           "email":  "accounting.team@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "dispatch.coordinator@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "driver.01@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "finance.team@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "inventory.team@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "order.creation.team@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "order.team@example.com",
+                                                           "enabled":  1
+                                                       },
+                                                       {
+                                                           "email":  "returns.team@example.com",
+                                                           "enabled":  1
+                                                       }
+                                                   ]
+                                     },
+                   "task_access_policies":  {
+                                                "required":  16,
+                                                "found":  0,
+                                                "missing":  [
+                                                                "Order entry",
+                                                                "Pack / prepare items",
+                                                                "Dispatch picking / hand-off",
+                                                                "Delivery",
+                                                                "Return to warehouse (aborted delivery / cancelled order)",
+                                                                "Pickup Returns",
+                                                                "Return drop-off at warehouse",
+                                                                "Returns processing / verification",
+                                                                "Returns restocking",
+                                                                "Invoice preparation / create invoice",
+                                                                "Debt Collection",
+                                                                "Distribute Payment",
+                                                                "Payment Received",
+                                                                "Discount Approval",
+                                                                "Purchase Approval",
+                                                                "Write-off Approval"
+                                                            ]
+                                            },
+                   "draft_purchase_orders":  {
+                                                 "total_drafts":  0,
+                                                 "missing_required_fields":  0,
+                                                 "problematic_pos":  null
+                                             },
+                   "malformed_tasks":  {
+                                           "total_active_tasks":  0,
+                                           "bad_assignee_count":  0,
+                                           "problematic_tasks":  [
+
+                                                                 ]
+                                       },
+                   "test_customer":  {
+                                         "exists":  false,
+                                         "name":  null
+                                     },
+                   "customer_debt_thresholds":  {
+                                                    "total_customers":  193,
+                                                    "zero_threshold_count":  0,
+                                                    "percentage_zero":  0
+                                                },
+                   "price_lists":  {
+                                       "standard_selling_count":  1000,
+                                       "standard_buying_count":  0,
+                                       "total_item_prices":  1000
+                                   },
+                   "item_tracking":  {
+                                         "total_items":  500,
+                                         "no_tracking_count":  425,
+                                         "batch_tracked":  75,
+                                         "serial_tracked":  0
+                                     }
+               }
+}

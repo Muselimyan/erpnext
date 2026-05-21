@@ -1,0 +1,296 @@
+﻿{
+    "checked_at":  "2026-05-18 18:36:37",
+    "role_diagnostics":  [
+                             {
+                                 "role":  "Ops - Order Creating",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Order Accepting",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Accounting",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Inventory",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Returns",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Delivery Driver",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Directors",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Delivery",
+                                 "exists":  true,
+                                 "disabled":  0
+                             },
+                             {
+                                 "role":  "Ops - Finance",
+                                 "exists":  true,
+                                 "disabled":  0
+                             }
+                         ],
+    "doctype_diagnostics":  [
+                                {
+                                    "doctype":  "Dispatch Case",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  0,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Stock Entry",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  4,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Sales Invoice",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  4,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Payment Entry",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  2,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Task",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  1,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Item",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  9,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Item Group",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  7,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "Item Attribute",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  1,
+                                    "meta_error":  null
+                                },
+                                {
+                                    "doctype":  "UOM",
+                                    "custom_docperm_count":  0,
+                                    "doctype_permission_count":  5,
+                                    "meta_error":  null
+                                }
+                            ],
+    "relevant_permission_rows":  {
+
+                                 },
+    "comparison":  [
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Ops - Order Creating",
+                           "expected":  "read,write,create,submit",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Ops - Order Accepting",
+                           "expected":  "read",
+                           "status":  "ISSUE",
+                           "missing":  "read",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Ops - Accounting",
+                           "expected":  "read",
+                           "status":  "ISSUE",
+                           "missing":  "read",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Ops - Inventory",
+                           "expected":  "read",
+                           "status":  "ISSUE",
+                           "missing":  "read",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Ops - Returns",
+                           "expected":  "read",
+                           "status":  "ISSUE",
+                           "missing":  "read",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Delivery Driver",
+                           "expected":  "read",
+                           "status":  "ISSUE",
+                           "missing":  "read",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Dispatch Case",
+                           "role":  "Ops - Directors",
+                           "expected":  "read,cancel",
+                           "status":  "ISSUE",
+                           "missing":  "read,cancel",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Stock Entry",
+                           "role":  "Ops - Inventory",
+                           "expected":  "read,write,create,submit",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Stock Entry",
+                           "role":  "Ops - Delivery",
+                           "expected":  "read,write,create,submit",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Stock Entry",
+                           "role":  "Ops - Returns",
+                           "expected":  "read,write,create,submit",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Sales Invoice",
+                           "role":  "Ops - Accounting",
+                           "expected":  "read,write,create,submit,cancel",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit,cancel",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Sales Invoice",
+                           "role":  "Ops - Finance",
+                           "expected":  "read",
+                           "status":  "ISSUE",
+                           "missing":  "read",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Payment Entry",
+                           "role":  "Ops - Accounting",
+                           "expected":  "read,write,create,submit,cancel",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit,cancel",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Payment Entry",
+                           "role":  "Ops - Finance",
+                           "expected":  "read,write,create,submit,cancel",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create,submit,cancel",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Task",
+                           "role":  "Ops - Finance",
+                           "expected":  "read,write",
+                           "status":  "ISSUE",
+                           "missing":  "read,write",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Item",
+                           "role":  "Ops - Inventory",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Item",
+                           "role":  "Ops - Directors",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Item Group",
+                           "role":  "Ops - Inventory",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Item Group",
+                           "role":  "Ops - Directors",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Item Attribute",
+                           "role":  "Ops - Inventory",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "Item Attribute",
+                           "role":  "Ops - Directors",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "UOM",
+                           "role":  "Ops - Inventory",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       },
+                       {
+                           "doctype":  "UOM",
+                           "role":  "Ops - Directors",
+                           "expected":  "read,write,create",
+                           "status":  "ISSUE",
+                           "missing":  "read,write,create",
+                           "rows_found":  0
+                       }
+                   ],
+    "issue_count":  23
+}
