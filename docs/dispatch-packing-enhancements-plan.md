@@ -17,13 +17,16 @@ This plan prepares ERPNext changes for warehouse packing work where the office c
 
 ## What the deploy script prepares
 
-File:
+Files:
 
 ```text
 deploy/dispatch-packing-enhancements-deploy.ps1
+deploy/dispatch-team-task-queue-deploy.ps1
+deploy/dispatch-packing-problem-alerts-deploy.ps1
+deploy/dispatch-task-integration-deploy.ps1
 ```
 
-The script supports:
+Each script supports:
 
 ```powershell
 .\deploy\dispatch-packing-enhancements-deploy.ps1 -Mode Check
@@ -60,19 +63,25 @@ The script supports:
 | `dispatch_task_accept` API Server Script | Lets a worker accept/start an operational task and assigns it to themselves |
 | `Dispatch Case-Packing Scan` Client Script | Adds scan button and scan field behavior on Dispatch Case |
 | `Task-Accept Start` Client Script | Adds `Accept / Start Task` button on Task |
+| `Task-team-queue-notify` Server Script | Marks operational tasks as team queue tasks and creates role-based ToDo notifications |
+| `Task-Team Queue` Client Script | Adds a Task list team queue filter button and accept/start behavior |
+| `Dispatch Case-packing-problem-alerts` Server Script | Creates manager/director ToDo alerts when packing rows are incomplete or marked Problem |
+| `Task-dispatch-queue-integration` Server Script | Keeps Dispatch Case operational tasks integrated with team queue status/role fields |
+| `dispatch_task_queue_backfill` API Server Script | Repairs existing open Dispatch Case tasks so they use team queue fields |
 
 ## Worker flow after deployment
 
 1. Office creates a `Dispatch Case`.
 2. Office adds real item rows in `Case Items`.
 3. ERPNext creates or shows the packing `Task`.
-4. Inventory worker opens the available task.
+4. Inventory worker searches for `Task` and uses `My Team Queue` to see available team tasks.
 5. Worker clicks `Accept / Start Task`.
 6. Worker opens the linked `Dispatch Case`.
 7. Worker scans product barcodes in `Packing Scan Barcode`.
 8. ERPNext updates scanned and remaining quantities.
 9. If earlier expiry stock exists, ERPNext warns but does not block.
-10. Worker continues until every required item row is complete.
+10. If items are missing or a row is marked Problem, ERPNext opens a packing problem and creates manager/director ToDo alerts.
+11. Worker continues until every required item row is complete.
 
 ## FEFO behavior
 
@@ -88,9 +97,18 @@ The scan is still accepted because FEFO is warning-only.
 
 - This prepares packing progress and warning behavior.
 - It does not yet create a custom full-screen mobile packing page.
-- It does not yet change the existing Dispatch Case task-generation scripts.
 - It does not yet send external phone/email notifications.
 - ERPNext in-app assignment/ToDo notification behavior still depends on ERPNext notification settings.
+
+## Deployed status
+
+As of the Step 1-3 deployment, ERPNext has:
+
+- Packing scan/progress fields and FEFO warning-only scan logic.
+- Team task queue fields and `Accept / Start Task` behavior.
+- Role-based ERPNext `ToDo` notifications for team queue tasks.
+- Packing shortage/problem fields and manager/director `ToDo` alerts.
+- Dispatch Case task integration so future operational tasks receive queue role/status.
 
 ## Testing after deployment
 
