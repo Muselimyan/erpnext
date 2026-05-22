@@ -2,28 +2,28 @@
 
 **Purpose:** Use this file as the main testing roadmap for the ERPNext setup. It tells you which manual to open, what business process you are testing, which ERPNext screens must be searchable, which role/user should perform the test, and what result proves that the setup works.
 
-**Manual set status:** ✅ Finished for colleague review as of 2026-05-21. Live ERPNext smoke testing and real-user signoff are still separate go-live activities.
+**Manual set status:** Manuals are written, but most workflows are not yet marked fully working. A manual is marked **fully working** only after the matching ERPNext flow has passed live smoke testing with the required roles.
 
-## Finished manual files
-| File | Status |
+## Working-condition status
+| File | Working status |
 |---|---|
-| `cancellation-and-corrections.md` | ✅ Finished |
-| `collection-set-setup.md` | ✅ Finished |
-| `daily-reporting-checks.md` | ✅ Finished |
-| `debt-collection-and-payment.md` | ✅ Finished |
-| `delivery-driver-guide.md` | ✅ Finished |
-| `discount-approval-walkthrough.md` | ✅ Finished |
-| `erpnext-manual-setup-checklist.md` | ✅ Finished |
-| `low-stock-reorder-routine.md` | ✅ Finished |
-| `new-customer-onboarding.md` | ✅ Finished |
-| `new-item-setup.md` | ✅ Finished |
-| `new-supplier-setup.md` | ✅ Finished |
-| `purchase-walkthrough.md` | ✅ Finished |
-| `standard-sale-walkthrough.md` | ✅ Finished |
-| `stock-adjustment-writeoff.md` | ✅ Finished |
-| `supplier-prepayment-allocation.md` | ✅ Finished |
-| `surgery-case-walkthrough.md` | ✅ Finished |
-| `surgery-set-type-setup.md` | ✅ Finished |
+| `erpnext-manual-setup-checklist.md` | ✅ Setup checklist mostly working: role permissions and item tracking completed; still use for final go-live checks |
+| `new-item-setup.md` | ✅ Core item tracking working: item tracking flags applied and verified; new item creation still needs role/user smoke test |
+| `daily-reporting-checks.md` | 🟡 Reports/workspace deployed; report results still need validation with real or test transactions |
+| `collection-set-setup.md` | 🟡 Collection Set readiness script deployed; template creation/use still needs smoke test |
+| `purchase-walkthrough.md` | 🟡 Purchasing gates deployed; full PO → PR → LCV → PI flow still needs smoke test |
+| `standard-sale-walkthrough.md` | 🟡 Dispatch Case no-return flow deployed; end-to-end smoke test still required |
+| `surgery-case-walkthrough.md` | 🟡 Dispatch Case return-expected flow deployed; end-to-end smoke test still required |
+| `debt-collection-and-payment.md` | 🟡 Debt/task logic deployed; payment/debt closure still needs smoke test |
+| `discount-approval-walkthrough.md` | 🟡 Discount approval logic deployed; approval/rejection path still needs smoke test |
+| `delivery-driver-guide.md` | 🟡 Delivery task/photo/handover gates documented/deployed; driver role test still required |
+| `low-stock-reorder-routine.md` | 🟡 Reorder governance deployed; reorder thresholds still need population before routine is useful |
+| `new-customer-onboarding.md` | 🟡 Customer master data loaded and debt thresholds set; new customer + warehouse creation still needs role smoke test |
+| `new-supplier-setup.md` | 🟡 Supplier setup manual written; supplier creation/access still needs role smoke test |
+| `supplier-prepayment-allocation.md` | 🟡 Manual written; supplier prepayment allocation still needs smoke test |
+| `stock-adjustment-writeoff.md` | 🟡 Manual written; write-off/stock correction governance still needs smoke test |
+| `cancellation-and-corrections.md` | 🟡 Manual written; correction/cancellation path still needs controlled smoke test |
+| `surgery-set-type-setup.md` | 🟡 Manual written; setup path still needs smoke test if used |
 
 ---
 

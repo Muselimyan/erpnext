@@ -9,55 +9,61 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 - Primary reader: a new worker who is sharp but new to ERPNext
 - Secondary readers: you / director team for approvals and review
 
-## 2.1) Documentation completion status
-**Last reviewed:** 2026-05-21
+## 2.1) Working-condition status
+**Last reviewed:** 2026-05-22
 
-### Fully finished / ready for colleague review
-| File | Status |
+These statuses describe whether the matching ERPNext area is already in working condition, not only whether the document text is written.
+
+### Working or mostly working in ERPNext
+| File | Working status |
 |---|---|
-| `02-navigation-and-naming.md` | ✅ Finished |
-| `03-roles-permissions-responsibilities.md` | ✅ Finished |
-| `03-roles-permissions-responsibilities-implementation.md` | ✅ Finished |
-| `04-customers-and-doctors.md` | ✅ Finished |
-| `04-customers-and-doctors-implementation.md` | ✅ Finished |
-| `05-warehouses-and-stock-rules.md` | ✅ Finished |
-| `05-warehouses-and-stock-rules-implementation.md` | ✅ Finished |
-| `06-items-variants-uoms.md` | ✅ Finished |
-| `06-items-variants-uoms-implementation.md` | ✅ Finished |
-| `07-suppliers-and-procurement-basic.md` | ✅ Finished |
-| `07-suppliers-and-procurement-basic-implementation.md` | ✅ Finished |
-| `08-reorder-and-ordering-by-supplier.md` | ✅ Finished |
-| `08-reorder-and-ordering-by-supplier-implementation.md` | ✅ Finished |
-| `10-task-system-foundations.md` | ✅ Finished |
-| `10-task-system-foundations-implementation.md` | ✅ Finished |
-| `10.1-directors-task-dashboard.md` | ✅ Finished |
-| `10.1-directors-task-dashboard-implementation.md` | ✅ Finished |
-| `13-reporting-pack.md` | ✅ Finished |
-| `13-reporting-pack-implementation.md` | ✅ Finished |
-| `14-go-live-checklist.md` | ✅ Finished |
-| `15-reporting-requirements-review.md` | ✅ Finished |
-| `15a-reporting-requirements-implementation.md` | ✅ Finished |
-| `16-unified-dispatch-flow.md` | ✅ Finished |
-| `16a-unified-dispatch-flow-implementation.md` | ✅ Finished |
-| `16b-unified-dispatch-flow-gap-analysis.md` | ✅ Finished |
-| `17-purchase-cost-and-valuation.md` | ✅ Finished |
-| `17a-purchase-cost-and-valuation-implementation.md` | ✅ Finished |
-| `ERPNext Barcode/FIXES_DOCUMENTATION.md` | ✅ Finished |
-| `ERPNext Barcode/IMPLEMENTATION_READY.md` | ✅ Finished as implementation-ready; live deployment still needs verification |
-| `go-live-action-plan.md` | ✅ Finished, but older than `GO-LIVE-STATUS.md` / `GO-LIVE-HANDOVER-SUMMARY.md` |
+| `03-roles-permissions-responsibilities.md` | ✅ Role Permission Manager completed manually; API verification limited |
+| `03-roles-permissions-responsibilities-implementation.md` | ✅ Role Permission Manager completed manually; API verification limited |
+| `06-items-variants-uoms.md` | ✅ Item tracking flags applied and verified for 3318 reviewed rows |
+| `06-items-variants-uoms-implementation.md` | ✅ Item tracking flags applied and verified for 3318 reviewed rows |
+| `14-go-live-checklist.md` | ✅ Checklist usable; final go-live checks still must be run |
+| `go-live-action-plan.md` | ✅ Status plan usable, but older than `GO-LIVE-STATUS.md` / `GO-LIVE-HANDOVER-SUMMARY.md` |
 
-### Finished but superseded / historical reference only
-| File | Status |
+### Deployed / prepared but still needs live smoke testing
+| File | Working status |
 |---|---|
-| `09-standard-selling-flow.md` | ✅ Finished, superseded by Doc 16 |
-| `09-standard-selling-flow-implementation.md` | ✅ Finished, superseded by Doc 16A |
-| `11-surgery-set-model.md` | ✅ Finished, superseded by Doc 16 |
-| `11-surgery-set-implementation.md` | ✅ Finished, superseded by Doc 16A |
-| `12-surgery-set-operational-workflow.md` | ✅ Finished, superseded by Doc 16 |
-| `12-surgery-set-operational-workflow-implementation.md` | ✅ Finished, superseded by Doc 16A |
+| `02-navigation-and-naming.md` | 🟡 Naming rules documented; item group/naming cleanup still open |
+| `04-customers-and-doctors.md` | 🟡 Customer master data loaded and debt thresholds set; new-customer workflow still needs role smoke test |
+| `04-customers-and-doctors-implementation.md` | 🟡 Customer master data loaded and debt thresholds set; new-customer workflow still needs role smoke test |
+| `05-warehouses-and-stock-rules.md` | 🟡 Core warehouse model exists; verify every active client-location warehouse |
+| `05-warehouses-and-stock-rules-implementation.md` | 🟡 Core warehouse model exists; verify every active client-location warehouse |
+| `07-suppliers-and-procurement-basic.md` | 🟡 Purchasing gates deployed; full purchase flow still needs smoke test |
+| `07-suppliers-and-procurement-basic-implementation.md` | 🟡 Purchasing gates deployed; full purchase flow still needs smoke test |
+| `08-reorder-and-ordering-by-supplier.md` | 🟡 Reorder governance deployed; reorder thresholds still need population |
+| `08-reorder-and-ordering-by-supplier-implementation.md` | 🟡 Reorder governance deployed; reorder thresholds still need population |
+| `10-task-system-foundations.md` | 🟡 Task governance deployed; real users/roles and task smoke tests still required |
+| `10-task-system-foundations-implementation.md` | 🟡 Task governance deployed; real users/roles and task smoke tests still required |
+| `10.1-directors-task-dashboard.md` | 🟡 Optional wallboard/dashboard area; not required for first transaction |
+| `10.1-directors-task-dashboard-implementation.md` | 🟡 Optional wallboard/dashboard area; not required for first transaction |
+| `13-reporting-pack.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
+| `13-reporting-pack-implementation.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
+| `15-reporting-requirements-review.md` | 🟡 Reports deployed/expanded; some report value quality depends on buying prices and test data |
+| `15a-reporting-requirements-implementation.md` | 🟡 Reports deployed/expanded; some report value quality depends on buying prices and test data |
+| `16-unified-dispatch-flow.md` | 🟡 Dispatch Case flow deployed; end-to-end no-return and return-expected smoke tests still required |
+| `16a-unified-dispatch-flow-implementation.md` | 🟡 Dispatch Case flow deployed; end-to-end no-return and return-expected smoke tests still required |
+| `16b-unified-dispatch-flow-gap-analysis.md` | 🟡 Deployment marked complete; business workflow still needs smoke test |
+| `17-purchase-cost-and-valuation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
+| `17a-purchase-cost-and-valuation-implementation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
+| `ERPNext Barcode/FIXES_DOCUMENTATION.md` | 🟡 Barcode logic prepared; live Purchase Receipt deployment/smoke test still required |
+| `ERPNext Barcode/IMPLEMENTATION_READY.md` | 🟡 Barcode implementation-ready; live deployment/smoke test still required |
 
-### Not final / reference / requires external confirmation
-| File | Status |
+### Superseded / historical reference only
+| File | Working status |
+|---|---|
+| `09-standard-selling-flow.md` | ⚪ Superseded by Doc 16; do not use as current working flow |
+| `09-standard-selling-flow-implementation.md` | ⚪ Superseded by Doc 16A; do not use as current working flow |
+| `11-surgery-set-model.md` | ⚪ Superseded by Doc 16; retained only for historical/template context |
+| `11-surgery-set-implementation.md` | ⚪ Superseded by Doc 16A; retained only for historical/template context |
+| `12-surgery-set-operational-workflow.md` | ⚪ Superseded by Doc 16; do not use as current working flow |
+| `12-surgery-set-operational-workflow-implementation.md` | ⚪ Superseded by Doc 16A; do not use as current working flow |
+
+### Reference / not a working-process document
+| File | Working status |
 |---|---|
 | `implementation-questions.md` | 🟡 Reference / open inputs list |
 | `ai-agent-api-access-guide.md` | 🟡 Reference |
