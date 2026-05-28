@@ -43,7 +43,7 @@ $TaskFields = @(
 )
 
 $TaskQueueAfterSave = @'
-def _run():
+def run_script():
     TASK_KIND_TEAM_ROLE = {
         "Order entry": "Ops - Order Accepting",
         "Pack / prepare items": "Ops - Inventory",
@@ -107,7 +107,7 @@ def _run():
         created += 1
     if created:
         frappe.db.set_value("Task", doc.name, "custom_team_notified", 1, update_modified=False)
-_run()
+run_script()
 '@
 $TaskAcceptApi = @'
 task_name = frappe.form_dict.get("task_name")

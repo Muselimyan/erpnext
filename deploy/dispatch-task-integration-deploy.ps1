@@ -78,7 +78,7 @@ frappe.response["message"] = {"ok": True, "scanned": scanned, "updated": updated
 '@
 
 $AfterSave = @'
-def _run():
+def run_script():
     if not doc.get("dispatch_case"):
         return
     TASK_KIND_TEAM_ROLE = {
@@ -116,7 +116,7 @@ def _run():
     if real_assigned:
         values["custom_accepted_by"] = real_assigned[0]
     frappe.db.set_value("Task", doc.name, values, update_modified=False)
-_run()
+run_script()
 '@
 
 $ServerScripts = @(

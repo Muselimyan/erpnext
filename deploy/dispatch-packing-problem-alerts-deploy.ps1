@@ -42,7 +42,7 @@ $Fields = @(
 )
 
 $ProblemAlertScript = @'
-def _run():
+def run_script():
     problem_rows = []
     for row in doc.get("case_items") or []:
         required = float(row.get("dispatched_qty") or 0)
@@ -95,7 +95,7 @@ def _run():
         for row in doc.get("case_items") or []:
             if row.get("custom_packing_status") == "Problem":
                 frappe.db.set_value("Dispatch Case Item", row.name, "custom_problem_alert_sent", 1, update_modified=False)
-_run()
+run_script()
 '@
 
 $ClientScript = @'

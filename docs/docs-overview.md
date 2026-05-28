@@ -10,17 +10,27 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 - Secondary readers: you / director team for approvals and review
 
 ## 2.1) Working-condition status
-**Last reviewed:** 2026-05-22
+**Last reviewed:** 2026-05-26
 
 These statuses describe whether the matching ERPNext area is already in working condition, not only whether the document text is written.
 
 ### Working or mostly working in ERPNext
 | File | Working status |
 |---|---|
-| `03-roles-permissions-responsibilities.md` | ✅ Role Permission Manager completed manually; API verification limited |
-| `03-roles-permissions-responsibilities-implementation.md` | ✅ Role Permission Manager completed manually; API verification limited |
-| `06-items-variants-uoms.md` | ✅ Item tracking flags applied and verified for 3318 reviewed rows |
-| `06-items-variants-uoms-implementation.md` | ✅ Item tracking flags applied and verified for 3318 reviewed rows |
+| `03-roles-permissions-responsibilities.md` | ✅ FULLY READY for current go-live step: Role Permission Manager completed manually; every operational role has at least one real user; dangerous roles only on developer account; Employee records deferred; example users to revisit before final go-live |
+| `03-roles-permissions-responsibilities-implementation.md` | ✅ FULLY READY for current go-live step: Role Permission Manager completed manually; every operational role has at least one real user; dangerous roles only on developer account; Employee records deferred; example users to revisit before final go-live |
+| `04-customers-and-doctors.md` | ✅ FULLY READY for current go-live step: real customers exist; no test/fake customer data found; debt thresholds are filled, with exact values to be adjusted after launch if needed; customer names are recognizable |
+| `04-customers-and-doctors-implementation.md` | ✅ FULLY READY for current go-live step: real customers exist; no test/fake customer data found; debt thresholds are filled, with exact values to be adjusted after launch if needed; customer names are recognizable |
+| `05-warehouses-and-stock-rules.md` | ✅ FULLY READY for current go-live step: core warehouses exist; client/doctor warehouses are under `Clients - Inmed`; no obvious wrong structure found; team rule accepted that stock should not bypass Dispatch Case/in-transit flow |
+| `05-warehouses-and-stock-rules-implementation.md` | ✅ FULLY READY for current go-live step: core warehouses exist; client/doctor warehouses are under `Clients - Inmed`; no obvious wrong structure found; team rule accepted that stock should not bypass Dispatch Case/in-transit flow |
+| `06-items-variants-uoms.md` | ✅ FULLY READY: Item tracking flags applied and verified for 3318 reviewed rows |
+| `06-items-variants-uoms-implementation.md` | ✅ FULLY READY: Item tracking flags applied and verified for 3318 reviewed rows |
+| `07-suppliers-and-procurement-basic.md` | ✅ FULLY READY for current go-live step: supplier master list completed; purchasing roles manually confirmed; no broken draft POs; USD→AMD exchange record created for testing; draft PO save works; director approval task blocks submit until approved; approved PO submit tested successfully |
+| `07-suppliers-and-procurement-basic-implementation.md` | ✅ FULLY READY for current go-live step: supplier master list completed; purchasing roles manually confirmed; no broken draft POs; USD→AMD exchange record created for testing; draft PO save works; director approval task blocks submit until approved; approved PO submit tested successfully |
+| `08-reorder-and-ordering-by-supplier.md` | ✅ SOFTWARE READY for current go-live step: purchasing roles confirmed; reorder fields exist; `Stock Projected Qty`, `Item Shortage Report`, and `RPT — Purchasing — Norm and Reorder` open successfully; business reorder levels/quantities intentionally deferred for testing/real stock decisions |
+| `08-reorder-and-ordering-by-supplier-implementation.md` | ✅ SOFTWARE READY for current go-live step: purchasing roles confirmed; reorder fields exist; `Stock Projected Qty`, `Item Shortage Report`, and `RPT — Purchasing — Norm and Reorder` open successfully; business reorder levels/quantities intentionally deferred for testing/real stock decisions |
+| `10-task-system-foundations.md` | ✅ READY for launch foundation: Task list/form open; Task Access Policy records exist; Purchase Approval task and PO approval writeback tested; minor task cleanup/usability refinements can be handled during testing month |
+| `10-task-system-foundations-implementation.md` | ✅ READY for launch foundation: Task list/form open; Task Access Policy records exist; Purchase Approval task and PO approval writeback tested; minor task cleanup/usability refinements can be handled during testing month |
 | `14-go-live-checklist.md` | ✅ Checklist usable; final go-live checks still must be run |
 | `go-live-action-plan.md` | ✅ Status plan usable, but older than `GO-LIVE-STATUS.md` / `GO-LIVE-HANDOVER-SUMMARY.md` |
 
@@ -28,16 +38,6 @@ These statuses describe whether the matching ERPNext area is already in working 
 | File | Working status |
 |---|---|
 | `02-navigation-and-naming.md` | 🟡 Naming rules documented; item group/naming cleanup still open |
-| `04-customers-and-doctors.md` | 🟡 Customer master data loaded and debt thresholds set; new-customer workflow still needs role smoke test |
-| `04-customers-and-doctors-implementation.md` | 🟡 Customer master data loaded and debt thresholds set; new-customer workflow still needs role smoke test |
-| `05-warehouses-and-stock-rules.md` | 🟡 Core warehouse model exists; verify every active client-location warehouse |
-| `05-warehouses-and-stock-rules-implementation.md` | 🟡 Core warehouse model exists; verify every active client-location warehouse |
-| `07-suppliers-and-procurement-basic.md` | 🟡 Purchasing gates deployed; full purchase flow still needs smoke test |
-| `07-suppliers-and-procurement-basic-implementation.md` | 🟡 Purchasing gates deployed; full purchase flow still needs smoke test |
-| `08-reorder-and-ordering-by-supplier.md` | 🟡 Reorder governance deployed; reorder thresholds still need population |
-| `08-reorder-and-ordering-by-supplier-implementation.md` | 🟡 Reorder governance deployed; reorder thresholds still need population |
-| `10-task-system-foundations.md` | 🟡 Task governance deployed; real users/roles and task smoke tests still required |
-| `10-task-system-foundations-implementation.md` | 🟡 Task governance deployed; real users/roles and task smoke tests still required |
 | `10.1-directors-task-dashboard.md` | 🟡 Optional wallboard/dashboard area; not required for first transaction |
 | `10.1-directors-task-dashboard-implementation.md` | 🟡 Optional wallboard/dashboard area; not required for first transaction |
 | `13-reporting-pack.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
