@@ -10,7 +10,7 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 - Secondary readers: you / director team for approvals and review
 
 ## 2.1) Working-condition status
-**Last reviewed:** 2026-05-26
+**Last reviewed:** 2026-06-01
 
 These statuses describe whether the matching ERPNext area is already in working condition, not only whether the document text is written.
 
@@ -32,7 +32,7 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `10-task-system-foundations.md` | ✅ READY for launch foundation: Task list/form open; Task Access Policy records exist; Purchase Approval task and PO approval writeback tested; minor task cleanup/usability refinements can be handled during testing month |
 | `10-task-system-foundations-implementation.md` | ✅ READY for launch foundation: Task list/form open; Task Access Policy records exist; Purchase Approval task and PO approval writeback tested; minor task cleanup/usability refinements can be handled during testing month |
 | `14-go-live-checklist.md` | ✅ Checklist usable; final go-live checks still must be run |
-| `go-live-action-plan.md` | ✅ Status plan usable, but older than `GO-LIVE-STATUS.md` / `GO-LIVE-HANDOVER-SUMMARY.md` |
+| `go-live-action-plan.md` | ✅ Current local launch checklist; implementation work is complete for Docs 15/16/17, remaining work is smoke testing and master data |
 
 ### Deployed / prepared but still needs live smoke testing
 | File | Working status |
@@ -42,13 +42,13 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `10.1-directors-task-dashboard-implementation.md` | 🟡 Optional wallboard/dashboard area; not required for first transaction |
 | `13-reporting-pack.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
 | `13-reporting-pack-implementation.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
-| `15-reporting-requirements-review.md` | 🟡 Reports deployed/expanded; some report value quality depends on buying prices and test data |
-| `15a-reporting-requirements-implementation.md` | 🟡 Reports deployed/expanded; some report value quality depends on buying prices and test data |
-| `16-unified-dispatch-flow.md` | 🟡 Dispatch Case flow deployed; end-to-end no-return and return-expected smoke tests still required |
-| `16a-unified-dispatch-flow-implementation.md` | 🟡 Dispatch Case flow deployed; end-to-end no-return and return-expected smoke tests still required |
-| `16b-unified-dispatch-flow-gap-analysis.md` | 🟡 Deployment marked complete; business workflow still needs smoke test |
+| `15-reporting-requirements-review.md` | 🟡 Software deployed; report value quality depends on Standard Buying prices and real/test transactions |
+| `15a-reporting-requirements-implementation.md` | 🟡 26/26 reports/functions/workspaces deployed or existing; remaining work is smoke testing and master-data-dependent value validation |
+| `16-unified-dispatch-flow.md` | 🟡 Dispatch Case flow deployed; `unit_price` optional; end-to-end no-return and return-expected smoke tests still required |
+| `16a-unified-dispatch-flow-implementation.md` | 🟡 Dispatch Case implementation deployed; `unit_price` optional; end-to-end no-return and return-expected smoke tests still required |
+| `16b-unified-dispatch-flow-gap-analysis.md` | 🟡 No core implementation gap remains; `Dispatch - Task Queues` workspace deployed; business workflow still needs smoke test |
 | `17-purchase-cost-and-valuation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
-| `17a-purchase-cost-and-valuation-implementation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
+| `17a-purchase-cost-and-valuation-implementation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete; LCV flow needs smoke test |
 | `ERPNext Barcode/FIXES_DOCUMENTATION.md` | 🟡 Barcode logic prepared; live Purchase Receipt deployment/smoke test still required |
 | `ERPNext Barcode/IMPLEMENTATION_READY.md` | 🟡 Barcode implementation-ready; live deployment/smoke test still required |
 
@@ -292,13 +292,13 @@ These statuses describe whether the matching ERPNext area is already in working 
 ### 15 — Reporting Requirements Review
 **File**: `15-reporting-requirements-review.md`
 - **Purpose**: Consolidates the 20 requested reports/functions into 26 implementation-ready ERPNext specifications. Documents all confirmed decisions (financial definitions, access control, debt rules, norm calculation). Cross-references Doc 13/13A for already-built reports. Proposes 4 phased implementation phases.
-- **Status**: Planning approved — Phase 1 (9 reports) is highest priority. Phase 2 items (task auto-escalation, dashboards, `buffer_percentage` field, `payment_verification_status` field) require additional scoping before implementation.
+- **Status**: Software deployed through Doc 15E; remaining validation depends on smoke tests, Standard Buying prices, and real/test transaction data.
 
 ### 15A — Reporting Requirements: Implementation Status and Build Plan
 **File**: `15a-reporting-requirements-implementation.md`
-- **Purpose**: Gap analysis between Doc 15 specs and current production state. Classifies all 26 reports as EXISTS / PARTIAL / NATIVE / MISSING. Provides naming convention, access control table, custom fields to deploy, and phased build order.
-- **Snapshot date**: 2026-05-11
-- **Key findings**: 3 reports already exist (§9.3, §9.4, §9.7); 6 are partially covered; 2 need config only; 15 must be built. 5 new-scope items (auto-escalation, dashboards, `buffer_percentage`, `urgency_description`) tracked separately.
+- **Purpose**: Current implementation status for all 26 Doc 15 reports/functions/workspaces, including Doc 15A–15E deployment scripts and remaining operational validation.
+- **Snapshot date**: 2026-06-01
+- **Key findings**: All 26 items are deployed or existing. Doc 15E added the remaining item reports, return/refund queue, norm notification scheduler, and clean workspaces. Remaining work is smoke testing and master-data-dependent report validation.
 
 ### 16 — Unified Dispatch Flow *(Current — Replaces Docs 09, 11, 12)*
 **File**: `16-unified-dispatch-flow.md`
@@ -313,20 +313,23 @@ These statuses describe whether the matching ERPNext area is already in working 
 ### 16A — Unified Dispatch Flow (Implementation)
 **File**: `16a-unified-dispatch-flow-implementation.md`
 - **Purpose**: Step-by-step ERPNext setup for Dispatch Case DocType, child tables, custom fields, server scripts, client scripts, roles, and Task Access Policies.
+- **Current status**: Deployed; `Dispatch Case Item.unit_price` is optional; workspace/task shortcuts are available through `Dispatch - Task Queues`.
 
 ### 16B — Unified Dispatch Flow Gap Analysis
 **File**: `16b-unified-dispatch-flow-gap-analysis.md`
 - **Purpose**: Deployment gap analysis — what was needed vs. what existed, deployment progress, and final state after `doc16a-deploy.ps1`.
+- **Current status**: No core implementation gap remains; end-to-end smoke tests are still required before final sign-off.
 
 ---
 
 ### 17 — Purchase Flow with Costing and Valuation
 **File**: `17-purchase-cost-and-valuation.md`
-- **Prod status (2026-05-11):** FIFO valuation ✅, PR/PO scripts ✅ | `hs_code`/`import_tax_rate` fields ❌ | LCV client script ❌ | Item prices 0 records ❌
+- **Prod status (2026-06-01):** FIFO valuation ✅, PR/PO scripts ✅, `hs_code`/`import_tax_rate` fields ✅, LCV client script ✅ | Standard Buying prices / HS codes / import tax rates still need master-data population
 
 ### 17A — Purchase Flow with Costing and Valuation (Implementation)
 **File**: `17a-purchase-cost-and-valuation-implementation.md`
 - **Purpose**: Step-by-step ERPNext setup — Item hs_code/import_tax_rate fields, LCV import-duty pre-fill client script, operating procedures for PR/LCV/PI, deploy script skeleton, and smoke tests. Full prod state analysis included.
+- **Current status**: Technical deployment complete; purchase-costing smoke test and master data remain.
 
 ---
 

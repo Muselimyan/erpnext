@@ -1,0 +1,482 @@
+﻿GROUP 5: zmd wire (20 items)
+
+1. 30248.08.1.2.250 - ZM K-wire, 1.2/250mm SS
+2. 30248.08.250 - ZM K-wire, 0.8/250mm SS
+3. 30248.1.0.230 - ZM K-wire, 1.0/230mm SS
+4. 30248.1.0.300 - ZM K-wire, 1.0/300mm SS
+5. 30248.1.2.300 - ZM K-wire, 1.2/300 mm SS
+6. 30248.1.5.300 - ZM K-wire, 1.5/300 mm SS
+7. 30248.2.0.250 - ZM K-wire, 2.0/250mm SS
+8. 30248.2.0.300 - ZM K-wire, 2.0/300mm SS
+9. 30248.2.5.250 - ZM K-wire, 2.5/250mm SS
+10. 30248.2.5.300 - ZM K-wire, 2.5/300mm SS
+11. 30248.3.0.250 - ZM K-wire, 3.0/250mm SS
+12. 30248.3.0.300 - ZM K-wire, 3.0/300mm SS
+13. 30248.3.5.300 - ZM K-wire, 3.5/300mm SS
+14. 30248.4.0.200 - ZM K-wire, 4.0/200mm SS
+15. 30248.4.0.250 - ZM K-wire, 4.0/250mm SS
+16. 30248.4.0.300 - ZM K-wire, 4.0/300mm SS
+17. 9000.0410 - ZM Suture Wire 5m 0.8 mm SS
+18. 9000.0411 - ZM Suture Wire 5m 0.6 mm SS
+19. 9000.0412 - ZM Suture Wire 5m 1.0 mm SS
+20. 9000.0413 - ZM Suture Wire 5m 1.2 mm SS
+
+
+GROUP 6: Zimede (162 items)
+
+1. 30248.0825 - Zimede, K-Wire, 0.8*250mm, S.S.
+2. 30248.10250 - Zimede, K-Wire, 1.0*250mm, S.S.
+3. 30248.10300 - Zimede, K-Wire, 1.0*300mm, S.S.
+4. 30248.12250 - Zimede, K-Wire, 1.2*250mm, S.S.
+5. 30248.12300 - Zimede, K-Wire, 1.2*300mm, S.S.
+6. 30248.15300 - Zimede, K-Wire, 1.5*300mm, S.S.
+7. 30248.20150 - Zimede, K-Wire, 2.0*250mm, S.S.
+8. 30248.20300 - Zimede, K-Wire, 2.0*300mm, S.S.
+9. 30248.25250 - Zimede, K-Wire, 2.5*250mm, S.S.
+10. 30248.25300 - Zimede, K-Wire, 2.5*300mm, S.S.
+11. 30248.30300 - Zimede, K-Wire, 3.0*300mm, S.S.
+12. 30249.065 - Zimede, Suture Wire, 0.6mm*5meter, S.S.
+13. 30249.085 - Zimede, Suture Wire, 0.8mm*5meter, S.S.
+14. 30249.105 - Zimede, Suture Wire, 1.0mm*5meter, S.S.
+15. 30249.125 - Zimede, Suture Wire, 1.2mm*5meter, S.S.
+16. 3240200490 - Rod BU 5.5mm, 500mm, Ti
+17. 40201.15 - Zimede, Position screws, 4.0x15mm, Ti
+18. 40201.17 - Zimede, Position screws, 4.0x17mm, Ti
+19. 40201.23 - Zimede, Anterior cervical plate, 4h - 23mm, Ti
+20. 40201.25 - Zimede, Anterior cervical plate, 4h - 25mm, Ti
+21. 40201.26 - Zimede, Anterior cervical plate, 4h - 26mm, Ti
+22. 40201.27 - Zimede, Anterior cervical plate, 4h - 27mm, Ti
+23. 40201.29 - Zimede, Anterior cervical plate, 4h - 29mm, Ti
+24. 40201.32 - Zimede, Anterior cervical plate, 4h - 32mm, Ti
+25. 40201.33 - Zimede, Anterior cervical plate, 4h - 33mm, Ti
+26. 40201.33-6 - Zimede, Anterior cervical plate, 6h - 33mm, Ti
+27. 40201.35 - Zimede, Anterior cervical plate, 6h - 35mm, Ti
+28. 40201.38 - Zimede, Anterior cervical plate, 6h - 38mm, Ti
+29. 40201.41 - Zimede, Anterior cervical plate, 6h - 41mm, Ti
+30. 40201.44 - Zimede, Anterior cervical plate, 6h - 44mm, Ti
+31. 40201.45 - Zimede, Anterior cervical plate, 6h - 45mm, Ti
+32. 40201.47 - Zimede, Anterior cervical plate, 6h - 47mm, Ti
+33. 40201.50 - Zimede, Anterior cervical plate, 6h - 50mm, Ti
+34. 40201.61 - Zimede, Anterior cervical plate, 8h - 61mm, Ti
+35. 40201.64 - Zimede, Anterior cervical plate, 8h - 64mm, Ti
+36. 40201.72 - Zimede, Anterior cervical plate, 10h - 72mm, Ti
+37. 40212.1290 - Zimede, Titanum Mesh Cage, 12x90mm, Ti
+38. 40304.5.0.35 - ZMD.Broken-type Multi-Axial U-shaped Screws 5.0*35mm,Ti
+39. 40304.5.0.40 - ZMD, Broken-type Multi-Axial U-shaped Screws, 5.0mm*40mm, Ti
+40. 40304.5.5.40 - ZMD, Broken-type Multi-Axial U-shaped Screws, 5.5mm*40mm, Ti
+41. 40304.5.5.45 - ZMD.Broken-type Multi-Axial U-shaped Screws 5.5*45mm,Ti
+42. 40304.6.5.35 - ZMD, Broken-type Multi-Axial U-shaped Screws, 6.5mm*35mm, Ti
+43. 40304.6.5.45 - ZMD.Broken-type Multi-Axial U-shaped Screws 6.5*45mm,Ti
+44. 42892012.12 - Zimede, 2.0mm Snap-off Screw, 12mm, Ti
+45. 42892013.13 - Zimede, 2.0mm Snap-off Screw, 13mm, Ti
+46. 42892014.14 - Zimede, 2.0mm Snap-off Screw, 14mm, Ti
+47. 42902712.12 - Zimede, 2.7mm Snap-off Screw, 12mm, Ti
+48. 42902713.13 - Zimede, 2.7mm Snap-off Screw, 13mm, Ti
+49. 42902714.14 - Zimede, 2.7mm Snap-off Screw, 14mm, Ti
+50. 50201.10*240 - Zimede, Tibial Intramedullary Nail, 10*240mm, T
+51. 50201.10*260 - Zimede, Tibial Intramedullary Nail, 10*260mm, T
+52. 50201.10*280 - Zimede, Tibial Intramedullary Nail, 10*280mm, T
+53. 50201.10*300 - Zimede, Tibial Intramedullary Nail, 10*300mm, T
+54. 50201.10*320 - Zimede, Tibial Intramedullary Nail, 10*320mm, T
+55. 50201.10*340 - Zimede, Tibial Intramedullary Nail, 10*340mm, T
+56. 50201.10*360 - Zimede, Tibial Intramedullary Nail, 10*360mm, T
+57. 50201.8*260 - Zimede, Tibial Intramedullary Nail, 8*260mm, T
+58. 50201.8*280 - Zimede, Tibial Intramedullary Nail, 8*280mm, T
+59. 50201.8*300 - Zimede, Tibial Intramedullary Nail, 8*300mm, T
+60. 50201.8*320 - Zimede, Tibial Intramedullary Nail, 8*320mm, T
+61. 50201.8*340 - Zimede, Tibial Intramedullary Nail, 8*340mm, T
+62. 50201.8*360 - Zimede, Tibial Intramedullary Nail, 8*360mm, T
+63. 50201.9*240 - Zimede, Tibial Intramedullary Nail, 9*240mm, T
+64. 50201.9*260 - Zimede, Tibial Intramedullary Nail, 9*260mm, T
+65. 50201.9*280 - Zimede, Tibial Intramedullary Nail, 9*280mm, T
+66. 50201.9*300 - Zimede, Tibial Intramedullary Nail, 9*300mm, T
+67. 50201.9*320 - Zimede, Tibial Intramedullary Nail, 9*320mm, T
+68. 50201.9*340 - Zimede, Tibial Intramedullary Nail, 9*340mm, T
+69. 50201.9*360 - Zimede, Tibial Intramedullary Nail, 9*360mm, T
+70. 50202.10*320 - Zimede, Femoral Proximal Lockable Intr. Nail, 10*320mm, S.S
+71. 50202.10*340 - Zimede, Femoral Proximal Lockable Intr. Nail, 10*340mm, S.S
+72. 50202.10*360 - Zimede, Femoral Proximal Lockable Intr. Nail, 10*360mm, S.S
+73. 50202.10*380 - Zimede, Femoral Proximal Lockable Intr. Nail, 10*380mm, S.S
+74. 50202.10*400 - Zimede, Femoral Proximal Lockable Intr. Nail, 10*400mm, S.S
+75. 50202.10*420 - Zimede, Femoral Proximal Lockable Intr. Nail, 10*420mm, S.S
+76. 50202.11*320 - Zimede, Femoral Proximal Lockable Intr. Nail, 11*320mm, S.S
+77. 50202.11*340 - Zimede, Femoral Proximal Lockable Intr. Nail, 11*340mm, S.S
+78. 50202.11*360 - Zimede, Femoral Proximal Lockable Intr. Nail, 11*360mm, S.S
+79. 50202.11*380 - Zimede, Femoral Proximal Lockable Intr. Nail, 11*380mm, S.S
+80. 50202.11*400 - Zimede, Femoral Proximal Lockable Intr. Nail, 11*400mm, S.S
+81. 50202.11*420 - Zimede, Femoral Proximal Lockable Intr. Nail, 11*420mm, S.S
+82. 50202.9*320 - Zimede, Femoral Proximal Lockable Intr. Nail, 9*320mm, S.S
+83. 50202.9*340 - Zimede, Femoral Proximal Lockable Intr. Nail, 9*340mm, S.S
+84. 50202.9*360 - Zimede, Femoral Proximal Lockable Intr. Nail, 9*360mm, S.S
+85. 50202.9*380 - Zimede, Femoral Proximal Lockable Intr. Nail, 9*380mm, S.S
+86. 50202.9*400 - Zimede, Femoral Proximal Lockable Intr. Nail, 9*400mm, S.S
+87. 50202.9*420 - Zimede, Femoral Proximal Lockable Intr. Nail, 9*420mm, S.S
+88. 50203.10*260 - Zimede, Femoral distal intramedullary nail, 10*260mm, S.S
+89. 50203.10*280 - Zimede, Femoral distal intramedullary nail, 10*280mm, S.S
+90. 50203.10*300 - Zimede, Femoral distal intramedullary nail, 10*300mm, S.S
+91. 50203.9*260 - Zimede, Femoral distal intramedullary nail, 9*260mm, S.S
+92. 50203.9*280 - Zimede, Femoral distal intramedullary nail, 9*280mm, S.S
+93. 50203.9*300 - Zimede, Femoral distal intramedullary nail, 9*300mm, S.S
+94. 50204.10*200 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 10*200mm, S.S
+95. 50204.10*220 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 10*220mm, S.S
+96. 50204.10*240 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 10*240mm, S.S
+97. 50204.10*260 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 10*260mm, S.S
+98. 50204.10*280 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 10*280mm, S.S
+99. 50204.11*200 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 11*200mm, S.S
+100. 50204.11*240 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 11*240mm, S.S
+101. 50204.11*260 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 11*260mm, S.S
+102. 50204.9*220 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 9*220mm, S.S
+103. 50204.9*240 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 9*240mm, S.S
+104. 50204.9*260 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 9*260mm, S.S
+105. 50204.9*280 - Zimede, St. Gamma Femoral Prox. Lock. I.N., 9*280mm, S.S
+106. 50206.7.5x180 - Zimede, Humeral Self-Lockable Intr. Nail, 7.5x180mm, S.S
+107. 50206.7.5x200 - Zimede, Humeral Self-Lockable Intr. Nail, 7.5x200mm, S.S
+108. 50206.7.5x220 - Zimede, Humeral Self-Lockable Intr. Nail, 7.5x220mm, S.S
+109. 50206.7.5x240 - Zimede, Humeral Self-Lockable Intr. Nail, 7.5x240mm, S.S
+110. 50206.7.5x260 - Zimede, Humeral Self-Lockable Intr. Nail, 7.5x260mm, S.S
+111. 50206.7.5x280 - Zimede, Humeral Self-Lockable Intr. Nail, 7.5x280mm, S.S
+112. 50206.7x180 - Zimede, Humeral Self-Lockable Intr. Nail, 7x180mm, S.S
+113. 50206.7x200 - Zimede, Humeral Self-Lockable Intr. Nail, 7x200mm, S.S
+114. 50206.7x220 - Zimede, Humeral Self-Lockable Intr. Nail, 7x220mm, S.S
+115. 50206.7x240 - Zimede, Humeral Self-Lockable Intr. Nail, 7x240mm, S.S
+116. 50206.7x260 - Zimede, Humeral Self-Lockable Intr. Nail, 7x260mm, S.S
+117. 50206.7x280 - Zimede, Humeral Self-Lockable Intr. Nail, 7x280mm, S.S
+118. 50206.8x180 - Zimede, Humeral Self-Lockable Intr. Nail, 8x180mm, S.S
+119. 50206.8x200 - Zimede, Humeral Self-Lockable Intr. Nail, 8x200mm, S.S
+120. 50206.8x220 - Zimede, Humeral Self-Lockable Intr. Nail, 8x220mm, S.S
+121. 50206.8x240 - Zimede, Humeral Self-Lockable Intr. Nail, 8x240mm, S.S
+122. 50206.8x260 - Zimede, Humeral Self-Lockable Intr. Nail, 8x260mm, S.S
+123. 50206.8x280 - Zimede, Humeral Self-Lockable Intr. Nail, 8x280mm, S.S
+124. 50208.3.5x24 - Zimede, Locking screw, 3.5x24mm, S.S
+125. 50208.3.5x26 - Zimede, Locking screw, 3.5x26mm, S.S
+126. 50208.3.5x28 - Zimede, Locking screw, 3.5x28mm, S.S
+127. 50208.3.5x30 - Zimede, Locking screw, 3.5x30mm, S.S
+128. 50208.3.5x32 - Zimede, Locking screw, 3.5x32mm, S.S
+129. 50208.3.5x36 - Zimede, Locking screw, 3.5x36mm, S.S
+130. 50208.3.5x38 - Zimede, Locking screw, 3.5x38mm, S.S
+131. 50208.3.5x40 - Zimede, Locking screw, 3.5x40mm, S.S
+132. 50208.3.5x45 - Zimede, Locking screw, 3.5x45mm, S.S
+133. 50208.3.5x50 - Zimede, Locking screw, 3.5x50mm, S.S
+134. 50208.4.8x35 - Zimede, Locking screw, 4.8x35mm, S.S
+135. 50208.4.8x40 - Zimede, Locking screw, 4.8x40mm, S.S
+136. 50208.4.8x45 - Zimede, Locking screw, 4.8x45mm, S.S
+137. 50208.4.8x50 - Zimede, Locking screw, 4.8x50mm, S.S
+138. 50208.4.8x55 - Zimede, Locking screw, 4.8x55mm, S.S
+139. 50208.4.8x60 - Zimede, Locking screw, 4.8x60mm, S.S
+140. 50208.4.8x65 - Zimede, Locking screw, 4.8x65mm, S.S
+141. 50208.4.8x70 - Zimede, Locking screw, 4.8x70mm, S.S
+142. 50208.4.8x75 - Zimede, Locking screw, 4.8x75mm, S.S
+143. 50208.4.8x80 - Zimede, Locking screw, 4.8x80mm, S.S
+144. 50208.4.8x85 - Zimede, Locking screw, 4.8x85mm, S.S
+145. 50208.4.8x90 - Zimede, Locking screw, 4.8x90mm, S.S
+146. 9000.0100 - Cannulated Drill Bit 2.0*150mm for 3.0 herbert screw 
+147. 9000.0286.1 - Opening ScrewDriver-T8 2.4 mini system (Blue) 1
+148. 9000.0286.2 - Opening ScrewDriver-T8 2.4 mini system (Blue) 2
+149. 9000.0291 - Non-Opening ScrewDriver-T8 2.7 mini system (Yellow) 1
+150. 9000.0292 - Non-Opening ScrewDriver-T8 2.7 mini system (Yellow) 2
+151. 9000.0384.1 - Hex Screwdriver (Handle) SW2.0 1
+152. 9000.0384.2 - Hex Screwdriver (Handle) SW2.0 2
+153. 9000.0388.1 - Hex Screwdriver (Handle) SW4.0 1
+154. 9000.0388.2 - Hex Screwdriver (Handle) SW4.0 2
+155. 9000.0694.1 - Cannulated Screwdriver(Handle) for 3.0 herbert screw 1
+156. 9000.0694.2 - Cannulated Screwdriver(Handle) for 3.0 herbert screw 2
+157. 9000.0697.1 - Cannulated Screwdriver(Handle) SW3.5 1
+158. 9000.0697.2 - Cannulated Screwdriver(Handle) SW3.5 2
+159. 9000.0698.1 - Cannulated Screwdriver(Handle) SW4.0 1
+160. 9000.0698.2 - Cannulated Screwdriver(Handle) SW4.0 2
+161. 9000.0917 - Straight quick coupling handle(wooden) 1
+162. 9000.0927 - Straight quick coupling handle(wooden) 2
+
+
+GROUP 7: JUST (4 items)
+
+1. 10005â¤1 - JUST Hip Instrument Set N2â¤1
+2. 10005â¤2 - JUST Hip Instrument Set N2â¤2
+3. 10006â¤1 - JUST Hip Instrument Set N3â¤1
+4. 10006â¤2 - JUST Hip Instrument Set N3â¤2
+
+
+GROUP 8: BOMBAY (274 items)
+
+1. 30243,1 - washer for cannulated screw 7.3 mm 
+2. 30243.1 - BOMBAY, washer for cannulated screw 4.0/4.5
+3. BO.02.9938.05.S.S. - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 5 Holes S.S.
+4. BO.02.9938.05.Ti - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 5 Holes Ti
+5. BO.02.9938.07.S.S. - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 7 Holes S.S.
+6. BO.02.9938.07.Ti - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 7 Holes Ti
+7. BO.02.9938.09.S.S. - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 9 Holes S.S.
+8. BO.02.9938.09.Ti - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 9 Holes Ti
+9. BO.02.9938.11.S.S. - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 11 Holes S.S.
+10. BO.02.9938.11.Ti - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 11 Holes Ti
+11. BO.02.9938.13.S.S. - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 13 Holes S.S.
+12. BO.02.9938.13.Ti - PROXIMAL FEMUR LOCKING PLATE (6.5 COBRA HEAD) 13 Holes Ti
+13. BO.0201.12.I - BOMBAY, 3.5MM DEPTH GAUGE 
+14. BO.0201.13.I - BOMBAY, 4.5MM DEPTH GAUGE
+15. BO.135.04.Ti - Ti Pedical HOOK
+16. BO.145.12.90.T - BOM.ECO CAGE DIA. 12mm length 90mm
+17. BO.145.14.90.T - BOM.ECO CAGE DIA. 14mm length 90mm
+18. BO.155.07.S - SMALL COMPRESSION LOCKING PLATE 3.5MM S.S. 7H
+19. BO.155.07.T - SMALL COMPRESSION LOCKING PLATE 3.5MM Ti 7H
+20. BO.155.09.S - SMALL COMPRESSION LOCKING PLATE 3.5MM S.S. 9H
+21. BO.155.09.T - SMALL COMPRESSION LOCKING PLATE 3.5MM Ti 9H
+22. BO.155.11.S - SMALL COMPRESSION LOCKING PLATE 3.5MM S.S. 11H
+23. BO.155.11.T - SMALL COMPRESSION LOCKING PLATE 3.5MM Ti 11H
+24. BO.155.12.S - SMALL COMPRESSION LOCKING PLATE 3.5MM S.S. 12H
+25. BO.155.12.T - SMALL COMPRESSION LOCKING PLATE 3.5MM Ti 12H
+26. BO.167.10.T - Broad Locking Compression Plate 10h Ti
+27. BO.167.11.S - BROAD LOCKING COMPRESSION PLATE 5.0MM 11H S.S.
+28. BO.167.11.T - Broad Locking Compression Plate 11h Ti
+29. BO.167.12.T - Broad Locking Compression Plate 12h Ti
+30. BO.167.13.S - BROAD LOCKING COMPRESSION PLATE 5.0MM 13H S.S.
+31. BO.167.15.S - BROAD LOCKING COMPRESSION PLATE 5.0MM 15H S.S.
+32. BO.167.16.T - Broad Locking Compression Plate 16h Ti
+33. BO.167.17.S - BROAD LOCKING COMPRESSION PLATE 5.0MM 17H S.S.
+34. BO.167.7.S - BROAD LOCKING COMPRESSION PLATE 5.0MM 7H S.S.
+35. BO.167.9.S - BROAD LOCKING COMPRESSION PLATE 5.0MM 9H S.S.
+36. BO.169.34.T - Locking Screw 5.0mm,34mm Ti
+37. BO.169.36.T - Locking Screw 5.0mm,36mm Ti
+38. BO.169.38.T - Locking Screw 5.0mm,38mm Ti
+39. BO.169.40.T - Locking Screw 5.0mm,40mm Ti
+40. BO.169.42.T - Locking Screw 5.0mm,42mm Ti
+41. BO.169.44.T - Locking Screw 5.0mm,44mm Ti
+42. BO.169.46.T - Locking Screw 5.0mm,46mm Ti
+43. BO.169.50.T - Locking Screw 5.0mm,50mm Ti
+44. BO.169.55.T - Locking Screw 5.0mm,55mm Ti
+45. BO.169.60.T - Locking Screw 5.0mm,60mm Ti
+46. BO.169.65.T - Locking Screw 5.0mm,65mm Ti
+47. BO.169.70.T - Locking Screw 5.0mm,70mm Ti
+48. BO.169.75.T - Locking Screw 5.0mm,75mm Ti
+49. BO.169.80.T - Locking Screw 5.0mm,80mm Ti
+50. BO.169.85.T - Locking Screw 5.0mm,85mm Ti
+51. BO.169.90.T - Locking Screw 5.0mm,90mm Ti
+52. Bo.182 T - Radial Head LCP RIM plate 2,4mm  2H
+53. Bo.183 T - Radial Head LCP 2,4mm Right 2H
+54. BO.186.10.S - Locking screw 2.4mm, 10mm S.S.
+55. BO.186.12.S - Locking screw 2.4mm, 12mm S.S.
+56. BO.186.14.S - Locking screw 2.4mm, 14mm S.S.
+57. BO.186.16.S - Locking screw 2.4mm, 16mm S.S.
+58. BO.186.18.S - Locking screw 2.4mm, 18mm S.S.
+59. BO.186.20.S - Locking screw 2.4mm, 20mm S.S.
+60. BO.186.22.S - Locking screw 2.4mm, 22mm S.S.
+61. BO.186.24.S - Locking screw 2.4mm, 24mm S.S.
+62. BO.186.26.S - Locking screw 2.4mm, 26mm S.S.
+63. BO.186.28.S - Locking screw 2.4mm, 28mm S.S.
+64. BO.186.30.S - Locking screw 2.4mm, 30mm S.S.
+65. BO.204.32.S - Locking screw 2.7mm, 32mm S.S.
+66. BO.204.34.S - Locking screw 2.7mm, 34mm S.S.
+67. BO.204.36.S - Locking screw 2.7mm, 36mm S.S.
+68. BO.204.38.S - Locking screw 2.7mm, 38mm S.S.
+69. BO.204.40.S - Locking screw 2.7mm, 40mm S.S.
+70. BO.268.L.04.T - Medial Proximal Tibia Locking Plate L 4h Ti 
+71. BO.268.L.06.T - Medial Proximal Tibia Locking Plate L 6h Ti 
+72. BO.268.L.08.T - Medial Proximal Tibia Locking Plate L 8h Ti 
+73. BO.268.L.10.S - Medial Proximal Tibia Locking Plate L 10h S.S.
+74. BO.268.L.10.T - Medial Proximal Tibia Locking Plate L 10h Ti 
+75. BO.268.L.12.S - Medial Proximal Tibia Locking Plate L 12h S.S.
+76. BO.268.L.12.T - Medial Proximal Tibia Locking Plate L 12h Ti 
+77. BO.268.L.14.S - Medial Proximal Tibia Locking Plate L 14h S.S.
+78. BO.268.L.14.T - Medial Proximal Tibia Locking Plate L 14h Ti 
+79. BO.268.L.16.S - Medial Proximal Tibia Locking Plate L 16h S.S.
+80. BO.268.L.16.T - Medial Proximal Tibia Locking Plate L 16h Ti 
+81. BO.268.L.4.S - Medial Proximal Tibia Locking Plate L 4h S.S.
+82. BO.268.L.6.S - Medial Proximal Tibia Locking Plate L 6h S.S.
+83. BO.268.L.8.S - Medial Proximal Tibia Locking Plate L 8h S.S.
+84. BO.268.R.04.T - Medial Proximal Tibia Locking Plate R 4h Ti 
+85. BO.268.R.06.T - Medial Proximal Tibia Locking Plate R 6h Ti 
+86. BO.268.R.08.T - Medial Proximal Tibia Locking Plate R 8h Ti 
+87. BO.268.R.10.S - Medial Proximal Tibia Locking Plate R 10h S.S.
+88. BO.268.R.10.T - Medial Proximal Tibia Locking Plate R 10h Ti 
+89. BO.268.R.12.S - Medial Proximal Tibia Locking Plate R 12h S.S.
+90. BO.268.R.12.T - Medial Proximal Tibia Locking Plate R 12h Ti 
+91. BO.268.R.14.S - Medial Proximal Tibia Locking Plate R 14h S.S.
+92. BO.268.R.14.T - Medial Proximal Tibia Locking Plate R 14h Ti 
+93. BO.268.R.16.S - Medial Proximal Tibia Locking Plate R 16h S.S.
+94. BO.268.R.16.T - Medial Proximal Tibia Locking Plate R 16h Ti 
+95. BO.268.R.4.S - Medial Proximal Tibia Locking Plate R 4h S.S.
+96. BO.268.R.6.S - Medial Proximal Tibia Locking Plate R 6h S.S.
+97. BO.268.R.8.S - Medial Proximal Tibia Locking Plate R 8h S.S.
+98. BO.509.R.4.L.S - OLECRANON LOCKING PLATE 3.5MM 4H LEFT S.S. 4H
+99. BO.509.R.4.R.S - OLECRANON LOCKING PLATE 3.5MM 4H RIGHT S.S. 4H
+100. BO.509.R.6.L.S - OLECRANON LOCKING PLATE 3.5MM 6H LEFT S.S. 6H
+101. BO.509.R.6.R.S - OLECRANON LOCKING PLATE 3.5MM 6H RIGHT S.S. 6H
+102. BO.509.R.8.L.S - OLECRANON LOCKING PLATE 3.5MM 6H LEFT S.S. 8H
+103. BO.509.R.8.R.S - OLECRANON LOCKING PLATE 3.5MM 6H RIGHT S.S. 8H
+104. BO.511.L.05.T - Anterolateral Distal Tibia LCP 3,5mm & L 5H Ti
+105. BO.511.L.07.T - Anterolateral Distal Tibia LCP 3,5mm & L 7H Ti
+106. BO.511.L.09.T - Anterolateral Distal Tibia LCP 3,5mm & L 9H Ti
+107. BO.511.L.11.T - Anterolateral Distal Tibia LCP 3,5mm & L 11H Ti
+108. BO.511.L.13.T - Anterolateral Distal Tibia LCP 3,5mm & L 13H Ti
+109. BO.511.L.15.T - Anterolateral Distal Tibia LCP 3,5mm & L 15H Ti
+110. BO.511.R.05.T - Anterolateral Distal Tibia LCP 3,5mm & R 5H Ti
+111. BO.511.R.07.T - Anterolateral Distal Tibia LCP 3,5mm & R 7H Ti
+112. BO.511.R.09.T - Anterolateral Distal Tibia LCP 3,5mm & R 9H Ti
+113. BO.511.R.11.T - Anterolateral Distal Tibia LCP 3,5mm & R 11H Ti
+114. BO.511.R.13.T - Anterolateral Distal Tibia LCP 3,5mm & R 13H Ti
+115. BO.511.R.15.T - Anterolateral Distal Tibia LCP 3,5mm & R 15H Ti
+116. BO.511.S.11h.L - Anterolateral Distal Tibia LCP 3,5mm & L 11H S.S.
+117. BO.511.S.11h.R - Anterolateral Distal Tibia LCP 3,5mm & R 11H S.S.
+118. BO.511.S.13h.L - Anterolateral Distal Tibia LCP 3,5mm & L 13H S.S.
+119. BO.511.S.13h.R - Anterolateral Distal Tibia LCP 3,5mm & R 13H S.S.
+120. BO.511.S.15h.L - Anterolateral Distal Tibia LCP 3,5mm & L 15H S.S.
+121. BO.511.S.15h.R - Anterolateral Distal Tibia LCP 3,5mm & R 15H S.S.
+122. BO.511.S.5h.L - Anterolateral Distal Tibia LCP 3,5mm & L 5H S.S.
+123. BO.511.S.5h.R - Anterolateral Distal Tibia LCP 3,5mm & R 5H S.S.
+124. BO.511.S.7h.L - Anterolateral Distal Tibia LCP 3,5mm & L 7H S.S.
+125. BO.511.S.7h.R - Anterolateral Distal Tibia LCP 3,5mm & R 7H S.S.
+126. BO.511.S.9h.L - Anterolateral Distal Tibia LCP 3,5mm & L 9H  S.S.
+127. BO.511.S.9h.R - Anterolateral Distal Tibia LCP 3,5mm & R 9H S.S.
+128. BO.531 - Ankle and Foot bone (First MTP Fusion plate 5), medium
+129. BO.532 - Ankle and Foot bone (First TMT Fusion ), standard
+130. BO.9907.L.11.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 11h L SS
+131. BO.9907.L.13.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 13h L SS
+132. BO.9907.L.3.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 3h L SS
+133. BO.9907.L.5.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 5h L SS
+134. BO.9907.L.7.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 7h L SS
+135. BO.9907.R.11.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 11h R SS
+136. BO.9907.R.13.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 13h R SS
+137. BO.9907.R.3.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 3h R SS 
+138. BO.9907.R.5.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 5h R SS
+139. BO.9907.R.7.S - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 7h R SS
+140. BO.9908.L.11.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 11h L SS
+141. BO.9908.L.13.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 13h L SS
+142. BO.9908.L.3.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 3h L SS
+143. BO.9908.L.5.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 5h L SS
+144. BO.9908.L.7.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 7h L SS
+145. BO.9908.L.9.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 9h L SS
+146. BO.9908.R.11.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 11h R SS
+147. BO.9908.R.13.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 13h R SS
+148. BO.9908.R.3.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 3h R SS
+149. BO.9908.R.5.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 5h R SS
+150. BO.9908.R.7.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 7h R SS
+151. BO.9908.R.9.S - Medial Distal Humerus LCP (2.7mm&3.5mm) 9h R SS
+152. BO.9941.L.10.S - Extra-Aarticular Distal Humerus Locking Plate 10h L S.S.
+153. BO.9941.L.12.S - Extra-Aarticular Distal Humerus Locking Plate 12h L S.S.
+154. BO.9941.L.14.S - Extra-Aarticular Distal Humerus Locking Plate 14h L S.S.
+155. BO.9941.L.4.S - Extra-Aarticular Distal Humerus Locking Plate 4h L S.S.
+156. BO.9941.L.6.S - Extra-Aarticular Distal Humerus Locking Plate 6h L S.S.
+157. BO.9941.L.8.S - Extra-Aarticular Distal Humerus Locking Plate 8h L S.S.
+158. BO.9941.R.10.S - Extra-Aarticular Distal Humerus Locking Plate 10h R S.S.
+159. BO.9941.R.12.S - Extra-Aarticular Distal Humerus Locking Plate 12h R S.S.
+160. BO.9941.R.14.S - Extra-Aarticular Distal Humerus Locking Plate 14h R S.S.
+161. BO.9941.R.4.S - Extra-Aarticular Distal Humerus Locking Plate 4h R S.S.
+162. BO.9941.R.6.S - Extra-Aarticular Distal Humerus Locking Plate 6h R S.S.
+163. BO.9941.R.8.S - Extra-Aarticular Distal Humerus Locking Plate 8h R S.S.
+164. BO.9946.2.L.S - Two-columa distal Radius plate, S.S. 2H Left
+165. BO.9946.2.R.S - Two-columa distal Radius plate, S.S. 2H Right
+166. BO.9946.3.L.S - Two-columa distal Radius plate, S.S. 3H Left
+167. BO.9946.3.R.S - Two-columa distal Radius plate, S.S. 3H Right
+168. BO.9946.4.L.S - Two-columa distal Radius plate, S.S. 4H Left
+169. BO.9946.4.R.S - Two-columa distal Radius plate, S.S. 4H Right
+170. BO.9946.6.L.S - Two-columa distal Radius plate, S.S. 6H Left
+171. BO.9946.6.R.S - Two-columa distal Radius plate, S.S. 6H Right
+172. BO.9946.8.L.S - Two-columa distal Radius plate, S.S. 8H Left
+173. BO.9946.8.R.S - Two-columa distal Radius plate, S.S. 8H Right
+174. BO.9986.L.04.S - Proximal Tibia Locking Plate L 4h S.S
+175. BO.9986.L.06.S - Proximal Tibia Locking Plate L 6h S.S.
+176. BO.9986.L.08.S - Proximal Tibia Locking Plate L 8h S.S.
+177. BO.9986.L.10.S - Proximal Tibia Locking Plate L 10h S.S.
+178. BO.9986.L.12.S - Proximal Tibia Locking Plate L 12h S.S.
+179. BO.9986.L.14.S - Proximal Tibia Locking Plate L 14h S.S.
+180. BO.9986.R.04.S - Proximal Tibia Locking Plate R 4h S.S.
+181. BO.9986.R.06.S - Proximal Tibia Locking Plate R 6h S.S.
+182. BO.9986.R.08.S - Proximal Tibia Locking Plate R 8h S.S.
+183. BO.9986.R.10.S - Proximal Tibia Locking Plate R 10h S.S.
+184. BO.9986.R.12.S - Proximal Tibia Locking Plate R 12h S.S.
+185. BO.9986.R.14.S - Proximal Tibia Locking Plate R 14h S.S.
+186. BOI.01.217.5.0.T - BOMBAY, TI ANCHOR SUTURE WITH LOOP DIA. 5.0MM
+187. BOI.04.150.09.28.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 28CM S.S.
+188. BOI.04.150.09.28.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 28CM Ti
+189. BOI.04.150.09.30.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 30CM S.S.
+190. BOI.04.150.09.30.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 30CM Ti
+191. BOI.04.150.09.32.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 32CM S.S.
+192. BOI.04.150.09.32.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 32CM Ti
+193. BOI.04.150.09.34.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 34CM S.S.
+194. BOI.04.150.09.34.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 34CM Ti
+195. BOI.04.150.09.36.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 36CM S.S.
+196. BOI.04.150.09.36.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 36CM Ti
+197. BOI.04.150.09.38.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 38CM S.S.
+198. BOI.04.150.09.38.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 38CM Ti
+199. BOI.04.150.09.40.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 40CM S.S.
+200. BOI.04.150.09.40.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 09MM, LENGTH 40CM Ti
+201. BOI.04.150.10.28.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 28CM S.S.
+202. BOI.04.150.10.28.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 28CM Ti
+203. BOI.04.150.10.30.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 30CM S.S.
+204. BOI.04.150.10.30.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 30CM Ti
+205. BOI.04.150.10.32.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 32CM S.S.
+206. BOI.04.150.10.32.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 32CM Ti
+207. BOI.04.150.10.34.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 34CM S.S.
+208. BOI.04.150.10.34.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 34CM Ti
+209. BOI.04.150.10.36.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 36CM S.S.
+210. BOI.04.150.10.36.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 36CM Ti
+211. BOI.04.150.10.38.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 38CM S.S.
+212. BOI.04.150.10.38.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 38CM Ti
+213. BOI.04.150.10.40.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 40CM S.S.
+214. BOI.04.150.10.40.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 10MM, LENGTH 40CM Ti
+215. BOI.04.150.11.28.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 28CM S.S.
+216. BOI.04.150.11.28.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 28CM Ti
+217. BOI.04.150.11.30.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 30CM S.S.
+218. BOI.04.150.11.30.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 30CM Ti
+219. BOI.04.150.11.32.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 32CM S.S.
+220. BOI.04.150.11.32.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 32CM Ti
+221. BOI.04.150.11.34.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 34CM S.S.
+222. BOI.04.150.11.34.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 34CM Ti
+223. BOI.04.150.11.36.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 36CM S.S.
+224. BOI.04.150.11.36.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 36CM Ti
+225. BOI.04.150.11.38.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 38CM S.S.
+226. BOI.04.150.11.38.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 38CM Ti
+227. BOI.04.150.11.40.SS - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 40CM S.S.
+228. BOI.04.150.11.40.TI - INTERLOCKING TIBIA NAIL (CANNULATED WITH DISTAL) DIA. 11MM, LENGTH 40CM Ti
+229. BOI.152.72.S - BOMBAY, InterLocking Bolt 4.9x72mm, S.S
+230. BOI.152.72.T - BOMBAY, InterLocking Bolt 4.9x72mm, Ti
+231. BOI.161.1.0.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 1,0x300mm, , S.S.
+232. BOI.161.1.2.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 1,2x300mm, , S.S.
+233. BOI.161.1.5.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 1,5x300mm, , S.S.
+234. BOI.161.1.8.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 1,8x300mm, , S.S.
+235. BOI.161.2.0.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 2,0x300mm, , S.S.
+236. BOI.161.2.5.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 2,5x300mm, , S.S.
+237. BOI.161.3.0.300.S - BOMBAY, K-WIRE DOUBLE TROCAR 3,0x300mm, , S.S.
+238. BOI.162.1.5.300.S - K-WIRE THREADED END 1,5*300mm
+239. BOI.162.300 - K-WIRE THREADED END 1,8*300mm
+240. BOI.185.10.S - Cortex screw 2.4mm, 10mm S.S.
+241. BOI.185.12.S - Cortex screw 2.4mm, 12mm S.S.
+242. BOI.185.14.S - Cortex screw 2.4mm, 14mm S.S.
+243. BOI.185.16.S - Cortex screw 2.4mm, 16mm S.S.
+244. BOI.185.18.S - Cortex screw 2.4mm, 18mm S.S.
+245. BOI.185.20.S - Cortex screw 2.4mm, 20mm S.S.
+246. BOI.185.22.S - Cortex screw 2.4mm, 22mm S.S.
+247. BOI.185.24.S - Cortex screw 2.4mm, 24mm S.S.
+248. BOI.185.26.S - Cortex screw 2.4mm, 26mm S.S.
+249. BOI.216.07.7S - BOMBAY, 7 mm for Small Screw S.S., ÕÕ¡ÖÕ¸Õ²Õ¡Õ¯ - ÕÕ¡ÕµÕ¢Õ¡, S.S.
+250. BOI.216.07.7T - BOMBAY, 7 mm for Small Screw Ti, ÕÕ¡ÖÕ¸Õ²Õ¡Õ¯ - ÕÕ¡ÕµÕ¢Õ¡, S.S.
+251. BOI.216.07.S - BOMBAY, WASHER FOR CANCELLOUS SCREW DIA. 7.0MM S.S
+252. BOI.216.07.T - BOMBAY, WASHER FOR CANCELLOUS SCREW DIA. 7.0MM 
+253. BOI.216.13.13S - BOMBAY, 13 mm for large Screw S.S., ÕÕ¡ÖÕ¸Õ²Õ¡Õ¯ - ÕÕ¡ÕµÕ¢Õ¡, S.S.
+254. BOI.216.13.13T - BOMBAY, 13 mm for large Screw Ti, ÕÕ¡ÖÕ¸Õ²Õ¡Õ¯ - ÕÕ¡ÕµÕ¢Õ¡, S.S.
+255. BOI.216.13.S - BOMBAY,  WASHER FOR CANCELLOUS SCREW DIA. 13MM
+256. BOI.216.13.T - BOMBAY, TI WASHER FOR CANCELLOUS SCREW DIA. 13MM
+257. BOI.217.3.0.T - BOMBAY, TI ANCHOR SUTURE DIA. 3.0MM
+258. BOI.217.5.0.T - BOMBAY, TI ANCHOR SUTURE DIA. 5.0MM
+259. BOI.237.16 - 16G  / 1,65mm * 3metr
+260. BOI.237.16.16G - BOMBAY, 16G  / 1,65mm * 3metr, ÕÕ¥ÖÕ¯Õ¬ÕµÕ¡Õª, S.S.
+261. BOI.237.18 - 18G  / 1,25mm * 3metr
+262. BOI.237.18.18G - BOMBAY, 18G  / 1,25mm * 3metr, ÕÕ¥ÖÕ¯Õ¬ÕµÕ¡Õª, S.S.
+263. BOI.237.20 - 20G / 0,9mm * 3metr
+264. BOI.237.20.20G - BOMBAY, 20G / 0,9mm * 3metr, ÕÕ¥ÖÕ¯Õ¬ÕµÕ¡Õª, S.S.
+265. BOI.237.22 - 22G  / 0,7mm * 3metr
+266. BOI.237.22.22G - BOMBAY, 22G  / 0,7mm * 3metr, ÕÕ¥ÖÕ¯Õ¬ÕµÕ¡Õª, S.S.
+267. BOI.237.24 - 24G  / 0,5mm * 3metr
+268. BOI.237.24.24G - BOMBAY, 24G  / 0,5mm * 3metr, ÕÕ¥ÖÕ¯Õ¬ÕµÕ¡Õª, S.S.
+269. BOI.237.26 - 26G  / 0,45mm * 3metr
+270. BOI.237.26.26G - BOMBAY, 26G  / 0,45mm * 3metr, ÕÕ¥ÖÕ¯Õ¬ÕµÕ¡Õª, S.S.
+271. BOI.533 - Ankle and Foot bone (second TMT Fusion )
+272. BOI.537 - Ankle and Foot bone (X) LOCKING plate medium
+273. BOI.712.009.1.8 - 400 - BOMBAY, GUID WIRE, 1.8mm Dia - 400mm Length, S.S
+274. BOI.712.010.2.0 - 400 - BOMBAY, GUID WIRE, 2.0mm Dia - 400mm Length, S.S
+
+
+GROUP 9: Delated (1 items)
+
+1. 2204.2012 - 2.0mm Locking screw 2.0*12mm Ti
+
+
+

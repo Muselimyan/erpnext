@@ -8,6 +8,7 @@
 | 2026-05-11 | Pre-deploy snapshot via `export.ps1` | deploy/ synced: 23 server scripts, 6 custom DocTypes, 62 custom fields, 14 task access policies |
 | 2026-05-11 | `doc16a-deploy.ps1 -Mode Deploy` | ✅ **COMPLETE** — exit code 0, all items `exists: true` in verification |
 | 2026-05-11 | Post-deploy snapshot via `export.ps1` | Custom fields: 74, Server scripts: 30, DocTypes: 10, Client scripts: 4, Users: 24, Roles: 60, Task Access Policies: 16 |
+| 2026-06-01 | `Dispatch Case Item.unit_price` made optional | ✅ Live ERPNext field updated to `reqd = 0`; `doc16a-deploy.ps1` patched for future definitions |
 
 **Legend for this document:**
 - **✅ EXISTS** — already in prod
@@ -172,7 +173,7 @@ Current custom DocTypes in prod (6 total, all Surgery Case family):
 | `Surgery Case Serial Exception` | ✅ EXISTS | Old child table |
 | *(3 more Surgery Case related)* | ✅ EXISTS | Verified from custom-doctypes.json count=6 |
 | `Dispatch Case` | ✅ EXISTS | New parent coordinator DocType (autoname `DC-.YYYY.-.#####`, submittable) |
-| `Dispatch Case Item` | ✅ EXISTS | New child table for Dispatch Case |
+| `Dispatch Case Item` | ✅ EXISTS | New child table for Dispatch Case; `unit_price` is optional |
 | `Debt Collection Invoice` | ✅ EXISTS | Child table for open invoices on Debt Collection task |
 | `Debt Collection Payment` | ✅ EXISTS | Child table for payment history on Debt Collection task |
 
@@ -231,7 +232,7 @@ Current custom DocTypes in prod (6 total, all Surgery Case family):
 
 ## 10. Workspace Shortcuts
 
-Not audited in detail (workspaces.json is large). The following shortcuts are confirmed **missing** (not in any current workspace based on task_kind filter patterns in workspaces.json):
+Originally not audited in detail (workspaces.json is large). On 2026-06-01, the confirmed task shortcuts were deployed in a clean workspace named `Dispatch - Task Queues` by `doc15e-deploy.ps1`.
 
 | Shortcut label | Filter |
 |---|---|
@@ -246,7 +247,7 @@ Not audited in detail (workspaces.json is large). The following shortcuts are co
 | VIEW: Distribute Payment Tasks | `task_kind = Distribute Payment` |
 | VIEW: All Dispatch Cases | DocType: Dispatch Case |
 
-Some of the above may already exist under different labels — verify in workspaces.json before creating.
+These shortcuts now exist in `Dispatch - Task Queues`; users should smoke test that each shortcut opens the expected filtered list.
 
 ---
 
@@ -327,7 +328,7 @@ Step 11 — Permissions
 | Custom DocTypes | 6 | **10** (+4) | 0 |
 | Server Scripts | 23 | **30** (+7 new + 1 updated) | 0 |
 | Client Scripts | 3 | **4** (+1) | 0 |
-| Workspace shortcuts | partial | partial | ~10 |
+| Workspace shortcuts | partial | `Dispatch - Task Queues` deployed 2026-06-01 | 0 core shortcuts |
 
 **✅ All 41 items deployed successfully.**  
-**Remaining gap: workspace shortcuts only (~10) — not scripted yet.**
+**Remaining gap: no core implementation gap; end-to-end smoke tests are still required before final sign-off.**

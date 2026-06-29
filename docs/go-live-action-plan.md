@@ -2,7 +2,7 @@
 
 Distilled from `migration-notes.md`. Only open items are listed here. Items that are completed or that have been formally superseded are omitted.
 
-Last updated: 2026-05-08
+Last updated: 2026-06-01
 
 ---
 
@@ -72,6 +72,8 @@ These cannot be set via the REST API and were not deployed by any script. Go to:
 | `Sales Invoice` | `Ops - Finance` | Read |
 | `Item`, `Item Group`, `Item Attribute`, `UOM` | `Ops - Inventory`, `Ops - Directors` | Write, Create (others: Read only) |
 | `Workspace: Ops — Reporting Pack` | `Ops - Order Accepting`, `Ops - Inventory`, `Accounting`, `Director` | Read / accessible |
+| `Workspace: Management - KPI Dashboard` | `Ops - Directors` | Read / accessible |
+| `Workspace: Dispatch - Task Queues` | Operational roles | Read / accessible |
 
 **Don't do:** Do not grant `System Manager` to Accounting staff to work around permission issues — this bypasses all governance scripts.
 
@@ -100,9 +102,21 @@ These cannot be deployed via the REST API (per-user saved views) or require ERPN
 | `Collection Sets — Readiness` | Collection Set list | (all active, used as Dispatch Case templates) | Ops - Inventory |
 | Directors wallboard Task views (5) | Task list | per role / status filters | Directors TV |
 | Dispatch Case state views | Dispatch Case list | `status` = Confirmed / Packed / In Transit / Awaiting Return Pickup / Return In Transit / Invoice Pending | Ops leads |
-| Task queue views (6) | Task list | per `task_kind` + status not Completed/Cancelled | per team |
+| Task queue views | Task list | per `task_kind` + status not Completed/Cancelled | per team |
 
-**Workaround already in place:** The `Ops — Reporting Pack` workspace shortcuts include DocType shortcuts with pre-set `stats_filter` for the Dispatch Case state views and Task queues — clicking them from the workspace behaves identically to a saved named view. Only missing piece is saving them as a named view per-user.
+**Workaround already in place:** `Dispatch - Task Queues` now contains shared Task and Dispatch Case shortcuts, and `Management - KPI Dashboard` contains clean KPI/report links. Per-user saved views are optional usability polish only.
+
+---
+
+## 6.1 Docs 15/16/17 Implementation Status
+
+| Area | Status | Remaining before launch |
+|---|---|---|
+| Doc 15A reporting requirements | ✅ 26/26 reports/functions/workspaces deployed or existing | Validate report outputs after smoke transactions and Standard Buying prices |
+| Doc 15E backlog | ✅ Deployed: item reports, return/refund queue, norm scheduler, management/dispatch workspaces | Open reports/workspaces and confirm permissions/results |
+| Doc 16 Dispatch Case | ✅ Core implementation deployed; `unit_price` optional | Run no-return and return-expected end-to-end smoke tests |
+| Doc 16B gaps | ✅ No core implementation gap remains | Sign off smoke tests |
+| Doc 17/17A purchasing costing | ✅ Technical deployment complete | Populate HS codes/import tax rates/Standard Buying prices and run PR → LCV → PI smoke test |
 
 ---
 
@@ -124,6 +138,8 @@ Run these in the staging environment or on the first real test case. Sign off ea
 | **Reorder governance** | Ops - Inventory (not Purchasing Lead) tries to change reorder levels → blocked; Purchasing Lead changes without reason → blocked |
 | **Dispatch Case no-return E2E** | Order entry task → Dispatch Case (`return_expected = No`) Submit → Pack → Delivery (Picked Up → Delivered) → Invoice Preparation → Debt Collection → Closed; verify all stock entries auto-submitted and stock ledger correct |
 | **Dispatch Case return-expected E2E** | Order entry task → Dispatch Case (`return_expected = Yes`) Submit → Pack → Delivery (Picked Up → Delivered) → Return Waiting → Return Pickup (Picked Up → Returned to WH) → Returns Inspection → Restock + Invoice Preparation (parallel) → Debt Collection → Closed; verify `dispatched = used + returned` reconciliation |
+| **Doc 15 reports/workspaces** | Search for `RPT - Item - Sort and Classify`, `RPT - Item - Nomenclature and Prices`, `RPT - Returns - Refund Queue`, `Management - KPI Dashboard`, and `Dispatch - Task Queues`; confirm they open for intended users |
+| **Doc 17A landed-cost flow** | Purchase Receipt → Landed Cost Voucher → click **Pre-fill Import Duty** → Purchase Invoice; confirm import duty appears and valuation updates |
 
 ---
 
@@ -168,6 +184,8 @@ These are architectural decisions baked into server scripts. Breaking them silen
 - [ ] `Standard Selling` price list populated
 - [ ] Role Permission Manager entries configured (Section 4 above)
 - [ ] All smoke tests (Section 7) passed and signed off
+- [ ] Doc 15E reports/workspaces opened and validated by intended users
+- [ ] Doc 17A landed-cost smoke test passed
 - [ ] `Test Doctor ASCII` test record deleted
 - [ ] Draft POs have `purchase_reason` and `requested_by` filled
 - [ ] Existing malformed Tasks (0 or 2+ assignees) cleaned up

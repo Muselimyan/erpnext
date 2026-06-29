@@ -1,0 +1,32 @@
+﻿if not doc.case_items:
+    frappe.throw("Add at least one item before submitting.")
+if doc.status not in ("Draft", "Confirmed"):
+    frappe.throw("Cannot submit a Dispatch Case in status: " + doc.status)
+if doc.status == "Draft":
+    doc.status = "Confirmed"
+existing_pack = frappe.db.exists("Task", {"dispatch_case": doc.name, "task_kind": "Pack / prepare items", "status": ["not in", ["Completed", "Cancelled"]]})
+if not existing_pack:
+    items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in doc.case_items)
+    t = frappe.get_doc({
+        "doctype": "Task",
+        "subject": f"Pack: {doc.name} Ã¢â¬â {doc.customer}",
+        "task_kind": "Pack / prepare items",
+        "task_access_policy": "Pack / prepare items",
+        "dispatch_case": doc.name,
+        "customer": doc.customer,
+        "description": f"Pack for delivery to: {doc.customer}\nDest: {doc.client_location_warehouse}\n\n{items_txt}",
+    })
+    t.flags.ignore_permissions = True
+    t.insert()
+    doc.pack_task = t.name
+    # FIXED: Update _assign via db (assign_to module not available in RestrictedPython)
+    frappe.db.set_value("Task", t.name, "_assign", json.dumps(["inventory.team@example.com"]))
+    todo = frappe.new_doc("ToDo")
+    todo.status = "Open"
+    todo.allocated_to = "inventory.team@example.com"
+    todo.reference_type = "Task"
+    todo.reference_name = t.name
+    todo.description = t.subject
+    todo.assigned_by = frappe.session.user
+    todo.flags.ignore_permissions = True
+    todo.insert()

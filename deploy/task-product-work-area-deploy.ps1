@@ -45,7 +45,8 @@ $Fields = @(
     [pscustomobject]@{name="Task-custom_task_add_qty";dt="Task";fieldname="custom_task_add_qty";label="Product Qty";fieldtype="Float";insert_after="custom_task_add_item_code";depends_on=$DispatchDepends;default="1"},
     [pscustomobject]@{name="Task-custom_task_add_batch_no";dt="Task";fieldname="custom_task_add_batch_no";label="Batch / LOT";fieldtype="Link";options="Batch";insert_after="custom_task_add_qty";depends_on=$DispatchDepends},
     [pscustomobject]@{name="Task-custom_task_add_unit_price";dt="Task";fieldname="custom_task_add_unit_price";label="Unit Price";fieldtype="Currency";insert_after="custom_task_add_batch_no";depends_on=$DispatchDepends;default="0"},
-    [pscustomobject]@{name="Task-custom_task_scan_barcode";dt="Task";fieldname="custom_task_scan_barcode";label="Scan Product Barcode";fieldtype="Data";insert_after="custom_task_add_unit_price";depends_on=$PackDepends},
+    [pscustomobject]@{name="Task-custom_barcode_section";dt="Task";fieldname="custom_barcode_section";label="Barcode Scanning (Optional)";fieldtype="Section Break";insert_after="custom_product_lines";depends_on=$PackDepends},
+    [pscustomobject]@{name="Task-custom_task_scan_barcode";dt="Task";fieldname="custom_task_scan_barcode";label="Scan Product Barcode";fieldtype="Data";insert_after="custom_barcode_section";depends_on=$PackDepends},
     [pscustomobject]@{name="Task-custom_task_scan_qty";dt="Task";fieldname="custom_task_scan_qty";label="Scan Qty";fieldtype="Float";insert_after="custom_task_scan_barcode";depends_on=$PackDepends;default="1"},
     [pscustomobject]@{name="Task-custom_task_scan_result";dt="Task";fieldname="custom_task_scan_result";label="Last Scan Result";fieldtype="Small Text";insert_after="custom_task_scan_qty";depends_on=$PackDepends;read_only=1},
     [pscustomobject]@{name="Task-custom_product_work_column";dt="Task";fieldname="custom_product_work_column";label="";fieldtype="Column Break";insert_after="custom_task_scan_result";depends_on=$DispatchDepends},
@@ -83,6 +84,16 @@ function task_product_work_area_focus_scan(frm) {
     }, 200);
 }
 
+function task_product_work_area_focus_dialog_scan(dialog) {
+    setTimeout(() => {
+        let input = dialog.$wrapper.find('[data-fieldname="lot_barcode"] input:visible').first();
+        if (input.length) {
+            input.val("").focus();
+            setTimeout(() => input.focus(), 100);
+        }
+    }, 250);
+}
+
 function task_product_work_area_parse_gs1(raw) {
     if (!raw || !raw.startsWith("]C111")) return null;
     let expiry_date = `20${raw.substring(13, 15)}-${raw.substring(15, 17)}-${raw.substring(17, 19)}`;
@@ -91,6 +102,68 @@ function task_product_work_area_parse_gs1(raw) {
     let lot_number = raw.substring(lot_ai_index + 2);
     if (!lot_number) return null;
     return { expiry_date: expiry_date, lot_number: lot_number };
+}
+
+function task_product_work_area_call_packing_scan(frm, barcode, item_code_override) {
+    frappe.call({
+        method: "dispatch_case_packing_scan",
+        args: {
+            case_name: frm.doc.dispatch_case,
+            barcode: barcode,
+            qty: frm.doc.custom_task_scan_qty || 1,
+            item_code_override: item_code_override || ""
+        },
+        freeze: true,
+        freeze_message: __("Checking packing scan..."),
+        callback: function(r) {
+            const msg = r.message || {};
+            if (msg.warning) {
+                frappe.msgprint({ title: __("FEFO Warning"), indicator: "orange", message: msg.warning });
+            } else {
+                frappe.show_alert({ message: __("Scan accepted"), indicator: "green" });
+            }
+            frm.set_value("custom_task_scan_result", __("Scanned {0}. Batch/LOT: {1}. Expiry: {2}", [msg.item_code || item_code_override || "", msg.batch_no || "", msg.expiry_date || ""]));
+            frm.set_value("custom_task_scan_barcode", "");
+            task_product_work_area_refresh(frm, false);
+            task_product_work_area_focus_scan(frm);
+        },
+        error: function() {
+            task_product_work_area_error_beep();
+            frm.set_value("custom_task_scan_barcode", "");
+            task_product_work_area_focus_scan(frm);
+        }
+    });
+}
+
+function task_product_work_area_open_lot_dialog(frm, item_code) {
+    let dialog = new frappe.ui.Dialog({
+        title: __("Scan LOT / Expiry Barcode for {0}", [item_code]),
+        fields: [
+            { fieldname: "lot_barcode", label: __("Scan LOT / Expiry Barcode"), fieldtype: "Data" },
+            { fieldname: "lot_preview", label: __("Detected LOT / Expiry"), fieldtype: "Small Text", read_only: 1 }
+        ]
+    });
+    dialog.fields_dict.lot_barcode.df.onchange = function() {
+        const lot_barcode = (dialog.get_value("lot_barcode") || "").trim();
+        if (!lot_barcode) return;
+        const parsed = task_product_work_area_parse_gs1(lot_barcode);
+        if (!parsed) {
+            dialog.set_value("lot_preview", __("Invalid GS1 LOT barcode."));
+            frappe.show_alert({ message: __("Invalid GS1 LOT barcode."), indicator: "red" }, 5);
+            task_product_work_area_error_beep();
+            dialog.set_value("lot_barcode", "");
+            task_product_work_area_focus_dialog_scan(dialog);
+            return;
+        }
+        dialog.set_value("lot_preview", __("LOT: {0}, Expiry: {1}", [parsed.lot_number, parsed.expiry_date]));
+        frm.set_value("custom_task_add_batch_no", parsed.lot_number);
+        frm.set_value("custom_task_scan_result", __("LOT/expiry captured: {0}, expiry {1}", [parsed.lot_number, parsed.expiry_date]));
+        dialog.hide();
+        task_product_work_area_call_packing_scan(frm, lot_barcode, item_code);
+    };
+    dialog.show();
+    dialog.set_value("lot_barcode", "");
+    task_product_work_area_focus_dialog_scan(dialog);
 }
 
 frappe.ui.form.on("Task", {
@@ -283,8 +356,7 @@ function task_product_work_area_scan(frm) {
         frm.set_value("custom_task_add_batch_no", parsed.lot_number);
         frm.set_value("custom_task_scan_result", __("LOT/expiry captured: {0}, expiry {1}", [parsed.lot_number, parsed.expiry_date]));
         frm.set_value("custom_task_scan_barcode", "");
-        task_product_work_area_add_product(frm);
-        task_product_work_area_focus_scan(frm);
+        task_product_work_area_call_packing_scan(frm, barcode, frm.doc.custom_task_add_item_code);
         return;
     }
 
@@ -295,10 +367,17 @@ function task_product_work_area_scan(frm) {
             const item_code = r.message && r.message.item_code;
         if (item_code) {
             frm.set_value("custom_task_add_item_code", item_code);
-            frm.set_value("custom_task_scan_result", __("Product selected from REF barcode: {0}. If this product has LOT/expiry, scan the second GS1 barcode now.", [item_code]));
-            frappe.show_alert({ message: __("Product selected. Scan LOT/expiry barcode if needed."), indicator: "green" });
-            frm.set_value("custom_task_scan_barcode", "");
-            task_product_work_area_focus_scan(frm);
+            frappe.db.get_value("Item", item_code, ["has_batch_no", "has_expiry_date"], function(v) {
+                frm.set_value("custom_task_scan_barcode", "");
+                if (v && (v.has_batch_no || v.has_expiry_date)) {
+                    frm.set_value("custom_task_scan_result", __("Product selected from REF barcode: {0}. Scan the LOT/expiry barcode in the popup.", [item_code]));
+                    frappe.show_alert({ message: __("Product selected. Scan LOT/expiry barcode now."), indicator: "green" });
+                    task_product_work_area_open_lot_dialog(frm, item_code);
+                } else {
+                    frm.set_value("custom_task_scan_result", __("Product selected from REF barcode: {0}.", [item_code]));
+                    task_product_work_area_call_packing_scan(frm, barcode, item_code);
+                }
+            });
         } else {
             frm.set_value("custom_task_scan_result", __("Barcode did not identify an Item."));
             frappe.show_alert({ message: __("Barcode did not identify an Item."), indicator: "red" }, 5);

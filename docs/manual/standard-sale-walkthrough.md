@@ -102,32 +102,55 @@
 
 ---
 
-## Step 3 — Verify Pack task and complete it
+## Step 3 — Complete the Pack task
 
 **Login as:** `Ops - Inventory`
 
-1. Search for `Task` and open the **Task** list, filter: **Task Kind = Pack / prepare items**, **Status = Open**.
-2. Find the task with Subject `Pack: DC-YYYY-NNNNN — [Customer]`.
+### 3.1 Accept the Pack task
 
-**✅ Expected task fields:**
-- Task Kind = `Pack / prepare items`
-- Dispatch Case linked = your case
-- Status = `Open`
+1. Search for `Task` and open the **Task** list.
+2. Filter: **Task Kind = Pack / prepare items**, **Status = Open**.
+3. Find `Pack: DC-YYYY-NNNNN — [Customer]`.
+4. Click **Accept / Start Task** button (this assigns the task to you).
 
-3. Open the linked Dispatch Case. In the **Case Items** table:
-   - For each **serial-tracked** item: fill in `serial_no`
+**✅ Expected:**
+- Task is now assigned to your user
+- Task status remains `Open`
+
+### 3.2 Pack products (choose one method)
+
+**Option A: Manual entry (current method)**
+
+5. Open the linked **Dispatch Case**.
+6. In the **Case Items** table:
    - For each **batch-tracked** item: fill in `batch_no` (select earliest-expiry batch — FEFO)
-   - Save the Dispatch Case.
-4. Back on the task, change **Status** to `Completed` and Save.
+   - For each **serial-tracked** item: fill in `serial_no`
+7. Save the Dispatch Case.
 
-**✅ Expected after completing Pack task:**
+**Option B: Barcode scanning (when available)**
+
+5. On the Pack task form, scroll to the **Product Work Area** section.
+6. For each item:
+   - **For REF_ONLY items:** Scan the item's REF barcode
+   - **For BATCH_EXPIRY items:** Scan REF barcode, then scan LOT/Expiry barcode
+   - Continue until **Packing Status = Complete** for all items
+7. ERPNext auto-fills batch_no and serial_no fields on Dispatch Case Items.
+
+### 3.3 Complete the Pack task
+
+8. Return to the Task form.
+9. Change **Status** to `Completed` and click **Save**.
+
+**✅ Expected:**
 - **Dispatch Stock Entry** auto-created and submitted: `Main - Inmed → Delivery In-Transit - Inmed`
-- Dispatch Case status → `Packed`
-- A **Delivery task** is auto-created
+- Dispatch Case status changes to `Packed`
+- Delivery task auto-created for Delivery Team
+- All batch_no and serial_no fields are filled on Dispatch Case Items
 
 **❌ Should NOT happen:**
-- Error "Serial No required" → fill in `serial_no` on the Case Item row first
-- Error "Batch No required" → fill in `batch_no` on the Case Item row first
+- Error "Batch No required" — fill batch_no on Case Item row (or scan correctly)
+- Error "Serial No required" — fill serial_no on Case Item row (or scan correctly)
+- Task won't complete if any items still show `Pending` or `Partial` status (barcode method)
 
 ---
 

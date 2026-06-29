@@ -1,0 +1,62 @@
+﻿if not doc.dispatch_case:
+    pass
+else:
+    # Update dispatch_case_status field for display
+    if doc.dispatch_case:
+        dc_status = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "status")
+        if dc_status:
+            doc.dispatch_case_status = dc_status
+    before = doc.get_doc_before_save()
+    before_status = before.status if before else None
+    before_ds = (before.delivery_status if before else None) or "Todo"
+    before_ps = (before.pickup_status if before else None) or "Todo"
+    is_completing = (doc.status == "Completed" and before_status != "Completed")
+    ds_changing = (doc.task_kind == "Delivery" and doc.delivery_status != before_ds)
+    ps_changing = (doc.task_kind == "Pickup Returns" and doc.pickup_status != before_ps)
+
+    # Delivery task: require pickup photo before completing
+    if is_completing and doc.task_kind == "Delivery" and not doc.warehouse_pickup_photo:
+        frappe.throw("Warehouse Pickup Photo is required before completing the Delivery task.")
+
+    # Auto-complete Delivery task when marked Delivered
+    if ds_changing and doc.delivery_status == "Delivered":
+        if not doc.warehouse_pickup_photo:
+            frappe.throw("Delivery Photo (Warehouse Pickup Photo) is required before marking Delivered.")
+        doc.status = "Completed"
+
+    # Auto-complete Return Pickup task when Returned to Warehouse
+    if ps_changing and doc.pickup_status == "Returned to Warehouse":
+        if not doc.warehouse_dropoff_photo:
+            frappe.throw("Drop-off Photo (Warehouse Drop-off Photo) is required before marking Returned to Warehouse.")
+        doc.status = "Completed"
+
+    # Pack completion: all items must be checked as packed
+    if doc.status == "Completed" and doc.task_kind == "Pack / prepare items":
+        case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+        not_packed = []
+        for row in (case.case_items or []):
+            status = row.custom_packing_status or 'Pending'
+            if status not in ('Complete', 'Over Scanned'):
+                not_packed.append(row.item_code or row.item_name or 'Unknown')
+        if not_packed:
+            frappe.throw('All items must be packed before completing this task. Not packed: ' + ', '.join(not_packed))
+
+    # Returns Inspection completion: require returned_qty
+    if is_completing and doc.task_kind == "Returns processing / verification":
+        case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+        for row in (case.case_items or []):
+            if row.returned_qty is None:
+                frappe.throw("Fill returned_qty for ALL items in Dispatch Case before completing.")
+
+    # Invoice Preparation completion: require submitted invoice
+    if is_completing and doc.task_kind == "Invoice preparation / create invoice":
+        inv = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "sales_invoice")
+        if not inv:
+            frappe.throw("No Sales Invoice linked to this Dispatch Case yet.")
+        if frappe.db.get_value("Sales Invoice", inv, "docstatus") != 1:
+            frappe.throw("Submit the Sales Invoice before completing this task.")
+
+    # Discount Approval completion: require approval_outcome
+    if is_completing and doc.task_kind == "Discount Approval":
+        if not doc.approval_outcome:
+            frappe.throw("Set Approval Outcome (Approved or Rejected) before completing.")

@@ -1,0 +1,195 @@
+﻿GROUP 10: Chunli Knee - ALL ITEMS
+
+1. 5126-30021 - Femoral Cone 2#-30-L
+2. 5126-30022 - Femoral Cone 2#-30-R
+3. 5128-15021 - Tibial Cone 15mm
+4. 5128-15022 - Tibial Cone 2#/30-15mm
+5. 5129-26020 - Tibial Shape 2#
+6. 5171-01020 - Tibial Tray-XN(R) 2#
+7. 5171-01030 - Tibial Tray-XN(R) 3#
+8. 5171-01040 - Tibial Tray-XN(R) 4#
+9. 5171-01050 - Tibial Tray-XN(R) 5#
+10. 5171-01060 - Tibial Tray-XN(R) 6#
+11. 5171-01070 - Tibial Tray-XN(R) 7#
+12. 5210-01021 - Femoral Condyle(PS-WB) 2L# 
+13. 5210-01022 - Femoral Condyle(PS-WB) 2R# 
+14. 5210-01031 - Femoral Condyle(PS-WB) 3L# 
+15. 5210-01032 - Femoral Condyle(PS-WB) 3R# 
+16. 5210-01041 - Femoral Condyle(PS-WB) 4L# 
+17. 5210-01042 - Femoral Condyle(PS-WB) 4R# 
+18. 5210-01051 - Femoral Condyle(PS-WB) 5L# 
+19. 5210-01052 - Femoral Condyle(PS-WB) 5R# 
+20. 5210-01061 - Femoral Condyle(PS-WB) 6L# 
+21. 5210-01062 - Femoral Condyle(PS-WB) 6R# 
+22. 5210-01071 - Femoral Condyle(PS-WB) 7L# 
+23. 5210-01072 - Femoral Condyle(PS-WB) 7R# 
+24. 5210-01081 - Femoral Condyle(PS-WB) 8L# 
+25. 5210-01082 - Femoral Condyle(PS-WB) 8R# 
+26. 5216-01020 - Tibial Tray-XN 2# 
+27. 5216-01030 - Tibial Tray-XN 3# 
+28. 5216-01040 - Tibial Tray-XN 4# 
+29. 5216-01050 - Tibial Tray-XN 5# 
+30. 5216-01060 - Tibial Tray-XN 6# 
+31. 5216-01070 - Tibial Tray-XN 7# 
+32. 5216-01080 - Tibial Tray-XN 8# 
+33. 5217-10021 - Tibial Insert-XN(PS) 2#/3#/4#-10mm 
+34. 5217-10031 - Tibial Insert-XN(PS) 5#/6#-10mm 
+35. 5217-10041 - Tibial Insert-XN(PS) 7#/8#-10mm 
+36. 5217-12021 - Tibial Insert-XN(PS) 2#/3#/4#-12mm 
+37. 5217-12031 - Tibial Insert-XN(PS) 5#/6#-12mm 
+38. 5217-12041 - Tibial Insert-XN(PS) 7#/8#-12mm 
+39. 5217-14021 - Tibial Insert-XN(PS) 2#/3#/4#-14mm 
+40. 5217-14031 - Tibial Insert-XN(PS) 5#/6#-14mm 
+41. 5217-14041 - Tibial Insert-XN(PS) 7#/8#-14mm 
+42. 5217-16021 - Tibial Insert-XN(PS) 2#/3#/4#-16mm 
+43. 5217-16031 - Tibial Insert-XN(PS) 5#/6#-16mm 
+44. 5217-16041 - Tibial Insert-XN(PS) 7#/8#-16mm 
+45. 5217-18021 - Tibial Insert-XN(PS) 2#/3#/4#-18mm 
+46. 5217-18031 - Tibial Insert-XN(PS) 5#/6#-18mm 
+47. 5217-18041 - Tibial Insert-XN(PS) 7#/8#-18mm 
+48. 5270-01021 - Femoral Condyle-XN(R-CCK) 2L#
+49. 5270-01022 - Femoral Condyle-XN(R-CCK) 2R#
+50. 5270-01031 - Femoral Condyle-XN(R-CCK) 3L#
+51. 5270-01032 - Femoral Condyle-XN(R-CCK) 3R#
+52. 5270-01041 - Femoral Condyle-XN(R-CCK) 4L#
+53. 5270-01042 - Femoral Condyle-XN(R-CCK) 4R#
+54. 5270-01051 - Femoral Condyle-XN(R-CCK) 5L#
+55. 5270-01052 - Femoral Condyle-XN(R-CCK) 5R#
+56. 5270-01061 - Femoral Condyle-XN(R-CCK) 6L#
+57. 5270-01062 - Femoral Condyle-XN(R-CCK) 6R#
+58. 5270-01071 - Femoral Condyle-XN(R-CCK) 7L#
+59. 5270-01072 - Femoral Condyle-XN(R-CCK) 7R#
+60. 5271-09031 - Tibial Insert-XN(R-CCK) 2#3#4#-9mm
+61. 5271-09051 - Tibial Insert-XN(R-CCK) 5#6#-9mm
+62. 5271-09071 - Tibial Insert-XN(R-CCK) 7#-9mm
+63. 5271-11031 - Tibial Insert-XN(R-CCK) 2#3#4#-11mm
+64. 5271-11051 - Tibial Insert-XN(R-CCK) 5#6#-11mm
+65. 5271-11071 - Tibial Insert-XN(R-CCK) 7#-11mm
+66. 5271-13031 - Tibial Insert-XN(R-CCK) 2#3#4#-13mm
+67. 5271-13051 - Tibial Insert-XN(R-CCK) 5#6#-13mm
+68. 5271-13071 - Tibial Insert-XN(R-CCK) 7#-13mm
+69. 5271-15031 - Tibial Insert-XN(R-CCK) 2#3#4#-15mm
+70. 5271-15051 - Tibial Insert-XN(R-CCK) 5#6#-15mm
+71. 5271-15071 - Tibial Insert-XN(R-CCK) 7#-15mm
+72. 5271-17031 - Tibial Insert-XN(R-CCK) 2#3#4#-17mm
+73. 5271-17051 - Tibial Insert-XN(R-CCK) 5#6#-17mm
+74. 5271-17071 - Tibial Insert-XN(R-CCK) 7#-17mm
+75. 5271-19031 - Tibial Insert-XN(R-CCK) 2#3#4#-19mm
+76. 5271-19051 - Tibial Insert-XN(R-CCK) 5#6#-19mm
+77. 5271-19071 - Tibial Insert-XN(R-CCK) 7#-19mm
+78. 5272-05023 - Augment of distal condylar 2#-5mm
+79. 5272-05024 - Augment of posterior condylar 2#-5mm
+80. 5272-05033 - Augment of distal condylar 3#-5mm
+81. 5272-05034 - Augment of posterior condylar 3#-5mm
+82. 5272-05043 - Augment of distal condylar 4#-5mm
+83. 5272-05044 - Augment of posterior condylar 3#-10mm
+84. 5272-05053 - Augment of distal condylar 5#-5mm
+85. 5272-05054 - Augment of posterior condylar 5#-5mm
+86. 5272-05063 - Augment of distal condylar 6#-5mm
+87. 5272-05064 - Augment of posterior condylar 6#-5mm
+88. 5272-05073 - Augment of distal condylar 7#-5mm
+89. 5272-05074 - Augment of posterior condylar 7#-5mm
+90. 5272-10023 - Augment of distal condylar 2#-10mm
+91. 5272-10024 - Augment of posterior condylar 2#-10mm
+92. 5272-10043 - Augment of distal condylar 4#-10mm
+93. 5272-10044 - Augment of posterior condylar 4#-5mm
+94. 5272-10053 - Augment of distal condylar 5#-10mm
+95. 5272-10054 - Augment of posterior condylar 5#-10mm
+96. 5272-10063 - Augment of distal condylar 6#-10mm
+97. 5272-10064 - Augment of posterior condylar 6#-10mm
+98. 5272-10073 - Augment of distal condylar 7#-10mm
+99. 5272-10074 - Augment of posterior condylar 7#-10mm
+100. 5273-09060 - Knee stem-ST  9-60mm
+101. 5273-09100 - Knee stem-ST  9-100mm
+102. 5273-09103 - Knee stem-OT  9-100mm
+103. 5273-09130 - Knee stem-ST  9-130mm
+104. 5273-09133 - Knee stem-OT  9-130mm
+105. 5273-10060 - Knee stem-ST 10-60mm
+106. 5273-10100 - Knee stem-ST 10-100mm
+107. 5273-10103 - Knee stem-OT 10-100mm
+108. 5273-10130 - Knee stem-ST 10-130mm
+109. 5273-10133 - Knee stem-OT 10-130mm
+110. 5273-11060 - Knee stem-ST 11-60mm
+111. 5273-11100 - Knee stem-ST 11-100mm
+112. 5273-11103 - Knee stem-OT 11-100mm
+113. 5273-11130 - Knee stem-ST 11-130mm
+114. 5273-11133 - Knee stem-OT 11-130mm
+115. 5273-12060 - Knee stem-ST 12-60mm
+116. 5273-12100 - Knee stem-ST 12-100mm
+117. 5273-12103 - Knee stem-OT 12-100mm
+118. 5273-12130 - Knee stem-ST 12-130mm
+119. 5273-12133 - Knee stem-OT 12-130mm
+120. 5273-13060 - Knee stem-ST 13-60mm
+121. 5273-13100 - Knee stem-ST 13-100mm
+122. 5273-13103 - Knee stem-OT 13-100mm
+123. 5273-13130 - Knee stem-ST 13-130mm
+124. 5273-13133 - Knee stem-OT 13-130mm
+125. 5273-14060 - Knee stem-ST 14-60mm
+126. 5273-14100 - Knee stem-ST 14-100mm
+127. 5273-14103 - Knee stem-OT 14-100mm
+128. 5273-14130 - Knee stem-ST 14-130mm
+129. 5273-14133 - Knee stem-OT 14-130mm
+130. 5273-15060 - Knee stem-ST 15-60mm
+131. 5273-15100 - Knee stem-ST 15-100mm
+132. 5273-15103 - Knee stem-OT 15-100mm
+133. 5273-15130 - Knee stem-ST 15-130mm
+134. 5273-15133 - Knee stem-OT 15-130mm
+135. 5273-16060 - Knee stem-ST 16-60mm
+136. 5273-16100 - Knee stem-ST 16-100mm
+137. 5273-16103 - Knee stem-OT 16-100mm
+138. 5273-16130 - Knee stem-ST 16-130mm
+139. 5273-16133 - Knee stem-OT 16-130mm
+140. 5276-12021 - Tibial Full Bloack(7ÃÂ°) 12mm, 2#, Left
+141. 5276-12022 - Tibial Full Bloack(7ÃÂ°) 12mm, 2#, Right
+142. 5276-12031 - Tibial Full Bloack(7ÃÂ°) 12mm, 3#, Left
+143. 5276-12032 - Tibial Full Bloack(7ÃÂ°) 12mm, 3#, Right
+144. 5276-12041 - Tibial Full Bloack(7ÃÂ°) 12mm, 4#, Left
+145. 5276-12042 - Tibial Full Bloack(7ÃÂ°) 12mm, 4#, Right
+146. 5276-12051 - Tibial Full Bloack(7ÃÂ°) 12mm, 5#, Left
+147. 5276-12052 - Tibial Full Bloack(7ÃÂ°) 12mm, 5#, Right
+148. 5276-12061 - Tibial Full Bloack(7ÃÂ°) 12mm, 6#, Left
+149. 5276-12062 - Tibial Full Bloack(7ÃÂ°) 12mm, 6#, Right
+150. 5276-12071 - Tibial Full Bloack(7ÃÂ°) 12mm, 7#, Left
+151. 5276-12072 - Tibial Full Bloack(7ÃÂ°) 12mm, 7#, Right
+152. 5277-10021 - Tibial Half Block(16ÃÂ°) 10mm, 2#, Left
+153. 5277-10022 - Tibial Half Block(16ÃÂ°) 10mm, 2#, Right
+154. 5277-10031 - Tibial Half Block(16ÃÂ°) 10mm, 3#, Left
+155. 5277-10032 - Tibial Half Block(16ÃÂ°) 10mm, 3#, Right
+156. 5277-10041 - Tibial Half Block(16ÃÂ°) 10mm, 4#, Left
+157. 5277-10042 - Tibial Half Block(16ÃÂ°) 10mm, 4#, Right
+158. 5277-10051 - Tibial Half Block(16ÃÂ°) 10mm, 5#, Left
+159. 5277-10052 - Tibial Half Block(16ÃÂ°) 10mm, 5#, Right
+160. 5277-10061 - Tibial Half Block(16ÃÂ°) 10mm, 6#, Left
+161. 5277-10062 - Tibial Half Block(16ÃÂ°) 10mm, 6#, Right
+162. 5277-10071 - Tibial Half Block(16ÃÂ°) 10mm, 7#, Left
+163. 5277-10072 - Tibial Half Block(16ÃÂ°) 10mm, 7#, Right
+164. 5278-05021 - Tibial Half Block(flat) 5mm, 2#, Left
+165. 5278-05022 - Tibial Half Block(flat) 5mm, 2#, Right
+166. 5278-05031 - Tibial Half Block(flat) 5mm, 3#, Left
+167. 5278-05032 - Tibial Half Block(flat) 5mm, 3#, Right
+168. 5278-05041 - Tibial Half Block(flat) 5mm, 4#, Left
+169. 5278-05042 - Tibial Half Block(flat) 5mm, 4#, Right
+170. 5278-05051 - Tibial Half Block(flat) 5mm, 5#, Left
+171. 5278-05052 - Tibial Half Block(flat) 5mm, 5#, Right
+172. 5278-05061 - Tibial Half Block(flat) 5mm, 6#, Left
+173. 5278-05062 - Tibial Half Block(flat) 5mm, 6#, Right
+174. 5278-05071 - Tibial Half Block(flat) 5mm, 7#, Left
+175. 5278-05072 - Tibial Half Block(flat) 5mm, 7#, Right
+176. 5278-10021 - Tibial Half Block(flat) 10mm, 2#, Left
+177. 5278-10022 - Tibial Half Block(flat) 10mm, 2#, Right
+178. 5278-10031 - Tibial Half Block(flat) 10mm, 3#, Left
+179. 5278-10032 - Tibial Half Block(flat) 10mm, 3#, Right
+180. 5278-10041 - Tibial Half Block(flat) 10mm, 4#, Left
+181. 5278-10042 - Tibial Half Block(flat) 10mm, 4#, Right
+182. 5278-10051 - Tibial Half Block(flat) 10mm, 5#, Left
+183. 5278-10052 - Tibial Half Block(flat) 10mm, 5#, Right
+184. 5278-10061 - Tibial Half Block(flat) 10mm, 6#, Left
+185. 5278-10062 - Tibial Half Block(flat) 10mm, 6#, Right
+186. 5278-10071 - Tibial Half Block(flat) 10mm, 7#, Left
+187. 5278-10072 - Tibial Half Block(flat) 10mm, 7#, Right
+188. 5279-00600 - Screw for tibial part - M5 6mm
+189. 5279-00700 - Screw for tibial part - M5 7mm
+190. 5279-53350 - M5 Fasten Screw 33.5mm
+
+TOTAL: 190 items
+

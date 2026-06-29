@@ -258,7 +258,7 @@ Add a **Section Break** with label `Record Payment`, then:
 | `dispatched_qty` | Dispatched Qty | Float | Req — In List View |
 | `serial_no` | Serial No | Small Text | Filled by Inventory at Pack step |
 | `batch_no` | Batch No | Link | Batch — Filled by Inventory at Pack step |
-| `unit_price` | Unit Price | Currency | Req |
+| `unit_price` | Unit Price | Currency | Optional |
 | `discount_pct` | Discount % | Percent | Default 0 |
 | `returned_qty` | Returned Qty | Float | Default 0 — filled by Returns team |
 | `lost_damaged_qty` | Lost / Damaged Qty | Float | Default 0 — filled by Returns team |

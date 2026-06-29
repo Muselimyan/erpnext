@@ -1,0 +1,255 @@
+﻿function task_product_work_area_refresh(frm, show_alert) {
+    const is_product_task = task_product_work_area_is_product_task(frm);
+    if (!is_product_task) {
+        if (frm.fields_dict.custom_task_product_summary) {
+            frm.fields_dict.custom_task_product_summary.$wrapper.empty();
+        }
+        return;
+    }
+    if (!frm.doc.dispatch_case) {
+        task_product_work_area_empty(frm, "No Dispatch Case linked yet.", "warning");
+        return;
+    }
+    frappe.call({
+        method: "frappe.client.get",
+        args: { doctype: "Dispatch Case", name: frm.doc.dispatch_case },
+        callback: function(r) {
+            const doc = r.message;
+            if (!doc) {
+                task_product_work_area_empty(frm, "Linked Dispatch Case was not found.", "danger");
+                return;
+            }
+            const rows = doc.case_items || [];
+            if (!rows.length) {
+                task_product_work_area_empty(frm, "No product rows yet.", "warning");
+                return;
+            }
+            const is_returns_task = (frm.doc.task_kind === "Returns processing / verification");
+            const checkbox_label = is_returns_task ? "Returned?" : "Packed?";
+            const col1_label = is_returns_task ? "Dispatched" : "Required";
+            const col2_label = is_returns_task ? "Returned" : "Scanned";
+            const col3_label = is_returns_task ? "Used" : "Missing";
+            
+            let html = `<div class="small text-muted" style="margin-bottom:8px">Source: <b>${frappe.utils.escape_html(doc.name)}</b> | Customer: <b>${frappe.utils.escape_html(doc.customer || "")}</b></div>`;
+            html += `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
+                <th style="width:70px">${checkbox_label}</th><th>Name</th><th>${col1_label}</th><th>${col2_label}</th><th>${col3_label}</th><th>Batch/LOT</th><th>Expiry</th><th>Status</th><th>Warning / Problem</th>
+            </tr></thead><tbody>`;
+            rows.forEach(function(row, idx) {
+                const required = flt(row.dispatched_qty || 0);
+                const scanned = flt(row.custom_scanned_qty || 0);
+                const remaining = row.custom_remaining_qty !== undefined && row.custom_remaining_qty !== null ? flt(row.custom_remaining_qty) : Math.max(required - scanned, 0);
+                const warn = row.custom_fefo_warning || row.custom_problem_reason || "";
+                const status = row.custom_packing_status || "Pending";
+                const is_packed = (status === "Complete" || status === "Over Scanned");
+                html += `<tr>
+                    <td class="text-center">
+                        <input type="checkbox" class="pack-checkbox" data-idx="${idx}" ${is_packed ? 'checked' : ''} 
+                               style="width:22px;height:22px;min-width:22px;min-height:22px;cursor:pointer;aspect-ratio:1/1"
+                               onchange="task_product_work_area_toggle_packed(this)">
+                    </td>
+                    <td>${frappe.utils.escape_html(row.item_name || row.item_code || "")}</td>
+                    <td class="text-right">${required}</td>
+                    <td class="text-right">${scanned}</td>
+                    <td class="text-right">${remaining}</td>
+                    <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
+                    <td>${frappe.utils.escape_html(row.expiry_date || row.custom_expiry_date || "")}</td>
+                    <td><span class="indicator ${is_packed ? 'green' : 'orange'}">${frappe.utils.escape_html(status)}</span></td>
+                    <td>${frappe.utils.escape_html(warn)}</td>
+                </tr>`;
+            });
+            html += `</tbody></table></div>`;
+            html += `<div class="small text-muted" style="margin-top:8px"><i>Tip: Check boxes then Save to update packing status.</i></div>`;
+            if (frm.fields_dict.custom_task_product_summary) {
+                frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
+            }
+        }
+    });
+}
+
+function task_product_work_area_toggle_packed(checkbox) {
+    if (cur_frm) { cur_frm.dirty(); }
+}
+
+function task_product_work_area_is_product_task(frm) {
+    const kinds = [
+        "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Return Call", "Pickup Returns",
+        "Return drop-off at warehouse", "Returns processing / verification", "Returns restocking",
+        "Invoice preparation / create invoice", "Discount Approval"
+    ];
+    return !!frm.doc.dispatch_case || kinds.includes(frm.doc.task_kind);
+}
+
+function task_product_work_area_empty(frm, message, indicator) {
+    if (frm.fields_dict.custom_task_product_summary) {
+        frm.fields_dict.custom_task_product_summary.$wrapper.html(
+            `<div class="alert alert-${indicator || "warning"}">${frappe.utils.escape_html(message)}</div>`
+        );
+    }
+}
+
+frappe.ui.form.on("Task", {
+    refresh(frm) {
+        // Show pickup photo on Pack, Delivery, Pickup Returns; hide on Order entry
+        const showPhotoKinds = ["Pack / prepare items", "Delivery"];
+        // Delivery: read-only (just viewing the photo)
+        if (frm.doc.task_kind === "Delivery") {
+            frm.set_df_property('warehouse_pickup_photo', 'read_only', 1);
+        }
+        if (showPhotoKinds.includes(frm.doc.task_kind)) {
+            frm.set_df_property('warehouse_pickup_photo', 'hidden', 0);
+            frm.set_df_property('warehouse_dropoff_photo', 'hidden', 1);
+            // Render image preview
+            task_render_photo_preview(frm);
+            // Add Photo button rendered inline for Pack tasks
+            if (frm.doc.task_kind === "Pack / prepare items" && !frm.is_new()) {
+                task_render_add_photo_btn(frm);
+            }
+        } else if (frm.doc.task_kind === "Order entry") {
+            frm.set_df_property('warehouse_pickup_photo', 'hidden', 1);
+            frm.set_df_property('warehouse_dropoff_photo', 'hidden', 1);
+        }
+        // Prevent auto-save after photo attach on Pickup Returns and Pack tasks
+        (function() {
+            var fields_to_patch = [];
+            if (frm.doc.task_kind === "Pickup Returns") fields_to_patch.push("warehouse_dropoff_photo");
+            if (frm.doc.task_kind === "Pack / prepare items") fields_to_patch.push("warehouse_pickup_photo");
+            fields_to_patch.forEach(function(fieldname) {
+                var ctrl = frm.fields_dict[fieldname];
+                if (ctrl && !ctrl._no_auto_save_patched) {
+                    ctrl._no_auto_save_patched = true;
+                    ctrl.on_upload_complete = function(file_doc) {
+                        this.parse_validate_and_set_in_model(file_doc.file_url);
+                        if (this.frm) {
+                            this.frm.attachments.new_attachment(file_doc);
+                            this.frm.dirty();
+                        }
+                    };
+                }
+            });
+        })();
+        task_product_work_area_refresh(frm);
+        const is_product_task = task_product_work_area_is_product_task(frm);
+        if (!frm.is_new() && is_product_task) {
+            frm.add_custom_button(__("Refresh Packing Status"), function() {
+                task_product_work_area_refresh(frm, true);
+            }, __("Packing"));
+        }
+    },
+    dispatch_case(frm) {
+        task_product_work_area_refresh(frm, true);
+    },
+    task_kind(frm) {
+        task_product_work_area_refresh(frm, true);
+    },
+    before_save(frm) {
+        if (!frm.doc.dispatch_case) return;
+        if (frm.doc.task_kind !== "Pack / prepare items" && frm.doc.task_kind !== "Returns processing / verification") return;
+
+        const wrapper = frm.fields_dict.custom_task_product_summary;
+        if (!wrapper) return;
+        const checkboxes = wrapper.$wrapper.find('input.pack-checkbox');
+        if (!checkboxes.length) return;
+
+        const packed_indices = [];
+        checkboxes.each(function() {
+            if (this.checked) {
+                packed_indices.push(parseInt($(this).data('idx')));
+            }
+        });
+
+        frappe.call({
+            method: "task_mark_items_packed_batch",
+            args: {
+                case_name: frm.doc.dispatch_case,
+                packed_indices: JSON.stringify(packed_indices)
+            },
+            async: false,
+            freeze: true,
+            freeze_message: __("Updating packing status...")
+        });
+    },
+    after_save(frm) {
+        // Prevent auto-save after photo attach on Pickup Returns and Pack tasks
+        (function() {
+            var fields_to_patch = [];
+            if (frm.doc.task_kind === "Pickup Returns") fields_to_patch.push("warehouse_dropoff_photo");
+            if (frm.doc.task_kind === "Pack / prepare items") fields_to_patch.push("warehouse_pickup_photo");
+            fields_to_patch.forEach(function(fieldname) {
+                var ctrl = frm.fields_dict[fieldname];
+                if (ctrl && !ctrl._no_auto_save_patched) {
+                    ctrl._no_auto_save_patched = true;
+                    ctrl.on_upload_complete = function(file_doc) {
+                        this.parse_validate_and_set_in_model(file_doc.file_url);
+                        if (this.frm) {
+                            this.frm.attachments.new_attachment(file_doc);
+                            this.frm.dirty();
+                        }
+                    };
+                }
+            });
+        })();
+        task_product_work_area_refresh(frm);
+    }
+});
+
+function task_render_photo_preview(frm) {
+    const wrapper = frm.fields_dict.warehouse_pickup_photo;
+    if (!wrapper || !wrapper.$wrapper) return;
+    wrapper.$wrapper.find('.photo-gallery-section').remove();
+    // Fetch all image attachments for this task
+    frappe.call({
+        method: 'frappe.client.get_list',
+        args: {
+            doctype: 'File',
+            filters: {
+                attached_to_doctype: 'Task',
+                attached_to_name: frm.doc.name,
+                is_private: ['in', [0, 1]]
+            },
+            fields: ['file_url', 'file_name'],
+            limit_page_length: 50
+        },
+        async: true,
+        callback: function(r) {
+            wrapper.$wrapper.find('.photo-gallery-section').remove();
+            const files = (r.message || []).filter(function(f) {
+                return /\.(jpg|jpeg|png|gif|webp|bmp|heic|heif)$/i.test(f.file_url || '');
+            });
+            if (!files.length) return;
+            let html = '<div class="photo-gallery-section" style="margin-top:10px;">';
+            html += '<label style="font-weight:600;font-size:12px;color:#6c757d;margin-bottom:6px;display:block;">Attached Photos (' + files.length + ')</label>';
+            html += '<div style="display:flex;flex-wrap:wrap;gap:10px;">';
+            files.forEach(function(f) {
+                html += '<div style="position:relative;">';
+                html += '<img src="' + f.file_url + '" title="' + frappe.utils.escape_html(f.file_name || '') + '" style="max-width:380px;max-height:380px;border:1px solid #ddd;border-radius:4px;cursor:pointer;" onclick="window.open(this.src)" />';
+                html += '</div>';
+            });
+            html += '</div></div>';
+            wrapper.$wrapper.append(html);
+        }
+    });
+}
+function task_render_add_photo_btn(frm) {
+    const wrapper = frm.fields_dict.warehouse_pickup_photo;
+    if (!wrapper || !wrapper.$wrapper) return;
+    wrapper.$wrapper.find('.add-photo-btn-wrap').remove();
+    const btnHtml = '<div class="add-photo-btn-wrap" style="margin-top:10px;margin-bottom:10px;"><button class="btn btn-sm btn-primary" type="button" style="font-size:13px;padding:6px 16px;">+ Add Photos</button></div>';
+    wrapper.$wrapper.append(btnHtml);
+    wrapper.$wrapper.find('.add-photo-btn-wrap button').on('click', function() {
+        new frappe.ui.FileUploader({
+            doctype: frm.doctype,
+            docname: frm.doc.name,
+            folder: 'Home/Attachments',
+            allow_multiple: true,
+            on_success: function(file) {
+                if (!frm.doc.warehouse_pickup_photo && file.file_url) {
+                    frm.set_value('warehouse_pickup_photo', file.file_url).then(function() {
+                        frm.save();
+                    });
+                } else {
+                    frm.reload_doc();
+                }
+            }
+        });
+    });
+}

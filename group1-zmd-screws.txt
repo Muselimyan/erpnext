@@ -1,0 +1,228 @@
+﻿GROUP 1: zmd screws - ALL ITEMS
+
+1. 1101.3512 - ZM Cortex screw 3.5mm,12mm S.S
+2. 1101.3514 - ZM Cortex screw 3.5mm,14mm S.S
+3. 1101.3516 - ZM Cortex screw 3.5mm,16mm S.S
+4. 1101.3518 - ZM Cortex screw 3.5mm,18mm S.S
+5. 1101.3520 - ZM Cortex screw 3.5mm,20mm S.S
+6. 1101.3522 - ZM Cortex screw 3.5mm,22mm S.S
+7. 1101.3524 - ZM Cortex screw 3.5mm,24mm S.S
+8. 1101.3526 - ZM Cortex screw 3.5mm,26mm S.S
+9. 1101.3528 - ZM Cortex screw 3.5mm,28mm S.S
+10. 1101.3530 - ZM Cortex screw 3.5mm,30mm S.S
+11. 1101.3532 - ZM Cortex screw 3.5mm,32mm S.S
+12. 1101.3540 - ZM Cortex screw 3.5mm,40mm S.S
+13. 1101.3550 - ZM Cortex screw 3.5mm,50mm S.S
+14. 1201.3514 - ZM Cortex screw 3.5mm, 14mm Ti
+15. 1201.3516 - ZM Cortex screw 3.5mm, 16mm Ti
+16. 1201.3518 - ZM Cortex screw 3.5mm, 18mm Ti
+17. 1201.3520 - ZM Cortex screw 3.5mm, 20mm Ti
+18. 1201.3522 - ZM Cortex screw 3.5mm, 22mm Ti
+19. 1201.3524 - ZM Cortex screw 3.5mm, 24mm Ti
+20. 1201.3528 - ZM Cortex screw 3.5mm, 28mm Ti
+21. 1201.3530 - ZM Cortex screw 3.5mm, 30mm Ti
+22. 1201.3532 - ZM Cortex screw 3.5mm, 32mm Ti
+23. 1201.3536 - ZM Cortex screw 3.5mm, 36mm Ti
+24. 1201.3538 - ZM Cortex screw 3.5mm, 38mm Ti
+25. 1201.3540 - ZM Cortex screw 3.5mm, 40mm Ti
+26. 1201.3546 - ZM Cortex screw 3.5mm, 46mm Ti
+27. 1201.3550 - ZM Cortex screw 3.5mm, 50mm Ti
+28. 1201.4526 - ZM Cortex screw 4.5mm,26mm Ti
+29. 1201.4528 - ZM Cortex screw 4.5mm,28mm Ti
+30. 1201.4530 - ZM Cortex screw 4.5mm,30mm Ti
+31. 1201.4532 - ZM Cortex screw 4.5mm,32mm Ti
+32. 1201.4534 - ZM Cortex screw 4.5mm,34mm Ti
+33. 1201.4536 - ZM Cortex screw 4.5mm,36mm Ti
+34. 1201.4538 - ZM Cortex screw 4.5mm,38mm Ti
+35. 1202.6535 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*35mm Ti
+36. 1202.6540 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*40mm Ti
+37. 1202.6545 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*45mm Ti
+38. 1202.6550 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*50mm Ti
+39. 1202.6555 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*55mm Ti
+40. 1202.6560 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*60mm Ti
+41. 1202.6565 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*65mm Ti
+42. 1202.6570 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*70mm Ti
+43. 1202.6575 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*75mm Ti
+44. 1202.6580 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*80mm Ti
+45. 1202.6585 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*85mm Ti
+46. 1202.6590 - 6.5mm Cancellous Screw (Partial-Threaded) 6.5*90mm Ti
+47. 1204.2412 - Cortex screw 2.4*12mm T
+48. 1204.2414 - Cortex screw 2.4*14mm T
+49. 1204.2416 - Cortex screw 2.4*16mm T
+50. 1204.2418 - Cortex screw 2.4*18mm
+51. 1204.2420 - Cortex screw 2.4*20mm
+52. 2201.3512 - ZM Locking screw 3.5mm, 12mm Ti
+53. 2201.3514 - ZM Locking screw 3.5mm, 14mm Ti
+54. 2201.3516 - ZM Locking screw 3.5mm, 16mm Ti
+55. 2201.3518 - ZM Locking screw 3.5mm, 18mm Ti
+56. 2201.3520 - ZM Locking screw 3.5mm, 20mm Ti
+57. 2201.3526 - ZM Locking screw 3.5mm, 26mm Ti
+58. 2201.3528 - ZM Locking screw 3.5mm, 28mm Ti
+59. 2201.3530 - ZM Locking screw 3.5mm, 30mm Ti
+60. 2201.3532 - ZM Locking screw 3.5mm, 32mm Ti
+61. 2201.3542 - ZM Locking screw 3.5mm, 42mm Ti
+62. 2201.3546 - ZM Locking screw 3.5mm, 46mm Ti
+63. 2201.3550 - ZM Locking screw 3.5mm, 50mm Ti
+64. 2201.5080 - ZM Locking screw 5.0mm,80mm Ti
+65. 2204.2014 - 2.0mm Locking screw 2.0*14mm Ti
+66. 2204.2016 - 2.0mm Locking screw 2.0*16mm Ti
+67. 2204.2018 - 2.0mm Locking screw 2.0*18mm Ti
+68. 2204.2020 - 2.0mm Locking screw 2.0*20mm Ti
+69. 2204.2412 - Locking Screw 2.4*12mm
+70. 2204.2414 - Locking Screw 2.4*14mm
+71. 2204.2416 - Locking Screw 2.4*16mm
+72. 2204.2418 - Locking Screw 2.4*18mm
+73. 2204.2420 - Locking Screw 2.4*20mm
+74. 30236.2.0*12 - Zimede, Cortex screw, 2.0*12mm, S.S
+75. 30236.2.0*14 - Zimede, Cortex screw, 2.0*14mm, S.S
+76. 30236.2.0*16 - Zimede, Cortex screw, 2.0*16mm, S.S
+77. 30236.2.0*18 - Zimede, Cortex screw, 2.0*18mm, S.S
+78. 30236.2.0*20 - Zimede, Cortex screw, 2.0*20mm, S.S
+79. 30236.2.12.S - Cortex screw 2.0*12mm S.S
+80. 30236.2.12.T.1 - Cortex screw 2.0*12mm Ti (#)
+81. 30236.2.14.S - Cortex screw 2.0*14mm S.S
+82. 30236.2.14.T.1 - Cortex screw 2.0*14mm Ti (#)
+83. 30236.2.16.S - Cortex screw 2.0*16mm S.S
+84. 30236.2.16.T.1 - Cortex screw 2.0*16mm Ti (#)
+85. 30236.2.18.S - Cortex screw 2.0*18mm S.S
+86. 30236.2.18.T.1 - Cortex screw 2.0*18mm Ti (#)
+87. 30236.2.20.S - Cortex screw 2.0*20mm S.S
+88. 30236.2.20.T.1 - Cortex screw 2.0*20mm Ti (#)
+89. 30237-65.S.40 - ZM Cortex Cancellous 1/2 screw 6.5mm,40mm S.S
+90. 30237-65.S.45 - ZM Cortex Cancellous 1/2 screw 6.5mm,45mm S.S
+91. 30237-65.S.50 - ZM Cortex Cancellous 1/2 screw 6.5mm,50mm S.S
+92. 30237-65.S.55 - ZM Cortex Cancellous 1/2 screw 6.5mm,55mm S.S
+93. 30237-65.S.60 - ZM Cortex Cancellous 1/2 screw 6.5mm,60mm S.S
+94. 30237-65.S.65 - ZM Cortex Cancellous 1/2 screw 6.5mm,65mm S.S
+95. 30237-65.S.70 - ZM Cortex Cancellous 1/2 screw 6.5mm,70mm S.S
+96. 30237-65.S.75 - ZM Cortex Cancellous 1/2 screw 6.5mm,75mm S.S
+97. 30237-65.S.80 - ZM Cortex Cancellous 1/2 screw 6.5mm,80mm S.S
+98. 30237-65.S.85 - ZM Cortex Cancellous 1/2 screw 6.5mm,85mm S.S
+99. 30237-65.S.90 - ZM Cortex Cancellous 1/2 screw 6.5mm,90mm S.S
+100. 30237.6.5x45 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x45mm, S.S
+101. 30237.6.5x50 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x50mm, S.S
+102. 30237.6.5x55 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x55mm, S.S
+103. 30237.6.5x60 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x60mm, S.S
+104. 30237.6.5x65 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x65mm, S.S
+105. 30237.6.5x70 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x70mm, S.S
+106. 30237.6.5x75 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x75mm, S.S
+107. 30237.6.5x80 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x80mm, S.S
+108. 30237.6.5x85 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x85mm, S.S
+109. 30237.6.5x90 - Zimede, Screws for cancellous bone (Half-Threaded), 6.5x90mm, S.S
+110. 30238-40.12 - ZM Cortex Cancellous screw 4.0mm,12mm Ti
+111. 30238-40.14 - ZM Cortex Cancellous screw 4.0mm,14mm Ti
+112. 30238-40.16 - ZM Cortex Cancellous screw 4.0mm,16mm Ti
+113. 30238-40.18 - ZM Cortex Cancellous screw 4.0mm,18mm Ti
+114. 30238-40.20 - ZM Cortex Cancellous screw 4.0mm,20mm Ti
+115. 30238-40.22 - ZM Cortex Cancellous screw 4.0mm,22mm Ti
+116. 30238-40.24 - ZM Cortex Cancellous screw 4.0mm,24mm Ti
+117. 30238-40.26 - ZM Cortex Cancellous screw 4.0mm,26mm Ti
+118. 30238-40.28 - ZM Cortex Cancellous screw 4.0mm,28mm Ti
+119. 30238-40.30 - ZM Cortex Cancellous screw 4.0mm,30mm Ti
+120. 30238-40.32 - ZM Cortex Cancellous screw 4.0mm,32mm Ti
+121. 30238-40.34 - ZM Cortex Cancellous screw 4.0mm,34mm Ti
+122. 30238-40.36 - ZM Cortex Cancellous screw 4.0mm,36mm Ti
+123. 30238-40.38 - ZM Cortex Cancellous screw 4.0mm,38mm Ti
+124. 30238-40.40 - ZM Cortex Cancellous screw 4.0mm,40mm Ti
+125. 30238-65.S.45 - ZM Cortex Cancellous Full screw 6.5mm,45mm S.S
+126. 30238-65.S.55 - ZM Cortex Cancellous Full screw 6.5mm,55mm S.S
+127. 30238-65.S.65 - ZM Cortex Cancellous Full screw 6.5mm,65mm S.S
+128. 30238-65.S.70 - ZM Cortex Cancellous Full screw 6.5mm,70mm S.S
+129. 30238-65.S.75 - ZM Cortex Cancellous Full screw 6.5mm,75mm S.S
+130. 30238-65.S.80 - ZM Cortex Cancellous Full screw 6.5mm,80mm S.S
+131. 30238-65.S.85 - ZM Cortex Cancellous Full screw 6.5mm,85mm S.S
+132. 30238-65.S.90 - ZM Cortex Cancellous Full screw 6.5mm,90mm S.S
+133. 30238.6.5x45 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x45mm, S.S
+134. 30238.6.5x55 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x55mm, S.S
+135. 30238.6.5x65 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x65mm, S.S
+136. 30238.6.5x70 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x70mm, S.S
+137. 30238.6.5x75 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x75mm, S.S
+138. 30238.6.5x80 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x80mm, S.S
+139. 30238.6.5x85 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x85mm, S.S
+140. 30238.6.5x90 - Zimede, Screws for cancellous bone (full-Threaded), 6.5x90mm, S.S
+141. 30243.4.5.46 - ZM Cannulated Screw, 4.5/46mm Ti
+142. 30243.4.5.50 - ZM Cannulated Screw, 4.5/50mm  Ti
+143. 30243.4.5.56 - ZM Cannulated Screw, 4.5/56mm Ti
+144. 30243.7.3.100 - ZM Cannulated  Screws 7.3mm/100 mm SS
+145. 30243.7.3.105 - ZM Cannulated  Screws 7.3mm/105mm SS
+146. 30243.7.3.85 - ZM Cannulated  Screws 7.3mm/85mm SS
+147. 30243.7.3.90 - ZM Cannulated  Screws 7.3mm/90 mm SS 
+148. 30243.7.3.95 - ZM Cannulated  Screws 7.3mm/95 mm SS
+149. 3102.7300 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/100mm
+150. 3102.7305 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/105mm
+151. 3102.7310 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/110mm
+152. 3102.7360 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/60mm
+153. 3102.7365 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/65mm
+154. 3102.7370 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/70mm
+155. 3102.7375 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/75mm
+156. 3102.7380 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/80mm
+157. 3102.7385 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/85mm
+158. 3102.7390 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/90mm
+159. 3102.7395 - ZM Cannulated Single -headed Comp. Screws SS 7.3mm/95mm
+160. 3201.3014 - ZM Herbert Screw, 3.0/14mm Ti
+161. 3201.3016 - ZM Herbert Screw, 3.0/16mm Ti
+162. 3201.3018 - ZM Herbert Screw, 3.0/18mm, Ti
+163. 3201.3020 - ZM Herbert Screw, 3.0/20mm Ti
+164. 3201.3022 - ZM Herbert Screw, 3.0/22mm Ti
+165. 3201.3024 - ZM Herbert Screw, 3.0/24mm Ti
+166. 3201.3026 - ZM Herbert Screw, 3.0/26mm Ti
+167. 3201.3028 - ZM Herbert Screw, 3.0/28mm Ti
+168. 3201.3030 - ZM Herbert Screw, 3.0/30mm Ti
+169. 3201.3032 - ZM Herbert Screw, 3.0/32mm Ti
+170. 3201.3034 - ZM Herbert Screw, 3.0/34mm Ti
+171. 3201.3036 - ZM Herbert Screw, 3.0/36mm Ti
+172. 3201.3038 - ZM Herbert Screw, 3.0/38mm Ti
+173. 3201.3040 - ZM Herbert Screw, 3.0/40mm Ti
+174. 3202.4030 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/30mm
+175. 3202.4032 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/32mm
+176. 3202.4034 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/34mm
+177. 3202.4036 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/36mm
+178. 3202.4038 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/38mm
+179. 3202.4040 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/40mm
+180. 3202.4044 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/44mm
+181. 3202.4050 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/50mm
+182. 3202.4054 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/54mm
+183. 3202.4060 - ZM Cannulated Single -headed Comp. Screws Ti, 4.0/60mm
+184. 3202.4544 - ZM Cannulated Single -headed Comp. Screws Ti, 4.5/44mm
+185. 3202.4550 - ZM Cannulated Single -headed Comp. Screws Ti, 4.5/50mm
+186. 3202.4554 - ZM Cannulated Single -headed Comp. Screws Ti, 4.5/54mm
+187. 3202.4560 - ZM Cannulated Single -headed Comp. Screws Ti, 4.5/60mm
+188. 4114.3526 - 3.5mm Lockable Screw 3.5*26mm S.S
+189. 4114.3528 - 3.5mm Lockable Screw 3.5*28mm S.S
+190. 4114.3530 - 3.5mm Lockable Screw 3.5*30mm S.S
+191. 4114.3532 - 3.5mm Lockable Screw 3.5*32mm S.S
+192. 4114.3534 - 3.5mm Lockable Screw 3.5*34mm S.S
+193. 4114.3536 - 3.5mm Lockable Screw 3.5*36mm S.S
+194. 4114.3538 - 3.5mm Lockable Screw 3.5*38mm S.S
+195. 4114.3540 - 3.5mm Lockable Screw 3.5*40mm S.S
+196. 4114.3544 - 3.5mm Lockable Screw 3.5*44mm S.S
+197. 4114.3550 - 3.5mm Lockable Screw 3.5*50mm S.S
+198. 4114.3555 - 3.5mm Lockable Screw 3.5*55mm S.S
+199. 4114.4535 - ZMD.Locking screw 4.8x35mm S.S
+200. 4114.4540 - ZMD.Locking screw 4.8x40mm S.S
+201. 4114.4545 - ZMD.Locking screw 4.8x45mm S.S
+202. 4114.4550 - ZMD.Locking screw 4.8x50mm S.S
+203. 4114.4555 - ZMD.Locking screw 4.8x55mm S.S
+204. 4114.4560 - ZMD.Locking screw 4.8x60mm S.S
+205. 4114.4565 - ZMD.Locking screw 4.8x65mm S.S
+206. 4114.4570 - ZMD.Locking screw 4.8x70mm S.S
+207. 4114.4575 - ZMD.Locking screw 4.8x75mm S.S
+208. 4114.4580 - ZMD.Locking screw 4.8x80mm S.S
+209. 4114.4585 - ZMD.Locking screw 4.8x85mm S.S
+210. 4114.4590 - ZMD.Locking screw 4.8x90mm S.S
+211. 4214.4535 - Locking Screw 4.8*35mm Ti
+212. 4214.4540 - Locking Screw 4.8*40mm Ti
+213. 4214.4545 - Locking Screw 4.8*45mm Ti
+214. 4214.4550 - Locking Screw 4.8*50mm Ti
+215. 4214.4555 - Locking Screw 4.8*55mm Ti
+216. 4214.4560 - Locking Screw 4.8*60mm Ti
+217. 4214.4565 - Locking Screw 4.8*65mm Ti
+218. 4214.4570 - Locking Screw 4.8*70mm Ti
+219. 4214.4575 - Locking Screw 4.8*75mm Ti
+220. 4214.4580 - Locking Screw 4.8*80mm Ti
+221. 4214.4585 - Locking Screw 4.8*85mm Ti
+222. 4214.4590 - Locking Screw 4.8*90mm Ti
+223. 9000.0624 - ZM K-wire for Herbert 
+
+TOTAL: 223 items
+

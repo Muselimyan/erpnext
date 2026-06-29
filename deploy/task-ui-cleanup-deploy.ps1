@@ -112,6 +112,7 @@ $Rules = @(
     [pscustomobject]@{ fieldname="task_access_policy"; hidden="1"; depends_on=""; note="Hide internal policy field from normal users" },
 
     [pscustomobject]@{ fieldname="dispatch_case"; hidden="0"; depends_on="eval:$DispatchKinds"; note="Show for Dispatch Case operational tasks" },
+    [pscustomobject]@{ fieldname="dispatch_case_status"; hidden="0"; depends_on="eval:$DispatchKinds"; note="Show Dispatch Case status for dispatch-related tasks" },
     [pscustomobject]@{ fieldname="delivery_status"; hidden="0"; depends_on='eval:!doc.task_kind || doc.task_kind=="Delivery"'; note="Show while choosing task kind and for Delivery tasks" },
     [pscustomobject]@{ fieldname="pickup_status"; hidden="0"; depends_on='eval:!doc.task_kind || doc.task_kind=="Pickup Returns"'; note="Show while choosing task kind and for Pickup Returns tasks" },
     [pscustomobject]@{ fieldname="return_pickup_driver"; hidden="0"; depends_on="eval:$ReturnKinds"; note="Show for return pickup/drop-off tasks" },

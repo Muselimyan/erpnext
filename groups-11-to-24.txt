@@ -1,0 +1,598 @@
+﻿GROUP 11: Permedica - Hip (56 items)
+============================================================
+
+1. 33842 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 42mm - Hooded
+2. 33844 - UHMWPE Hooded 20ÃÂ°JUMP SYSTEM Cemented Cup - ÃÂ 32 x 44mm - Hooded
+3. 33846 - UHMWPE Hooded 20ÃÂ°JUMP SYSTEM Cemented Cup - ÃÂ 32 x 46mm - Hooded
+4. 33848 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 48mm - Hooded
+5. 33850 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 50mm - Hooded
+6. 33852 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 52mm - Hooded
+7. 33854 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 54mm - Hooded
+8. 33856 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 56mm - Hooded
+9. 33858 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 58mm - Hooded
+10. 33860 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 60mm - Hooded
+11. 33862 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 62mm - Hooded
+12. 33864 - UHMWPE Hooded 20ÃÂ° JUMP SYSTEM Cemented Cup - ÃÂ 32 x 64mm - Hooded
+13. 35242 - JUMP SYSTEM Cup -W/Holes X-Pore ÃÂ 42mm - GREEN
+14. 35244 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 44mm - BLACK
+15. 35246 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 46mm - BLACK
+16. 35248 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 48mm - YELLOW
+17. 35250 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 50mm - YELLOW
+18. 35252 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 52mm - GREY
+19. 35254 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 54mm - GREY
+20. 35256 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 56mm - BLUE
+21. 35258 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 58mm - BLUE
+22. 35260 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 60mm - BLUE
+23. 35262 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 62mm - RED
+24. 35264 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 64mm - RED
+25. 35266 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 66mm - RED
+26. 35268 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 68mm - RED
+27. 35270 - JUMP SYSTEM Cup -W/holes X-Pore - ÃÂ 70mm - RED
+28. 36005 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 28mm - BLACK
+29. 36006 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 28mm - GREY
+30. 36008 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 28mm - YELLOW
+31. 36009 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 28mm - BLUE
+32. 36010 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 28mm - RED
+33. 36011 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 32mm - BLACK
+34. 36015 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 32mm - GREY
+35. 36016 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 32mm - YELLOW
+36. 36017 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 32mm - BLUE
+37. 36018 - JUMP SYSTEM BIOLOX DELTA Insert - ÃÂ 32mm - RED
+38. 36329 - JUMP SYSTEM UHMWPE Insert - ÃÂ 36mm Hooded 10ÃÂ° - BLUE
+39. 36330 - JUMP SYSTEM UHMWPE Insert - ÃÂ 36mm Hooded 10ÃÂ° - RED
+40. 36362 - JUMP SYSTEM UHMWPE Insert - ÃÂ 22mm Hooded 10ÃÂ° - GREEN
+41. 36363 - JUMP SYSTEM UHMWPE Insert - ÃÂ 28mm Hooded 10ÃÂ° - BLACK
+42. 36364 - JUMP SYSTEM UHMWPE Insert - ÃÂ 28mm Hooded 10ÃÂ° - YELLOW
+43. 36365 - JUMP SYSTEM UHMWPE Insert - ÃÂ 28mm Hooded 10ÃÂ° - GREY
+44. 36366 - JUMP SYSTEM UHMWPE Insert - ÃÂ 28mm Hooded 10ÃÂ° - BLUE
+45. 36367 - JUMP SYSTEM UHMWPE Insert - ÃÂ 28mm Hooded 10ÃÂ° - RED
+46. 36368 - JUMP SYSTEM UHMWPE Insert - ÃÂ 32mm Hooded 10ÃÂ° - YELLOW
+47. 36369 - JUMP SYSTEM UHMWPE Insert - ÃÂ 32mm Hooded 10ÃÂ° - GREY
+48. 36370 - JUMP SYSTEM UHMWPE Insert - ÃÂ 32mm Hooded 10ÃÂ° - BLUE
+49. 36371 - JUMP SYSTEM UHMWPE Insert - ÃÂ 32mm Hooded 10ÃÂ° - RED
+50. 36378 - JUMP SYSTEM UHMWPE Insert - ÃÂ 36mm Hooded 10ÃÂ° - WHITE
+51. 36384 - JUMP SYSTEM UHMWPE Insert - ÃÂ 40mm Hooded 10ÃÂ° - BLUE
+52. 36385 - JUMP SYSTEM UHMWPE Insert - ÃÂ 40mm Hooded 10ÃÂ° - RED
+53. 36725 - JUMP Fixation SCREW - Flat head ÃÂ 6,5x25mm
+54. 36730 - JUMP Fixation SCREW - Flat head ÃÂ 6,5x30mm
+55. 36735 - JUMP Fixation SCREW - Flat head ÃÂ 6,5x35mm
+56. 36740 - JUMP Fixation SCREW - Flat head ÃÂ 6,5x40mm
+
+
+GROUP 12: pfna (45 items)
+============================================================
+
+1. 4207.0918 - PFNA 9*180mm Ti
+2. 4207.0920 - PFNA 9*200mm Ti
+3. 4207.0922 - PFNA 9*220mm Ti
+4. 4207.1018 - PFNA 10*180mm Ti
+5. 4207.1020 - PFNA 10*200mm Ti
+6. 4207.1022 - PFNA 10*220mm Ti
+7. 4207.1118 - PFNA 11*180mm Ti
+8. 4207.1120 - PFNA 11*200mm Ti 
+9. 4207.1122 - PFNA 11*220mm Ti
+10. 4208.0924 - Long PFNA left 9*240mm Ti
+11. 4208.0928 - Long PFNA left 9*280mm Ti
+12. 4208.0932 - Long PFNA left 9*320mm Ti
+13. 4208.1024 - Long PFNA left 10*240mm Ti
+14. 4208.1028 - Long PFNA left 10*280mm Ti
+15. 4208.1032 - Long PFNA left 10*320mm Ti
+16. 4208.1036 - Long PFNA left 10*360mm Ti
+17. 4208.1038 - Long PFNA left 10*380mm Ti
+18. 4208.1124 - Long PFNA left 11*240mm Ti
+19. 4208.1128 - Long PFNA left 11*280mm Ti
+20. 4208.1132 - Long PFNA left 11*320mm Ti
+21. 4208.1136 - Long PFNA left 11*360mm Ti
+22. 4208.1138 - Long PFNA left 11*380mm Ti
+23. 4208.1140 - Long PFNA left 11*400mm Ti
+24. 4209.0924 - Long PFNA right 9*240mm Ti
+25. 4209.0928 - Long PFNA right 9*280mm Ti
+26. 4209.0932 - Long PFNA right 9*320mm Ti
+27. 4209.1024 - Long PFNA right 10*240mm Ti
+28. 4209.1028 - Long PFNA right 10*280mm Ti
+29. 4209.1032 - Long PFNA right 10*320mm Ti
+30. 4209.1036 - Long PFNA right 10*360mm Ti
+31. 4209.1038 - Long PFNA right 10*380mm Ti
+32. 4209.1124 - Long PFNA right 11*240mm Ti
+33. 4209.1128 - Long PFNA right 11*280mm Ti
+34. 4209.1132 - Long PFNA right 11*320mm Ti
+35. 4209.1136 - Long PFNA right 11*360mm Ti
+36. 4209.1138 - Long PFNA right 11*380mm Ti
+37. 4209.1140 - Long PFNA right 11*400mm Ti
+38. 4227.1140 - Long PFNA right 11*400mm Ti
+39. 4230.1000 - PFNA blade 10*100mm Ti
+40. 4230.1005 - PFNA blade 10*105mm Ti
+41. 4230.1010 - PFNA blade 10*110mm Ti
+42. 4230.1080 - PFNA blade 10*80mm Ti
+43. 4230.1085 - PFNA blade 10*85mm Ti
+44. 4230.1090 - PFNA blade 10*90mm Ti
+45. 4230.1095 - PFNA blade 10*95mm Ti
+
+
+GROUP 13: tibia nails (40 items)
+============================================================
+
+1. 4101.0826 - Tibia Lockable Intr. Nail 8*260mm S.S
+2. 4101.0828 - Tibia Lockable Intr. Nail 8*280mm S.S
+3. 4101.0830 - Tibia Lockable Intr. Nail 8*300mm S.S
+4. 4101.0832 - Tibia Lockable Intr. Nail 8*320mm S.S
+5. 4101.0834 - Tibia Lockable Intr. Nail 8*340mm S.S
+6. 4101.0836 - Tibia Lockable Intr. Nail 8*360mm S.S
+7. 4101.0924 - Tibia Lockable Intr. Nail 9*240mm S.S
+8. 4101.0926 - Tibia Lockable Intr. Nail 9*260mm S.S
+9. 4101.0928 - Tibia Lockable Intr. Nail 9*280mm S.S
+10. 4101.0930 - Tibia Lockable Intr. Nail 9*300mm S.S
+11. 4101.0932 - Tibia Lockable Intr. Nail 9*320mm S.S
+12. 4101.0934 - Tibia Lockable Intr. Nail 9*340mm S.S
+13. 4101.0936 - Tibia Lockable Intr. Nail 9*360mm S.S
+14. 4101.1024 - Tibia Lockable Intr. Nail 10*240mm S.S
+15. 4101.1026 - Tibia Lockable Intr. Nail 10*260mm S.S
+16. 4101.1028 - Tibia Lockable Intr. Nail 10*280mm S.S
+17. 4101.1030 - Tibia Lockable Intr. Nail 10*300mm S.S
+18. 4101.1032 - Tibia Lockable Intr. Nail 10*320mm S.S
+19. 4101.1034 - Tibia Lockable Intr. Nail 10*340mm S.S
+20. 4101.1036 - Tibia Lockable Intr. Nail 10*360mm S.S
+21. 4201.0826 - Tibial Intramedullary Nail 8*260mm Ti
+22. 4201.0828 - Tibial Intramedullary Nail 8*280mm Ti 
+23. 4201.0830 - Tibial Intramedullary Nail 8*300mm Ti
+24. 4201.0832 - Tibial Intramedullary Nail 8*320mm Ti
+25. 4201.0834 - Tibial Intramedullary Nail 8*340mm Ti
+26. 4201.0836 - Tibial Intramedullary Nail 8*360mm Ti
+27. 4201.0924 - Tibial Intramedullary Nail 9*240mm Ti
+28. 4201.0926 - Tibial Intramedullary Nail 9*260mm Ti
+29. 4201.0928 - Tibial Intramedullary Nail 9*280mm Ti
+30. 4201.0930 - Tibial Intramedullary Nail 9*300mm Ti
+31. 4201.0932 - Tibial Intramedullary Nail 9*320mm Ti
+32. 4201.0934 - Tibial Intramedullary Nail 9*340mm Ti
+33. 4201.0936 - Tibial Intramedullary Nail 9*360mm Ti
+34. 4201.1024 - Tibial Intramedullary Nail 10*240mm Ti
+35. 4201.1026 - Tibial Intramedullary Nail 10*260mm Ti
+36. 4201.1028 - Tibial Intramedullary Nail 10*280mm Ti
+37. 4201.1030 - Tibial Intramedullary Nail 10*300mm Ti
+38. 4201.1032 - Tibial Intramedullary Nail 10*320mm Ti
+39. 4201.1034 - Tibial Intramedullary Nail 10*340mm Ti
+40. 4201.1036 - Tibial Intramedullary Nail 10*360mm Ti
+
+
+GROUP 14: Humeral nails (18 items)
+============================================================
+
+1. 4106.0718 - Humeral Self-Lockable Intr. Nail 7x180mm S.S
+2. 4106.0720 - Humeral Self-Lockable Intr. Nail 7x200mm S.S
+3. 4106.0722 - Humeral Self-Lockable Intr. Nail 7x220mm S.S
+4. 4106.0724 - Humeral Self-Lockable Intr. Nail 7x240mm S.S
+5. 4106.0726 - Humeral Self-Lockable Intr. Nail 7x260mm S.S
+6. 4106.0728 - Humeral Self-Lockable Intr. Nail 7x280mm S.S
+7. 4106.0818 - Humeral Self-Lockable Intr. Nail 8x180mm S.S
+8. 4106.0820 - Humeral Self-Lockable Intr. Nail 8x200mm S.S
+9. 4106.0822 - Humeral Self-Lockable Intr. Nail 8x220mm S.S
+10. 4106.0824 - Humeral Self-Lockable Intr. Nail 8x240mm S.S
+11. 4106.0826 - Humeral Self-Lockable Intr. Nail 8x260mm S.S
+12. 4106.0828 - Humeral Self-Lockable Intr. Nail 8x280mm S.S 
+13. 4106.0918 - Humeral Self-Lockable Intr. Nail 7.5x180mm S.S
+14. 4106.0920 - Humeral Self-Lockable Intr. Nail 7.5x200mm S.S
+15. 4106.0922 - Humeral Self-Lockable Intr. Nail 7.5x220mm S.S
+16. 4106.0924 - Humeral Self-Lockable Intr. Nail 7.5x240mm S.S
+17. 4106.0926 - Humeral Self-Lockable Intr. Nail 7.5x260mm S.S
+18. 4106.0928 - Humeral Self-Lockable Intr. Nail 7.5x280mm S.S
+
+
+GROUP 15: femoral nails (18 items)
+============================================================
+
+1. 4102.0938 - ZMD.Femoral Proximal Lockable Intr. Nail 9*380mm S.S
+2. 4102.1038 - ZMD.Femoral Proximal Lockable Intr. Nail 10*380mm S.S
+3. 4102.1142 - ZMD.Femoral Proximal Lockable Intr. Nail 11*420mm S.S
+4. 4202.1132 - ZMD.Femoral Proximal Lockable Intr. Nail 11*320mm S.S
+5. 50202.10.320.S - ZMD.Femoral Proximal Lockable Intr. Nail 10*320mm S.S
+6. 50202.10.340.S - ZMD.Femoral Proximal Lockable Intr. Nail 10*340mm S.S
+7. 50202.10.360.S - ZMD.Femoral Proximal Lockable Intr. Nail 10*360mm S.S
+8. 50202.10.400.S - ZMD.Femoral Proximal Lockable Intr. Nail 10*400mm S.S
+9. 50202.10.420.S - ZMD.Femoral Proximal Lockable Intr. Nail 10*420mm S.S
+10. 50202.11.340.S - ZMD.Femoral Proximal Lockable Intr. Nail 11*340mm S.S
+11. 50202.11.360.S - ZMD.Femoral Proximal Lockable Intr. Nail 11*360mm S.S
+12. 50202.11.380.S - ZMD.Femoral Proximal Lockable Intr. Nail 11*380mm S.S
+13. 50202.11.400.S - ZMD.Femoral Proximal Lockable Intr. Nail 11*400mm S.S
+14. 50202.9.320.S - ZMD.Femoral Proximal Lockable Intr. Nail 9*320mm S.S
+15. 50202.9.340.S - ZMD.Femoral Proximal Lockable Intr. Nail 9*340mm S.S
+16. 50202.9.360.S - ZMD.Femoral Proximal Lockable Intr. Nail 9*360mm S.S
+17. 50202.9.400.S - ZMD.Femoral Proximal Lockable Intr. Nail 9*400mm S.S
+18. 50202.9.420.S - ZMD.Femoral Proximal Lockable Intr. Nail 9*420mm S.S
+
+
+GROUP 16: Revers Shoulder (15 items)
+============================================================
+
+1. 5031-00300 - Broach Universal
+2. 5031-00501 - Humeral Head 36mm
+3. 5031-00502 - Humeral Head 38mm
+4. 5031-00503 - Humeral Head 40mm
+5. 5031-00504 - Humeral Head 42mm
+6. 5031-00601 - Glenoid 36mm-5
+7. 5031-00602 - Glenoid 36mm-10
+8. 5031-00604 - Glenoid 38mm-5
+9. 5031-00605 - Glenoid 38mm-10
+10. 5031-00607 - Glenoid 40mm-5
+11. 5031-00608 - Glenoid 40mm-10
+12. 5031-00610 - Glenoid 42mm-5
+13. 5031-00611 - Glenoid 42mm-10
+14. 5031-00701 - Upper Humerus 36/5
+15. 5031-00702 - Upper Humerus 36/10
+
+
+GROUP 17: Radius Prosthesis (15 items)
+============================================================
+
+1. 5041-00101 - Radius Head 18-8.5mm
+2. 5041-00102 - Radius Head 18-10.5mm
+3. 5041-00103 - Radius Head 18-12.5mm
+4. 5041-00104 - Radius Head 20-9mm
+5. 5041-00105 - Radius Head 20-11mm
+6. 5041-00106 - Radius Head 20-13mm
+7. 5041-00107 - Radius Head 22-9,5mm
+8. 5041-00108 - Radius Head 22-11,5mm
+9. 5041-00109 - Radius Head 22-13.5mm
+10. 5041-00202 - Radius Stem 6.5-26mm
+11. 5041-00203 - Radius Stem 7.5-27mm
+12. 5041-00206 - Radius Stem 6.5-28mm
+13. 5041-00207 - Radius Stem 7.5-29mm
+14. 5041-00210 - Radius Stem 6.5-30mm
+15. 5041-00211 - Radius Stem 7.5-31mm
+
+
+GROUP 18: Gamma (15 items)
+============================================================
+
+1. 50204.10.200.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 10*200mm S.S
+2. 50204.10.220.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 10*220mm S.S
+3. 50204.10.240.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 10*240mm S.S
+4. 50204.10.260.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 10*260mm S.S
+5. 50204.10.280.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 10*280mm S.S
+6. 50204.11.200.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 11*200mm S.S
+7. 50204.11.240.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 11*240mm S.S
+8. 50204.11.260.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 11*260mm S.S
+9. 50204.9.220.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 9*220mm S.S
+10. 50204.9.240.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 9*240mm S.S
+11. 50204.9.260.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 9*260mm S.S
+12. 50204.9.280.S - ZMD.St. Gamma Femoral Prox. Lock. I.N. 9*280mm S.S
+13. 50208.85.S - Pulling screws for Gamma 6.0*85mm S.S
+14. 50208.90.S - Pulling screws for Gamma 6.5*90mm S.S
+15. 50208.95.S - Pulling screws for Gamma 6.5*95mm S.S
+
+
+GROUP 19: Femoras stem BE (10 items)
+============================================================
+
+1. 3323-04080 - Femoral Stem-BE - 8
+2. 3323-04090 - Femoral Stem-BE - 9
+3. 3323-04100 - Femoral Stem-BE - 10
+4. 3323-04110 - Femoral Stem-BE - 11
+5. 3323-04120 - Femoral Stem-BE - 12
+6. 3323-04130 - Femoral Stem-BE - 13
+7. 3323-04140 - Femoral Stem-BE - 14
+8. 3323-04150 - Femoral Stem-BE - 15
+9. 3323-04160 - Femoral Stem-BE - 16
+10. 3323-04170 - Femoral Stem-BE - 17
+
+
+GROUP 20: Femoral stem BE1 (8 items)
+============================================================
+
+1. 3331-04060 - Femoral Stem-BE1 - 6
+2. 3331-04070 - Femoral Stem-BE1 - 7
+3. 3331-04080 - Femoral Stem-BE1 - 8
+4. 3331-04090 - Femoral Stem-BE1 - 9
+5. 3331-04100 - Femoral Stem-BE1 - 10
+6. 3331-04110 - Femoral Stem-BE1 - 11
+7. 3331-04120 - Femoral Stem-BE1 - 12
+8. 3331-04130 - Femoral Stem-BE1 - 13
+
+
+GROUP 21: Femoras stem 140 (7 items)
+============================================================
+
+1. 3312-02090 - 140A1 Stem, Porous Ti, 130 - 9
+2. 3312-02100 - 140A1 Stem, Porous Ti, 131 - 10
+3. 3312-02110 - 140A1 Stem, Porous Ti, 132 - 11
+4. 3312-02120 - 140A1 Stem, Porous Ti, 133 - 12
+5. 3312-02130 - 140A1 Stem, Porous Ti, 134 - 13
+6. 3312-02140 - 140A1 Stem, Porous Ti, 135 - 14
+7. 3312-02150 - 140A1 Stem, Porous Ti, 136 - 15
+
+
+GROUP 22: Drill (13 items)
+============================================================
+
+1. 50.45.34.1 - Acetabular Reaming drill
+2. 50.45.34.2 - Canulated drill
+3. 50.45.34.3 - Ostillating Saw
+4. 50.45.34.4 - Micro Oscillating Saw
+5. 50.45.34.5 - Saw Blade for Micro
+6. 50.45.34.6 - Saw Blade for Ostillating Saw
+7. BO.703.01 - Cannulateed Drill Bit 4.5
+8. BO.704.006 - Cannulateed Drill Bit 2.7
+9. BO.704.007 - Cannulateed Drill Bit 3.5
+10. BO.710.005 - Drill Bit 4.0mmx250mm
+11. BO.710.006 - Drill Bit 3.2mmx250mm
+12. BO.710.025 - Drill Bit 2.0mmx250mm
+13. BO.711.005 - Drill Bit 2.5mmx250mm
+
+
+GROUP 23: TEN (7 items)
+============================================================
+
+1. 50209.2.440.T - Zim.TEN 2.0x440mm Ti
+2. 50209.3,5.440.T - Zim.TEN 3.5x440mm Ti
+3. 50209.3.440.T - Zim.TEN 3.0x440mm Ti
+4. 50209.4.440.T - Zim.TEN 4.0x440mm Ti
+5. BOI.9938.3.0.T - BOI.TEN 3.0mm Ti
+6. BOI.9938.3.5.T - BOI.TEN 3.5mm Ti
+7. BOI.9938.4.0.T - BOI.TEN 4.0mm Ti
+
+
+GROUP 24: Plates (260 items)
+============================================================
+
+1. 3245452610 - Bon M., Laminoplasty Plate, T-shaped, narrow mouth Ti, 10mm
+2. B01.262.10.S - T Buttress LCP 10h S.S
+3. B01.262.12.S - T Buttress LCP 12h S.S
+4. B01.262.4.S - T Buttress LCP 4h S.S
+5. B01.262.5.S - T Buttress LCP 5h S.S
+6. B01.262.6.S - T Buttress LCP 6h S.S
+7. B01.262.7.S - T Buttress LCP 7h S.S
+8. B01.262.8.S - T Buttress LCP 8h S.S
+9. B01.262.9.S - T Buttress LCP 9h S.S
+10. BO.01.156.02.S - Proximal humerus LCP PHILOS (long dynamic hole) 2h S.S 
+11. BO.01.156.03.S - Proximal humerus LCP PHILOS (long dynamic hole) 3h S.S 
+12. BO.01.156.04.S - Proximal humerus LCP PHILOS (long dynamic hole) 4h S.S 
+13. BO.01.156.05.S - Proximal humerus LCP PHILOS (long dynamic hole) 5h S.S 
+14. BO.01.156.06.S - Proximal humerus LCP PHILOS (long dynamic hole) 6h S.S 
+15. BO.01.156.07.S - Proximal humerus LCP PHILOS (long dynamic hole) 7h S.S 
+16. BO.01.156.08.S - Proximal humerus LCP PHILOS (long dynamic hole) 8h S.S 
+17. BO.01.156.09.S - Proximal humerus LCP PHILOS (long dynamic hole) 9h S.S 
+18. BO.01.156.10.S - Proximal humerus LCP PHILOS (long dynamic hole) 10h S.S 
+19. BO.01.156.12.S - Proximal humerus LCP PHILOS (long dynamic hole) 12h S.S 
+20. BO.01.156.13.S - Proximal humerus LCP PHILOS (long dynamic hole) 13h S.S 
+21. BO.01.9928.L.06.S - Clavicle locking  plate - II LCP, 6h L S.S.
+22. BO.01.9928.L.06.T - Clavicle locking  plate - II LCP 6h L Ti
+23. BO.01.9928.L.08.S - Clavicle locking  plate - II LCP, 8h L S.S.
+24. BO.01.9928.L.08.T - Clavicle locking  plate - II LCP 8h L Ti
+25. BO.01.9928.L.10.S - Clavicle locking  plate - II LCP, 10h L S.S.
+26. BO.01.9928.L.10.T - Clavicle locking  plate - II LCP 10h L Ti
+27. BO.01.9928.R.06.S - Clavicle locking  plate - II LCP, 6h R S.S.
+28. BO.01.9928.R.06.T - Clavicle locking  plate - II LCP 6h R Ti
+29. BO.01.9928.R.08.S - Clavicle locking  plate - II LCP, 8h R S.S.
+30. BO.01.9928.R.08.T - Clavicle locking  plate - II LCP 8h R Ti
+31. BO.01.9928.R.10.S - Clavicle locking  plate - II LCP, 10h R S.S.
+32. BO.01.9928.R.10.T - Clavicle locking  plate - II LCP 10h R Ti
+33. BO.02.156.03.S - Proximal humerus LCP PHILOS (small dynamic hole) 3h S.S 
+34. BO.02.156.03.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 3h Ti
+35. BO.02.156.04.S - Proximal humerus LCP PHILOS (small dynamic hole) 4h S.S 
+36. BO.02.156.04.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 4h Ti
+37. BO.02.156.05.S - Proximal humerus LCP PHILOS (small dynamic hole) 5h S.S 
+38. BO.02.156.05.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 5h Ti
+39. BO.02.156.06.S - Proximal humerus LCP PHILOS (small dynamic hole) 6h S.S 
+40. BO.02.156.06.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 6h Ti
+41. BO.02.156.07.S - Proximal humerus LCP PHILOS (small dynamic hole) 7h S.S 
+42. BO.02.156.07.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 7h Ti
+43. BO.02.156.08.S - Proximal humerus LCP PHILOS (small dynamic hole) 8h S.S 
+44. BO.02.156.08.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 8h Ti
+45. BO.02.156.09.S - Proximal humerus LCP PHILOS (small dynamic hole) 9h S.S 
+46. BO.02.156.10.S - Proximal humerus LCP PHILOS (small dynamic hole) 10h S.S 
+47. BO.02.156.10.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 10h Ti
+48. BO.02.156.12.S - Proximal humerus LCP PHILOS (small dynamic hole) 12h S.S 
+49. BO.02.156.12.T - Proximal Humerus LCP PHILOS (SMALL DYNAMIC HOLE) 12h Ti
+50. BO.02.156.13.S - Proximal humerus LCP PHILOS (small dynamic hole) 13h S.S 
+51. BO.143.16.T - TI ANTERIOR CERVICAL SCREW DIA. 4,0MM, LENGTH 16MM
+52. BO.143.18.T - TI ANTERIOR CERVICAL SCREW DIA. 4,0MM, LENGTH 18MM
+53. BO.149.23.T - Anterior cervical plate - II SYS Ti, 23mm
+54. BO.149.25.T - Anterior cervical plate - II SYS Ti, 25mm
+55. BO.149.27.T - Anterior cervical plate - II SYS Ti, 27mm
+56. BO.149.29.T - Anterior cervical plate - II SYS Ti, 29mm
+57. BO.149.32.T - Anterior cervical plate - II SYS Ti, 32mm
+58. BO.149.35.T - Anterior cervical plate - II SYS Ti, 35mm
+59. BO.149.38.T - Anterior cervical plate - II SYS Ti, 38mm
+60. BO.149.41.T - Anterior cervical plate - II SYS Ti, 41mm
+61. BO.149.44.T - Anterior cervical plate - II SYS Ti, 44mm
+62. BO.149.47.T - Anterior cervical plate - II SYS Ti, 47mm
+63. BO.149.50.T - Anterior cervical plate - II SYS Ti, 50mm
+64. BO.149.53.T - Anterior cervical plate - II SYS Ti, 53mm
+65. BO.163.L.05.S - Distal Femur LCP 6.5mm 5h L S.S
+66. BO.163.L.05.T - Distal Femur LCP 6.5mm 5h L Ti
+67. BO.163.L.07.S - Distal Femur LCP 6.5mm 7h L S.S
+68. BO.163.L.07.T - Distal Femur LCP 6.5mm 7h L Ti
+69. BO.163.L.09.S - Distal Femur LCP 6.5mm 9h L S.S
+70. BO.163.L.09.T - Distal Femur LCP 6.5mm 9h L Ti
+71. BO.163.L.11.S - Distal Femur LCP 6.5mm 11 L S.S
+72. BO.163.L.11.T - Distal Femur LCP 6.5mm 11 L Ti
+73. BO.163.L.13.S - Distal Femur LCP 6.5mm 13 L S.S
+74. BO.163.L.13.T - Distal Femur LCP 6.5mm 13 L Ti
+75. BO.163.R.05.S - Distal Femur LCP 6.5mm 5h R S.S
+76. BO.163.R.05.T - Distal Femur LCP 6.5mm 5h R Ti
+77. BO.163.R.07.S - Distal Femur LCP 6.5mm 7h R S.S
+78. BO.163.R.07.T - Distal Femur LCP 6.5mm 7h R Ti
+79. BO.163.R.09.S - Distal Femur LCP 6.5mm 9h R S.S
+80. BO.163.R.09.T - Distal Femur LCP 6.5mm 9h R Ti
+81. BO.163.R.11.S - Distal Femur LCP 6.5mm 11 R S.S
+82. BO.163.R.11.T - Distal Femur LCP 6.5mm 11 R Ti
+83. BO.163.R.13.S - Distal Femur LCP 6.5mm 13 R S.S
+84. BO.163.R.13.T - Distal Femur LCP 6.5mm 13 R Ti
+85. BO.269.10.S - Distal Fibula Locking Plate 3.5mm, 10h  S.S.
+86. BO.269.10.T - Distal Fibula Loking Plate 3.5mm 10h Ti 
+87. BO.269.4.S - Distal Fibula Locking Plate 3.5mm, 4h  S.S.
+88. BO.269.4.T - Distal Fibula Loking Plate 3.5mm 4h Ti 
+89. BO.269.5.T - Distal Fibula Loking Plate 3.5mm 5h Ti 
+90. BO.269.6.S - Distal Fibula Locking Plate 3.5mm, 6h  S.S.
+91. BO.269.6.T - Distal Fibula Loking Plate 3.5mm 6h Ti 
+92. BO.269.7.T - Distal Fibula Loking Plate 3.5mm 7h Ti 
+93. BO.269.8.S - Distal Fibula Locking Plate 3.5mm, 8h  S.S.
+94. BO.269.8.T - Distal Fibula Loking Plate 3.5mm 8h Ti 
+95. BO.501.04 - CLAVICAL SUPERIOR ANTERIOR DIVIDE LOCKING PLATE WITH LATERAL EXTENSION LEFT - 4h
+96. BO.501.05 - CLAVICAL SUPERIOR ANTERIOR DIVIDE LOCKING PLATE WITH LATERAL EXTENSION LEFT  - 5h
+97. BO.501.06 - CLAVICAL SUPERIOR ANTERIOR DIVIDE LOCKING PLATE WITH LATERAL EXTENSION LEFT - 6h
+98. BO.502.04 - CLAVICAL SUPERIOR ANTERIOR DIVIDE LOCKING PLATE WITH LATERAL EXTENSION RIGHT - 4h
+99. BO.502.05 - CLAVICAL SUPERIOR ANTERIOR DIVIDE LOCKING PLATE WITH LATERAL EXTENSION RIGHT - 5h
+100. BO.502.06 - CLAVICAL SUPERIOR ANTERIOR - DIVIDE LOCKING PLATE WITH LATERAL EXTENSION RIGHT - 6h
+101. BO.9907.L.11.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 11h L Ti
+102. BO.9907.L.13.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 13h L Ti
+103. BO.9907.L.3.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 3h R Ti
+104. BO.9907.L.5.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 5h L Ti
+105. BO.9907.L.7.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 7h L Ti
+106. BO.9907.R.11.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 11h R Ti
+107. BO.9907.R.13.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 13h R Ti
+108. BO.9907.R.3.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 3h R Ti
+109. BO.9907.R.5.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 5h R Ti
+110. BO.9907.R.7.T - Distal Humerus With Lateral Support LCP (2.7mm&3.5mm) 7h R Ti
+111. BO.9908.L.11.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 11h L Ti
+112. BO.9908.L.13.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 13h L Ti
+113. BO.9908.L.3.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 3h L Ti
+114. BO.9908.L.5.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 5h L Ti
+115. BO.9908.L.7.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 7h L Ti
+116. BO.9908.L.9.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 9h L Ti
+117. BO.9908.R.11.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 11h R Ti
+118. BO.9908.R.13.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 13h R Ti
+119. BO.9908.R.3.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 3h R Ti
+120. BO.9908.R.5.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 5h R Ti
+121. BO.9908.R.7.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 7h R Ti
+122. BO.9908.R.9.T - Medial Distal Humerus LCP (2.7mm&3.5mm) 9h R Ti
+123. BO.9909.11.L - Medial Distal Tibia Locking Plate 11h L S.S
+124. BO.9909.11.R - Medial Distal Tibia Locking Plate 11h R S.S
+125. BO.9909.13.L - Medial Distal Tibia Locking Plate 13h L S.S
+126. BO.9909.13.R - Medial Distal Tibia Locking Plate 13h R S.S
+127. BO.9909.15.L - Medial Distal Tibia Locking Plate 15h L S.S
+128. BO.9909.15.R - Medial Distal Tibia Locking Plate 15h R S.S
+129. BO.9909.5.L - Medial Distal Tibia Locking Plate 5h L S.S
+130. BO.9909.5.R - Medial Distal Tibia Locking Plate 5h R S.S
+131. BO.9909.7.L - Medial Distal Tibia Locking Plate 7h L S.S
+132. BO.9909.7.R - Medial Distal Tibia Locking Plate 7h R S.S
+133. BO.9909.9.L - Medial Distal Tibia Locking Plate 9h L S.S
+134. BO.9909.9.R - Medial Distal Tibia Locking Plate 9h R S.S
+135. BO.9912. 5.T - Reconstruction Locking Plate 3.5mm Dynamic hole 5h Ti
+136. BO.9912.11.S - Reconstruction Locking Plate Dynamic hole 3,5mm, 11h S.S.
+137. BO.9912.11.T - Reconstruction Locking Plate 3.5mm Dynamic hole 11h Ti
+138. BO.9912.12.S - Reconstruction Locking Plate Dynamic hole 3,5mm, 12h S.S.
+139. BO.9912.13.T - Reconstruction Locking Plate 3.5mm Dynamic hole 13h Ti
+140. BO.9912.14.S - Reconstruction Locking Plate Dynamic hole 3,5mm, 14h S.S.
+141. BO.9912.15.T - Reconstruction Locking Plate 3.5mm Dynamic hole 15h Ti
+142. BO.9912.5.S - Reconstruction Locking Plate Dynamic hole 3,5mm, 5h S.S.
+143. BO.9912.7.S - Reconstruction Locking Plate Dynamic hole 3,5mm, 7h S.S.
+144. BO.9912.7.T - Reconstruction Locking Plate 3.5mm Dynamic hole 7h Ti
+145. BO.9912.9.S - Reconstruction Locking Plate Dynamic hole 3,5mm, 9h S.S.
+146. BO.9912.9.T - Reconstruction Locking Plate 3.5mm Dynamic hole 9h Ti
+147. BO.9928.L.04.S - Clavicle locking plate 4h L S.S.
+148. BO.9928.L.04.T - Clavicle locking  plate 4h L Ti
+149. BO.9928.L.06.S - Clavicle locking plate 6h L S.S.
+150. BO.9928.L.06.T - Clavicle locking  plate 6h L Ti
+151. BO.9928.L.08.S - Clavicle locking plate 8h L S.S.
+152. BO.9928.L.08.T - Clavicle locking  plate 8h L Ti
+153. BO.9928.R.04.S - Clavicle locking plate 4h R S.S.
+154. BO.9928.R.04.T - Clavicle locking  plate 4h R Ti
+155. BO.9928.R.06.S - Clavicle locking plate 6h R S.S.
+156. BO.9928.R.06.T - Clavicle locking  plate 6h R Ti
+157. BO.9928.R.08.S - Clavicle locking plate 8h R S.S.
+158. BO.9928.R.08.T - Clavicle locking  plate 8h R Ti
+159. BO.9940.75.L.S - Calcaneal LCP 3.5mm, 75mm L S.S.
+160. BO.9940.75.R.S - Calcaneal LCP 3.5mm, 75mm R S.S.
+161. BO.9941.L.10.T - Extra-Aarticular Distal Humerus Locking Plate 10h L Ti
+162. BO.9941.L.12.T - Extra-Aarticular Distal Humerus Locking Plate 12h L Ti
+163. BO.9941.L.14.T - Extra-Aarticular Distal Humerus Locking Plate 14h L Ti
+164. BO.9941.L.4.T - Extra-Aarticular Distal Humerus Locking Plate 4h L Ti
+165. BO.9941.L.6.T - Extra-Aarticular Distal Humerus Locking Plate 6h L Ti
+166. BO.9941.L.8.T - Extra-Aarticular Distal Humerus Locking Plate 8h L Ti
+167. BO.9941.R.10.T - Extra-Aarticular Distal Humerus Locking Plate 10h R Ti
+168. BO.9941.R.12.T - Extra-Aarticular Distal Humerus Locking Plate 12h R Ti
+169. BO.9941.R.14.T - Extra-Aarticular Distal Humerus Locking Plate 14h R Ti
+170. BO.9941.R.4.T - Extra-Aarticular Distal Humerus Locking Plate 4h R Ti
+171. BO.9941.R.6.T - Extra-Aarticular Distal Humerus Locking Plate 6h R Ti
+172. BO.9941.R.8.T - Extra-Aarticular Distal Humerus Locking Plate 8h R Ti
+173. BO.9946.L.02.T - Two-columa distal Radius Plate, 2h L Ti
+174. BO.9946.L.03.T - Two-columa distal Radius Plate, 3h L Ti
+175. BO.9946.L.04.T - Two-columa distal Radius Plate, 4h L Ti
+176. BO.9946.L.06.T - Two-columa distal Radius Plate, 6h L Ti
+177. BO.9946.L.08.T - Two-columa distal Radius Plate, 8h L Ti
+178. BO.9946.R.02.T - Two-columa distal Radius Plate, 2h R Ti
+179. BO.9946.R.03.T - Two-columa distal Radius Plate, 3h R Ti
+180. BO.9946.R.04.T - Two-columa distal Radius Plate, 4h R Ti
+181. BO.9946.R.06.T - Two-columa distal Radius Plate, 6h R Ti
+182. BO.9946.R.08.T - Two-columa distal Radius Plate, 8h R Ti
+183. BO.9986.L.04.T - Proximal Tibia Locking Plate L 4h Ti
+184. BO.9986.L.06.T - Proximal Tibia Locking Plate L 6h Ti
+185. BO.9986.L.08.T - Proximal Tibia Locking Plate L 8h Ti
+186. BO.9986.L.10.T - Proximal Tibia Locking Plate L 10h Ti
+187. BO.9986.L.12.T - Proximal Tibia Locking Plate L 12h Ti
+188. BO.9986.L.14.T - Proximal Tibia Locking Plate L 14h Ti
+189. BO.9986.R.04.T - Proximal Tibia Locking Plate R 4h Ti
+190. BO.9986.R.06.T - Proximal Tibia Locking Plate R 6h Ti
+191. BO.9986.R.08.T - Proximal Tibia Locking Plate R 8h Ti
+192. BO.9986.R.10.T - Proximal Tibia Locking Plate R 10h Ti
+193. BO.9986.R.12.T - Proximal Tibia Locking Plate R 12h Ti
+194. BO.9986.R.14.T - Proximal Tibia Locking Plate R 14h Ti
+195. BOI.118.100.S - BOMBAY, DHS Lag screw Hexagonal 12.5x100mm, S.S
+196. BOI.118.105.S - BOMBAY, DHS Lag screw Hexagonal 12.5x105mm, S.S
+197. BOI.118.110.S - BOMBAY, DHS Lag screw Hexagonal 12.5x110mm, S.S
+198. BOI.118.60.S - BOMBAY, DHS Lag screw Hexagonal 12.5x60mm, S.S
+199. BOI.118.65.S - BOMBAY, DHS Lag screw Hexagonal 12.5x65mm, S.S
+200. BOI.118.70.S - BOMBAY, DHS Lag screw Hexagonal  12.5x70mm, S.S
+201. BOI.118.75.S - BOMBAY, DHS Lag screw Hexagonal 12.5x75mm, S.S
+202. BOI.118.80.S - BOMBAY, DHS Lag screw Hexagonal  12.5x80mm, S.S
+203. BOI.118.85.S - BOMBAY, DHS Lag screw Hexagonal 12.5x85mm, S.S
+204. BOI.118.90.S - BOMBAY, DHS Lag screw Hexagonal 12.5x90mm, S.S
+205. BOI.118.95.S - BOMBAY, DHS Lag screw Hexagonal 12.5x95mm, S.S
+206. BOI.125.10 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 10h, S.S.
+207. BOI.125.11 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 11h, S.S.
+208. BOI.125.12 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 12h, S.S.
+209. BOI.125.15 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 15h, S.S.
+210. BOI.125.16 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 16h, S.S.
+211. BOI.125.5 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 5h, S.S.
+212. BOI.125.7 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 7h, S.S.
+213. BOI.125.9 - BOMBAY, Small Dinamic Compression plate (DCP), Stainless Steel, , 9h, S.S.
+214. BOI.134.11 - BOMBAY, LC DCP Plate Narrow for 4.5mm scr, 11Õ°, S.S.
+215. BOI.134.12 - BOMBAY, LC DCP Plate Narrow for 4.5mm scr, 12Õ°, S.S.
+216. BOI.134.13 - BOMBAY, LC DCP Plate Narrow for 4.5mm scr, 13Õ°, S.S.
+217. BOI.134.14 - BOMBAY, LC DCP Plate Narrow for 4.5mm scr, 14Õ°, S.S.
+218. BOI.134.9 - BOMBAY, LC DCP Plate Narrow for 4.5mm scr, 9Õ°, S.S.
+219. BOI.139.130.03.S - BOMBAY, DHS plate 130degree, 3 hole, S.S., 
+220. BOI.139.130.04.S - BOMBAY, DHS plate 130degree, 4 hole, S.S., 
+221. BOI.139.130.05.S - BOMBAY, DHS plate 130degree, 5 hole, S.S., 
+222. BOI.139.130.06.S - BOMBAY, DHS plate 130degree, 6 hole, S.S., 
+223. BOI.139.130.07.S - BOMBAY, DHS plate 130degree, 7 hole, S.S., 
+224. BOI.139.130.08.S - BOMBAY, DHS plate 130degree, 8 hole, S.S., 
+225. BOI.139.130.09.S - BOMBAY, DHS plate 130degree, 9 hole, S.S., 
+226. BOI.139.130.10.S - BOMBAY, DHS plate 130degree, 10 hole, S.S., 
+227. BOI.139.130.11.S - BOMBAY, DHS plate 130degree, 11 hole, S.S., 
+228. BOI.139.130.12.S - BOMBAY, DHS plate 130degree, 12 hole, S.S., 
+229. BOI.139.130.14.S - BOMBAY, DHS plate 130degree, 14 hole, S.S., 
+230. BOI.141.04.S - BOMBAY, DCS plate 95degree, 4 hole, S.S
+231. BOI.141.05.S - BOMBAY, DCS plate 95degree, 5 hole, S.S
+232. BOI.141.06.S - BOMBAY, DCS plate 95degree, 6 hole, S.S
+233. BOI.141.07.S - BOMBAY, DCS plate 95degree, 7 hole, S.S
+234. BOI.141.08.S - BOMBAY, DCS plate 95degree, 8 hole, S.S
+235. BOI.141.09.S - BOMBAY, DCS plate 95degree, 9 hole, S.S
+236. BOI.141.10.S - BOMBAY, DCS plate 95degree, 10 hole, S.S
+237. BOI.141.11.S - BOMBAY, DCS plate 95degree, 11 hole, S.S
+238. BOI.141.12.S - BOMBAY, DCS plate 95degree, 12 hole, S.S
+239. BOI.141.14.S - BOMBAY, DCS plate 95degree, 14 hole, S.S
+240. BOI.203.04.S - BOMBAY, Pelvic Symphyseal plate DC 4 holes, S.S
+241. BOI.203.06.S - BOMBAY, Pelvic Symphyseal plate DC 6 holes, S.S
+242. BOI.203.08.S - BOMBAY, Pelvic Symphyseal plate DC 8 holes, S.S
+243. BOI.205.08.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 8 hole, S.S
+244. BOI.205.10 - BOMBAY, Curved Pelvic Reco plate 3.5mm, Stainless steel, 10 holes, S.S
+245. BOI.205.10.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 10 hole, S.S
+246. BOI.205.12 - BOMBAY, Curved Pelvic Reco plate 3.5mm, Stainless steel, 12 holes, S.S
+247. BOI.205.16 - BOMBAY, Curved Pelvic Reco plate 3.5mm, Stainless steel, 16 holes, S.S
+248. BOI.205.6 - BOMBAY, Curved Pelvic Reco plate 3.5mm, Stainless steel, 6 holes, S.S
+249. BOI.205.8 - BOMBAY, Curved Pelvic Reco plate 3.5mm, Stainless steel, 8 holes, S.S
+250. BOI.206.12.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 12 hole, S.S
+251. BOI.206.14.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 14 hole, S.S
+252. BOI.206.16.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 16 hole, S.S
+253. BOI.206.18.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 18 hole, S.S
+254. BOI.206.20.S - BOMBAY, Straight Pelvic Reconstruction plate 3.5mm 20 hole, S.S
+255. BOI.251.31 - BOMBAY, SHOULDER PROSTHESIS, 31mm, S.S
+256. BOI.251.33 - BOMBAY, SHOULDER PROSTHESIS, 33mm, S.S
+257. BOI.251.35 - BOMBAY, SHOULDER PROSTHESIS, 35mm, S.S
+258. BOI.251.37 - BOMBAY, SHOULDER PROSTHESIS, 37mm , S.S
+259. BOI.251.39 - BOMBAY, SHOULDER PROSTHESIS, 39mm, S.S
+260. BOI.251.41 - BOMBAY, SHOULDER PROSTHESIS, 41mm, S.S
+
+
+

@@ -9,11 +9,11 @@
 |---|---|
 | `erpnext-manual-setup-checklist.md` | ✅ Setup checklist mostly working: role permissions and item tracking completed; still use for final go-live checks |
 | `new-item-setup.md` | ✅ Core item tracking working: item tracking flags applied and verified; new item creation still needs role/user smoke test |
-| `daily-reporting-checks.md` | 🟡 Reports/workspace deployed; report results still need validation with real or test transactions |
+| `daily-reporting-checks.md` | 🟡 Reports/workspaces deployed, including Doc 15E; report results still need validation with real or test transactions |
 | `collection-set-setup.md` | 🟡 Collection Set readiness script deployed; template creation/use still needs smoke test |
-| `purchase-walkthrough.md` | 🟡 Purchasing gates deployed; full PO → PR → LCV → PI flow still needs smoke test |
-| `standard-sale-walkthrough.md` | 🟡 Dispatch Case no-return flow deployed; end-to-end smoke test still required |
-| `surgery-case-walkthrough.md` | 🟡 Dispatch Case return-expected flow deployed; end-to-end smoke test still required |
+| `purchase-walkthrough.md` | 🟡 Purchasing gates and Doc 17A costing support deployed; full PO → PR → LCV → PI flow still needs smoke test |
+| `standard-sale-walkthrough.md` | 🟡 Dispatch Case no-return flow deployed; `unit_price` optional; end-to-end smoke test still required |
+| `surgery-case-walkthrough.md` | 🟡 Dispatch Case return-expected flow deployed; `unit_price` optional; end-to-end smoke test still required |
 | `debt-collection-and-payment.md` | 🟡 Debt/task logic deployed; payment/debt closure still needs smoke test |
 | `discount-approval-walkthrough.md` | 🟡 Discount approval logic deployed; approval/rejection path still needs smoke test |
 | `delivery-driver-guide.md` | 🟡 Delivery task/photo/handover gates documented/deployed; driver role test still required |
@@ -51,7 +51,7 @@ Use this order to test the new ERPNext setup quickly:
 | 1 | `new-supplier-setup.md` | Supplier master data can be created and used for buying | `Ops - Purchasing` | `Supplier`, `Contact`, `Payment Terms Template`, `Item` | Supplier exists, has contact/payment terms, and linked items can be used on a Purchase Order |
 | 2 | `new-item-setup.md` | A product can be created with supplier, UOM, tracking, and price | `Ops - Inventory` / `Ops - Accounting` | `Item`, `Item Group`, `UOM`, `Item Price`, `Supplier` | Item saves successfully and is ready for purchase/sale testing |
 | 3 | `new-customer-onboarding.md` | Customer and client warehouse can be created | `Ops - Order Creating`, `Ops - Inventory`, `Ops - Accounting` | `Customer`, `Warehouse` | Customer is active/non-provisional and warehouse exists under `Clients - Inmed` |
-| 4 | `purchase-walkthrough.md` | Buying flow works end-to-end | `Ops - Purchasing`, `Ops - Directors`, `Ops - Inventory`, `Ops - Accounting` | `Purchase Order`, `Task`, `Purchase Receipt`, `Landed Cost Voucher`, `Purchase Invoice`, `Payment Entry` | Purchase Order is approved, goods are received, landed cost/invoice are recorded |
+| 4 | `purchase-walkthrough.md` | Buying flow works end-to-end, including landed cost | `Ops - Purchasing`, `Ops - Directors`, `Ops - Inventory`, `Ops - Accounting` | `Purchase Order`, `Task`, `Purchase Receipt`, `Landed Cost Voucher`, `Purchase Invoice`, `Payment Entry` | Purchase Order is approved, goods are received, import duty is pre-filled on Landed Cost Voucher, landed cost/invoice are recorded |
 | 5 | `standard-sale-walkthrough.md` | Simple sale with no return works | `Ops - Order Accepting`, `Ops - Order Creating`, `Ops - Inventory`, `Delivery Driver`, `Ops - Accounting` | `Task`, `Dispatch Case`, `Stock Entry`, `Delivery Note`, `Sales Invoice` | Case moves through delivery and invoicing without return steps |
 | 6 | `surgery-case-walkthrough.md` | Full return-expected case works | Order, Inventory, Driver, Returns, Accounting, Finance roles | `Task`, `Dispatch Case`, `Stock Entry`, `Sales Invoice`, `Payment Entry` | Case completes dispatch, return, inspection, restock, invoice, and payment/debt steps |
 | 7 | `debt-collection-and-payment.md` | Finance can record customer payment and close debt | `Ops - Finance` | `Task`, `Payment Entry`, `Accounts Receivable`, `Dispatch Case` | Payment reduces outstanding amount and closes the case when fully paid |
@@ -62,7 +62,7 @@ Use these only when the matching situation happens:
 - `supplier-prepayment-allocation.md` — only when testing advance supplier payments.
 - `stock-adjustment-writeoff.md` — only when testing stock count corrections, expired goods, or damaged goods.
 - `cancellation-and-corrections.md` — only when testing mistakes and corrections.
-- `daily-reporting-checks.md` — use after test transactions exist, to confirm reports and task queues.
+- `daily-reporting-checks.md` — use after test transactions exist, to confirm reports, `Management - KPI Dashboard`, and `Dispatch - Task Queues`.
 - `delivery-driver-guide.md` — use for training/testing the Delivery Driver role only.
 - `collection-set-setup.md` — use before surgery case testing if Collection Sets are missing or need updates.
 
@@ -83,8 +83,8 @@ Known setup items that may affect testing:
 - Current ERPNext Supplier Groups are `Distributor`, `Local`, `Raw Material`, `Services`, `Pharmaceutical`, `Hardware`, and `Electrical`. Do not use old documentation names such as `Manufacturers`, `Distributors`, or `Local Vendors` unless those groups are created later.
 - Current supplier master data for `ZMD` and `CHUNLI` is ready for purchasing tests: Supplier Group = `Distributor`, Default Currency = `USD`, Payment Terms = `Prepayment 100%`.
 - `Payment Terms Template` records `Prepayment 100%` and `Prepayment 50/50` exist.
-- Existing item prices may still be empty, so selling/purchase tests may require creating test `Item Price` records first.
-- Existing item batch/expiry/serial tracking may not be finalized, so use a controlled test item when testing stock receipt or dispatch.
+- Standard Buying item prices may still be empty, so purchase-costing and profit reports may require creating test `Item Price` records first.
+- Item batch/expiry tracking has been applied from the item-level review, but still use a controlled test item when testing stock receipt or dispatch.
 - The real client warehouse group name is `Clients - Inmed`.
 
 ---

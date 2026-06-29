@@ -91,9 +91,13 @@ case = frappe.get_doc("Dispatch Case", case_name)
 item_code = None
 batch_no = None
 expiry_date = None
+item_code_override = frappe.form_dict.get("item_code_override")
 raw = barcode.replace("]C1", "").replace("]d2", "")
 
-if frappe.db.exists("Item", barcode):
+if item_code_override and frappe.db.exists("Item", item_code_override):
+    item_code = item_code_override
+
+if not item_code and frappe.db.exists("Item", barcode):
     item_code = barcode
 
 if not item_code:
@@ -248,8 +252,8 @@ TASK_KIND_ALLOWED_ROLES = {
     "Write-off Approval": ["Ops - Directors"],
 }
 allowed = TASK_KIND_ALLOWED_ROLES.get(task.task_kind) or []
-roles = frappe.get_roles(frappe.session.user) or []
-if allowed and not any(r in roles for r in allowed) and frappe.session.user != "Administrator" and "System Manager" not in roles:
+user_roles = frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role")
+if allowed and not any(r in user_roles for r in allowed) and frappe.session.user != "Administrator" and "System Manager" not in user_roles:
     frappe.throw("You are not allowed to accept this task kind. Required role: " + ", ".join(allowed))
 
 try:
@@ -262,15 +266,23 @@ real_assigned = [u for u in assigned if u not in team_placeholders]
 if real_assigned and frappe.session.user not in real_assigned:
     frappe.throw("Task is already accepted by: " + ", ".join(real_assigned))
 
-task._assign = frappe.as_json([frappe.session.user])
-task.status = "Working"
-task.flags.ignore_permissions = True
-task.save()
-
+# FIXED: Update _assign via db and create ToDo manually (assign_to module not available in RestrictedPython)
+# Cancel existing open ToDos first
 open_todos = frappe.get_all("ToDo", filters={"reference_type": "Task", "reference_name": task.name, "status": "Open"}, pluck="name")
 for td in open_todos or []:
     frappe.db.set_value("ToDo", td, "status", "Cancelled")
 
+# Update _assign in database first, then reload and save
+frappe.db.set_value("Task", task.name, "_assign", json.dumps([frappe.session.user]), update_modified=False)
+frappe.db.commit()
+
+# Reload task to get the updated _assign value
+task.reload()
+task.status = "Working"
+task.flags.ignore_permissions = True
+task.save()
+
+# Create new ToDo for current user
 todo = frappe.new_doc("ToDo")
 todo.status = "Open"
 todo.allocated_to = frappe.session.user
@@ -278,7 +290,8 @@ todo.reference_type = "Task"
 todo.reference_name = task.name
 todo.description = task.subject or task.name
 todo.assigned_by = frappe.session.user
-todo.insert(ignore_permissions=True)
+todo.flags.ignore_permissions = True
+todo.insert()
 
 frappe.response["message"] = {"ok": True, "task": task.name, "assigned_to": frappe.session.user, "status": task.status}
 '@
@@ -290,6 +303,9 @@ frappe.ui.form.on("Dispatch Case", {
             frm.add_custom_button(__("Scan Packing Barcode"), function() {
                 dispatch_case_scan_packing_barcode(frm);
             }, __("Packing"));
+            
+            // Update visual checklist indicators
+            update_packing_checklist_visual(frm);
         }
     },
     custom_packing_scan_barcode(frm) {
@@ -299,6 +315,75 @@ frappe.ui.form.on("Dispatch Case", {
     }
 });
 
+frappe.ui.form.on("Dispatch Case Item", {
+    case_items_add(frm, cdt, cdn) {
+        update_packing_checklist_visual(frm);
+    },
+    case_items_remove(frm, cdt, cdn) {
+        update_packing_checklist_visual(frm);
+    }
+});
+
+function update_packing_checklist_visual(frm) {
+    // Add visual indicators to each row based on packing status
+    if (!frm.doc.case_items) return;
+    
+    frm.doc.case_items.forEach(function(row, idx) {
+        const required = row.dispatched_qty || 0;
+        const scanned = row.custom_scanned_qty || 0;
+        const status = row.custom_packing_status || "Pending";
+        
+        // Get the row element
+        setTimeout(function() {
+            const row_elem = frm.fields_dict.case_items.grid.grid_rows_by_docname[row.name];
+            if (!row_elem || !row_elem.wrapper) return;
+            
+            // Remove existing indicators
+            row_elem.wrapper.find(".packing-indicator").remove();
+            
+            // Add indicator based on status
+            let indicator_html = "";
+            let row_class = "";
+            
+            if (status === "Complete") {
+                indicator_html = '<span class="packing-indicator" style="color: green; font-weight: bold; margin-right: 5px;">✓</span>';
+                row_class = "packing-complete";
+            } else if (status === "Partial") {
+                indicator_html = '<span class="packing-indicator" style="color: orange; font-weight: bold; margin-right: 5px;">◐</span>';
+                row_class = "packing-partial";
+            } else if (status === "Over Scanned") {
+                indicator_html = '<span class="packing-indicator" style="color: red; font-weight: bold; margin-right: 5px;">⚠</span>';
+                row_class = "packing-over";
+            } else {
+                indicator_html = '<span class="packing-indicator" style="color: gray; font-weight: bold; margin-right: 5px;">⬜</span>';
+                row_class = "packing-pending";
+            }
+            
+            // Add indicator to the first cell
+            const first_cell = row_elem.wrapper.find(".grid-row .data-row .col:first");
+            if (first_cell.length > 0 && !first_cell.find(".packing-indicator").length) {
+                first_cell.prepend(indicator_html);
+            }
+            
+            // Add background color to row
+            row_elem.wrapper.removeClass("packing-complete packing-partial packing-over packing-pending");
+            row_elem.wrapper.addClass(row_class);
+        }, 100);
+    });
+    
+    // Add CSS for row highlighting
+    if (!$("style#packing-checklist-css").length) {
+        $("head").append(`
+            <style id="packing-checklist-css">
+                .packing-complete { background-color: #d4edda !important; }
+                .packing-partial { background-color: #fff3cd !important; }
+                .packing-over { background-color: #f8d7da !important; }
+                .packing-pending { background-color: #f8f9fa !important; }
+            </style>
+        `);
+    }
+}
+
 function dispatch_case_scan_packing_barcode(frm) {
     const barcode = (frm.doc.custom_packing_scan_barcode || "").trim();
     const qty = frm.doc.custom_packing_scan_qty || 1;
@@ -306,6 +391,69 @@ function dispatch_case_scan_packing_barcode(frm) {
         frappe.msgprint(__("Scan or enter a barcode first."));
         return;
     }
+    
+    // First, check if this item exists in the checklist
+    frappe.call({
+        method: "frappe.client.get_value",
+        args: {
+            doctype: "Item",
+            filters: { name: barcode },
+            fieldname: ["name", "item_name"]
+        },
+        callback: function(item_r) {
+            let item_code = null;
+            
+            // Try to find item code from barcode
+            if (item_r.message) {
+                item_code = item_r.message.name;
+            } else {
+                // Check if it's an item barcode
+                frappe.call({
+                    method: "frappe.client.get_value",
+                    args: {
+                        doctype: "Item Barcode",
+                        filters: { barcode: barcode },
+                        fieldname: "parent"
+                    },
+                    async: false,
+                    callback: function(barcode_r) {
+                        if (barcode_r.message) {
+                            item_code = barcode_r.message.parent;
+                        }
+                    }
+                });
+            }
+            
+            // Check if item is on the checklist
+            let on_checklist = false;
+            if (item_code && frm.doc.case_items) {
+                on_checklist = frm.doc.case_items.some(function(row) {
+                    return row.item_code === item_code;
+                });
+            }
+            
+            // If not on checklist, show warning
+            if (item_code && !on_checklist) {
+                frappe.confirm(
+                    __("⚠️ This item is NOT on the checklist!<br><br>Item: {0}<br><br>Do you want to add it anyway?", [item_code]),
+                    function() {
+                        // User confirmed - proceed with scan
+                        perform_packing_scan(frm, barcode, qty);
+                    },
+                    function() {
+                        // User cancelled - clear barcode field
+                        frm.set_value("custom_packing_scan_barcode", "");
+                    }
+                );
+            } else {
+                // Item is on checklist or couldn't determine - proceed
+                perform_packing_scan(frm, barcode, qty);
+            }
+        }
+    });
+}
+
+function perform_packing_scan(frm, barcode, qty) {
     frappe.call({
         method: "dispatch_case_packing_scan",
         args: { case_name: frm.doc.name, barcode: barcode, qty: qty },
@@ -319,6 +467,11 @@ function dispatch_case_scan_packing_barcode(frm) {
                 frappe.show_alert({ message: __("Scan accepted"), indicator: "green" });
             }
             frm.reload_doc();
+            
+            // Update visual checklist after reload
+            setTimeout(function() {
+                update_packing_checklist_visual(frm);
+            }, 500);
         }
     });
 }

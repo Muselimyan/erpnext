@@ -1,0 +1,134 @@
+﻿GROUP 3: Chunli Hip - ALL ITEMS
+
+1. 3111-02522 - Revision Cementless Cage 46 B 52L
+2. 3111-02562 - RevisionÃÂ CementlessÃÂ CageÃÂ 46ÃÂ B - 56L
+3. 3111-02602 - RevisionÃÂ CementlessÃÂ CageÃÂ 46ÃÂ B - 60 ÃÂ¼
+4. 3111-02642 - RevisionÃÂ CementlessÃÂ CageÃÂ 46ÃÂ B - 64L
+5. 3111-12522 - Revision Cementless Cage 46 B 52R
+6. 3111-12562 - RevisionÃÂ CementlessÃÂ CageÃÂ 46ÃÂ B - 56R
+7. 3111-12602 - RevisionÃÂ CementlessÃÂ CageÃÂ 46ÃÂ B - 60 R
+8. 3111-12642 - RevisionÃÂ CementlessÃÂ CageÃÂ 46ÃÂ B - 64R
+9. 3146-60200 - Screw - 6/20
+10. 3146-60260 - Screw - 6/26
+11. 3146-60300 - Screw - 6/30
+12. 3146-60350 - Screw - 6/35
+13. 3146-60400 - Screw - 6/40
+14. 3146-60450 - Screw - 6/45
+15. 3149-01480 - Acetabular cup G-20 - 48
+16. 3149-01500 - Acetabular cup G-20 - 50
+17. 3149-01520 - Acetabular cup G-20 - 52
+18. 3149-01540 - Acetabular cup G-20 - 54
+19. 3149-01560 - Acetabular cup G-20 - 56
+20. 3149-01580 - Acetabular cup G-20 - 58
+21. 3149-01600 - Acetabular cup G-20 - 60
+22. 3149-01620 - Acetabular cup G-20 - 62
+23. 3149-01640 - Acetabular cup G-20 - 64
+24. 3149-02460 - Acetabular Cup-58 - 46
+25. 3149-02480 - Acetabular Cup-58 - 48
+26. 3149-02500 - Acetabular Cup-58 - 50
+27. 3149-02520 - Acetabular Cup-58 - 52
+28. 3149-02540 - Acetabular Cup-58 - 54
+29. 3149-02560 - Acetabular Cup-58 - 56
+30. 3149-02580 - Acetabular Cup-58 - 58
+31. 3149-02600 - Acetabular Cup-58 - 60
+32. 3149-02620 - Acetabular Cup-58 - 62
+33. 3149-02640 - Acetabular Cup-58 - 64
+34. 3149-02660 - Acetabular Cup-58- 66
+35. 3150-28353 - Liner-HXLPE - 35/28 44# (working with cup size of 40,42,44)
+36. 3150-28353.1 - 58Liner-PE - 28/35 44# (working with cup size of 40,42,44)
+37. 3150-28373 - Liner-HXLPE - 37/28 46# (working with cup size of 46)
+38. 3150-28373.1 - 58Liner-PE - 28/37 46# (working with cup size of 46)
+39. 3150-32393 - Liner-HXLPE - 39/32 48# (working with cup size of 48,50)
+40. 3150-32393.1 - 58Liner-PE - 32/39 48# (working with cup size of 48,50)
+41. 3150-36443 - Liner-HXLPE - 44/36 52# (working with cup size of 52,54)
+42. 3150-36443.1 - 58Liner-PE - 36/44 52# (working with cup size of 52,54)
+43. 3150-36483 - Liner-HXLPE - 48/36 56# (working with cup size of 56,58,60)
+44. 3150-36483.1 - 58Liner-PE - 36/48 56# (working with cup size of 56,58,60)
+45. 3150-36523 - Liner-HXLPE - 52/36 62# (working with cup size of 62,64)
+46. 3150-36523.1 - 58Liner-PE - 36/52 62# (working with cup size of 62,64,66)
+47. 3154-05460 - 64 Cup 46
+48. 3154-05480 - 64 Cup 48
+49. 3154-05500 - 64 Cup 50
+50. 3154-05520 - 64 Cup 52
+51. 3154-05540 - 64 Cup 54
+52. 3154-05560 - 64 Cup 56
+53. 3154-05580 - 64 Cup 58
+54. 3154-05600 - 64 Cup 60
+55. 3154-05620 - 64 Cup 62
+56. 3154-05640 - 64 Cup 64
+57. 3154-22461 - 64 Liner 46 (working with cup size of 46)
+58. 3154-22481 - 64 Liner 48 (working with cup size of 48)
+59. 3154-22501 - 64 Liner 50 (working with cup size of 50,52)
+60. 3154-22541 - 64 Liner 54 (working with cup size of 54,56)
+61. 3154-22581 - 64 Liner 58 (working with cup size of 58,60)
+62. 3154-22621 - 64 Liner 62 (working with cup size of 62,64)
+63. 3170-28460 - Cemented Cup-HXLPE with 32head 46
+64. 3170-28480 - Cemented Cup-HXLPE with 32head 48
+65. 3170-28500 - Cemented Cup-HXLPE with 32head 50
+66. 3170-28520 - Cemented Cup-HXLPE with 32head 52
+67. 3170-28540 - Cemented Cup-HXLPE with 32head 54
+68. 3170-28560 - Cemented Cup-HXLPE with 32head 56
+69. 3170-28580 - Cemented Cup-HXLPE with 32head 58
+70. 3170-28600 - Cemented Cup-HXLPE with 32head 60
+71. 3205-10044 - WAGNER Femoral Stem-130 - 205mm 10
+72. 3205-11044 - WAGNER Femoral Stem-130 - 205mm 11
+73. 3205-12044 - WAGNER Femoral Stem-130 - 205mm 12
+74. 3205-13044 - WAGNER Femoral Stem-130 - 205mm 13
+75. 3205-14044 - WAGNER Femoral Stem-130 -205mm 14
+76. 3205-15044 - WAGNER Femoral Stem-130-205mm 15
+77. 3205-16044 - WAGNER Femoral Stem-130-205mm 16
+78. 3210-03280 - Femoral Head-T - 28/-3
+79. 3210-03320 - Femoral Head-T - 32/-3
+80. 3210-03360 - Femoral Head-T - 36/-3
+81. 3210-06320 - Femoral Head-T - 32/-6
+82. 3210-06360 - Femoral Head-T - 36/-6
+83. 3210-10220 - Femoral Head-T 22/0
+84. 3210-10280 - Femoral Head-T - 28/0
+85. 3210-10320 - Femoral Head-T - 32/0
+86. 3210-10360 - Femoral Head-T - 36/0
+87. 3210-13220 - Femoral Head-T - 22/3
+88. 3210-13280 - Femoral Head-T - 28/3
+89. 3210-13320 - Femoral Head-T - 32/3
+90. 3210-13360 - Femoral Head-T - 36/3
+91. 3210-16220 - Femoral Head-T 22/6
+92. 3210-16280 - Femoral Head-T - 28/6
+93. 3210-16320 - Femoral Head-T - 32/6
+94. 3210-16360 - Femoral Head-T - 36/6
+95. 3210-19220 - Femoral Head-T 22/9
+96. 3211-00280 - Ceramic Head 28S 
+97. 3211-00320 - Ceramic Head 32S 
+98. 3211-00360 - Ceramic Head 36S 
+99. 3211-01280 - Ceramic Head 28M 
+100. 3211-01320 - Ceramic Head 32M 
+101. 3211-01360 - Ceramic Head 36M 
+102. 3211-02260 - Ceramic Head 36XL 
+103. 3211-02280 - Ceramic Head 28L 
+104. 3211-02320 - Ceramic Head 32L 
+105. 3211-02360 - Ceramic Head 36L 
+106. 3211-03320 - Ceramic Head 32XL 
+107. 3250-10044 - WAGNER Femoral Stem-130-250mm 10
+108. 3250-11044 - WAGNER Femoral Stem-130-250mm 11
+109. 3250-12044 - WAGNER Femoral Stem-130-250mm 12
+110. 3250-13044 - WAGNER Femoral Stem-130-250mm 13
+111. 3250-14044 - WAGNER Femoral Stem-130-250mm 14
+112. 3250-15044 - WAGNER Femoral Stem-130-250mm 15
+113. 3250-16044 - WAGNER Femoral Stem-130-250mm 16
+114. 3349-02440 - Acetabular Cup-58 - 44
+115. 3514-02080 - Femoral Stem-BC4 8
+116. 3514-02090 - Femoral Stem-BC4 9
+117. 3514-02100 - Femoral Stem-BC4 10
+118. 3514-02110 - Femoral Stem-BC4 11
+119. 3514-02120 - Femoral Stem-BC4 12
+120. 3514-02130 - Femoral Stem-BC4 13
+121. 3514-02140 - Femoral Stem-BC4 14
+122. 5031-00201 - REV. Screw - 18
+123. 5031-00202 - REV. Screw - 22
+124. 5031-00203 - REV. Screw - 26
+125. 5031-00204 - REV. Screw - 30
+126. 5031-00205 - REV. Screw - 34
+127. 5031-00206 - REV. Screw - 38
+128. 5031-00207 - REV. Screw - 42
+129. 5031-00208 - REV. Screw - 46
+
+TOTAL: 129 items
+

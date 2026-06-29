@@ -1,16 +1,16 @@
-# Doc 15 — Reporting and Functions Requirements Review
+# Doc 15 — Reporting and Functions Launch Plan
 
-**Status:** Planning document only — do not implement until team approval.
+**Status:** Launch-ready implementation plan — all critical decisions answered.
 
-**Last updated:** 2026-05-11
+**Last updated:** 2026-06-01
 
 ---
 
 ## ✅ CRITICAL DECISIONS — ALL ANSWERED
 
-**All 10 critical questions have been answered. Review with your colleague before implementation.**
+**All 10 critical questions have been answered. This document is ready to guide report, dashboard, and automation implementation.**
 
-### 🔴 PRIORITY 1 — Decisions Made (Review with Colleague)
+### 🔴 PRIORITY 1 — Decisions Made
 
 1. **Buying cost definition for profit calculation** ✅ ANSWERED
    - **Decision:** Use standard buying price (flexible for future changes)
@@ -77,7 +77,7 @@
      - **Original task owner notified** when task is escalated
    - **Benefits:** Directors stay informed, prevents tasks from being forgotten, maintains accountability
    - **Note:** Can be adjusted later if too many escalations occur
-   - **⚠️ New Scope:** Auto-escalation does not yet exist. Requires a new Scheduled Script — not in current go-live action plan. Add to Phase 2 work plan.
+   - **Implementation requirement:** Auto-escalation requires a new Scheduled Script in Phase 2.
 
 10. **Which KPIs are most important for daily/weekly review?** ✅ ANSWERED
     - **Decision:** Confirmed KPIs for daily and weekly dashboards
@@ -99,9 +99,13 @@
       - Stock turnover ratio
       - Week-over-week sales comparison
     
-    - **Implementation:** Create 2 separate dashboards
-    - **Note:** Final list subject to review with colleague, can be adjusted
-    - **⚠️ New Scope:** Daily and weekly ERPNext Dashboard objects do not yet exist. Add to Phase 2 work plan.
+    - **MONTHLY KPI addition:**
+      - Monthly total income
+      - Monthly total profit
+    
+    - **Implementation:** Create 2 separate dashboards plus monthly income/profit KPI widgets
+    - **Note:** Final list is approved for launch implementation and can be adjusted later after real usage feedback.
+    - **Implementation requirement:** Daily and weekly ERPNext Dashboard objects do not yet exist. Monthly income/profit KPI widgets also need to be created in Phase 2.
 
 ---
 
@@ -176,19 +180,19 @@
 
 ## 1) Purpose
 
-This document converts the 20 requested reports/functions into implementation-ready specifications for ERPNext.
+This document converts the 20 requested reports/functions into launch-ready implementation specifications for ERPNext.
 
 Goals:
 - Remove repetitions and unclear naming.
 - Define what each report answers, required filters, columns, and data sources.
 - Identify overlaps with existing Doc 13 reporting pack.
 - Add useful suggestions based on existing workflow.
-- Collect open questions before implementation.
+- Record final implementation decisions and phase priorities.
 
 Important:
 - This is a **separate new document**.
 - Existing reporting docs (Doc 13, Doc 13A) should not be changed.
-- Implementation starts only after team review and approval.
+- Implementation can follow the phases defined in this document.
 
 ---
 
@@ -762,7 +766,7 @@ Consequence:
 
 ## 10) Implementation Questions — Status and Answers
 
-**Note:** Most questions have been answered. See "ANSWERED QUESTIONS" section at top for confirmed decisions. Remaining open questions are in "CRITICAL DECISIONS NEEDED" section.
+**Note:** All critical questions have been answered. See "ANSWERED QUESTIONS" section at top for confirmed decisions.
 
 ### 10.1 Product identifiers and tracking ✅ ANSWERED
 
@@ -830,7 +834,7 @@ Consequence:
 2. Who approves refunds: **Admins** (confirmed)
 3. Refund wait for verification: **Yes, refund after physical stock verification** (confirmed)
 4. Damaged/opened/expired products: **Damaged=no refund (customer responsibility), Opened/expired=case-by-case** (confirmed)
-5. Refund document type: **To be determined during implementation** (Credit Note and/or Payment Entry)
+5. Refund document type: **Use ERPNext standard Credit Note / Return Sales Invoice and Payment Entry refund flow as appropriate for the transaction**
 
 ---
 
@@ -892,11 +896,14 @@ Consequence:
 3. Accounting — Debt Status Board
 4. Sales — Statistics by Product and Doctor
 5. Workspace — Tasks by Urgency
-6. Item List — Sort and Classify
+6. Task Auto-Escalation Scheduled Script
+7. Daily Dashboard and Weekly Dashboard
+8. Monthly total income/profit KPI widgets
+9. Item List — Sort and Classify
 
-**Why second:** These need clearer business definitions and may require automation or dashboard setup.
+**Why second:** These need approved business definitions and require automation or dashboard setup.
 
-**Estimated effort:** 2-3 weeks for all 6 reports/functions.
+**Estimated effort:** 2-3 weeks for all 9 reports/functions.
 
 ---
 
@@ -904,13 +911,13 @@ Consequence:
 
 **Build later:**
 1. Statistics — Sales Comparative Periods
-2. Management — Global Statistics Dashboard
+2. Advanced Management — Global Statistics Dashboard improvements
 3. Function — Return/Refund Money workflow improvements
 4. Stock — Slow-Moving Products
 5. Stock — Near Expiry Value at Risk
 6. Purchasing — Supplier Performance
 
-**Why later:** These are valuable but depend on clean historical data and approved KPI definitions.
+**Why later:** These are valuable enhancements that depend on clean historical data and real usage feedback.
 
 **Estimated effort:** 3-4 weeks for all 6 reports/functions.
 
@@ -933,7 +940,7 @@ Consequence:
 
 ## 12) Final Consolidated Report List
 
-If the team wants a clean final list without repetitions:
+Clean final list without repetitions:
 
 ### Stock Reports (7 reports)
 1. Stock Balance — Multi-Select
@@ -977,28 +984,29 @@ If the team wants a clean final list without repetitions:
 
 ---
 
-## 13) Next Steps
+## 13) Launch Execution Steps
 
-### Before implementation starts:
+### Ready before implementation starts:
 
-1. **Team review meeting:** Review this document with Operations Lead, Accounting Lead, Purchasing Lead, and Director.
+1. **Decisions:** All critical reporting, dashboard, access, and automation decisions are answered.
 
-2. **Answer all questions in Section 10:** Make decisions on all open questions before building reports.
+2. **Priority:** Phase 1 and Phase 2 priorities are defined.
 
-3. **Prioritize final list:** Confirm which reports are Phase 1 (must-have) vs Phase 2/3/4 (nice-to-have).
+3. **KPIs:** Income, profit, buying cost, norm calculation, debt calculation, daily dashboard, weekly dashboard, and monthly KPI definitions are confirmed.
 
-4. **Define KPIs:** Agree on exact definitions for income, profit, buying cost, norm calculation, and debt calculation.
+4. **Access control:** Director-only reports and role-based visibility are defined.
 
-5. **Test data readiness:** Verify that REF/LOT/Serial/Expiry/Doctor/Hospital data is being entered consistently in current transactions.
+5. **Data readiness check:** Verify that REF/LOT/Serial/Expiry/Doctor/Hospital data is being entered consistently in current transactions before relying on reports.
 
-6. **Access control decisions:** Define which roles can see which reports.
+6. **Implementation readiness:** Build custom reports only where ERPNext standard reports are not sufficient.
 
-### After team approval:
+### Implementation order:
 
 1. Start Phase 1 implementation.
 2. Test each report with real data before moving to next report.
-3. Train users on how to use each report.
-4. Document report usage in user manual or workflow guide.
+3. Start Phase 2 implementation for norm notifications, dashboards, monthly KPIs, and task auto-escalation.
+4. Train users on how to use each report.
+5. Document report usage in user manual or workflow guide.
 
 ---
 
@@ -1217,6 +1225,9 @@ ORDER BY net_receivable_amd DESC
 **Dashboards:**
 - Daily Dashboard: 5 KPIs (auto-refresh)
 - Weekly Dashboard: 8 KPIs (manual refresh)
+- Monthly KPI widgets: total income and total profit
+
+**Launch status:** Ready for implementation.
 
 ---
 

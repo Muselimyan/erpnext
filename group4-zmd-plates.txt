@@ -1,0 +1,160 @@
+﻿GROUP 4: zmd plates - ALL ITEMS
+
+1. 1113.1804 - Fibula distal plate 4h S.S
+2. 1113.1805 - Fibula distal plate 5h S.S
+3. 1113.1806 - Fibula distal plate 6h S.S
+4. 1113.1807 - Fibula distal plate 7h S.S
+5. 1113.1808 - Fibula distal plate 8h S.S
+6. 1211.1704 - Humeral proximal plate 4h L Ti
+7. 1211.1705 - Humeral proximal plate 5h L Ti
+8. 1212.1704 - Humeral proximal plate 4h R Ti
+9. 1212.1705 - Humeral proximal plate 5h R Ti
+10. 2211.1505 - Calcaneal Locking Plate III M Left Ti
+11. 2211.1506 - Calcaneal Locking Plate III L Left Ti
+12. 2211.1511 - Calcaneal Locking Plate 11 Holes Left Ti
+13. 2211.1513 - Calcaneal Locking Plate 13 Holes Left Ti
+14. 2212.1505 - Calcaneal Locking Plate III M Right Ti
+15. 2212.1506 - Calcaneal Locking Plate III L Right Ti
+16. 2212.1511 - Calcaneal Locking Plate 11 Holes Right Ti
+17. 2212.1513 - Calcaneal Locking Plate 13 Holes Right Ti
+18. 2213.1104 - Radius Distal Small T Locking Plate 4h T
+19. 2213.1105 - Radius Distal Small T Locking Plate 5h T
+20. 30230A.5H.S - Straigjt bone plate phalangs 5h S.S
+21. 30230A.5H.T - StraigÕ°t bone plate phalangs 5h Ti
+22. 30230A.6 - Zimede, Straigjt bone plate phalangs, 6 holes, Ti
+23. 30230A.6H.S - Straigjt bone plate phalangs 6h S.S
+24. 30230A.6H.T - StraigÕ°t bone plate phalangs 6h Ti
+25. 30230A.7 - Zimede, Straigjt bone plate phalangs, 7 holes, Ti
+26. 30230A.7H.T - StraigÕ°t bone plate phalangs 7h Ti
+27. 30230A.8 - Zimede, Straigjt bone plate phalangs, 8 holes, Ti
+28. 30230A.8H.T - StraigÕ°t bone plate phalangs 8h Ti
+29. 30231A.4 - Zimede, T-Plate for Phalanx, 4 holes, S.S
+30. 30231A.4H.S - T-Plate for Phalanx 4h S.S
+31. 30231A.4h.T - T-Plate for Phalanx 4h Ti
+32. 30231A.5 - Zimede, T-Plate for Phalanx, 5 holes, S.S
+33. 30231A.5H.S - T-Plate for Phalanx 5h S.S
+34. 30231A.5h.T - T-Plate for Phalanx 5h Ti
+35. 30231A.6H.S - T-Plate for Phalanx 6h S.S
+36. 30231A.7H.S - T-Plate for Phalanx 7h S.S
+37. 30239.12.100.S - Screws, DHS / DCS 12*100mm S.S
+38. 30239.12.105.S - Screws, DHS / DCS 12*105mm S.S
+39. 30239.12.110.S - Screws, DHS / DCS 12*110mm S.S
+40. 30239.12.60.S - Screws, DHS / DCS 12*60mm S.S
+41. 30239.12.65.S - Screws, DHS / DCS 12*65mm S.S
+42. 30239.12.70.S - Screws, DHS / DCS 12*70mm S.S
+43. 30239.12.75.S - Screws, DHS / DCS 12*75mm S.S
+44. 30239.12.80.S - Screws, DHS / DCS 12*80mm S.S
+45. 30239.12.85.S - Screws, DHS / DCS 12*85mm S.S
+46. 30239.12.90.S - Screws, DHS / DCS 12*90mm S.S
+47. 30239.12.95.S - Screws, DHS / DCS 12*95mm S.S
+48. 30239.12*100 - Zimede, Screws, DHS / DCS, 12*100mm, S.S
+49. 30239.12*105 - Zimede, Screws, DHS / DCS, 12*105mm, S.S
+50. 30239.12*110 - Zimede, Screws, DHS / DCS, 12*110mm, S.S
+51. 30239.12*60 - Zimede, Screws, DHS / DCS, 12*60mm, S.S
+52. 30239.12*65 - Zimede, Screws, DHS / DCS, 12*65mm, S.S
+53. 30239.12*70 - Zimede, Screws, DHS / DCS, 12*70mm, S.S
+54. 30239.12*75 - Zimede, Screws, DHS / DCS, 12*75mm, S.S
+55. 30239.12*80 - Zimede, Screws, DHS / DCS, 12*80mm, S.S
+56. 30239.12*85 - Zimede, Screws, DHS / DCS, 12*85mm, S.S
+57. 30239.12*90 - Zimede, Screws, DHS / DCS, 12*90mm, S.S
+58. 30239.12*95 - Zimede, Screws, DHS / DCS, 12*95mm, S.S
+59. 3211.1204 - Radius Distal Multi-direction Locking Plate 4h L T
+60. 3211.1205 - Radius Distal Multi-direction Locking Plate 5h L T
+61. 3212.1204 - Radius Distal Multi-direction Locking Plate 4h R T
+62. 3212.1205 - Radius Distal Multi-direction Locking Plate 5h RL T
+63. 40212.1490 - Zimede, Titanum Mesh Cage, 14x90mm, Ti
+64. 4211.0503 - Tibia Distal Medial Combinated Locking plate 3h L Ti
+65. 4211.0505 - Tibia Distal Medial Combinated Locking plate 5h L Ti
+66. 4211.0507 - Tibia Distal Medial Combinated Locking plate 7h L Ti
+67. 4211.0509 - Tibia Distal Medial Combinated Locking plate 9h L Ti
+68. 4211.0511 - Tibia Distal Medial Combinated Locking plate 11h L Ti
+69. 4211.0513 - Tibia Distal Medial Combinated Locking plate 13h L Ti
+70. 4211.0703 - Tibial proximal lateral lock-plate combination 3h L TI
+71. 4211.0705 - Tibial proximal lateral lock-plate combination 5h L TI
+72. 4211.0707 - Tibial proximal lateral lock-plate combination 7h L TI
+73. 4211.0709 - Tibial proximal lateral lock-plate combination 9h L TI
+74. 4211.0711 - Tibial proximal lateral lock-plate combination 11h L TI
+75. 4211.0803 - Tibial proximal medial locking plate combination 3h L Ti
+76. 4211.0805 - Tibial proximal medial locking plate combination 5h L Ti
+77. 4211.0807 - Tibial proximal medial locking plate combination 7h L Ti
+78. 4211.0809 - Tibial proximal medial locking plate combination 9h L Ti
+79. 4211.0811 - Tibial proximal medial locking plate combination 11h L Ti
+80. 4211.0813 - Tibial proximal medial locking plate combination 13h L Ti
+81. 4211.1407 - S-Clavicular Combinated Locking Plate 7 Holes Left Ti
+82. 4211.1408 - S-Clavicular Combinated Locking Plate 8 Holes Left Ti
+83. 4211.1409 - S-Clavicular Combinated Locking Plate 9 Holes Left Ti
+84. 4211.1410 - S-Clavicular Combinated Locking Plate 10 Holes Left Ti
+85. 4211.1412 - S-Clavicular Combinated Locking Plate 12 Holes Left Ti
+86. 4211.1902 - Clavicular Hook Locking Plate Combination 2h L Ti
+87. 4211.1903 - Clavicular Hook Locking Plate Combination 3h L Ti
+88. 4211.1904 - Clavicular Hook Locking Plate Combination 4h L Ti
+89. 4211.1905 - Clavicular Hook Locking Plate Combination 5h L Ti
+90. 4211.1906 - Clavicular Hook Locking Plate Combination 6h L Ti
+91. 4211.4503 - Ulna Olecranon Locking Plate Combination 3h L Ti
+92. 4211.4505 - Ulna Olecranon Locking Plate Combination 5h L Ti
+93. 4211.4507 - Ulna Olecranon Locking Plate Combination 7h L Ti
+94. 4212.0503 - Tibia Distal Medial Combinated Locking plate 3h R Ti
+95. 4212.0505 - Tibia Distal Medial Combinated Locking plate 5h R Ti
+96. 4212.0507 - Tibia Distal Medial Combinated Locking plate 7h R Ti
+97. 4212.0509 - Tibia Distal Medial Combinated Locking plate 9h R Ti
+98. 4212.0511 - Tibia Distal Medial Combinated Locking plate 11h R Ti
+99. 4212.0513 - Tibia Distal Medial Combinated Locking plate 13h R Ti
+100. 4212.0703 - Tibial proximal lateral lock-plate combination 3h R TI
+101. 4212.0705 - Tibial proximal lateral lock-plate combination 5h R TI
+102. 4212.0707 - Tibial proximal lateral lock-plate combination 7h R TI
+103. 4212.0709 - Tibial proximal lateral lock-plate combination 9h R TI
+104. 4212.0711 - Tibial proximal lateral lock-plate combination 11h R TI
+105. 4212.0803 - Tibial proximal medial locking plate combination 3h R Ti
+106. 4212.0805 - Tibial proximal medial locking plate combination 5h R Ti
+107. 4212.0807 - Tibial proximal medial locking plate combination 7h R Ti
+108. 4212.0809 - Tibial proximal medial locking plate combination 9h R Ti
+109. 4212.0811 - Tibial proximal medial locking plate combination 11h R Ti
+110. 4212.0813 - Tibial proximal medial locking plate combination 13h R Ti
+111. 4212.1407 - S-Clavicular Combinated Locking Plate 7 Holes Right Ti
+112. 4212.1408 - S-Clavicular Combinated Locking Plate 8 Holes Right Ti
+113. 4212.1409 - S-Clavicular Combinated Locking Plate 9 Holes Right Ti
+114. 4212.1410 - S-Clavicular Combinated Locking Plate 10 Holes Right Ti
+115. 4212.1412 - S-Clavicular Combinated Locking Plate 12 Holes Right Ti
+116. 4212.1902 - Clavicular Hook Locking Plate Combination 2h R Ti
+117. 4212.1903 - Clavicular Hook Locking Plate Combination 3h R Ti
+118. 4212.1904 - Clavicular Hook Locking Plate Combination 4h R Ti
+119. 4212.1905 - Clavicular Hook Locking Plate Combination 5h R Ti
+120. 4212.1906 - Clavicular Hook Locking Plate Combination 6h R Ti
+121. 4212.4503 - Ulna Olecranon Locking Plate Combination 3h R Ti
+122. 4212.4505 - Ulna Olecranon Locking Plate Combination 5h R Ti
+123. 4212.4507 - Ulna Olecranon Locking Plate Combination 7h R Ti
+124. 4213.0105 - Upper Limbs Locking plate Combination 5h Ti
+125. 4213.0106 - Upper Limbs Locking plate Combination 6h Ti
+126. 4213.0107 - Upper Limbs Locking plate Combination 7h Ti
+127. 4213.0109 - Upper Limbs Locking plate Combination 9h Ti
+128. 4213.0110 - Upper Limbs Locking plate Combination 10h Ti
+129. 4213.1703 - Humeral proximal locking plate combination 3h Ti
+130. 4213.1704 - Humeral proximal locking plate combination 4h Ti
+131. 4213.1706 - Humeral proximal locking plate combination 6h Ti
+132. 4213.1708 - Humeral proximal locking plate combination 8h Ti
+133. 4213.1710 - Humeral proximal locking plate combination 10 Ti
+134. 4213.1712 - Humeral proximal locking plate combination 12 Ti
+135. 4213.1804 - Fibula Distal Locking Plate combination 4h Ti
+136. 4213.1805 - Fibula Distal Locking Plate combination 5h Ti
+137. 4213.1806 - Fibula Distal Locking Plate combination 6h Ti
+138. 4213.1807 - Fibula Distal Locking Plate combination 7h Ti
+139. 4213.1808 - Fibula Distal Locking Plate combination 8h Ti
+140. 8213.0804 - Straight Locking Plate  2.0mm Phalanx Locking plate 4 Holes
+141. 8213.0805 - Straight Locking Plate  2.0mm Phalanx Locking plate 5 Holes
+142. 8213.0806 - Straight Locking Plate  2.0mm Phalanx Locking plate 6 Holes
+143. 8213.0807 - Straight Locking Plate  2.0mm Phalanx Locking plate 7 Holes
+144. 8213.0808 - Straight Locking Plate  2.0mm Phalanx Locking plate 8 Holes
+145. 8213.1003 - T Locking Plate (2 Holes) 2.0mm Phalanx Locking plate 3 Holes
+146. 8213.1004 - T Locking Plate (2 Holes) 2.0mm Phalanx Locking plate 4 Holes
+147. 8213.1005 - T Locking Plate (2 Holes) 2.0mm Phalanx Locking plate 5 Holes
+148. 8213.1006 - T Locking Plate (2 Holes) 2.0mm Phalanx Locking plate 6 Holes
+149. 8213.1007 - T Locking Plate (2 Holes) 2.0mm Phalanx Locking plate 7 Holes
+150. 8213.1008 - T Locking Plate (2 Holes) 2.0mm Phalanx Locking plate 8 Holes
+151. 8213.1405 - Straight Locking Plate 2.4mm 5 Holes
+152. 8213.1406 - Straight Locking Plate 2.4mm 6 Holes
+153. 8213.1603 - T Locking Plate (2 Holes) 2.4mm 3 Holes
+154. 8213.1605 - T Locking Plate (2 Holes) 2.4mm 5 Holes
+155. 8213.1607 - T Locking Plate (2 Holes) 2.4mm 7 Holes
+
+TOTAL: 155 items
+

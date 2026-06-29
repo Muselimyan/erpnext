@@ -1,5 +1,10 @@
 ﻿# Dispatch Case — Surgery / Return Case Walkthrough
 
+> **📚 REFERENCE VERSION - Original Design**  
+> This document reflects the initial workflow design before barcode scanning automation was implemented.  
+> **For current testing, use `surgery-case-walkthrough-v2.md` instead.**  
+> This file is kept as a reference and will not be updated.
+
 **Purpose:** Step-by-step test script to verify the complete unified dispatch flow for a return-expected case (surgery sets, equipment loans, or any dispatch where items are expected to come back). Covers all 14 states. Run as a smoke test after deployment or after any server script changes.
 
 **Estimated time:** 45–60 minutes
@@ -46,10 +51,17 @@
    - **Customer:** select the test customer
    - **Description:** note the items, quantities, surgery date, and any special instructions
    - **Assigned To:** `order.creation.team@example.com` (Order Creation Team)
-3. Click **Save**.
+3. In the **Product Lines** table, add the items for this order:
+   - Click **Add Row**
+   - Select **Item Name** (or enter **Item Code**)
+   - Enter **Qty** (quantity needed)
+   - Select **Warehouse** (default: `Main - Inmed`)
+   - Repeat for each item
+4. Click **Save**.
 
 **✅ Expected:**
 - Task saved with Status `Open`
+- Product lines table shows all items with available quantities
 
 ---
 
@@ -57,17 +69,21 @@
 
 **Login as:** `Ops - Order Creating`
 
-1. Open your Order entry task. Open a new tab: search for `Dispatch Case` and click **New**.
-2. Fill in:
-   - **Customer:** select the test customer
+1. Open your Order entry task (from Step 1).
+2. Click **Actions** → **Create Dispatch Case from Task**.
+3. Confirm the dialog to create the Dispatch Case.
+
+**✅ Expected:**
+- New Dispatch Case opens automatically
+- All items from Task product lines are copied to **Case Items** table
+- Customer is pre-filled
+
+4. In the Dispatch Case form, fill in:
    - **Return Expected:** **checked** — critical for this scenario
    - **Client Location Warehouse:** select the client's warehouse (e.g. `Dr. Smith WH - Inmed`)
    - **Surgery Date:** the surgery/delivery date
-   - **Item Template (Collection Set):** select if applicable — click **Load from Template** to auto-fill Case Items
-3. In the **Case Items** table, verify or add items:
-   - **Item Code, Dispatched Qty, Unit Price** — fill for each item
-   - **Discount %:** `0` for the no-discount scenario (see Step 2a if discount needed)
-4. Click **Save**, then **Submit**.
+5. In the **Case Items** table, verify items are correct (prices auto-filled from Item master, visible only to Accounting team)
+6. Click **Save**, then **Submit**.
 
 **✅ Expected after Save:**
 - Status = `Draft`
@@ -77,7 +93,7 @@
 - Pack task auto-created for Inventory Team
 - Case receives autoname `DC-YYYY-NNNNN`
 
-5. Back on the Order entry task: link the **Dispatch Case** field, change Status to `Completed`, and Save.
+7. Back on the Order entry task: link the **Dispatch Case** field, change Status to `Completed`, and Save.
 
 ---
 
