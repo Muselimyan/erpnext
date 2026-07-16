@@ -12,8 +12,8 @@
 | `daily-reporting-checks.md` | 🟡 Reports/workspaces deployed, including Doc 15E; report results still need validation with real or test transactions |
 | `collection-set-setup.md` | 🟡 Collection Set readiness script deployed; template creation/use still needs smoke test |
 | `purchase-walkthrough.md` | 🟡 Purchasing gates and Doc 17A costing support deployed; full PO → PR → LCV → PI flow still needs smoke test |
-| `standard-sale-walkthrough.md` | 🟡 Dispatch Case no-return flow deployed; `unit_price` optional; end-to-end smoke test still required |
-| `surgery-case-walkthrough.md` | 🟡 Dispatch Case return-expected flow deployed; `unit_price` optional; end-to-end smoke test still required |
+| `standard-sale-walkthrough.md` | 🟡 Current no-return flow documented: Accept button, Complete Task button, Order Entry auto-submit, text-match item search; end-to-end smoke test still required |
+| `surgery-case-walkthrough-v2.md` | 🟡 Current return-expected flow documented: barcode Product Work Area, Accept button, Complete Task button, Order Entry auto-submit; end-to-end smoke test still required |
 | `debt-collection-and-payment.md` | 🟡 Debt/task logic deployed; payment/debt closure still needs smoke test |
 | `discount-approval-walkthrough.md` | 🟡 Discount approval logic deployed; approval/rejection path still needs smoke test |
 | `delivery-driver-guide.md` | 🟡 Delivery task/photo/handover gates documented/deployed; driver role test still required |
@@ -52,8 +52,8 @@ Use this order to test the new ERPNext setup quickly:
 | 2 | `new-item-setup.md` | A product can be created with supplier, UOM, tracking, and price | `Ops - Inventory` / `Ops - Accounting` | `Item`, `Item Group`, `UOM`, `Item Price`, `Supplier` | Item saves successfully and is ready for purchase/sale testing |
 | 3 | `new-customer-onboarding.md` | Customer and client warehouse can be created | `Ops - Order Creating`, `Ops - Inventory`, `Ops - Accounting` | `Customer`, `Warehouse` | Customer is active/non-provisional and warehouse exists under `Clients - Inmed` |
 | 4 | `purchase-walkthrough.md` | Buying flow works end-to-end, including landed cost | `Ops - Purchasing`, `Ops - Directors`, `Ops - Inventory`, `Ops - Accounting` | `Purchase Order`, `Task`, `Purchase Receipt`, `Landed Cost Voucher`, `Purchase Invoice`, `Payment Entry` | Purchase Order is approved, goods are received, import duty is pre-filled on Landed Cost Voucher, landed cost/invoice are recorded |
-| 5 | `standard-sale-walkthrough.md` | Simple sale with no return works | `Ops - Order Accepting`, `Ops - Order Creating`, `Ops - Inventory`, `Delivery Driver`, `Ops - Accounting` | `Task`, `Dispatch Case`, `Stock Entry`, `Delivery Note`, `Sales Invoice` | Case moves through delivery and invoicing without return steps |
-| 6 | `surgery-case-walkthrough.md` | Full return-expected case works | Order, Inventory, Driver, Returns, Accounting, Finance roles | `Task`, `Dispatch Case`, `Stock Entry`, `Sales Invoice`, `Payment Entry` | Case completes dispatch, return, inspection, restock, invoice, and payment/debt steps |
+| 5 | `standard-sale-walkthrough.md` | Simple sale with no return works | `Ops - Order Accepting`, `Ops - Order Creating`, `Ops - Inventory`, `Delivery Driver`, `Ops - Accounting` | `Task`, `Dispatch Case`, `Stock Entry`, `Sales Invoice` | Case moves through Order Entry auto-submit, packing, delivery, invoicing, and payment without return steps |
+| 6 | `surgery-case-walkthrough-v2.md` | Full return-expected case works | Order, Inventory, Driver, Returns, Accounting, Finance roles | `Task`, `Dispatch Case`, `Stock Entry`, `Sales Invoice`, `Payment Entry` | Case completes Order Entry auto-submit, barcode packing, return, inspection, restock, invoice, and payment/debt steps |
 | 7 | `debt-collection-and-payment.md` | Finance can record customer payment and close debt | `Ops - Finance` | `Task`, `Payment Entry`, `Accounts Receivable`, `Dispatch Case` | Payment reduces outstanding amount and closes the case when fully paid |
 
 Use these only when the matching situation happens:
@@ -72,7 +72,7 @@ Use these only when the matching situation happens:
 
 When a manual says **Login as:** `Ops - Purchasing`, `Ops - Inventory`, or another role, it means login as a test/example user that has that role. The username does not need to match the role name.
 
-Before continuing each flow, confirm that the test user can search for and open the main ERPNext screen named in the step. Search for the exact DocType/report/tool name, such as `Supplier`, `Item`, `Customer`, `Warehouse`, `Purchase Order`, `Task`, or `Stock Balance`.
+Before continuing each flow, confirm that the test user can search for and open the main ERPNext screen named in the step. Search for the exact DocType/report/tool name, such as `Supplier`, `Item`, `Customer`, `Warehouse`, `Purchase Order`, `Task`, or `Stock Balance`. Link fields such as Item search should match visible text, including item code, item name, description, item group, and customer code.
 
 If the expected screen does not appear in search, stop and record it as a setup/permission blocker. Do not spend time trying to work around it inside the walkthrough. A System Manager should check the user's role assignment, Role Permission Manager settings, and any User Permission restrictions.
 
@@ -144,7 +144,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 ---
 
 ### 5 — Surgery case dispatch (return expected)
-**File:** `surgery-case-walkthrough.md`
+**File:** `surgery-case-walkthrough-v2.md`
 **Status:** ✅ Written
 **Covers:** Full dispatch case where items are lent to a client, partially used, and the remainder is returned, inspected, restocked, and invoiced for used quantities only.
 

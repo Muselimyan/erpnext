@@ -170,9 +170,11 @@ function task_product_work_area_toggle_packed(checkbox, case_name, idx) {
                     message: packed ? __("Marked as packed: {0}", [msg.item_code]) : __("Marked as not packed: {0}", [msg.item_code]), 
                     indicator: "green" 
                 });
-                // Refresh to update status
+                // Mark form as dirty so Save works
                 const frm = cur_frm;
                 if (frm) {
+                    frm.doc.__unsaved = 1;
+                    frm.page.set_indicator(__("Not Saved"), "orange");
                     task_product_work_area_refresh(frm, false);
                 }
             }

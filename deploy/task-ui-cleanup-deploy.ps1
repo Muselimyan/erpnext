@@ -95,7 +95,7 @@ $DispatchKinds = "$NoKind || doc.task_kind==`"Pack / prepare items`" || doc.task
 $ReturnKinds = "$NoKind || doc.task_kind==`"Pickup Returns`" || doc.task_kind==`"Return drop-off at warehouse`""
 $PaymentDebtKinds = "$NoKind || doc.task_kind==`"Payment Received`" || doc.task_kind==`"Debt Collection`""
 $PaymentLinkKinds = "$NoKind || doc.task_kind==`"Payment Received`" || doc.task_kind==`"Distribute Payment`" || doc.task_kind==`"Debt Collection`""
-$InvoiceKinds = "$NoKind || doc.task_kind==`"Invoice preparation / create invoice`" || doc.task_kind==`"Debt Collection`" || doc.task_kind==`"Payment Received`" || doc.task_kind==`"Distribute Payment`""
+$InvoiceKinds = "$NoKind || doc.task_kind==`"Invoice preparation / create invoice`" || doc.task_kind==`"Debt Collection`" || doc.task_kind==`"Payment Received`" || doc.task_kind==`"Distribute Payment`" || doc.task_kind==`"Returns processing / verification`""
 
 $Rules = @(
     [pscustomobject]@{ fieldname="weight"; hidden="1"; depends_on=""; note="Hide standard project progress weight" },

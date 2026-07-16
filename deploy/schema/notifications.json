@@ -1,5 +1,5 @@
 ﻿{
-    "count":  4,
+    "count":  5,
     "records":  [
                     {
                         "name":  "Notification for new fiscal year",
@@ -179,6 +179,62 @@
                                                "idx":  1,
                                                "receiver_by_role":  "System Manager",
                                                "parent":  "Integration Request",
+                                               "parentfield":  "recipients",
+                                               "parenttype":  "Notification",
+                                               "doctype":  "Notification Recipient"
+                                           }
+                                       ]
+                    },
+                    {
+                        "name":  "DATUREX Task Push",
+                        "owner":  "levonaghinyan77@gmail.com",
+                        "creation":  "2026-07-06 15:11:01.778052",
+                        "modified":  "2026-07-06 15:22:23.654864",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "enabled":  1,
+                        "is_standard":  0,
+                        "channel":  "System Notification",
+                        "subject":  "New Task: {{ doc.subject or doc.name }}",
+                        "event":  "New",
+                        "document_type":  "Task",
+                        "days_in_advance":  0,
+                        "minutes_offset":  0,
+                        "send_system_notification":  1,
+                        "condition_type":  "Python",
+                        "send_to_all_assignees":  1,
+                        "message_type":  "Markdown",
+                        "message":  "Task {{ doc.name }} ({{ doc.task_kind }}) has been created and needs attention.",
+                        "attach_print":  0,
+                        "attach_files":  "",
+                        "doctype":  "Notification",
+                        "recipients":  [
+                                           {
+                                               "name":  "7qsjjfvhc9",
+                                               "owner":  "ai-agent@internal.com",
+                                               "creation":  "2026-07-06 15:11:01.778052",
+                                               "modified":  "2026-07-06 15:22:23.654864",
+                                               "modified_by":  "ai-agent@internal.com",
+                                               "docstatus":  0,
+                                               "idx":  1,
+                                               "receiver_by_document_field":  "custom_assigned_to",
+                                               "parent":  "DATUREX Task Push",
+                                               "parentfield":  "recipients",
+                                               "parenttype":  "Notification",
+                                               "doctype":  "Notification Recipient"
+                                           },
+                                           {
+                                               "name":  "7qsthg51ge",
+                                               "owner":  "ai-agent@internal.com",
+                                               "creation":  "2026-07-06 15:11:01.778052",
+                                               "modified":  "2026-07-06 15:22:23.654864",
+                                               "modified_by":  "ai-agent@internal.com",
+                                               "docstatus":  0,
+                                               "idx":  2,
+                                               "receiver_by_document_field":  "custom_team_queue_role",
+                                               "condition":  "doc.custom_team_queue_role",
+                                               "parent":  "DATUREX Task Push",
                                                "parentfield":  "recipients",
                                                "parenttype":  "Notification",
                                                "doctype":  "Notification Recipient"
