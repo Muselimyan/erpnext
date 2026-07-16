@@ -68,6 +68,7 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `implementation-questions.md` | 🟡 Reference / open inputs list |
 | `ai-agent-api-access-guide.md` | 🟡 Reference |
 | `docs-overview.md` | 🟡 Index / status tracker |
+| `infrastructure-test-vs-prod-environments.md` | 🟡 Infra reference (excluded from functional scope, see §1); test instance live at test.erpnext.am since 2026-07-15 |
 
 ## 3) Document sequence (recommended)
 ### 01 — Requirements

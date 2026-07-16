@@ -614,7 +614,7 @@ Two acceptable approaches (choose one policy and apply consistently):
 
 ### 7.3 Lost / damaged items
 - Record on the case as Lost/Damaged.
-- Decide whether you invoice the client for lost/damaged items (policy).
+- **Policy (decided):** lost/damaged items are invoiced to the client as a fee, at the item's normal unit price/discount — the same rate as a used item. This applies uniformly across item categories, with no per-case director escalation required. Stock is written off from the client location warehouse immediately regardless of when the invoice is created. (See `docs/implementation-questions.md` #17.)
 
 ### 7.4 Case cancelled before delivery
 - If stock is already in `Delivery In-Transit - WH`, transfer back to `Main - WH`.

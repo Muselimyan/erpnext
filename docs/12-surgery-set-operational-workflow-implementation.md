@@ -899,6 +899,13 @@ if before_state == "Usage Derived" and after_state == "Invoiced":
                     "item_code": row.item,
                     "qty": row.used_qty,
                 })
+            # Lost/Damaged commercial policy (docs/implementation-questions.md #17, resolved):
+            # billed as a fee at the same rate as a used item, not written off for free.
+            if row.lost_damaged_qty and row.lost_damaged_qty > 0:
+                inv.append("items", {
+                    "item_code": row.item,
+                    "qty": row.lost_damaged_qty,
+                })
         inv.insert()
         doc.sales_invoice = inv.name
 

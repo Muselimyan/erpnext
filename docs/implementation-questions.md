@@ -1381,16 +1381,14 @@ Recommendation:
 - Yes: require recording serial numbers for missing/damaged tools.
 - Require a photo for damaged tools where possible.
 
-17) Lost/damaged commercial policy
-- Question: Are lost/damaged items invoiced to the hospital, written off internally, or escalated for director decision?
-- Data needed:
-  - policy by category (tools vs implants)
-  - who approves charging the hospital
-  - required evidence/notes
-
-Recommendation:
-- Implants/consumables: invoice the hospital for lost items by default.
-- Tools/instruments: escalate to Directors for a decision (case-by-case).
+17) Lost/damaged commercial policy — **RESOLVED**
+- Question (was open): Are lost/damaged items invoiced to the hospital, written off internally, or escalated for director decision?
+- **Decision:** Lost/damaged items are **invoiced to the client as a fee**, at the row's normal `unit_price`/`discount_pct` — same rate as a used item. This applies uniformly, with no split by category (tools vs implants) and no per-case director escalation required.
+- This applies to both:
+  - Immediate Lost/Damaged (recorded at Returns Inspection, `lost_damaged_qty`), and
+  - Held-then-discovered Lost/Damaged (recorded later via the Held Stock Follow-up flow — see `docs/held-at-client-items-plan.md`).
+- Stock is written off from the client location warehouse immediately in both cases, regardless of when the invoice is created.
+- See `docs/12-surgery-set-operational-workflow.md` §7.3 and `docs/16-unified-dispatch-flow.md` Task 6.7 for the corresponding workflow-doc updates. Production automation (`Task-after-save-dispatch-flow`) is not yet updated to implement this — tracked as a pending implementation step.
 
 18) Multi-trip return pickups (support requirement)
 - Question: Do we need to support a single Surgery Case being returned in multiple pickup trips at go-live?

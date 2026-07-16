@@ -78,7 +78,7 @@ Each row represents one item in the dispatch. Columns:
 | `unit_price` | Price per unit |
 | `discount_pct` | Discount percentage (triggers approval if > 0) |
 | `returned_qty` | Filled by Returns team at inspection |
-| `lost_damaged_qty` | Filled by Returns team at inspection |
+| `lost_damaged_qty` | Filled by Returns team at inspection. Billed as a fee at `unit_price`/`discount_pct` (same rate as a used item) — see §9A "Lost/Damaged Billing Policy". |
 | `used_qty` | Auto-computed: `dispatched_qty - returned_qty - lost_damaged_qty` |
 
 ### 4.3 Payment Fields
@@ -320,8 +320,8 @@ Templates are not mandatory — the items table can be filled manually.
 - ✅ `used_qty ≥ 0` for all rows (system validates — negative means data error)
 
 **On Completion:**
-- Server script auto-submits **Consumption Stock Entry**: `Client Location Warehouse → (Material Issue / out)` for `used_qty` of each item
-- Auto-creates draft **Sales Invoice** for used quantities and prices
+- Server script auto-submits **Consumption Stock Entry**: `Client Location Warehouse → (Material Issue / out)` for `used_qty` **and** `lost_damaged_qty` of each item (both are physically gone from the client location, regardless of billing treatment)
+- Auto-creates draft **Sales Invoice** for used quantities at their prices, **plus** a fee line for any `lost_damaged_qty` at the same `unit_price`/`discount_pct` (see §9A)
 - Case state → `Invoice Pending`
 - **Task 6.8** (Restock) created for Returns Team (if any items have `returned_qty > 0`)
 - **Task 6.9** (Invoice Preparation) created for Accounting Team
@@ -474,7 +474,7 @@ The Debt Collection task is marked Completed only when total outstanding = 0 for
 | Delivery Delivered (no return) | Client Location WH | — | Material Issue (Consumption) |
 | Return Pickup task → Picked Up | Client Location WH | Return Pickup In-Transit | Material Transfer |
 | Return Pickup task → Returned to Warehouse | Return Pickup In-Transit | Returns WH | Material Transfer |
-| Returns Inspection Completed | Client Location WH | — | Material Issue (used qty only) |
+| Returns Inspection Completed | Client Location WH | — | Material Issue (`used_qty` + `lost_damaged_qty`) |
 | Restock task Completed | Returns WH | Main WH | Material Transfer |
 
 All SEs are auto-created and auto-submitted by server scripts. No team member ever opens a Stock Entry form.
@@ -500,6 +500,17 @@ The Accounting team submits these auto-created Payment Entries as part of their 
 2. Server script detects `discount_pct > 0` on any item → creates Discount Approval task for Directors Team → Case state = `Awaiting Approval`
 3. **If approved:** Case can be submitted → Pack task created → normal flow continues
 4. **If rejected:** New `Order entry` task created for Order Creation Team with note "Discount rejected — revise pricing." Case stays in `Draft`. Order Creation person opens the case, adjusts prices, saves again → new Discount Approval task created.
+
+---
+
+## 9A. Lost/Damaged Billing Policy
+
+Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-surgery-set-operational-workflow.md` §7.3). Now resolved:
+
+- Lost/damaged quantities (`lost_damaged_qty`) are **invoiced to the client as a fee**, at the same `unit_price`/`discount_pct` as a used item — one uniform policy, no split by item category and no per-case director escalation.
+- Stock is written off from the client location warehouse **immediately** at Returns Inspection completion (Task 6.7), combined with the `used_qty` write-off in the same Consumption Stock Entry — regardless of when the invoice is created.
+- The same policy applies to Lost/Damaged discovered later while a quantity was Held (see `docs/held-at-client-items-plan.md`), keeping the rule consistent regardless of timing.
+- **Production status:** this policy is not yet implemented in the deployed `Task-after-save-dispatch-flow` script (which currently only invoices `used_qty`) — tracked as a pending implementation step.
 
 ---
 

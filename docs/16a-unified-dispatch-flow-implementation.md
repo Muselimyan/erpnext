@@ -825,10 +825,13 @@ def _run():
     # ================================================================
     if is_becoming_completed and doc.task_kind == "Returns processing / verification":
         case.reload()
-        # Consume used items: SE from Client WH → out (Material Issue)
+        # Consume used + lost/damaged items: SE from Client WH → out (Material Issue).
+        # Lost/damaged items are physically gone from the client location regardless
+        # of billing treatment, so they are written off from stock here too
+        # (docs/implementation-questions.md #17 — Lost/Damaged commercial policy, resolved).
         used_items = [
-            (r.item_code, r.used_qty, r.serial_no, r.batch_no)
-            for r in case.case_items if (r.used_qty or 0) > 0
+            (r.item_code, (r.used_qty or 0) + (r.lost_damaged_qty or 0), r.serial_no, r.batch_no)
+            for r in case.case_items if ((r.used_qty or 0) + (r.lost_damaged_qty or 0)) > 0
         ]
         if used_items:
             _consume_items(case, used_items)
@@ -998,18 +1001,28 @@ def _consume_items(case, items):
     frappe.db.set_value("Dispatch Case", case.name, "consumption_stock_entry", se.name)
 
 def _create_sales_invoice(case):
+    items = []
+    for r in case.case_items:
+        rate = r.unit_price * (1 - (r.discount_pct or 0) / 100)
+        if (r.used_qty or 0) > 0:
+            items.append({
+                "item_code": r.item_code,
+                "qty": r.used_qty,
+                "rate": rate,
+            })
+        # Lost/Damaged commercial policy (docs/implementation-questions.md #17, resolved):
+        # billed as a fee at the same rate as a used item, not written off for free.
+        if (r.lost_damaged_qty or 0) > 0:
+            items.append({
+                "item_code": r.item_code,
+                "qty": r.lost_damaged_qty,
+                "rate": rate,
+            })
     si = frappe.get_doc({
         "doctype": "Sales Invoice",
         "customer": case.customer,
         "update_stock": 0,
-        "items": [
-            {
-                "item_code": r.item_code,
-                "qty": r.used_qty,
-                "rate": r.unit_price * (1 - (r.discount_pct or 0) / 100),
-            }
-            for r in case.case_items if (r.used_qty or 0) > 0
-        ],
+        "items": items,
     })
     si.insert(ignore_permissions=True)
     frappe.db.set_value("Dispatch Case", case.name, "sales_invoice", si.name)
@@ -1402,14 +1415,14 @@ Work through this checklist in order after completing all setup steps.
 - [ ] Log in as `Ops - Returns`; find inspection task; attempt to complete without filling `returned_qty` → must fail
 - [ ] Open Dispatch Case; fill `returned_qty` and `lost_damaged_qty`; save; confirm `used_qty` is correct
 - [ ] Complete the inspection task
-- [ ] Expected: Consumption SE submitted for used qty; draft Sales Invoice created for used items; `Invoice preparation` task created; if returned_qty > 0: `Returns restocking` task created
+- [ ] Expected: Consumption SE submitted for `used_qty` + `lost_damaged_qty` combined; draft Sales Invoice created with lines for used items AND a fee line for any `lost_damaged_qty` (same rate); `Invoice preparation` task created; if returned_qty > 0: `Returns restocking` task created
 - [ ] Complete the Restock task
 - [ ] Expected: SE (Returns WH → Main WH) submitted for returned items
 
 ### 12.4 Invoicing and payment
 
 - [ ] Log in as `Ops - Accounting`; find the Invoice task; open the linked draft Sales Invoice
-- [ ] Verify `Update Stock` is unchecked; verify quantities match `used_qty` from Case Items
+- [ ] Verify `Update Stock` is unchecked; verify quantities match `used_qty` (and any `lost_damaged_qty` fee lines) from Case Items
 - [ ] Submit the Sales Invoice; complete the task
 - [ ] Expected (if prepaid = 0): `Debt Collection` task created/updated in Finance inbox; Case status = `Payment Pending`
 - [ ] Log in as `Ops - Finance`; open the Debt Collection task

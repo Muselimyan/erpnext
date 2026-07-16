@@ -1,0 +1,307 @@
+﻿{
+    "count":  6,
+    "records":  [
+                    {
+                        "name":  "System Manager",
+                        "owner":  "vahe.muselimyan@gmail.com",
+                        "creation":  "2026-04-19 23:22:49.638697",
+                        "modified":  "2026-04-19 23:22:49.638697",
+                        "modified_by":  "vahe.muselimyan@gmail.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "role_profile":  "System Manager",
+                        "doctype":  "Role Profile",
+                        "roles":  [
+                                      {
+                                          "name":  "cr0vjb0po4",
+                                          "owner":  "vahe.muselimyan@gmail.com",
+                                          "creation":  "2026-04-19 23:22:49.638697",
+                                          "modified":  "2026-04-19 23:22:49.638697",
+                                          "modified_by":  "vahe.muselimyan@gmail.com",
+                                          "docstatus":  0,
+                                          "idx":  1,
+                                          "role":  "System Manager",
+                                          "parent":  "System Manager",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      }
+                                  ]
+                    },
+                    {
+                        "name":  "Inventory",
+                        "owner":  "Administrator",
+                        "creation":  "2026-04-20 00:31:06.318074",
+                        "modified":  "2026-04-20 00:31:06.318074",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "role_profile":  "Inventory",
+                        "doctype":  "Role Profile",
+                        "roles":  [
+                                      {
+                                          "name":  "03n6vfslst",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.318635",
+                                          "modified":  "2026-04-20 00:31:06.318635",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  1,
+                                          "role":  "Stock User",
+                                          "parent":  "Inventory",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03nt3dn1kg",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.318989",
+                                          "modified":  "2026-04-20 00:31:06.318989",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  2,
+                                          "role":  "Stock Manager",
+                                          "parent":  "Inventory",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03nna0neg6",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.319293",
+                                          "modified":  "2026-04-20 00:31:06.319293",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  3,
+                                          "role":  "Item Manager",
+                                          "parent":  "Inventory",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      }
+                                  ]
+                    },
+                    {
+                        "name":  "Manufacturing",
+                        "owner":  "Administrator",
+                        "creation":  "2026-04-20 00:31:06.329931",
+                        "modified":  "2026-04-20 00:31:06.329931",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "role_profile":  "Manufacturing",
+                        "doctype":  "Role Profile",
+                        "roles":  [
+                                      {
+                                          "name":  "03n4l9geh6",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.330517",
+                                          "modified":  "2026-04-20 00:31:06.330517",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  1,
+                                          "role":  "Stock User",
+                                          "parent":  "Manufacturing",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03n33b0qpf",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.333057",
+                                          "modified":  "2026-04-20 00:31:06.333057",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  2,
+                                          "role":  "Manufacturing User",
+                                          "parent":  "Manufacturing",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03n0l54kc6",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.333555",
+                                          "modified":  "2026-04-20 00:31:06.333555",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  3,
+                                          "role":  "Manufacturing Manager",
+                                          "parent":  "Manufacturing",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      }
+                                  ]
+                    },
+                    {
+                        "name":  "Accounts",
+                        "owner":  "Administrator",
+                        "creation":  "2026-04-20 00:31:06.343195",
+                        "modified":  "2026-04-20 00:31:06.343195",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "role_profile":  "Accounts",
+                        "doctype":  "Role Profile",
+                        "roles":  [
+                                      {
+                                          "name":  "03n2mfptjp",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.343681",
+                                          "modified":  "2026-04-20 00:31:06.343681",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  1,
+                                          "role":  "Accounts User",
+                                          "parent":  "Accounts",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03n83g8fgb",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.343984",
+                                          "modified":  "2026-04-20 00:31:06.343984",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  2,
+                                          "role":  "Accounts Manager",
+                                          "parent":  "Accounts",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      }
+                                  ]
+                    },
+                    {
+                        "name":  "Sales",
+                        "owner":  "Administrator",
+                        "creation":  "2026-04-20 00:31:06.349809",
+                        "modified":  "2026-04-20 00:31:06.349809",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "role_profile":  "Sales",
+                        "doctype":  "Role Profile",
+                        "roles":  [
+                                      {
+                                          "name":  "03n5fubi6r",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.350159",
+                                          "modified":  "2026-04-20 00:31:06.350159",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  1,
+                                          "role":  "Sales User",
+                                          "parent":  "Sales",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03n2giiu95",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.350409",
+                                          "modified":  "2026-04-20 00:31:06.350409",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  2,
+                                          "role":  "Stock User",
+                                          "parent":  "Sales",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03n7mb5dib",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.350661",
+                                          "modified":  "2026-04-20 00:31:06.350661",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  3,
+                                          "role":  "Sales Manager",
+                                          "parent":  "Sales",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      }
+                                  ]
+                    },
+                    {
+                        "name":  "Purchase",
+                        "owner":  "Administrator",
+                        "creation":  "2026-04-20 00:31:06.355518",
+                        "modified":  "2026-04-20 00:31:06.355518",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "role_profile":  "Purchase",
+                        "doctype":  "Role Profile",
+                        "roles":  [
+                                      {
+                                          "name":  "03npi322ge",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.355864",
+                                          "modified":  "2026-04-20 00:31:06.355864",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  1,
+                                          "role":  "Item Manager",
+                                          "parent":  "Purchase",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03n1tvfvdd",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.356084",
+                                          "modified":  "2026-04-20 00:31:06.356084",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  2,
+                                          "role":  "Stock User",
+                                          "parent":  "Purchase",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03nmhmfksl",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.356271",
+                                          "modified":  "2026-04-20 00:31:06.356271",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  3,
+                                          "role":  "Purchase User",
+                                          "parent":  "Purchase",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      },
+                                      {
+                                          "name":  "03nmiq75rb",
+                                          "owner":  "Administrator",
+                                          "creation":  "2026-04-20 00:31:06.356460",
+                                          "modified":  "2026-04-20 00:31:06.356460",
+                                          "modified_by":  "Administrator",
+                                          "docstatus":  0,
+                                          "idx":  4,
+                                          "role":  "Purchase Manager",
+                                          "parent":  "Purchase",
+                                          "parentfield":  "roles",
+                                          "parenttype":  "Role Profile",
+                                          "doctype":  "Has Role"
+                                      }
+                                  ]
+                    }
+                ]
+}
