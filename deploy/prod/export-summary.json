@@ -1,14 +1,13 @@
 ﻿{
-    "env":  "Prod",
-    "exported_at":  "2026-07-15T19:55:04Z",
+    "exported_at":  "2026-07-13T13:05:29Z",
     "base_url":  "https://erpnext.am",
     "schema":  {
                    "custom-fields":  132,
                    "notifications":  5,
                    "client-scripts":  28,
-                   "server-scripts":  54,
+                   "server-scripts":  52,
                    "workflows":  1,
-                   "property-setters":  208,
+                   "property-setters":  203,
                    "role-profiles":  6,
                    "workspaces":  23,
                    "print-formats":  1,

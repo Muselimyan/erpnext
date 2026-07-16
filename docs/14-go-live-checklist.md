@@ -38,7 +38,7 @@ Operational rule:
 ## 3) Go / No-Go criteria (minimum)
 Go-live is allowed only if:
 - You can run **one complete Dispatch Case (no-return path)** end-to-end: Order entry task → Dispatch Case (`return_expected = No`) submit → Pack → Delivery (Picked Up → Delivered) → Invoice Preparation → Debt Collection → Closed, with correct stock movements and all Stock Entries auto-submitted.
-- You can run **one complete Dispatch Case (return-expected path)** end-to-end: Order entry task → Dispatch Case (`return_expected = Yes`) submit → Pack → Delivery → Return Waiting → Return Pickup → Returns Inspection → Invoice Preparation → Debt Collection → Closed, with correct batch/serial behavior and `dispatched = used + returned` reconciliation.
+- You can run **one complete Dispatch Case (return-expected path)** end-to-end: Order entry task → Dispatch Case (`return_expected = Yes`) submit → Pack → Delivery → Return Call → Return Pickup → Returns Inspection → Invoice Preparation → Debt Collection → Closed, with batch/serial temporarily disabled and `dispatched = used + returned` reconciliation.
 - If any client location uses a permanent on-site set model, you can run **one complete permanent set replenishment cycle** end-to-end (usage posting → invoice used → replenish stock into the correct client location warehouse).
 - Directors can see:
   - open approvals (discounts, purchase approvals)
@@ -230,7 +230,7 @@ Pass criteria (Doc 16 acceptance intent):
 - Create and submit a Dispatch Case (`return_expected = Yes`) with a **Client Location Warehouse** set.
 - Complete Pack task → Dispatch SE auto-submitted: `Main - Inmed → Delivery In-Transit - Inmed`.
 - Driver: Delivery `Delivered` → Delivery SE auto-submitted: `Delivery In-Transit → Client Location WH`. Case → `Awaiting Return Pickup`.
-- Returns team completes Return Waiting task (sets driver + scheduled date) → Return Pickup task auto-created. Case → `Return Pickup Scheduled`.
+- Returns/office workflow completes Return Call task (sets driver + scheduled date) → Return Pickup task auto-created. Case → `Return Pickup Scheduled`.
 - Driver: Return Pickup `Picked Up` → Return Pickup SE auto-submitted: `Client Location WH → Return Pickup In-Transit - Inmed`. Case → `Return In Transit`.
 - Driver: attaches drop-off photo, sets Return Pickup `Returned to Warehouse` → Return Receive SE auto-submitted: `Return Pickup In-Transit → Returns - Inmed`. Case → `Returns Received`. Returns Inspection task auto-created.
 - Returns team fills `returned_qty` (and `lost_damaged_qty` if any) on Case Items, completes Returns Inspection task.

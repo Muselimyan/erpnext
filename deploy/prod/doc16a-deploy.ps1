@@ -457,6 +457,13 @@ if not existing_pack:
 
 # 9.5  Task Before Save — dispatch gates (photo, serial/batch, quantities, approval)
 $TaskDispatchGates = @'
+# Mandatory: task must be accepted before any save/change/complete
+if doc.task_kind and doc.status != "Template" and doc.status != "Cancelled":
+    before = doc.get_doc_before_save()
+    is_new = not before
+    if not is_new and not doc.custom_accepted_by:
+        frappe.throw("You must Accept this task before making any changes or completing it.")
+
 if not doc.dispatch_case:
     pass
 else:

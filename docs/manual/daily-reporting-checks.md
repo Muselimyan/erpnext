@@ -190,7 +190,7 @@ Each case here has an auto-created draft Sales Invoice waiting to be reviewed an
 
 Search for `Task` and open the **Task** list, filter: **Task Kind = Invoice preparation / create invoice**, **Status = Open** — work through these tasks.
 
-**Action:** Open each task → open the linked draft Sales Invoice → verify quantities and prices → submit. See `standard-sale-walkthrough.md` Step 5 or `surgery-case-walkthrough.md` Step 11 for details.
+**Action:** Open each task → open the linked draft Sales Invoice → verify quantities and prices → submit. See `standard-sale-walkthrough.md` Step 5 or `surgery-case-walkthrough-v2.md` Step 11 for details.
 
 ---
 

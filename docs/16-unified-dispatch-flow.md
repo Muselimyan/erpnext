@@ -2,7 +2,7 @@
 
 ## 1. Overview
 
-All order types — standard sales and surgery cases — are handled through a single unified workflow called the **Dispatch Case**. Every team member works exclusively from their task inbox. No one needs to open a Dispatch Case form to advance the workflow, except the Order Creation team (to create it) and the Returns team (to fill in returned quantities).
+All order types — standard sales and surgery cases — are handled through a single unified workflow called the **Dispatch Case**. Every team member works primarily from their task inbox. Order Creation creates, submits, and links the Dispatch Case. Inventory prepares products from the Pack task. Barcode/Product Work Area behavior is optional/future until tracking is re-enabled. Returns may open the Dispatch Case or use the task return summary to record returned quantities.
 
 The Dispatch Case is the coordinator record. It holds item quantities, links to all generated stock entries and invoices, and tracks state. Field teams never need to understand its internals.
 
@@ -22,13 +22,13 @@ Key behavioral difference based on the **Return Expected** flag:
 
 ### 2.2 Team User Pattern
 
-For each role there is a dedicated **team user** in ERPNext named after that role (e.g., `Delivery Team`, `Inventory Team`). Every person who holds the corresponding role can see tasks assigned to the team user in their own inbox. When someone picks up a task, they reassign it to themselves. Default assignment for all auto-created tasks is the team user, unless the creating person explicitly assigns to an individual.
+For each role there is a dedicated **team user** in ERPNext named after that role (e.g., `Delivery Team`, `Inventory Team`). Every person who holds the corresponding role can see tasks assigned to the team user in their own inbox. When someone picks up a task, they click **Accept / Start Task**. The task records the accepting user and becomes workable for that user. The Accept button disappears for the user who accepted it, while users who have not accepted still see their own Accept button. Default assignment for all auto-created tasks is the team user, unless the creating person explicitly assigns to an individual.
 
 ### 2.3 Task-Driven Principle
 
-Every state change in a Dispatch Case is triggered by a task completion or state change — never by clicking a button on the Dispatch Case form. Completing a task causes a server script to:
+Every state change in a Dispatch Case is triggered by a task completion or state change. Users complete tasks with the red **Complete Task** button near the Status field. Completing a task causes a server script to:
 1. Advance the Dispatch Case to the next state
-2. Auto-submit any required Stock Entries
+2. Auto-submit any required Stock Entry, Payment Entry, or other downstream document
 3. Create the next task in the chain
 
 ---
@@ -40,7 +40,7 @@ Every state change in a Dispatch Case is triggered by a task completion or state
 | `Ops - Order Accepting` | Order Acceptance Team | Receives client calls/messages; creates Order entry tasks |
 | `Ops - Order Creating` | Order Creation Team | Picks up Order entry tasks; creates and submits Dispatch Cases |
 | `Ops - Directors` | Directors Team | Approves or rejects discount approval tasks |
-| `Ops - Inventory` | Inventory Team | Packs shipments; fills serial/batch numbers |
+| `Ops - Inventory` | Inventory Team | Packs shipments; batch/serial tracking is temporarily disabled until barcode tracking is re-enabled |
 | `Delivery Driver` | Delivery Team | Picks up and delivers; handles return pickups |
 | `Ops - Returns` | Returns Team | Coordinates return pickups; inspects and records returned items; restocks |
 | `Ops - Accounting` | Accounting Team | Reviews and submits auto-created invoices |
@@ -73,8 +73,8 @@ Each row represents one item in the dispatch. Columns:
 | `item_code` | Link → Item |
 | `item_name` | Auto-filled |
 | `dispatched_qty` | Quantity planned for dispatch |
-| `serial_no` | Serial number(s) — filled by Inventory at Pack step |
-| `batch_no` | Batch number — filled by Inventory at Pack step |
+| `serial_no` | Serial number(s) — temporarily not required while serial tracking is disabled |
+| `batch_no` | Batch number — temporarily not required while batch tracking is disabled |
 | `unit_price` | Price per unit |
 | `discount_pct` | Discount percentage (triggers approval if > 0) |
 | `returned_qty` | Filled by Returns team at inspection |
@@ -132,12 +132,14 @@ Templates are not mandatory — the items table can be filled manually.
 - Any relevant context from the call
 
 **Actions:**
-- Order Creation team member assigns the task to themselves
-- Opens the Dispatch Case creation link on the task
-- Creates the Dispatch Case (see Section 7)
-- Links the created case to this task (either at case creation or when closing the task)
+- Order Creation team member clicks **Accept / Start Task**
+- Creates a Dispatch Case (see Section 7)
+- Adds at least one item row to the Case Items table
+- Saves and submits the Dispatch Case
+- Links the submitted case to this task
+- Clicks the red **Complete Task** button
 
-**Completes when:** Dispatch Case is submitted and linked to this task. On link, the task auto-completes. If not linked at case creation, the Order Creation person manually selects the case from the list (sorted newest-first) when closing the task.
+**Completes when:** Dispatch Case is linked to this task and already submitted. If the case is missing, completion is blocked with `Link a Dispatch Case before completing the Order entry task.` If the case is not submitted, completion is blocked with `Submit the Dispatch Case before completing the Order entry task.`
 
 ---
 
@@ -177,18 +179,21 @@ Templates are not mandatory — the items table can be filled manually.
 - Client Location Warehouse (destination reference)
 
 **Actions:**
-- Inventory team member assigns to themselves
+- Inventory team member clicks **Accept / Start Task**
 - Physically assembles the shipment box according to the items list
-- Opens the Dispatch Case link
-- In the Case Items table, fills in `serial_no` for each serial-tracked item and `batch_no` for each batch-tracked item (FEFO: select earliest-expiry batch)
-- Saves the Dispatch Case
+- Prepares products physically according to the Dispatch Case item rows
+- Saves the Task or Dispatch Case as needed
 
-**Before marking Completed:**
-- ✅ All serial-tracked items have `serial_no` filled
-- ✅ All batch-tracked items have `batch_no` filled
+**Current temporary tracking state:**
+- Batch, serial, and expiry requirements are temporarily disabled for all Items.
+- The Pack task should not require Batch No, Serial No, or Expiry Date to complete.
+- Barcode/Product Work Area behavior is optional/future until tracking is re-enabled.
+
+**Before clicking Complete Task:**
+- ✅ Products are physically prepared according to the Dispatch Case item rows
 
 **On Completion:**
-- Server script auto-creates and auto-submits **Dispatch Stock Entry**: `Main → Delivery In-Transit`, using the serial/batch data from Case Items
+- Server script auto-creates and auto-submits **Dispatch Stock Entry**: `Main → Delivery In-Transit`, using the Case Items
 - Case state → `Packed`
 - **Task 6.4** (Delivery) created for Delivery Team
 
@@ -213,9 +218,8 @@ Templates are not mandatory — the items table can be filled manually.
 
 **Todo → Picked Up** (driver physically picks up the box from the warehouse):
 - Driver taps "Mark as Picked Up"
-- **SE auto-submitted:** `Delivery In-Transit → Client Location Warehouse`
-  *(Note: stock was already in Delivery In-Transit from Pack task SE)*
-  Wait — correction: SE from Pack task moves Main → Delivery In-Transit. At Picked Up, items are in Delivery In-Transit and physically with the driver. No SE fires at Picked Up — items are already correctly in Delivery In-Transit.
+- No Stock Entry fires at this stage.
+  *(Stock was already moved from Main → Delivery In-Transit by the Pack task. At Picked Up, items are physically with the driver and remain in Delivery In-Transit.)*
 - Case state → `In Transit`
 - Photo attachment and Handover Note fields become visible
 
@@ -238,18 +242,18 @@ Templates are not mandatory — the items table can be filled manually.
 
 **If `return_expected = Yes`:**
 - Case state → `Awaiting Return Pickup`
-- **Task 6.5** (Return Waiting) created for Returns Team
+- **Task 6.5** (`Return Call`) created for the office/returns workflow
 
 ---
 
-### Task 6.5 — Return Waiting (return expected cases only)
+### Task 6.5 — Return Call (return expected cases only)
 
-**Kind:** `Pickup Returns`
-**Default assignee:** Returns Team
+**Kind:** `Return Call`
+**Default assignee:** Office Team
 **Created by:** Delivery task completion when `return_expected = Yes`
 
 **Contains:**
-- Subject: `Wait for return call: [Case ID] — [Customer]`
+- Subject: `Return call: [Customer] ([Case ID])`
 - Client name and contact information
 - Items list (what was dispatched — what to expect back)
 - Link to Dispatch Case
@@ -541,9 +545,10 @@ Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-su
 |---|---|---|
 | `Order entry` | Initial order request; discount rejection follow-up | `Ops - Order Accepting`, `Ops - Order Creating` |
 | `Discount Approval` | Director approval of discounted items | `Ops - Directors` |
-| `Pack / prepare items` | Packing shipment + filling serial/batch data | `Ops - Inventory` |
+| `Pack / prepare items` | Packing shipment; batch/serial temporarily disabled | `Ops - Inventory` |
 | `Delivery` | Multi-state: pickup + delivery | `Delivery Driver` |
-| `Pickup Returns` | Return coordination wait + multi-state return pickup | `Ops - Returns`, `Delivery Driver` |
+| `Return Call` | Return coordination wait / scheduling | Office/Returns workflow |
+| `Pickup Returns` | Multi-state return pickup | `Delivery Driver` |
 | `Returns processing / verification` | Inspecting and recording returned quantities | `Ops - Returns` |
 | `Returns restocking` | Moving returned items from Returns WH to Main | `Ops - Returns` |
 | `Invoice preparation / create invoice` | Reviewing and submitting auto-created invoice | `Ops - Accounting` |
@@ -563,19 +568,19 @@ New kinds to add (not yet in current `task_kind` field options):
 Task inbox only. Creates Order entry tasks when calls/messages arrive. Never opens a Dispatch Case.
 
 ### `Ops - Order Creating`
-Task inbox. Opens Order entry tasks, creates Dispatch Cases (the only time this role interacts with a Dispatch Case form). Links created cases back to tasks.
+Task inbox. Opens Order entry tasks, creates and submits Dispatch Cases (the only time this role interacts with a Dispatch Case form). Links submitted cases back to tasks.
 
 ### `Ops - Directors`
 Task inbox. Opens Discount Approval tasks, reviews discounts, marks approved or rejected.
 
 ### `Ops - Inventory`
-Task inbox (filtered by `Pack / prepare items`). Opens linked Dispatch Case to fill serial/batch columns. Marks task done. Never opens a Stock Entry.
+Task inbox (filtered by `Pack / prepare items`). Prepares products according to the linked Dispatch Case. Batch/serial fields are temporarily not required while tracking is disabled. Marks task done. Never opens a Stock Entry.
 
 ### `Delivery Driver`
 Task inbox (filtered by `Delivery` and `Pickup Returns`). Uses multi-state buttons (Picked Up / Delivered / Returned). Attaches photos. Never opens a Dispatch Case or Stock Entry.
 
 ### `Ops - Returns`
-Task inbox. For Pickup Returns (waiting) tasks: assigns driver and schedules. For Inspection tasks: opens Dispatch Case to fill returned quantities (the only interaction with the Dispatch Case form for this role). For Restock tasks: marks done when physical restocking complete.
+Task inbox. For `Return Call` tasks: assigns driver and schedules pickup. For Inspection tasks: opens Dispatch Case to fill returned quantities (the only interaction with the Dispatch Case form for this role). For Restock tasks: marks done when physical restocking complete.
 
 ### `Ops - Accounting`
 Task inbox. Opens linked draft Sales Invoice, verifies, submits. Also submits auto-created Payment Entries (separate from Finance's task flow). Never opens a Dispatch Case.

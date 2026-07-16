@@ -78,7 +78,7 @@ After each payment is recorded, a **Distribute Payment task** is automatically c
    - **Cash:** count and deposit the cash amount
    - **Bank Transfer:** confirm the transfer has cleared in the bank account
    - **Card:** confirm the card terminal receipt matches
-4. Change Status to `Completed` and Save.
+4. Click the red **Complete Task** button near the Status field.
 
 ---
 
@@ -145,7 +145,7 @@ Sales Invoice submitted (outstanding > 0)
   └─► Debt Collection task auto-created for customer (Ops - Finance)
         └─► Finance receives payment → fills amount + method + reference → Save
               └─► Payment Entry (Receive) auto-created — FIFO across open invoices
-              └─► Distribute Payment task auto-created → Finance handles physical payment → Complete
+              └─► Distribute Payment task auto-created → Finance handles physical payment → Complete Task
               └─► [Repeat for each partial payment]
               └─► When outstanding = 0:
                     └─► Debt Collection task auto-completes

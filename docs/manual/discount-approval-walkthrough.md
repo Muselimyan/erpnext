@@ -1,6 +1,6 @@
 ﻿# Discount Approval Walkthrough
 
-**Purpose:** Focused guide for the discount approval sub-flow that occurs whenever a Dispatch Case contains a line item with a Discount % greater than zero. This is a reference for the Order Creation team and Directors. The full dispatch flows are documented separately in `standard-sale-walkthrough.md` and `surgery-case-walkthrough.md`.
+**Purpose:** Focused guide for the discount approval sub-flow that occurs whenever a Dispatch Case contains a line item with a Discount % greater than zero. This is a reference for the Order Creation team and Directors. The full dispatch flows are documented separately in `standard-sale-walkthrough.md` and `surgery-case-walkthrough-v2.md`.
 
 **Estimated time:** 5–15 minutes
 
@@ -14,7 +14,7 @@
 |---|---|---|
 | 1 | Enter discount on Dispatch Case and save | `Ops - Order Creating` |
 | 2 | Review and approve or reject | `Ops - Directors` |
-| 3a | If approved: submit the Dispatch Case | `Ops - Order Creating` |
+| 3a | If approved: submit Dispatch Case and complete Order Entry | `Ops - Order Creating` |
 | 3b | If rejected: revise pricing and re-save | `Ops - Order Creating` |
 
 ---
@@ -24,11 +24,11 @@
 When a Dispatch Case is **Saved** with any Case Item row where `Discount % > 0`:
 - The case status moves to **`Awaiting Approval`**
 - A **Discount Approval task** is automatically created and assigned to the Directors team
-- The case cannot be submitted until the Director completes the task as `Approved`
+- The case cannot proceed to confirmed/packing until the Director completes the task as `Approved`
 
 When **Discount % = 0** on all rows:
 - No approval task is created
-- The case can be submitted immediately after save
+- The case can be submitted, then the linked Order Entry task can be completed
 
 ---
 
@@ -50,7 +50,7 @@ When **Discount % = 0** on all rows:
 **✅ Expected after Save with Discount % = 0:**
 - No approval task created
 - Case status = `Draft`
-- You can submit immediately
+- Submit the Dispatch Case first, then complete the linked Order Entry task
 
 ---
 
@@ -68,22 +68,25 @@ When **Discount % = 0** on all rows:
    - `Approved` — the discount is accepted; the case can proceed
    - `Rejected` — the discount is not accepted; pricing must be revised
 5. Fill in **Approval Note** — always record why (e.g. "Approved — hospital account volume deal" or "Rejected — exceeds the 10% max policy").
-6. Set Task **Status** to `Completed` and click **Save**.
+6. If a blue **Save** button appears near the Status field, click **Save** first.
+7. Click the red **Complete Task** button near the Status field.
 
 ---
 
-## Step 3a — If Approved: submit the Dispatch Case
+## Step 3a — If Approved: complete Order Entry
 
 **Login as:** `Ops - Order Creating`
 
-1. Search for `Dispatch Case`, open the **Dispatch Case** list, and open the case (status should now be `Draft` — the approval unlocked it).
-2. Confirm the case items still look correct.
-3. Click **Submit**.
+1. Search for `Dispatch Case`, open the approved Dispatch Case, and click **Submit** if it is still in Draft.
+2. Search for `Task`, open the linked `Order entry` task, and confirm the **Dispatch Case** field is linked.
+3. Confirm the Dispatch Case has at least one product row and the approved prices/discounts are correct.
+4. If a blue **Save** button appears near the Status field, click **Save** first.
+5. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
-- Case status → `Confirmed`
+- Dispatch Case status → `Confirmed`
 - Pack task auto-created for the Inventory team
-- Normal dispatch flow continues (see `standard-sale-walkthrough.md` or `surgery-case-walkthrough.md`)
+- Normal dispatch flow continues (see `standard-sale-walkthrough.md` or `surgery-case-walkthrough-v2.md`)
 
 ---
 
@@ -100,7 +103,7 @@ When **Discount % = 0** on all rows:
 
 **After revising:**
 - If `Discount % > 0` still remains on any row → a new Discount Approval task is automatically created and the process repeats from Step 2
-- If all rows now have `Discount % = 0` → no new approval task; you can submit immediately
+- If all rows now have `Discount % = 0` → no new approval task; submit the Dispatch Case, then complete the linked Order Entry task
 
 ---
 
@@ -130,14 +133,14 @@ Dispatch Case saved with Discount % > 0
   └─► Status = Awaiting Approval
   └─► Discount Approval task auto-created → assigned to Directors
         ├─► Approved
-        │     └─► Case status unlocked → Order Creating submits
+        │     └─► Case status unlocked → Order Creating submits Dispatch Case and completes Order Entry
         │           └─► Status = Confirmed → Pack task created → normal flow
         └─► Rejected
               └─► Case stays Draft
               └─► New Order entry task auto-created → "Revise pricing"
                     └─► Order Creating adjusts Discount % or Unit Price
                           └─► Save again → repeat approval if discount still present
-                          └─► Save again → submit immediately if all discounts = 0
+                          └─► Save again → complete Order Entry if all discounts = 0
 ```
 
 ---

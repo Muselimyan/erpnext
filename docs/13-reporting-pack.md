@@ -200,7 +200,7 @@ Operational breakdown:
 - Cases in `Confirmed` (Pack task not completed)
 - Cases in `Packed` (Delivery task not started)
 - Cases in `In Transit` (Delivery task not completed)
-- Cases in `Awaiting Return Pickup` (Return Waiting task not completed) — return-expected only
+- Cases in `Awaiting Return Pickup` (Return Call task not completed) — return-expected only
 - Cases in `Return Pickup Scheduled` or `Return In Transit` (Return Pickup task in progress) — return-expected only
 - Cases in `Returns Received` (Returns Inspection task not completed) — return-expected only
 - Cases in `Invoice Pending` (Invoice Preparation task not completed)
@@ -212,7 +212,7 @@ Red flags:
 What it usually means:
 - Missing task completion
 - Missing stock movements (auto-submitted by Dispatch Case scripts; if missing, check server script is enabled)
-- Blocking gate not cleared (e.g. photo not attached, batch not filled)
+- Blocking gate not cleared (e.g. photo not attached). Batch/serial gates are temporarily disabled while tracking is disabled.
 
 ---
 
