@@ -1,6 +1,6 @@
 # Dispatch Case — Surgery / Return Case Walkthrough (v2 - Updated)
 
-> **📌 This is the CURRENT working version** reflecting the actual deployed system with barcode scanning automation.  
+> **📌 This is the CURRENT working version** reflecting the actual deployed system. Barcode/batch/serial tracking is temporarily disabled operationally and is documented only as future/optional behavior.  
 > The original `surgery-case-walkthrough.md` is kept as a reference of the initial design vision.  
 > **Use this v2 document for testing and update only this file going forward.**
 
@@ -26,10 +26,10 @@
 | 1 | Create Order entry task | `Ops - Order Accepting` |
 | 2 | Create and submit Dispatch Case | `Ops - Order Creating` |
 | 2a | *(Discount approval — if applicable)* | `Ops - Directors` |
-| 3 | Complete Pack task (barcode scanning) | `Ops - Inventory` |
+| 3 | Complete Pack task (prepare products) | `Ops - Inventory` |
 | 4 | Delivery task — Picked Up | `Delivery Driver` |
 | 5 | Delivery task — Delivered | `Delivery Driver` |
-| 6 | Return Waiting task — schedule pickup | `Ops - Returns` |
+| 6 | Return Call task — schedule pickup | `Ops - Returns` |
 | 7 | Return Pickup task — Picked Up | `Delivery Driver` |
 | 8 | Return Pickup task — Returned to Warehouse | `Delivery Driver` |
 | 9 | Returns Inspection task | `Ops - Returns` |
@@ -64,35 +64,40 @@
 
 ---
 
-## Step 2 — Create and submit the Dispatch Case
+## Step 2 — Create the Dispatch Case and complete Order Entry
 
 **Login as:** `Ops - Order Creating`
 
-1. Open your Order entry task (from Step 1).
-2. Click **Actions** → **Create Dispatch Case from Task**.
-3. Confirm the dialog to create the Dispatch Case.
-
-**✅ Expected:**
-- New Dispatch Case opens automatically
-- All items from Task product lines are copied to **Case Items** table
-- Customer is pre-filled
-
-4. In the Dispatch Case form, fill in:
+1. Open your Order entry task from Step 1.
+2. Click **Accept / Start Task**.
+   - The button is visible to every user who has not already accepted this task.
+   - After you accept it, the button disappears for you because the task is already accepted by your user.
+3. Open a new tab: search for `Dispatch Case` and click **New**.
+4. Fill in:
+   - **Customer:** select the test customer
    - **Return Expected:** **checked** — critical for this scenario
    - **Client Location Warehouse:** select the client's warehouse (e.g. `Dr. Smith WH - Inmed`)
    - **Surgery Date:** the surgery/delivery date
-5. In the **Case Items** table, verify items are correct (prices auto-filled from Item master, visible only to Accounting team)
-6. Click **Save**, then **Submit**.
+5. In the **Case Items** table, verify or add items:
+   - **Item Code:** search by any visible text, such as item code, item name, description, item group, or customer code
+   - **Dispatched Qty:** enter the quantity needed
+   - **Unit Price:** enter or verify the selling price
+   - **Discount %:** leave `0` unless director approval is required
+6. Click **Save**.
+7. Click **Save**, then **Submit** on the Dispatch Case.
+8. Go back to the Order entry task and link the **Dispatch Case** field to this case.
+9. If a blue **Save** button appears near the Status field, click **Save** first.
+10. Click the red **Complete Task** button near the Status field.
 
-**✅ Expected after Save:**
-- Status = `Draft`
-
-**✅ Expected after Submit:**
-- Status = `Confirmed`
+**✅ Expected after submitting the Dispatch Case and completing the Order Entry task:**
+- Dispatch Case Status = `Confirmed`
 - Pack task auto-created for Inventory Team
 - Case receives autoname `DC-YYYY-NNNNN`
 
-7. Back on the Order entry task: link the **Dispatch Case** field, change Status to `Completed`, and Save.
+**❌ Should NOT happen:**
+- Error `Submit the Dispatch Case before completing the Order entry task.` → open the linked Dispatch Case and click **Submit** first.
+- Error `Link a Dispatch Case before completing the Order entry task.` → link the Dispatch Case field on the Order entry task.
+- Status stuck at `Awaiting Approval` → discount % > 0 was found; go to Step 2a below.
 
 ---
 
@@ -102,7 +107,9 @@
 
 1. Search for `Task` and open the **Task** list, filter: **Task Kind = Discount Approval**, **Status = Open**.
 2. Open the Discount Approval task for your case.
-3. Set **Approval Outcome** to `Approved`. Change Status to `Completed` and Save.
+3. Set **Approval Outcome** to `Approved`.
+4. If a blue **Save** button appears near the Status field, click **Save** first.
+5. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:** Dispatch Case status changes to `Confirmed`, Pack task auto-created.
 
@@ -110,7 +117,7 @@
 
 ---
 
-## Step 3 — Complete the Pack task (barcode scanning)
+## Step 3 — Complete the Pack task (prepare products)
 
 **Login as:** `Ops - Inventory`
 
@@ -119,63 +126,41 @@
 1. Search for `Task` and open the **Task** list.
 2. Filter: **Task Kind = Pack / prepare items**, **Status = Open**.
 3. Find `Pack: DC-YYYY-NNNNN — [Customer]`.
-4. Click **Accept / Start Task** button (this assigns the task to you).
+4. Click **Accept / Start Task** button.
 
 **✅ Expected:**
-- Task is now assigned to your user
-- Task status remains `Open`
+- Task is accepted by your user and becomes editable for you
+- The Accept button disappears for your user after acceptance
+- Other users who have not accepted the task can still see their own Accept button
+- Task status is `Working` or remains active until completion
 
-### 3.2 Scan products using the Task Product Work Area
+### 3.2 Prepare products
 
-5. On the Pack task form, scroll to the **Product Work Area** section.
-6. You'll see:
-   - **Product List** table showing all items needed for this case
-   - **Scan Barcode** field
-   - **Scan Qty** field (default: 1)
-   - **Scan Result** display
+5. On the Pack task form, review the product information for the linked Dispatch Case.
+6. Physically prepare the products from `Main - Inmed`.
+7. Barcode/batch/serial tracking is **temporarily disabled for now**, so completion should not require Batch No, Serial No, or Expiry Date.
 
-7. For each item in the Product List:
-   - **For REF_ONLY items (non-sterile, no batch/expiry):**
-     - Scan the item's REF barcode (the product identifier barcode)
-     - ERPNext auto-fills the item and increments scanned quantity
-     - Continue scanning until the required quantity is reached
-   
-   - **For BATCH_EXPIRY items (sterile, with LOT + expiry):**
-     - First scan the item's REF barcode (product identifier)
-     - ERPNext prompts: "Scan LOT / Expiry Barcode for [item code]"
-     - Scan the GS1 barcode containing LOT (AI 10) and Expiry (AI 17)
-     - ERPNext auto-fills batch_no and expiry_date
-     - If earlier-expiring stock exists, you'll see an **orange FEFO warning** (warning only, not blocking)
-     - Continue scanning until the required quantity is reached
+**✅ Expected during preparation:**
+- Products are prepared according to the Dispatch Case item rows
+- No Batch No / Serial No mandatory error should appear while completing the task
 
-**✅ Expected during scanning:**
-- **Scanned Qty** increments for each successful scan
-- **Remaining Qty** decreases
-- **Packing Status** changes: `Pending` → `Partial` → `Complete`
-- **FEFO warnings** appear in orange if fresher batches are scanned while older stock exists (warning only, you can proceed)
-- **Success sound** plays for valid scans
-- **Error sound** plays for invalid scans
-
-**❌ Common scan errors:**
-- "Could not identify Item from barcode" — scan the REF barcode first
-- "Invalid GS1 LOT barcode" — rescan the LOT/expiry barcode
-- FEFO warning appears — this is normal, you can proceed or swap to older stock
+**Optional / future barcode workflow:**
+- The Task Product Work Area and barcode scanning workflow may be used later when barcode tracking is re-enabled.
+- FEFO should remain warning-only, not blocking, when barcode tracking is active again.
 
 ### 3.3 Complete the Pack task
 
-8. Once all items show **Packing Status = Complete**, return to the Task form.
-9. Change **Status** to `Completed` and click **Save**.
+8. When products are prepared, return to the Task form.
+9. If a blue **Save** button appears near the Status field, click **Save** first.
+10. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - **Dispatch Stock Entry** auto-created and submitted: `Main - Inmed → Delivery In-Transit - Inmed`
 - Dispatch Case status changes to `Packed`
 - Delivery task auto-created for Delivery Team
-- All batch_no and serial_no fields are auto-filled on Dispatch Case Items (no manual entry needed)
 
 **❌ Should NOT happen:**
-- Error "Batch No required" — if you scanned correctly, batch_no is auto-filled
-- Error "Serial No required" — if you scanned correctly, serial_no is auto-filled
-- Task won't complete if any items still show `Pending` or `Partial` status
+- Error "Batch No required" or "Serial No required" — batch/serial requirements are temporarily disabled for now.
 
 ---
 
@@ -205,7 +190,7 @@
 **✅ Expected:**
 - **Delivery Stock Entry** auto-submitted: `Delivery In-Transit - Inmed → Client Location WH`
 - Dispatch Case status changes to `Awaiting Return Pickup`
-- **Return Waiting task** (Kind: `Pickup Returns`) auto-created for Returns Team
+- **Return Call task** (Kind: `Return Call`) auto-created for the office/returns workflow
 
 **❌ Should NOT happen (gate blocks — correct behavior):**
 - Error "Delivery photo is required" — attach photo first
@@ -213,16 +198,17 @@
 
 ---
 
-## Step 6 — Return Waiting task: schedule the pickup
+## Step 6 — Return Call task: schedule the pickup
 
 **Login as:** `Ops - Returns`
 
-1. Search for `Task` and open the **Task** list, filter: **Task Kind = Pickup Returns**, **Status = Open**.
-2. Find `Wait for return call: DC-YYYY-NNNNN`.
+1. Search for `Task` and open the **Task** list, filter: **Task Kind = Return Call**, **Status = Open**.
+2. Find `Return call: [Customer] (DC-YYYY-NNNNN)`.
 3. Fill in:
    - **Return Pickup Driver:** select the driver who will collect the items
    - **Scheduled Return Date:** the agreed pickup date
-4. Change Status to `Completed` and Save.
+4. If a blue **Save** button appears near the Status field, click **Save** first.
+5. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - Dispatch Case status changes to `Return Pickup Scheduled`
@@ -292,7 +278,8 @@
 
 ### Complete the task
 
-8. Change task **Status** to `Completed` and click **Save**.
+8. If a blue **Save** button appears near the Status field, click **Save** first.
+9. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - **Consumption Stock Entry** auto-submitted: `Client Location WH → Material Issue` for `used_qty` of each item
@@ -315,7 +302,8 @@
 1. Search for `Task` and open the **Task** list, filter: **Task Kind = Returns restocking**, **Status = Open**.
 2. Find `Restock returns: DC-YYYY-NNNNN`.
 3. Physically move items from `Returns - Inmed` shelf back to `Main - Inmed` shelf locations.
-4. Change Status to `Completed` and Save.
+4. If a blue **Save** button appears near the Status field, click **Save** first.
+5. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - **Restock Stock Entry** auto-submitted: `Returns - Inmed → Main - Inmed` for all items with `returned_qty > 0`
@@ -336,7 +324,8 @@
    - **Update Stock** is **unchecked** (stock moved by Consumption SE)
    - Prices and taxes are correct
 5. Click **Submit** on the Sales Invoice.
-6. Back on the task: change Status to `Completed` and Save.
+6. Back on the task, if a blue **Save** button appears near the Status field, click **Save** first.
+7. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - Sales Invoice submitted
@@ -402,11 +391,11 @@ Search for `Stock Ledger` and open the **Stock Ledger** report, then filter by t
 
 ```
 Order entry task (manual)
-  -> Dispatch Case created & submitted
+  -> Dispatch Case manually created/linked, then submitted before Order Entry is completed
         -> [Discount Approval task — only if discount > 0]
-        -> Pack task (Inventory) — barcode scanning via Product Work Area
+        -> Pack task (Inventory) — prepare products; barcode tracking temporarily disabled
               -> Delivery task (Driver) — Todo -> Picked Up -> Delivered
-                    -> Return Waiting task (Returns) — schedule driver
+                    -> Return Call task (Office/Returns workflow) — schedule driver
                           -> Return Pickup task (Driver) — Todo -> Picked Up -> Returned to WH
                                 -> Returns Inspection task (Returns)
                                       -> Restock task (Returns) — parallel
@@ -421,15 +410,15 @@ Order entry task (manual)
 
 | Symptom | Likely cause |
 |---|---|
-| Pack task not created after Submit | Dispatch Case submit script error; check `Dispatch-Case-before-submit` in Server Scripts |
+| Pack task not created after Order Entry completion | Linked Dispatch Case was not submitted first, or task completion script failed; check `Task-before-save-dispatch-gates` and `Task-after-save-dispatch-flow` in Server Scripts |
 | "Accept / Start Task" button missing | Task client script not deployed; check `Task-Accept Start` |
-| Product Work Area not visible on Task | Task Product Work Area client script not deployed; check `task-product-work-area-deploy.ps1` |
-| Scan does not work | `dispatch_case_packing_scan` API script missing or disabled |
-| "Batch No required" on Pack task complete | Scanning didn't auto-fill batch_no; check if GS1 barcode was scanned correctly |
-| FEFO warning blocks the scan | FEFO should be warning-only; check `dispatch_case_packing_scan` script |
+| "Batch No required" or "Serial No required" on Pack task complete | Batch/serial requirements should be temporarily disabled; verify Item tracking flags are still disabled for now |
+| Product Work Area not visible on Task | Optional/future barcode UI is not active or not deployed; not required for current packing completion |
+| Scan does not work | Barcode workflow is optional/future while batch/serial tracking is temporarily disabled |
+| FEFO warning blocks the scan | FEFO should be warning-only when barcode tracking is re-enabled; check `dispatch_case_packing_scan` script |
 | Delivery SE not auto-submitted on Delivered | `Task-after-save-dispatch-flow` script error or disabled |
 | "Delivery photo is required" | Attach photo before setting Delivered |
-| Return Waiting task not created | Dispatch Case `return_expected` is unchecked — this is the no-return path |
+| Return Call task not created | Dispatch Case `return_expected` is unchecked — this is the no-return path |
 | "Drop-off photo is required" | Attach photo before setting Returned to Warehouse |
 | Returns Inspection task not created after Return Pickup | `Task-after-save-dispatch-flow` script; verify it is enabled |
 | "Used Qty negative" on inspection complete | returned + lost/damaged > dispatched; fix Case Item quantities |
@@ -442,12 +431,12 @@ Order entry task (manual)
 ## Key differences from manual workflow (v1)
 
 **What changed:**
-- ✅ **Step 3 now uses barcode scanning** instead of manually filling serial_no/batch_no fields
-- ✅ **Task Product Work Area** provides the scanning interface directly on the Pack task
-- ✅ **FEFO warnings are orange and non-blocking** — you can proceed even if fresher stock is scanned
-- ✅ **Batch and serial numbers auto-fill** from scanned barcodes
-- ✅ **Packing Status tracking** shows Pending/Partial/Complete for each item
-- ✅ **Accept / Start Task** button assigns tasks to workers
+- ✅ **Accept / Start Task** button accepts the task for the current worker and disappears for that worker after acceptance
+- ✅ **Blue Save button** appears near the Status field when there are unsaved changes
+- ✅ **Complete Task** button is shown near the Status field, saves first, then completes the task
+- ✅ **Order Entry completion requires a linked, submitted Dispatch Case**
+- ✅ **Item search works by text match** using item code, item name, description, item group, or customer code
+- ⚠️ **Barcode, batch, serial, expiry, and FEFO behavior are temporarily disabled operationally** and should be treated as future/optional until tracking is re-enabled
 
 **What stayed the same:**
 - All other steps (delivery, returns, invoicing, payment) remain unchanged

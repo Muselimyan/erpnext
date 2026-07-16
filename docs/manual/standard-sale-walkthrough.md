@@ -46,39 +46,40 @@
 
 ---
 
-## Step 2 — Create and submit the Dispatch Case
+## Step 2 — Create the Dispatch Case and complete Order Entry
 
 **Login as:** `Ops - Order Creating`
 
 1. Open your Order entry task from Step 1.
-2. Open a new tab: search for `Dispatch Case` and click **New**.
-3. Fill in:
+2. Click **Accept / Start Task**.
+   - The button is visible to every user who has not already accepted this task.
+   - After you accept it, the button disappears for you because the task is already accepted by your user.
+3. Open a new tab: search for `Dispatch Case` and click **New**.
+4. Fill in:
    - **Customer:** select the test customer
    - **Return Expected:** **unchecked** ← critical for this scenario
    - **Surgery Date:** optional
    - **Client Location Warehouse:** leave blank (not needed when Return Expected = No)
    - **Notes:** optional
-4. In the **Case Items** table, click **Add Row**:
-   - **Item Code:** select the test item
+5. In the **Case Items** table, click **Add Row**:
+   - **Item Code:** search by any visible text, such as item code, item name, description, item group, or customer code
    - **Dispatched Qty:** e.g. `2`
    - **Unit Price:** enter the selling price
    - **Discount %:** leave `0` for this scenario
-5. Click **Save** (stays in Draft; server script checks for discounts).
-6. Click **Submit**.
+6. Click **Save**, then **Submit** on the Dispatch Case.
+7. Go back to the Order entry task and link the **Dispatch Case** field to this case.
+8. If a blue **Save** button appears near the Status field, click **Save** first.
+9. Click the red **Complete Task** button near the Status field.
 
-**✅ Expected after Save:**
-- Status = `Draft`
-- No Discount Approval task (Discount % is 0)
-
-**✅ Expected after Submit:**
-- Status = `Confirmed`
+**✅ Expected after submitting the Dispatch Case and completing the Order Entry task:**
+- Dispatch Case Status = `Confirmed`
 - A **Pack task** is auto-created (check in Step 3)
 - The case receives its autoname `DC-YYYY-NNNNN`
 
 **❌ Should NOT happen:**
-- Status stuck at `Awaiting Approval` → discount % > 0 was found; go to Step 2a below
-
-7. Go back to the Order entry task. Set **Dispatch Case** field to link to this case. Change Status to `Completed` and Save.
+- Error `Submit the Dispatch Case before completing the Order entry task.` → open the linked Dispatch Case and click **Submit** first.
+- Error `Link a Dispatch Case before completing the Order entry task.` → link the Dispatch Case field on the Order entry task.
+- Status stuck at `Awaiting Approval` → discount % > 0 was found; go to Step 2a below.
 
 ---
 
@@ -89,7 +90,8 @@
 1. Search for `Task` and open the **Task** list, filter: **Task Kind = Discount Approval**, **Status = Open**.
 2. Open the Discount Approval task for your case.
 3. Review the discount. Set **Approval Outcome** to `Approved`.
-4. Change Status to `Completed` and Save.
+4. If a blue **Save** button appears near the Status field, click **Save** first.
+5. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - Dispatch Case status → `Confirmed`
@@ -111,46 +113,37 @@
 1. Search for `Task` and open the **Task** list.
 2. Filter: **Task Kind = Pack / prepare items**, **Status = Open**.
 3. Find `Pack: DC-YYYY-NNNNN — [Customer]`.
-4. Click **Accept / Start Task** button (this assigns the task to you).
+4. Click **Accept / Start Task** button.
 
 **✅ Expected:**
-- Task is now assigned to your user
-- Task status remains `Open`
+- Task is accepted by your user and becomes editable for you
+- The Accept button disappears for your user after acceptance
+- Other users who have not accepted the task can still see their own Accept button
+- Task status is `Working` or remains active until completion
 
-### 3.2 Pack products (choose one method)
+### 3.2 Pack products
 
-**Option A: Manual entry (current method)**
+5. Review the linked Dispatch Case item rows.
+6. Physically prepare the products from `Main - Inmed`.
+7. Barcode/batch/serial tracking is **temporarily disabled for now**, so completion should not require Batch No, Serial No, or Expiry Date.
 
-5. Open the linked **Dispatch Case**.
-6. In the **Case Items** table:
-   - For each **batch-tracked** item: fill in `batch_no` (select earliest-expiry batch — FEFO)
-   - For each **serial-tracked** item: fill in `serial_no`
-7. Save the Dispatch Case.
-
-**Option B: Barcode scanning (when available)**
-
-5. On the Pack task form, scroll to the **Product Work Area** section.
-6. For each item:
-   - **For REF_ONLY items:** Scan the item's REF barcode
-   - **For BATCH_EXPIRY items:** Scan REF barcode, then scan LOT/Expiry barcode
-   - Continue until **Packing Status = Complete** for all items
-7. ERPNext auto-fills batch_no and serial_no fields on Dispatch Case Items.
+**Optional / future barcode workflow:**
+- The Task Product Work Area and barcode scanning workflow may be used later when barcode tracking is re-enabled.
+- FEFO should remain warning-only, not blocking, when barcode tracking is active again.
 
 ### 3.3 Complete the Pack task
 
 8. Return to the Task form.
-9. Change **Status** to `Completed` and click **Save**.
+9. If a blue **Save** button appears near the Status field, click **Save** first.
+10. Click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - **Dispatch Stock Entry** auto-created and submitted: `Main - Inmed → Delivery In-Transit - Inmed`
 - Dispatch Case status changes to `Packed`
 - Delivery task auto-created for Delivery Team
-- All batch_no and serial_no fields are filled on Dispatch Case Items
 
 **❌ Should NOT happen:**
-- Error "Batch No required" — fill batch_no on Case Item row (or scan correctly)
-- Error "Serial No required" — fill serial_no on Case Item row (or scan correctly)
-- Task won't complete if any items still show `Pending` or `Partial` status (barcode method)
+- Error "Batch No required" or "Serial No required" — batch/serial requirements are temporarily disabled for now.
 
 ---
 
@@ -202,7 +195,7 @@
    - **Update Stock** is **unchecked** (stock already moved by the Consumption Stock Entry)
    - Prices are correct
 5. Click **Submit** on the Sales Invoice.
-6. Back on the task, change **Status** to `Completed` and Save.
+6. Back on the task, click the red **Complete Task** button near the Status field.
 
 **✅ Expected:**
 - Sales Invoice submitted
@@ -266,7 +259,7 @@ Search for `Stock Ledger` and open the **Stock Ledger** report and filter by tes
 
 ```
 Order entry task (manual)
-  └─► Dispatch Case created & submitted
+  └─► Dispatch Case created, linked, and auto-submitted when Order Entry is completed
         └─► [Discount Approval task — only if discount > 0]
         └─► Pack task (Inventory)
               └─► Delivery task (Driver) — Todo → Picked Up → Delivered

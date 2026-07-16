@@ -1,5 +1,7 @@
 ﻿# Doc 16A — Unified Dispatch Flow (Implementation / ERPNext Setup Guide)
 
+> **Status note — historical setup guide:** This document contains original implementation/setup snippets and may include outdated embedded server-script examples. For current deployed workflow behavior, use `docs/16-unified-dispatch-flow.md` and `docs/manual/surgery-case-walkthrough-v2.md`. Do not treat embedded code snippets in this file as the current live source of truth without comparing them to deployed scripts.
+
 ## 1) Purpose
 
 This is a **step-by-step setup guide** to implement the workflow described in:

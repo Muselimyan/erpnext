@@ -127,7 +127,7 @@ Run these in the staging environment or on the first real test case. Sign off ea
 | Test | What to verify |
 |---|---|
 | **Discount approval gate** | Create Dispatch Case with Discount % > 0 on a Case Item → Discount Approval task auto-created on Submit → Case status = `Awaiting Approval` → Director marks task Completed as Approved → status → `Confirmed` → Pack task auto-created |
-| **Pack gate (serial/batch)** | Complete Pack task with serial/batch-tracked Case Items that have no `serial_no`/`batch_no` filled → hard block |
+| **Pack tracking temporary state** | Complete Pack task without `serial_no`/`batch_no` filled → should not block while batch/serial tracking is temporarily disabled |
 | **Delivery gate (no photo)** | Set Delivery Status to `Delivered` on Delivery task without a delivery photo attached → hard block |
 | **Delivery gate (no handover note)** | Set Delivery Status to `Delivered` without `Driver Handover Note` filled → hard block |
 | **Return drop-off gate** | Set Pickup Status to `Returned to Warehouse` on Return Pickup task without drop-off photo → hard block |
@@ -137,7 +137,7 @@ Run these in the staging environment or on the first real test case. Sign off ea
 | **Purchase Receipt gate** | Submit Purchase Receipt with row targeting non-`Main - Inmed` warehouse → hard block |
 | **Reorder governance** | Ops - Inventory (not Purchasing Lead) tries to change reorder levels → blocked; Purchasing Lead changes without reason → blocked |
 | **Dispatch Case no-return E2E** | Order entry task → Dispatch Case (`return_expected = No`) Submit → Pack → Delivery (Picked Up → Delivered) → Invoice Preparation → Debt Collection → Closed; verify all stock entries auto-submitted and stock ledger correct |
-| **Dispatch Case return-expected E2E** | Order entry task → Dispatch Case (`return_expected = Yes`) Submit → Pack → Delivery (Picked Up → Delivered) → Return Waiting → Return Pickup (Picked Up → Returned to WH) → Returns Inspection → Restock + Invoice Preparation (parallel) → Debt Collection → Closed; verify `dispatched = used + returned` reconciliation |
+| **Dispatch Case return-expected E2E** | Order entry task → Dispatch Case (`return_expected = Yes`) Submit → Pack → Delivery (Picked Up → Delivered) → Return Call → Return Pickup (Picked Up → Returned to WH) → Returns Inspection → Restock + Invoice Preparation (parallel) → Debt Collection → Closed; verify `dispatched = used + returned` reconciliation |
 | **Doc 15 reports/workspaces** | Search for `RPT - Item - Sort and Classify`, `RPT - Item - Nomenclature and Prices`, `RPT - Returns - Refund Queue`, `Management - KPI Dashboard`, and `Dispatch - Task Queues`; confirm they open for intended users |
 | **Doc 17A landed-cost flow** | Purchase Receipt → Landed Cost Voucher → click **Pre-fill Import Duty** → Purchase Invoice; confirm import duty appears and valuation updates |
 
