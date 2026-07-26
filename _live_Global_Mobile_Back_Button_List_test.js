@@ -1,4 +1,4 @@
-// Global mobile CSS + tooltip fix (runs once, persists across all pages)
+﻿// Global mobile CSS + tooltip fix (runs once, persists across all pages)
 if (window.innerWidth <= 768 && !document.getElementById("mobile-global-css")) {
     var _mcss = document.createElement("style");
     _mcss.id = "mobile-global-css";
@@ -134,3 +134,25 @@ frappe.listview_settings['Task'].onload = function(listview) {
         setTimeout(function() { applyToggleFilter(); }, 500);
     });
 };
+    // Mobile: add assignee badge formatter
+    if (window.innerWidth <= 768) {
+        frappe.listview_settings['Task'].formatters = frappe.listview_settings['Task'].formatters || {};
+        frappe.listview_settings['Task'].formatters.subject = function(value, df, doc) {
+            var assignee = '';
+            
+            // Check custom_assigned_to first (specific user)
+            if (doc.custom_assigned_to) {
+                assignee = '<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:#e3f2fd;color:#1976d2;border-radius:3px;font-size:11px;font-weight:500;">Ã°Å¸âÂ¤ ' + frappe.utils.escape_html(doc.custom_assigned_to) + '</span>';
+            }
+            // Check custom_team_queue_role (team/role)
+            else if (doc.custom_team_queue_role) {
+                assignee = '<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:#fff3e0;color:#f57c00;border-radius:3px;font-size:11px;font-weight:500;">Ã°Å¸âÂ¥ ' + frappe.utils.escape_html(doc.custom_team_queue_role) + '</span>';
+            }
+            // Unassigned
+            else {
+                assignee = '<span style="display:inline-block;margin-top:4px;padding:2px 8px;background:#f5f5f5;color:#757575;border-radius:3px;font-size:11px;font-weight:500;">Ã¢Å¡Âª Unassigned</span>';
+            }
+            
+            return '<div>' + frappe.utils.escape_html(value || '') + '<br>' + assignee + '</div>';
+        };
+    }

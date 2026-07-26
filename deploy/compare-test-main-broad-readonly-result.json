@@ -1,0 +1,282 @@
+﻿{
+    "checked_at":  "2026-07-21T14:16:46+04:00",
+    "sites":  {
+                  "test":  "https://test.erpnext.am",
+                  "main":  "https://erpnext.am"
+              },
+    "doctypes":  [
+                     {
+                         "doctype":  "Company",
+                         "full_hash_checked":  true,
+                         "test_count":  1,
+                         "main_count":  1,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "User",
+                         "full_hash_checked":  true,
+                         "test_count":  26,
+                         "main_count":  26,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+                                           "ai-agent@internal.com",
+                                           "artakn7@gmail.com",
+                                           "artursemerjyan91@gmail.com",
+                                           "emalumyan4@gmail.com",
+                                           "ghahramanyann@gmail.com",
+                                           "karapetyansev@gmail.com",
+                                           "levonaghinyan77@gmail.com",
+                                           "ly.aghayan@gmail.com",
+                                           "sahakyan.oli1998@gmail.com",
+                                           "vagramyankaren@gmail.com",
+                                           "vahe.muselimyan@gmail.com"
+                                       ]
+                     },
+                     {
+                         "doctype":  "Role",
+                         "full_hash_checked":  false,
+                         "test_count":  60,
+                         "main_count":  60,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Warehouse",
+                         "full_hash_checked":  true,
+                         "test_count":  203,
+                         "main_count":  203,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Item Group",
+                         "full_hash_checked":  true,
+                         "test_count":  62,
+                         "main_count":  62,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Customer Group",
+                         "full_hash_checked":  true,
+                         "test_count":  5,
+                         "main_count":  5,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Territory",
+                         "full_hash_checked":  true,
+                         "test_count":  3,
+                         "main_count":  3,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Supplier Group",
+                         "full_hash_checked":  true,
+                         "test_count":  8,
+                         "main_count":  8,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Price List",
+                         "full_hash_checked":  true,
+                         "test_count":  2,
+                         "main_count":  2,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Brand",
+                         "full_hash_checked":  true,
+                         "test_count":  1,
+                         "main_count":  1,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "UOM",
+                         "full_hash_checked":  true,
+                         "test_count":  239,
+                         "main_count":  239,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Customer",
+                         "full_hash_checked":  false,
+                         "test_count":  193,
+                         "main_count":  193,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Supplier",
+                         "full_hash_checked":  false,
+                         "test_count":  26,
+                         "main_count":  26,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Item",
+                         "full_hash_checked":  false,
+                         "test_count":  3265,
+                         "main_count":  3265,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Item Price",
+                         "full_hash_checked":  false,
+                         "test_count":  3146,
+                         "main_count":  3146,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Task",
+                         "full_hash_checked":  false,
+                         "test_count":  196,
+                         "main_count":  203,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+                                           "TASK-2026-00348",
+                                           "TASK-2026-00349",
+                                           "TASK-2026-00350",
+                                           "TASK-2026-00351",
+                                           "TASK-2026-00352",
+                                           "TASK-2026-00353",
+                                           "TASK-2026-00354"
+                                       ],
+                         "different":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Dispatch Case",
+                         "full_hash_checked":  false,
+                         "test_count":  92,
+                         "main_count":  95,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+                                           "DC-2026-00093",
+                                           "DC-2026-00094",
+                                           "DC-2026-00095"
+                                       ],
+                         "different":  [
+
+                                       ]
+                     }
+                 ]
+}
