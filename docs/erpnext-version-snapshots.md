@@ -6,13 +6,17 @@ Starting point created on 2026-08-10.
 
 - `P-x.y.z` = production version.
 - `T-x.y.z` = test version.
+- `x` = major version: big workflow/data model changes or breaking operational changes.
+- `y` = feature/minor version: user-visible improvements that do not intentionally break existing behavior.
+- `z` = fix/patch version: bug fixes and small UI corrections.
+- Prod/test may have version gaps. If test reaches `T-1.2.10` and those changes are later applied to prod, prod can jump from an older version directly to `P-1.2.10`.
 
-## Current starting versions
+## Current versions
 
 | Environment | Version | URL | Site | Server snapshot directory |
 |---|---:|---|---|---|
-| Prod | `P-1.1.1` | `https://erpnext.am` | `161.97.83.156` | `/root/erpnext-version-snapshots/prod_P-1.1.1_20260810T163934Z` |
-| Test | `T-1.1.1` | `https://test.erpnext.am` | `test.erpnext.am` | `/root/erpnext-version-snapshots/test_T-1.1.1_20260810T163934Z` |
+| Prod | `P-1.1.5` | `https://erpnext.am` | `161.97.83.156` | `/root/erpnext-version-snapshots/prod_P-1.1.5_20260814T154801Z` |
+| Test | `T-1.1.5` | `https://test.erpnext.am` | `test.erpnext.am` | `/root/erpnext-version-snapshots/test_T-1.1.5_20260814T154159Z` |
 
 ## Snapshot contents
 
@@ -28,7 +32,7 @@ Each snapshot contains:
 
 The clean server-side index for this starting point is:
 
-`/root/erpnext-version-snapshots/VERSION_INDEX_20260810T163934Z.txt`
+`/root/erpnext-version-snapshots/VERSION_INDEX_20260814T154159Z_T-1.1.5.txt` and `/root/erpnext-version-snapshots/VERSION_INDEX_20260814T154801Z_P-1.1.5.txt`
 
 ## Safety rule
 

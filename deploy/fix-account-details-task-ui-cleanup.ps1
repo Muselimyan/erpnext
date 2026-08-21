@@ -9,7 +9,8 @@ param(
 Set-StrictMode -Off
 $ErrorActionPreference = "Stop"
 
-$ConfigPath = Join-Path $PSScriptRoot "export.ps1"
+$ConfigFolder = if ($Target -eq "test") { "test" } else { "prod" }
+$ConfigPath = Join-Path (Join-Path $PSScriptRoot $ConfigFolder) "export.ps1"
 $Config = Get-Content $ConfigPath -Raw
 $ApiKey = [regex]::Match($Config, '\$ApiKey\s*=\s*"([^"\r\n]+)"').Groups[1].Value
 $ApiSec = [regex]::Match($Config, '\$ApiSec\s*=\s*"([^"\r\n]+)"').Groups[1].Value
@@ -223,9 +224,12 @@ function task_account_details_ui_cleanup(frm) {
         }
         var photosBoxHost = wrapper.find('#account-details-photos-box-host');
         if (!photosBoxHost.length) {
-            photosBoxHost = $('<div id="account-details-photos-box-host" class="frappe-control" data-account-details-photos-visible="accountDetailsPhotosVisible" style="margin-top:12px;"></div>');
+            photosBoxHost = $('<div id="account-details-photos-box-host" class="frappe-control" data-account-details-photos-visible="accountDetailsPhotosVisible" style="margin-top:6px;margin-bottom:12px;"></div>');
         }
-        if (statusControl.length) {
+        var subjectControl = wrapper.find('[data-fieldname="subject"]').closest('.frappe-control');
+        if (subjectControl.length) {
+            photosBoxHost.insertAfter(subjectControl);
+        } else if (statusControl.length) {
             photosBoxHost.insertBefore(statusControl);
         } else if (leftColumn.length) {
             photosBoxHost.prependTo(leftColumn);
