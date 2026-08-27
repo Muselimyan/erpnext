@@ -1,9 +1,4 @@
-﻿// Name: Task-Mobile Form Layout Fix
-// DocType: Task
-// Enabled: 1
-// ---
-
-frappe.ui.form.on('Task', {
+﻿frappe.ui.form.on('Task', {
     refresh: function(frm) {
         task_mobile_form_layout_fix(frm);
         task_mobile_scroll_to_top(frm);
@@ -292,9 +287,6 @@ function task_mobile_pack_photo_button(frm) {
     var $w = $(frm.wrapper);
     task_mobile_cleanup_other_photo_buttons($w, config);
     if (!config) return;
-    var _roles = frappe.user_roles || [];
-    var _isAdmin = _roles.indexOf('System Manager') !== -1 || _roles.indexOf('Administrator') !== -1 || frappe.session.user === 'Administrator';
-    var _canEdit = _isAdmin || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
     var $btn = $w.find('#' + config.button_id);
     if (!$btn.length) {
         $btn = $('<button id="' + config.button_id + '" class="btn btn-sm btn-primary" type="button" style="font-size:12px;padding:6px 16px;background:#000;border-color:#000;color:#fff;border-radius:7px;margin-top:8px;margin-bottom:12px;display:inline-block;">' + config.label + '</button>');
@@ -338,9 +330,8 @@ function task_mobile_pack_photo_button(frm) {
     }
     if ($anchor.length) {
         $btn.detach().insertAfter($anchor.find('.control-input-wrapper, .control-value').last());
-        if (_canEdit) { $btn.show(); } else { $btn.hide(); }
-        task_mobile_photo_preview(frm, _canEdit);
-        setTimeout(function() { task_mobile_photo_preview(frm, _canEdit); }, 900);
+        task_mobile_photo_preview(frm);
+        setTimeout(function() { task_mobile_photo_preview(frm); }, 900);
     }
 }
 
@@ -366,7 +357,7 @@ function task_mobile_photo_config(frm) {
     return null;
 }
 
-function task_mobile_photo_preview(frm, canEdit) {
+function task_mobile_photo_preview(frm) {
     if (!frm || !frm.doc || !frm.doc.name || !frm.wrapper || frm.is_new()) return;
     var config = task_mobile_photo_config(frm);
     if (!config) return;
@@ -401,12 +392,11 @@ function task_mobile_photo_preview(frm, canEdit) {
         var images = [];
         (files || []).forEach(function(f) {
             var url = normalizeUrl(f.file_url || f.url || f.href || '');
-            var displayName = f.file_name || f.title || 'Photo';
-            var docName = f.name || '';
+            var name = f.file_name || f.name || f.title || 'Photo';
             if (!url || seen[url]) return;
-            if (!isImageFile({file_url: imageTestUrl(url), file_name: displayName})) return;
+            if (!isImageFile({file_url: imageTestUrl(url), file_name: name})) return;
             seen[url] = true;
-            images.push({file_url: url, file_name: displayName, doc_name: docName});
+            images.push({file_url: url, file_name: name});
         });
         if (!images.length) {
             $host.empty();
@@ -419,15 +409,9 @@ function task_mobile_photo_preview(frm, canEdit) {
             var url = f.file_url || '';
             var title = frappe.utils.escape_html(f.file_name || 'Photo');
             var safeUrl = frappe.utils.escape_html(url);
-            var safeDocName = frappe.utils.escape_html(f.doc_name || '');
-            html += '<div style="position:relative;display:inline-block;">';
             html += '<button type="button" class="btn btn-xs task-photo-preview-thumb" data-photo-url="' + safeUrl + '" data-photo-title="' + title + '" onclick="window.task_photo_fullscreen_preview(this)" style="display:block;padding:0;border:0;background:transparent;line-height:0;">';
             html += '<img src="' + safeUrl + '" title="' + title + '" style="width:76px;height:76px;object-fit:cover;border:1px solid #d1d8dd;border-radius:6px;background:#f8f9fa;" />';
             html += '</button>';
-            if (canEdit) {
-                html += '<button type="button" class="task-photo-delete-btn" data-file-doc-name="' + safeDocName + '" data-file-url="' + safeUrl + '" onclick="window.task_photo_delete_file(this)" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;border:none;background:#e74c3c;color:#fff;font-size:12px;line-height:20px;text-align:center;padding:0;cursor:pointer;z-index:1;">x</button>';
-            }
-            html += '</div>';
         });
         html += '</div>';
         $host.html(html);
@@ -441,7 +425,7 @@ function task_mobile_photo_preview(frm, canEdit) {
                 attached_to_name: frm.doc.name,
                 is_private: ['in', [0, 1]]
             },
-            fields: ['name', 'file_url', 'file_name', 'is_private'],
+            fields: ['file_url', 'file_name', 'is_private'],
             order_by: 'creation desc',
             limit_page_length: 50
         },
@@ -461,7 +445,7 @@ function task_photo_fullscreen_preview(btn) {
     var overlay = $('<div id="task-photo-fullscreen" style="position:fixed;z-index:99999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.94);display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;"></div>');
     var toolbar = $('<div style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.75);color:#fff;box-sizing:border-box;z-index:2;"></div>');
     var caption = $('<div style="flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>').text(title);
-    var zoomOut = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 11px;font-weight:bold;">âˆ’</button>');
+    var zoomOut = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 11px;font-weight:bold;">Ã¢Ëâ</button>');
     var zoomIn = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 11px;font-weight:bold;">+</button>');
     var reset = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 10px;font-weight:bold;">Reset</button>');
     var close = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 12px;font-weight:bold;">Close</button>');
@@ -564,44 +548,3 @@ function task_mobile_set_photo_field(frm, config, url, save_now) {
         });
     }
 }
-
-window.task_photo_delete_file = function(btn) {
-    var frm = cur_frm;
-    if (!frm || !frm.doc) return;
-    var _roles = frappe.user_roles || [];
-    var _isAdmin = _roles.indexOf('System Manager') !== -1 || _roles.indexOf('Administrator') !== -1 || frappe.session.user === 'Administrator';
-    var _canEdit = _isAdmin || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
-    if (!_canEdit) { frappe.msgprint(__('You must accept this task before you can modify it.')); return; }
-    var fileDocName = btn && btn.getAttribute('data-file-doc-name');
-    var fileUrl = btn && btn.getAttribute('data-file-url');
-    if (!fileDocName) { frappe.msgprint(__('Cannot identify file to delete.')); return; }
-    frappe.confirm(__('Remove this photo?'), function() {
-        frappe.call({
-            method: 'frappe.client.delete',
-            args: { doctype: 'File', name: fileDocName },
-            callback: function() {
-                if (!frm || !frm.doc) return;
-                // Clear any Attach field that pointed to the deleted file
-                var fieldsToCheck = ['warehouse_pickup_photo', 'warehouse_dropoff_photo', 'custom_delivery_photo'];
-                var dirty = false;
-                fieldsToCheck.forEach(function(fn) {
-                    if (frm.doc[fn] && frm.fields_dict[fn]) {
-                        var val = frm.doc[fn] || '';
-                        if (val === fileUrl || val === decodeURIComponent(fileUrl) || encodeURIComponent(val).indexOf(encodeURIComponent(fileUrl.split('file_url=').pop())) >= 0) {
-                            frm.set_value(fn, '');
-                            dirty = true;
-                        }
-                    }
-                });
-                if (dirty) {
-                    frm.save().then(function() { frm.reload_doc(); });
-                } else {
-                    frm.reload_doc();
-                }
-            },
-            error: function() {
-                frappe.msgprint(__('Could not delete the photo. Please try again.'));
-            }
-        });
-    });
-};

@@ -329,7 +329,7 @@
 
 **✅ Expected:**
 - Sales Invoice submitted
-- Dispatch Case status changes to `Invoiced`, then to `Payment Pending` (if outstanding > 0)
+- Dispatch Case status changes to `Payment Pending` (if outstanding > 0)
 - **Debt Collection task** auto-created or updated for Finance Team
 - If fully prepaid: Dispatch Case changes to `Closed`
 

@@ -1,9 +1,4 @@
-﻿// Name: Task-Account Details UI Cleanup
-// DocType: Task
-// Enabled: 1
-// ---
-
-frappe.ui.form.on("Task", {
+﻿frappe.ui.form.on("Task", {
     validate(frm) {
         task_account_details_prepare_subject(frm);
     },
@@ -177,39 +172,34 @@ function task_account_details_add_new_accept_button(frm) {
 
 function task_account_details_render_photos_box(frm, photosControl) {
     if (!photosControl || !photosControl.length) return;
-    var _roles = frappe.user_roles || [];
-    var _isAdmin = _roles.indexOf('System Manager') !== -1 || _roles.indexOf('Administrator') !== -1 || frappe.session.user === 'Administrator';
-    var _canEdit = _isAdmin || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
     photosControl.find('.account-details-add-photos-box').remove();
-    if (_canEdit) {
-        var box = $('<div class="account-details-add-photos-box" data-account-details-add-photos-box="accountDetailsAddPhotosBox" style="margin-top:10px;margin-bottom:12px;padding:8px 0;border:0;background:transparent;"></div>');
-        var btn = $('<button class="btn btn-sm btn-primary" type="button" style="font-size:12px;padding:5px 14px;background:#000;border-color:#000;color:#fff;border-radius:5px;">+ Add Photos</button>');
-        box.append(btn);
-        photosControl.prepend(box);
-        btn.on('click', function() {
-            if (frm.is_new()) {
-                frappe.msgprint(__('Please save the task before adding photos.'));
-                return;
+    var box = $('<div class="account-details-add-photos-box" data-account-details-add-photos-box="accountDetailsAddPhotosBox" style="margin-top:10px;margin-bottom:12px;padding:8px 0;border:0;background:transparent;"></div>');
+    var btn = $('<button class="btn btn-sm btn-primary" type="button" style="font-size:12px;padding:5px 14px;background:#000;border-color:#000;color:#fff;border-radius:5px;">+ Add Photos</button>');
+    box.append(btn);
+    photosControl.prepend(box);
+    btn.on('click', function() {
+        if (frm.is_new()) {
+            frappe.msgprint(__('Please save the task before adding photos.'));
+            return;
+        }
+        new frappe.ui.FileUploader({
+            doctype: frm.doctype,
+            docname: frm.doc.name,
+            folder: 'Home/Attachments',
+            allow_multiple: true,
+            on_success: function() {
+                task_account_details_render_photo_preview(frm, photosControl);
+                setTimeout(function() { task_account_details_render_photo_preview(frm, photosControl); }, 1000);
+                frm.reload_doc();
             }
-            new frappe.ui.FileUploader({
-                doctype: frm.doctype,
-                docname: frm.doc.name,
-                folder: 'Home/Attachments',
-                allow_multiple: true,
-                on_success: function() {
-                    task_account_details_render_photo_preview(frm, photosControl, _canEdit);
-                    setTimeout(function() { task_account_details_render_photo_preview(frm, photosControl, _canEdit); }, 1000);
-                    frm.reload_doc();
-                }
-            });
         });
-    }
-    task_account_details_render_photo_preview(frm, photosControl, _canEdit);
-    setTimeout(function() { task_account_details_render_photo_preview(frm, photosControl, _canEdit); }, 800);
-    setTimeout(function() { task_account_details_render_photo_preview(frm, photosControl, _canEdit); }, 1800);
+    });
+    task_account_details_render_photo_preview(frm, photosControl);
+    setTimeout(function() { task_account_details_render_photo_preview(frm, photosControl); }, 800);
+    setTimeout(function() { task_account_details_render_photo_preview(frm, photosControl); }, 1800);
 }
 
-function task_account_details_render_photo_preview(frm, photosControl, canEdit) {
+function task_account_details_render_photo_preview(frm, photosControl) {
     if (!photosControl || !photosControl.length) return;
     photosControl.find('.account-details-photo-gallery').remove();
     photosControl.find('[data-account-details-new-doc-photo-cleanup]').remove();
@@ -248,30 +238,22 @@ function task_account_details_render_photo_preview(frm, photosControl, canEdit) 
         var images = [];
         (files || []).forEach(function(f) {
             var url = normalizeUrl(f.file_url || f.url || f.href || '');
-            var displayName = f.file_name || f.title || 'Photo';
-            var docName = f.name || '';
+            var name = f.file_name || f.name || f.title || 'Photo';
             if (!url || seen[url]) return;
-            if (!isImageFile({file_url: imageTestUrl(url), file_name: displayName})) return;
+            if (!isImageFile({file_url: imageTestUrl(url), file_name: name})) return;
             seen[url] = true;
-            images.push({file_url: url, file_name: displayName, doc_name: docName});
+            images.push({file_url: url, file_name: name});
         });
         if (!images.length) return;
         var html = '<div class="account-details-photo-gallery" style="margin-top:12px;margin-bottom:12px;">';
         html += '<label style="font-weight:500;font-size:11px;color:#6c757d;margin-bottom:8px;display:block;">Attached Photos (' + images.length + ')</label>';
-        html += '<div style="display:flex;flex-wrap:wrap;align-items:flex-start;gap:8px;">';
+        html += '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:8px;">';
         images.forEach(function(f) {
             var url = f.file_url || '';
             var title = frappe.utils.escape_html(f.file_name || 'Photo');
-            var safeUrl = frappe.utils.escape_html(url);
-            var safeDocName = frappe.utils.escape_html(f.doc_name || '');
-            html += '<div style="position:relative;display:inline-block;">';
-            html += '<button type="button" class="btn btn-xs task-photo-preview-thumb" data-photo-url="' + safeUrl + '" data-photo-title="' + title + '" onclick="window.task_photo_fullscreen_preview(this)" style="display:block;padding:0;border:0;background:transparent;line-height:0;">';
-            html += '<img src="' + safeUrl + '" title="' + title + '" style="width:90px;max-height:140px;object-fit:cover;border:1px solid #d1d8dd;border-radius:4px;background:#f8f9fa;" />';
-            html += '</button>';
-            if (canEdit) {
-                html += '<button type="button" class="task-photo-delete-btn" data-file-doc-name="' + safeDocName + '" data-file-url="' + safeUrl + '" onclick="window.task_photo_delete_file(this)" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;border:none;background:#e74c3c;color:#fff;font-size:12px;line-height:20px;text-align:center;padding:0;cursor:pointer;z-index:1;">x</button>';
-            }
-            html += '</div>';
+            html += '<a href="' + url + '" target="_blank" style="display:block;text-decoration:none;line-height:0;">';
+            html += '<img src="' + url + '" title="' + title + '" style="width:90px;max-height:140px;object-fit:cover;border:1px solid #d1d8dd;border-radius:4px;background:#f8f9fa;" />';
+            html += '</a>';
         });
         html += '</div></div>';
         photosControl.append(html);
@@ -286,7 +268,7 @@ function task_account_details_render_photo_preview(frm, photosControl, canEdit) 
                 attached_to_name: frm.doc.name,
                 is_private: ['in', [0, 1]]
             },
-            fields: ['name', 'file_url', 'file_name', 'is_private'],
+            fields: ['file_url', 'file_name', 'is_private'],
             order_by: 'creation desc',
             limit_page_length: 50
         },

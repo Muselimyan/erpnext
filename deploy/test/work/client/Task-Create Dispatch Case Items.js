@@ -19,15 +19,19 @@ function _task_create_dispatch(frm) {
     });
 }
 
-function _add_action_btn(frm) {
-    frm.add_custom_button(__("Action"), function() {
+function _add_create_dispatch_btn(frm) {
+    frm.add_custom_button(__("Create Dispatch Case"), function() {
+        if (!frm.doc.customer) {
+            frappe.msgprint(__("Select Customer on this Task first."));
+            return;
+        }
         if (frm.dirty()) {
             frm.save().then(function() { _task_create_dispatch(frm); });
         } else {
             _task_create_dispatch(frm);
         }
     });
-    frm.change_custom_button_type(__("Action"), null, "primary");
+    frm.change_custom_button_type(__("Create Dispatch Case"), null, "primary");
 }
 
 frappe.ui.form.on("Task", {
@@ -47,7 +51,7 @@ frappe.ui.form.on("Task", {
                     frappe.set_route("Form", "Dispatch Case", frm.doc.dispatch_case);
                 });
             } else if (frm.doc.custom_accepted_by) {
-                _add_action_btn(frm);
+                _add_create_dispatch_btn(frm);
             }
             return;
         }

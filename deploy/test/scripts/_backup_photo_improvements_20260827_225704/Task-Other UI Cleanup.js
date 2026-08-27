@@ -1,9 +1,4 @@
-﻿// Name: Task-Other UI Cleanup
-// DocType: Task
-// Enabled: 1
-// ---
-
-frappe.ui.form.on("Task", {
+﻿frappe.ui.form.on("Task", {
     refresh(frm) { task_restore_status_priority_complete_all(frm); task_other_ui_cleanup(frm); setTimeout(function(){ task_restore_status_priority_complete_all(frm); task_other_ui_cleanup(frm); }, 200); setTimeout(function(){ task_restore_status_priority_complete_all(frm); task_other_ui_cleanup(frm); }, 800); setTimeout(function(){ task_restore_status_priority_complete_all(frm); task_other_ui_cleanup(frm); }, 1600); setTimeout(function(){ task_restore_status_priority_complete_all(frm); task_other_ui_cleanup(frm); }, 2600); },
     task_kind(frm) { task_other_ui_cleanup(frm); }
 });
@@ -25,7 +20,7 @@ function task_restore_status_priority_complete_all(frm) {
         var originalCompletedOn = frm.doc.completed_on;
         btn.data("busy", true).prop("disabled", true).text("Saving...");
         function resetButton() { btn.data("busy", false).prop("disabled", false).css("background-color", "#e74c3c").text("Complete Task"); }
-        frm.save().then(function() { btn.text("Completing..."); frm.set_value("status", "Completed"); if (!frm.doc.completed_on) frm.set_value("completed_on", frappe.datetime.get_today()); return frm.save(); }).then(function() { btn.css("background-color", "#27ae60").text("Completed âœ“"); return frm.reload_doc(); }).catch(function(err) { frm.doc.status = originalStatus; if (frm.doc.completed_on !== originalCompletedOn) frm.doc.completed_on = originalCompletedOn || ""; resetButton(); frappe.show_alert({message: "Failed: " + (err.message || err), indicator: "red"}, 10); });
+        frm.save().then(function() { btn.text("Completing..."); frm.set_value("status", "Completed"); if (!frm.doc.completed_on) frm.set_value("completed_on", frappe.datetime.get_today()); return frm.save(); }).then(function() { btn.css("background-color", "#27ae60").text("Completed Ã¢Åâ"); return frm.reload_doc(); }).catch(function(err) { frm.doc.status = originalStatus; if (frm.doc.completed_on !== originalCompletedOn) frm.doc.completed_on = originalCompletedOn || ""; resetButton(); frappe.show_alert({message: "Failed: " + (err.message || err), indicator: "red"}, 10); });
     });
     statusField.$wrapper.append(btn);
 }
@@ -99,7 +94,7 @@ function task_photo_fullscreen_preview(btn) {
     var overlay = $('<div id="task-photo-fullscreen" style="position:fixed;z-index:99999;left:0;top:0;width:100vw;height:100vh;background:rgba(0,0,0,0.94);display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;"></div>');
     var toolbar = $('<div style="flex:0 0 auto;display:flex;align-items:center;gap:8px;padding:10px;background:rgba(0,0,0,0.75);color:#fff;box-sizing:border-box;z-index:2;"></div>');
     var caption = $('<div style="flex:1;min-width:0;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>').text(title);
-    var zoomOut = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 11px;font-weight:bold;">âˆ’</button>');
+    var zoomOut = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 11px;font-weight:bold;">Ã¢Ëâ</button>');
     var zoomIn = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 11px;font-weight:bold;">+</button>');
     var reset = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 10px;font-weight:bold;">Reset</button>');
     var close = $('<button type="button" style="background:#fff;color:#111;border:0;border-radius:6px;padding:8px 12px;font-weight:bold;">Close</button>');
@@ -139,33 +134,26 @@ function task_photo_fullscreen_preview(btn) {
 function task_other_render_photos(frm) {
     var anchor = frm.fields_dict.custom_next_task_assign_to || frm.fields_dict.status || frm.fields_dict.priority;
     if (!anchor || !anchor.$wrapper) return;
-    var _roles = frappe.user_roles || [];
-    var _isAdmin = _roles.indexOf('System Manager') !== -1 || _roles.indexOf('Administrator') !== -1 || frappe.session.user === 'Administrator';
-    var _canEdit = _isAdmin || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
     var host = $(frm.wrapper).find('#other-task-photos-box-host');
     if (!host.length) { host = $('<div id="other-task-photos-box-host" class="frappe-control" style="margin-top:12px;margin-bottom:12px;"></div>'); anchor.$wrapper.after(host); }
     host.empty().show();
     frm._other_photo_render_token = (frm._other_photo_render_token || 0) + 1;
     var renderToken = frm._other_photo_render_token;
-    if (_canEdit) {
-        var btn = $('<button class="btn btn-sm btn-primary" type="button" style="font-size:12px;padding:5px 14px;background:#000;border-color:#000;color:#fff;border-radius:5px;">+ Add Photos</button>');
-        host.append(btn);
-    }
+    var btn = $('<button class="btn btn-sm btn-primary" type="button" style="font-size:12px;padding:5px 14px;background:#000;border-color:#000;color:#fff;border-radius:5px;">+ Add Photos</button>');
+    host.append(btn);
     if (frm.is_new() || !frm.doc.name || String(frm.doc.name).indexOf('new-') === 0) {
         host.append('<div style="font-size:11px;color:#8d99a6;margin-top:8px;">Photos will be available after saving this task.</div>');
-        if (_canEdit && btn) btn.on('click', function() { frappe.msgprint(__('Please save the task before adding photos.')); });
+        btn.on('click', function() { frappe.msgprint(__('Please save the task before adding photos.')); });
         return;
     }
-    if (_canEdit && btn) {
-        btn.on('click', function() {
-            frappe.call({ method: 'frappe.client.get_list', args: { doctype: 'File', filters: { attached_to_doctype: 'Task', attached_to_name: frm.doc.name }, fields: ['name', 'file_url', 'is_folder'], limit_page_length: 100 }, callback: function(r) {
-                var seen = {};
-                var images = (r.message || []).filter(function(f) { var key = f.file_url || f.name || ''; if (!key || f.is_folder || seen[key] || !/\.(png|jpe?g|gif|webp|heic|heif)$/i.test(f.file_url || '')) return false; seen[key] = true; return true; });
-                if (images.length >= 5) { frappe.msgprint(__('You can attach up to 5 photos.')); return; }
-                new frappe.ui.FileUploader({ doctype: 'Task', docname: frm.doc.name, folder: 'Home/Attachments', restrictions: { allowed_file_types: ['image/*'], max_number_of_files: 5 - images.length }, on_success: function() { setTimeout(function() { task_other_render_photos(frm); }, 500); } });
-            }});
-        });
-    }
+    btn.on('click', function() {
+        frappe.call({ method: 'frappe.client.get_list', args: { doctype: 'File', filters: { attached_to_doctype: 'Task', attached_to_name: frm.doc.name }, fields: ['name', 'file_url', 'is_folder'], limit_page_length: 100 }, callback: function(r) {
+            var seen = {};
+            var images = (r.message || []).filter(function(f) { var key = f.file_url || f.name || ''; if (!key || f.is_folder || seen[key] || !/\.(png|jpe?g|gif|webp|heic|heif)$/i.test(f.file_url || '')) return false; seen[key] = true; return true; });
+            if (images.length >= 5) { frappe.msgprint(__('You can attach up to 5 photos.')); return; }
+            new frappe.ui.FileUploader({ doctype: 'Task', docname: frm.doc.name, folder: 'Home/Attachments', restrictions: { allowed_file_types: ['image/*'], max_number_of_files: 5 - images.length }, on_success: function() { setTimeout(function() { task_other_render_photos(frm); }, 500); } });
+        }});
+    });
     frappe.call({ method: 'frappe.client.get_list', args: { doctype: 'File', filters: { attached_to_doctype: 'Task', attached_to_name: frm.doc.name }, fields: ['name', 'file_url', 'file_name', 'is_folder'], limit_page_length: 100 }, callback: function(r) {
         if (renderToken !== frm._other_photo_render_token) return;
         host.find('.other-task-photo-gallery').remove();
@@ -176,13 +164,7 @@ function task_other_render_photos(frm) {
         images.forEach(function(img) {
             var safeUrl = frappe.utils.escape_html(img.file_url || '');
             var title = frappe.utils.escape_html(img.file_name || 'Photo');
-            var safeDocName = frappe.utils.escape_html(img.name || '');
-            var wrapper = $('<div style="position:relative;display:inline-block;"></div>');
-            wrapper.append('<button type="button" class="btn btn-xs task-photo-preview-thumb" data-photo-url="' + safeUrl + '" data-photo-title="' + title + '" onclick="window.task_photo_fullscreen_preview(this)" style="display:block;padding:0;border:0;background:transparent;line-height:0;"><img src="' + safeUrl + '" title="' + title + '" style="width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid #d1d8dd;"></button>');
-            if (_canEdit) {
-                wrapper.append('<button type="button" class="task-photo-delete-btn" data-file-doc-name="' + safeDocName + '" data-file-url="' + safeUrl + '" onclick="window.task_photo_delete_file(this)" style="position:absolute;top:-4px;right:-4px;width:20px;height:20px;border-radius:50%;border:none;background:#e74c3c;color:#fff;font-size:12px;line-height:20px;text-align:center;padding:0;cursor:pointer;z-index:1;">x</button>');
-            }
-            gallery.append(wrapper);
+            gallery.append('<button type="button" class="btn btn-xs task-photo-preview-thumb" data-photo-url="' + safeUrl + '" data-photo-title="' + title + '" onclick="window.task_photo_fullscreen_preview(this)" style="display:block;padding:0;border:0;background:transparent;line-height:0;"><img src="' + safeUrl + '" title="' + title + '" style="width:68px;height:68px;object-fit:cover;border-radius:6px;border:1px solid #d1d8dd;"></button>');
         });
         host.append(gallery);
     }});

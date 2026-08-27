@@ -224,12 +224,12 @@ Templates are not mandatory — the items table can be filled manually.
 - Photo attachment and Handover Note fields become visible
 
 **Picked Up → Delivered** (driver has handed items to client):
-- Driver attaches delivery photo (required — cannot advance without photo)
+- Driver may attach delivery photo (optional)
 - Driver fills Handover Note (who received the items)
 - Driver taps "Mark as Delivered"
 - **SE auto-submitted:** `Delivery In-Transit → Client Location Warehouse`
 - Case state → `Delivered`
-- Photo is also written to `delivery_photo` field on Dispatch Case
+- If a photo is attached, it is also written to `delivery_photo` field on Dispatch Case
 
 **On Delivered — two paths:**
 
@@ -324,8 +324,8 @@ Templates are not mandatory — the items table can be filled manually.
 - ✅ `used_qty ≥ 0` for all rows (system validates — negative means data error)
 
 **On Completion:**
-- Server script auto-submits **Consumption Stock Entry**: `Client Location Warehouse → (Material Issue / out)` for `used_qty` **and** `lost_damaged_qty` of each item (both are physically gone from the client location, regardless of billing treatment)
-- Auto-creates draft **Sales Invoice** for used quantities at their prices, **plus** a fee line for any `lost_damaged_qty` at the same `unit_price`/`discount_pct` (see §9A)
+- Server script auto-submits **Consumption Stock Entry**: `Returns WH → (Material Issue / out)` for `used_qty` of each item (all items were moved to Returns WH by the Return Pickup flow; used items are written off from there). Lost/damaged items remain in Returns WH pending manual review (see §9A).
+- Auto-creates draft **Sales Invoice** for `used_qty` only — lost/damaged quantities are not auto-invoiced
 - Case state → `Invoice Pending`
 - **Task 6.8** (Restock) created for Returns Team (if any items have `returned_qty > 0`)
 - **Task 6.9** (Invoice Preparation) created for Accounting Team
@@ -377,9 +377,8 @@ Templates are not mandatory — the items table can be filled manually.
 - ✅ Sales Invoice is `Submitted`
 
 **On Completion:**
-- Case state → `Invoiced`
 - System checks outstanding amount = `invoice_total - prepaid_amount`
-- **If outstanding > 0:** Task 6.10 (Debt Collection) created or updated for Finance Team
+- **If outstanding > 0:** Case state → `Payment Pending`; Task 6.10 (Debt Collection) created or updated for Finance Team
 - **If outstanding = 0** (fully pre-paid): Case state → `Closed`
 
 ---
@@ -478,7 +477,7 @@ The Debt Collection task is marked Completed only when total outstanding = 0 for
 | Delivery Delivered (no return) | Client Location WH | — | Material Issue (Consumption) |
 | Return Pickup task → Picked Up | Client Location WH | Return Pickup In-Transit | Material Transfer |
 | Return Pickup task → Returned to Warehouse | Return Pickup In-Transit | Returns WH | Material Transfer |
-| Returns Inspection Completed | Client Location WH | — | Material Issue (`used_qty` + `lost_damaged_qty`) |
+| Returns Inspection Completed | Returns WH | — | Material Issue (`used_qty` only; `lost_damaged_qty` stays in Returns WH for manual review) |
 | Restock task Completed | Returns WH | Main WH | Material Transfer |
 
 All SEs are auto-created and auto-submitted by server scripts. No team member ever opens a Stock Entry form.
@@ -507,14 +506,14 @@ The Accounting team submits these auto-created Payment Entries as part of their 
 
 ---
 
-## 9A. Lost/Damaged Billing Policy
+## 9A. Lost/Damaged Policy
 
 Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-surgery-set-operational-workflow.md` §7.3). Now resolved:
 
-- Lost/damaged quantities (`lost_damaged_qty`) are **invoiced to the client as a fee**, at the same `unit_price`/`discount_pct` as a used item — one uniform policy, no split by item category and no per-case director escalation.
-- Stock is written off from the client location warehouse **immediately** at Returns Inspection completion (Task 6.7), combined with the `used_qty` write-off in the same Consumption Stock Entry — regardless of when the invoice is created.
-- The same policy applies to Lost/Damaged discovered later while a quantity was Held (see `docs/held-at-client-items-plan.md`), keeping the rule consistent regardless of timing.
-- **Production status:** this policy is not yet implemented in the deployed `Task-after-save-dispatch-flow` script (which currently only invoices `used_qty`) — tracked as a pending implementation step.
+- **Stock write-off:** Only `used_qty` is automatically written off from the Returns warehouse at Returns Inspection completion (Task 6.7). Lost/damaged items remain in Returns WH as tracked inventory pending manual resolution.
+- **Invoicing:** Lost/damaged quantities are **not auto-invoiced**. Each lost/damaged case requires manual review to decide whether to invoice the client, write off internally, or escalate. The auto-created Sales Invoice covers only `used_qty`.
+- **Manual resolution:** After inspection, a coordinator or director reviews the `lost_damaged_qty` on the Dispatch Case and decides the appropriate action (invoice, write-off, replacement, etc.) on a case-by-case basis. Once resolved, the items are manually issued from Returns WH.
+- The same policy applies to Lost/Damaged discovered later while a quantity was Held (see `docs/held-at-client-items-plan.md`).
 
 ---
 
@@ -533,7 +532,6 @@ Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-su
 | `Return In Transit` | Driver has collected returns, en route to warehouse |
 | `Returns Received` | Returns at warehouse; inspection task active |
 | `Invoice Pending` | Inspection done; invoice being prepared by Accounting |
-| `Invoiced` | Sales Invoice submitted |
 | `Payment Pending` | Debt Collection task active |
 | `Closed` | Fully paid |
 

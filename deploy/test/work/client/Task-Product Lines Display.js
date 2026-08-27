@@ -1,6 +1,9 @@
 ﻿// Name: Task-Product Lines Display
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
+// DISABLED: Superseded by Task-Create Dispatch Case Items.js which uses
+// the server-side task_create_dispatch_case method. This script used
+// client-side frappe.client.insert with a hardcoded wrong warehouse default.
 // ---
 
 frappe.ui.form.on("Task", {

@@ -1,9 +1,4 @@
-﻿// Name: Task-Lock Unaccepted
-// DocType: Task
-// Enabled: 1
-// ---
-
-frappe.ui.form.on('Task', {
+﻿frappe.ui.form.on('Task', {
     refresh: function(frm) {
         apply_task_accept_edit_lock(frm);
     },
@@ -49,8 +44,6 @@ function apply_task_accept_edit_lock(frm) {
             frm.refresh_fields();
             $(frm.wrapper).find('input, textarea, select, .ql-editor, .like-disabled-input').prop('disabled', false).css({'pointer-events': '', 'opacity': '', 'background-color': ''});
             $(frm.wrapper).find('.btn-attach, .btn-open, .grid-add-row, .grid-remove-rows').show();
-            $(frm.wrapper).find('.task-photo-delete-btn').show();
-            $(frm.wrapper).find('#task-mobile-pack-add-pickup-photos-btn, #task-mobile-pickup-returns-add-dropoff-photos-btn').show();
         } else {
             frm.disable_save();
             frm.set_intro('You must accept this task before you can edit it. Click <b>Accept / Start Task</b>.', 'yellow');
@@ -62,10 +55,6 @@ function apply_task_accept_edit_lock(frm) {
             frm.refresh_fields();
             $(frm.wrapper).find('input, textarea, select, .ql-editor, .like-disabled-input').prop('disabled', true).css({'pointer-events': 'none', 'opacity': '0.6', 'background-color': '#f5f5f5'});
             $(frm.wrapper).find('.btn-attach, .btn-open, .grid-add-row, .grid-remove-rows').hide();
-            $(frm.wrapper).find('.task-photo-delete-btn').hide();
-            $(frm.wrapper).find('#task-mobile-pack-add-pickup-photos-btn, #task-mobile-pickup-returns-add-dropoff-photos-btn').hide();
-            $(frm.wrapper).find('.account-details-add-photos-box').hide();
-            $(frm.wrapper).find('#other-task-photos-box-host .btn-primary').hide();
         }
 
         $(frm.wrapper).find('[data-fieldname="custom_is_team_queue_task"]').closest('.frappe-control').hide();

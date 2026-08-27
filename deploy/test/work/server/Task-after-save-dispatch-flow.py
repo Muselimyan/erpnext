@@ -244,7 +244,7 @@ else:
         case.reload()
         u = used_items(case)
         if u:
-            c_se = create_se(case.client_location_warehouse, "", u, "Material Issue")
+            c_se = create_se(RETURNS_WH, "", u, "Material Issue")
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "consumption_stock_entry", c_se.name if c_se else "")
         create_invoice(case)
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Invoice Pending")

@@ -361,7 +361,6 @@ Return Pickup Scheduled
 Return In Transit
 Returns Received
 Invoice Pending
-Invoiced
 Payment Pending
 Closed
 ```
@@ -393,7 +392,7 @@ Closed
 |---|---|---|---|
 | `dispatch_stock_entry` | Dispatch SE (Main → In-Transit) | Link → `Stock Entry` | Read Only |
 | `delivery_stock_entry` | Delivery SE (In-Transit → Client WH) | Link → `Stock Entry` | Read Only |
-| `consumption_stock_entry` | Consumption SE (Client WH → out) | Link → `Stock Entry` | Read Only |
+| `consumption_stock_entry` | Consumption SE (Returns WH → out) | Link → `Stock Entry` | Read Only |
 | `return_pickup_stock_entry` | Return Pickup SE (Client → In-Transit) | Link → `Stock Entry` | Read Only |
 | `return_receive_stock_entry` | Return Receive SE (In-Transit → Returns) | Link → `Stock Entry` | Read Only |
 | `restock_stock_entry` | Restock SE (Returns → Main) | Link → `Stock Entry` | Read Only |
@@ -590,12 +589,10 @@ is_becoming_completed = (doc.status == "Completed" and before_status != "Complet
 delivery_advancing = (doc.task_kind == "Delivery" and doc.delivery_status != before_delivery_status)
 pickup_advancing = (doc.task_kind == "Pickup Returns" and doc.pickup_status != before_pickup_status)
 
-# --- Gate: Delivery task → "Delivered" requires delivery_photo ---
+# --- Delivery task → "Delivered": mirror optional photo to Dispatch Case ---
 if delivery_advancing and doc.delivery_status == "Delivered":
-    if not doc.delivery_photo:
-        frappe.throw("Delivery Photo is required before marking as Delivered.")
-    # Mirror photo to Dispatch Case
-    if doc.dispatch_case:
+    # Photo is optional; if provided, copy to Dispatch Case for visibility
+    if doc.delivery_photo and doc.dispatch_case:
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, "delivery_photo", doc.delivery_photo)
 
 # --- Gate: Return Pickup task → "Returned to Warehouse" requires delivery_photo ---
@@ -827,13 +824,13 @@ def _run():
     # ================================================================
     if is_becoming_completed and doc.task_kind == "Returns processing / verification":
         case.reload()
-        # Consume used + lost/damaged items: SE from Client WH → out (Material Issue).
-        # Lost/damaged items are physically gone from the client location regardless
-        # of billing treatment, so they are written off from stock here too
-        # (docs/implementation-questions.md #17 — Lost/Damaged commercial policy, resolved).
+        # Consume used items only: SE from Returns WH → out (Material Issue).
+        # All items were moved to Returns WH by the Return Pickup flow.
+        # Only used_qty is auto-written-off; lost/damaged items remain in Returns WH
+        # pending manual review (see Doc 16 §9A).
         used_items = [
-            (r.item_code, (r.used_qty or 0) + (r.lost_damaged_qty or 0), r.serial_no, r.batch_no)
-            for r in case.case_items if ((r.used_qty or 0) + (r.lost_damaged_qty or 0)) > 0
+            (r.item_code, r.used_qty or 0, r.serial_no, r.batch_no)
+            for r in case.case_items if (r.used_qty or 0) > 0
         ]
         if used_items:
             _consume_items(case, used_items)
@@ -892,7 +889,6 @@ def _run():
         prepaid = case.prepaid_amount or 0
         outstanding = invoice_total - prepaid
         frappe.db.set_value("Dispatch Case", case.name, {
-            "status": "Invoiced",
             "total_invoice_amount": invoice_total,
             "outstanding_amount": outstanding,
         })
@@ -990,7 +986,7 @@ def _consume_items(case, items):
             {
                 "item_code": item_code,
                 "qty": qty,
-                "s_warehouse": case.client_location_warehouse,
+                "s_warehouse": "Returns - Inmed",
                 "serial_no": serial_no or "",
                 "batch_no": batch_no or "",
             }
@@ -1398,10 +1394,9 @@ Work through this checklist in order after completing all setup steps.
 - [ ] Log in as `Delivery Driver`; find the Delivery task
 - [ ] Change `delivery_status` to `Picked Up`; save
 - [ ] Expected: Case status = `In Transit`; no SE fires
-- [ ] Change `delivery_status` to `Delivered` without attaching a photo → must fail
-- [ ] Attach a photo; change to `Delivered`; fill Handover Note; save
+- [ ] Change `delivery_status` to `Delivered`; fill Handover Note; optionally attach a photo; save
 - [ ] Expected (if `return_expected = No`): Consumption SE submitted; draft Sales Invoice created; `Invoice preparation` task in Accounting inbox; Case status = `Invoice Pending`
-- [ ] Expected: Delivery Photo also appears on the Dispatch Case form
+- [ ] Expected: If a Delivery Photo was attached, it also appears on the Dispatch Case form
 
 ### 12.3 Return flow
 
@@ -1417,14 +1412,14 @@ Work through this checklist in order after completing all setup steps.
 - [ ] Log in as `Ops - Returns`; find inspection task; attempt to complete without filling `returned_qty` → must fail
 - [ ] Open Dispatch Case; fill `returned_qty` and `lost_damaged_qty`; save; confirm `used_qty` is correct
 - [ ] Complete the inspection task
-- [ ] Expected: Consumption SE submitted for `used_qty` + `lost_damaged_qty` combined; draft Sales Invoice created with lines for used items AND a fee line for any `lost_damaged_qty` (same rate); `Invoice preparation` task created; if returned_qty > 0: `Returns restocking` task created
+- [ ] Expected: Consumption SE submitted from Returns WH for `used_qty` only; draft Sales Invoice created for used items only (lost/damaged items are NOT auto-invoiced — they remain in Returns WH for manual review); `Invoice preparation` task created; if returned_qty > 0: `Returns restocking` task created
 - [ ] Complete the Restock task
 - [ ] Expected: SE (Returns WH → Main WH) submitted for returned items
 
 ### 12.4 Invoicing and payment
 
 - [ ] Log in as `Ops - Accounting`; find the Invoice task; open the linked draft Sales Invoice
-- [ ] Verify `Update Stock` is unchecked; verify quantities match `used_qty` (and any `lost_damaged_qty` fee lines) from Case Items
+- [ ] Verify `Update Stock` is unchecked; verify quantities match `used_qty` from Case Items (lost/damaged items are not on the invoice)
 - [ ] Submit the Sales Invoice; complete the task
 - [ ] Expected (if prepaid = 0): `Debt Collection` task created/updated in Finance inbox; Case status = `Payment Pending`
 - [ ] Log in as `Ops - Finance`; open the Debt Collection task
