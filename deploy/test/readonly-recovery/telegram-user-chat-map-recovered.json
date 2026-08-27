@@ -1,0 +1,24 @@
+{
+  "recovered_from": {
+    "environment": "test",
+    "server_script": "Telegram Task Assignment Notification",
+    "version": "ivt1jk9odg",
+    "version_creation": "2026-07-29 15:17:06",
+    "source_file": "deploy/test/readonly-recovery/version-ivt1jk9odg-script-old.py"
+  },
+  "user_chat_map": {
+    "levonaghinyan77@gmail.com": "1908277721",
+    "sahakyan.oli1998@gmail.com": "6563165623",
+    "vagramyankaren@gmail.com": "697289441",
+    "ly.aghayan@gmail.com": "909299151",
+    "karapetyansev@gmail.com": "838790562",
+    "artursemerjyan91@gmail.com": "807759949",
+    "m.nersisyan93@gmail.com": "993000488",
+    "artakn7@gmail.com": "1388206182"
+  },
+  "commented_placeholders": {
+    "emalumyan4@gmail.com": "",
+    "ghahramanyann@gmail.com": "NORAYRS_CHAT_ID",
+    "anchilingaryan90@gmail.com": ""
+  }
+}

@@ -1,0 +1,49 @@
+﻿details-add-photos-btn"]').remove();
+    $(frm.wrapper).find('button').filter(function() { return $.trim($(this).text()) === "+ Add Photos"; }).remove();
+    var anchor = frm.fields_dict.subject || frm.fields_dict.customer || frm.fields_dict.custom_next_task_assign_to || frm.fields_dict.status;
+    if (!anchor || !anchor.$wrapper) return;
+    var btn = $('<button id="task-order-entry-add-photos-btn" class="btn btn-sm btn-primary" type="button" style="font-size:12px;padding:5px 14px;background:#000;border-color:#000;color:#fff;border-radius:5px;margin-top:8px;margin-bottom:12px;display:block;">+ Add Photos</button>');
+    btn.on("click", function() {
+        var openUploader = function() {
+            frappe.call({
+                method: "frappe.client.get_count",
+                args: { doctype: "File", filters: { attached_to_doctype: "Task", attached_to_name: frm.doc.name } },
+                callback: function(r) {
+                    var existing = r.message || 0;
+                    if (existing >= 5) {
+                        frappe.msgprint(__("Maximum 5 photos/files can be attached."));
+                        return;
+                    }
+                    new frappe.ui.FileUploader({
+                        doctype: "Task",
+                        docname: frm.doc.name,
+                        folder: "Home/Attachments",
+                        allow_multiple: true,
+                        restrictions: { allowed_file_types: ["image/*"], max_number_of_files: 5 - existing },
+                        on_success: function() { frm.reload_doc(); }
+                    });
+                }
+            });
+        };
+        if (frm.is_new() || !frm.doc.name || frm.doc.name.indexOf("new-") === 0) {
+            frm.save().then(function() { openUploader(); });
+        } else {
+            openUploader();
+        }
+    });
+    function placeOrderEntryPhotosButton() {
+        var subjectControl = $(frm.wrapper).find('.frappe-control[data-fieldname="subject"]:visible').first();
+        if (!subjectControl.length) {
+            subjectControl = $(frm.wrapper).find('[data-fieldname="subject"]').closest('.frappe-control').filter(':visible').first();
+        }
+        if (!subjectControl.length) {
+            subjectControl = $(frm.wrapper).find('.control-label, label').filter(function() { return $.trim($(this).text()) === "Subject"; }).closest('.frappe-control').filter(':visible').first();
+        }
+        $(frm.wrapper).find('button').filter(function() { return $.trim($(this).text()) === "+ Add Photos"; }).not(btn).remove();
+        if (subjectControl.length) btn.detach().insertAfter(subjectControl);
+        else anchor.$wrapper.after(btn);
+    }
+    placeOrderEntryPhotosButton();
+    setTimeout(placeOrderEntryPhotosButton, 300);
+    setTimeout(placeOrderEntryPhotosButton, 1000);
+}

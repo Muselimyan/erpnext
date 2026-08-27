@@ -4,7 +4,7 @@ param()
 Set-StrictMode -Off
 $ErrorActionPreference = "Stop"
 
-$ConfigPath = Join-Path $PSScriptRoot "export.ps1"
+$ConfigPath = Join-Path $PSScriptRoot "prod\export.ps1"
 $Config = Get-Content $ConfigPath -Raw
 $ApiKey = [regex]::Match($Config, '\$ApiKey\s*=\s*"([^"\r\n]+)"').Groups[1].Value
 $ApiSec = [regex]::Match($Config, '\$ApiSec\s*=\s*"([^"\r\n]+)"').Groups[1].Value
@@ -36,7 +36,10 @@ function Normalize-Object($Obj) {
         return @($Obj | ForEach-Object { Normalize-Object $_ })
     }
     if ($Obj -is [PSCustomObject]) {
-        $skip = @("modified", "modified_by", "creation", "owner", "idx", "docstatus", "_user_tags", "_comments", "_assign", "_liked_by")
+        $propNames = @($Obj.PSObject.Properties | ForEach-Object { $_.Name })
+        $isChildRow = (($propNames -contains "parent") -and ($propNames -contains "parenttype") -and ($propNames -contains "parentfield"))
+        $skip = @("modified", "modified_by", "creation", "owner", "idx", "docstatus", "_user_tags", "_comments", "_assign", "_liked_by", "parent", "parenttype", "parentfield")
+        if ($isChildRow) { $skip += "name" }
         $ordered = [ordered]@{}
         foreach ($p in @($Obj.PSObject.Properties | Sort-Object Name)) {
             if ($skip -contains $p.Name) { continue }

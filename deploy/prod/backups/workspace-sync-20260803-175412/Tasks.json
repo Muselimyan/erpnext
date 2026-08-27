@@ -1,0 +1,44 @@
+﻿{
+    "name":  "Tasks",
+    "owner":  "ai-agent@internal.com",
+    "creation":  "2026-06-08 11:13:49.157688",
+    "modified":  "2026-06-08 11:15:45.792589",
+    "modified_by":  "ai-agent@internal.com",
+    "docstatus":  0,
+    "idx":  0,
+    "label":  "Tasks",
+    "title":  "Tasks",
+    "sequence_id":  0.0,
+    "module":  "Projects",
+    "app":  "erpnext",
+    "type":  "Workspace",
+    "link_type":  "DocType",
+    "icon":  "list",
+    "indicator_color":  "blue",
+    "hide_custom":  0,
+    "public":  1,
+    "is_hidden":  0,
+    "content":  "[{\"type\":\"Card Break\"},{\"type\":\"Link\",\"link_type\":\"DocType\",\"link_to\":\"Task\",\"label\":\"Task List\",\"icon\":\"list\"}]",
+    "doctype":  "Workspace",
+    "number_cards":  [
+
+                     ],
+    "charts":  [
+
+               ],
+    "shortcuts":  [
+
+                  ],
+    "links":  [
+
+              ],
+    "quick_lists":  [
+
+                    ],
+    "custom_blocks":  [
+
+                      ],
+    "roles":  [
+
+              ]
+}

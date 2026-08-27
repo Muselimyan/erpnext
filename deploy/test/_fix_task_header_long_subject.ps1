@@ -9,66 +9,47 @@ function Enc([string]$s) { [uri]::EscapeDataString($s) }
 $script = @'
 frappe.ui.form.on('Task', {
     refresh: function(frm) {
-        task_header_long_subject_fix();
+        task_subject_field_visibility_fix(frm);
+        setTimeout(function() { task_subject_field_visibility_fix(frm); }, 250);
+        setTimeout(function() { task_subject_field_visibility_fix(frm); }, 900);
+    },
+    subject: function(frm) {
+        task_subject_field_visibility_fix(frm);
     }
 });
 
-function task_header_long_subject_fix() {
-    if (document.getElementById('task-header-long-subject-fix')) return;
-    var style = document.createElement('style');
-    style.id = 'task-header-long-subject-fix';
-    style.textContent = `
-body[data-route^="Form/Task"] .page-head .container,
-body[data-route^="Form/Task"] .page-head .container-fluid,
-body[data-route^="Form/Task"] .page-head .page-head-content,
-body[data-route^="Form/Task"] .page-head .standard-actions {
-    min-width: 0 !important;
+function task_subject_field_visibility_fix(frm) {
+    try {
+        var oldStyle = document.getElementById('task-header-long-subject-fix');
+        if (oldStyle) oldStyle.remove();
+
+        if (!document.getElementById('task-subject-field-visibility-fix')) {
+            var style = document.createElement('style');
+            style.id = 'task-subject-field-visibility-fix';
+            style.textContent = `
+body[data-route^="Form/Task"] [data-fieldname="subject"],
+body[data-route^="Form/Task"] [data-fieldname="subject"] .control-input-wrapper,
+body[data-route^="Form/Task"] [data-fieldname="subject"] .control-input {
+    display: block !important;
+    visibility: visible !important;
 }
-body[data-route^="Form/Task"] .page-head .page-head-content {
-    display: flex !important;
-    align-items: flex-start !important;
-    gap: 8px !important;
-    flex-wrap: nowrap !important;
-}
-body[data-route^="Form/Task"] .page-head .title-area {
-    min-width: 0 !important;
-    flex: 1 1 auto !important;
-    max-width: none !important;
-    overflow: visible !important;
-}
-body[data-route^="Form/Task"] .page-head .title-text,
-body[data-route^="Form/Task"] .page-head .title-text a,
-body[data-route^="Form/Task"] .page-head .title-text span,
-body[data-route^="Form/Task"] .page-head h3,
-body[data-route^="Form/Task"] .page-head .ellipsis {
-    white-space: normal !important;
-    overflow-wrap: anywhere !important;
-    word-break: break-word !important;
-    overflow: visible !important;
-    text-overflow: clip !important;
-    line-height: 1.25 !important;
-    max-width: 100% !important;
-}
-body[data-route^="Form/Task"] .page-head .page-actions,
-body[data-route^="Form/Task"] .page-head .standard-actions,
-body[data-route^="Form/Task"] .page-head .custom-actions {
-    flex: 0 0 auto !important;
-    white-space: nowrap !important;
-    display: flex !important;
-    align-items: flex-start !important;
-    justify-content: flex-end !important;
-    min-width: max-content !important;
-    margin-left: auto !important;
-    position: relative !important;
-    z-index: 2 !important;
-}
-body[data-route^="Form/Task"] .page-head .page-actions .btn,
-body[data-route^="Form/Task"] .page-head .standard-actions .btn,
-body[data-route^="Form/Task"] .page-head .custom-actions .btn {
-    flex: 0 0 auto !important;
+body[data-route^="Form/Task"] .task-visible-subject-banner {
+    display: none !important;
+    visibility: hidden !important;
 }
 `;
-    document.head.appendChild(style);
+            document.head.appendChild(style);
+        }
+
+        if (frm && frm.fields_dict && frm.fields_dict.subject) {
+            frm.toggle_display('subject', true);
+            frm.set_df_property('subject', 'hidden', 0);
+        }
+        if (frm && frm.wrapper) {
+            $(frm.wrapper).find('.task-visible-subject-banner').remove();
+            $(frm.wrapper).find('[data-fieldname="subject"]').closest('.frappe-control').show().css({ display: 'block', visibility: 'visible' });
+        }
+    } catch (e) {}
 }
 '@
 
@@ -84,8 +65,8 @@ $body = @{
 try {
     Invoke-RestMethod -Uri "$BaseUrl/api/resource/Client%20Script/$(Enc 'Task-Header Long Subject Fix')" -Headers $Headers -Method Get -TimeoutSec 10 | Out-Null
     Invoke-RestMethod -Uri "$BaseUrl/api/resource/Client%20Script/$(Enc 'Task-Header Long Subject Fix')" -Headers $Headers -Method Put -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 30 | Out-Null
-    Write-Host "Updated Task-Header Long Subject Fix." -ForegroundColor Green
+    Write-Host "Updated Task-Header Long Subject Fix with minimal safe subject visibility only." -ForegroundColor Green
 } catch {
     Invoke-RestMethod -Uri "$BaseUrl/api/resource/Client%20Script" -Headers $Headers -Method Post -Body ([System.Text.Encoding]::UTF8.GetBytes($body)) -TimeoutSec 30 | Out-Null
-    Write-Host "Created Task-Header Long Subject Fix." -ForegroundColor Green
+    Write-Host "Created Task-Header Long Subject Fix with minimal safe subject visibility only." -ForegroundColor Green
 }

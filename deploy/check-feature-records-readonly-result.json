@@ -1,0 +1,64 @@
+﻿{
+    "checked_at":  "2026-08-03T16:42:23+04:00",
+    "sites":  {
+                  "test":  "https://test.erpnext.am",
+                  "main":  "https://erpnext.am"
+              },
+    "doctypes":  [
+                     {
+                         "doctype":  "Surgical Kit Template",
+                         "test_count":  1,
+                         "main_count":  1,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Surgical Kit Template Item",
+                         "test_count":  0,
+                         "main_count":  0,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Telegram Settings",
+                         "test_count":  0,
+                         "main_count":  0,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Telegram Notification User",
+                         "test_count":  1,
+                         "main_count":  1,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ]
+                     },
+                     {
+                         "doctype":  "Account Detail Attachment",
+                         "test_count":  0,
+                         "main_count":  0,
+                         "only_test":  [
+
+                                       ],
+                         "only_main":  [
+
+                                       ]
+                     }
+                 ]
+}

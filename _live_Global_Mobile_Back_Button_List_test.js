@@ -57,14 +57,14 @@ frappe.listview_settings['Task'].onload = function(listview) {
     }
 
     // === Task List Toggle Filters ===
-    var TOGGLE_STATE = { my_tasks: 1, open_tasks: 1, completed: 0 };
+    var TOGGLE_STATE = window._taskToggleState || { my_tasks: 1, open_tasks: 1, completed: 0 };
     window._taskToggleState = TOGGLE_STATE;
 
     function renderToggleBar() {
         var $wrapper = $(listview.page.wrapper);
         $wrapper.find("#task-toggle-bar").remove();
 
-        var bar = $('<div id="task-toggle-bar" style="display:flex;gap:10px;padding:8px 15px;background:#f7f7f7;border-bottom:1px solid #d1d8dd;position:sticky;top:0;z-index:100;flex-wrap:wrap;align-items:center;"></div>');
+        var bar = $('<div id="task-toggle-bar" data-task-toggle-stable="1" style="display:flex;gap:10px;padding:8px 15px;background:#f7f7f7;border-bottom:1px solid #d1d8dd;position:sticky;top:0;z-index:100;flex-wrap:wrap;align-items:center;"></div>');
 
         var toggles = [
             { key: "my_tasks", label: "My Tasks" },
@@ -128,10 +128,44 @@ frappe.listview_settings['Task'].onload = function(listview) {
         });
     }
 
+    function ensureToggleBar() {
+        if (frappe.get_route && frappe.get_route()[0] !== "List") return;
+        if (frappe.get_route && frappe.get_route()[1] !== "Task") return;
+        var $wrapper = $(listview.page.wrapper);
+        if (!$wrapper.find("#task-toggle-bar").length) {
+            renderToggleBar();
+        }
+    }
+
+    if (window._taskToggleStableInterval) {
+        clearInterval(window._taskToggleStableInterval);
+    }
+    window._taskToggleStableInterval = setInterval(ensureToggleBar, 1000);
+    if (window._taskToggleStableObserver) {
+        window._taskToggleStableObserver.disconnect();
+    }
+    window._taskToggleStableObserver = new MutationObserver(function() {
+        clearTimeout(window._taskToggleStableTimer);
+        window._taskToggleStableTimer = setTimeout(ensureToggleBar, 100);
+    });
+    window._taskToggleStableObserver.observe(listview.page.wrapper, { childList: true, subtree: true });
+    var old_refresh = listview.refresh;
+    if (!listview._taskToggleRefreshPatched) {
+        listview.refresh = function() {
+            var out = old_refresh.apply(listview, arguments);
+            setTimeout(ensureToggleBar, 200);
+            setTimeout(ensureToggleBar, 800);
+            return out;
+        };
+        listview._taskToggleRefreshPatched = true;
+    }
+    frappe.router.on("change", function() { setTimeout(ensureToggleBar, 300); });
+
     // Clear any stale filters on load, then render toggles
     listview.filter_area.clear().then(function() {
         renderToggleBar();
         setTimeout(function() { applyToggleFilter(); }, 500);
+        setTimeout(ensureToggleBar, 1000);
     });
 };
     // Mobile: add assignee badge formatter

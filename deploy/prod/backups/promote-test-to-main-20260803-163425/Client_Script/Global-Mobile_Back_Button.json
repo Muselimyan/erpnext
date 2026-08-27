@@ -1,0 +1,14 @@
+﻿{
+    "name":  "Global-Mobile Back Button",
+    "owner":  "levonaghinyan77@gmail.com",
+    "creation":  "2026-07-10 12:37:58.777886",
+    "modified":  "2026-07-15 13:45:35.417248",
+    "modified_by":  "ai-agent@internal.com",
+    "docstatus":  0,
+    "idx":  0,
+    "dt":  "Task",
+    "view":  "Form",
+    "enabled":  1,
+    "script":  "frappe.ui.form.on(\u0027Task\u0027, {\r\n    refresh: function(frm) {\r\n        \r\n\r\n        function buildMobileBackButton() {\nif (!btn) {\r\n                btn = document.createElement(\u0027div\u0027);\r\n                btn.id = \u0027mobile-back-btn\u0027;\r\n                btn.textContent = \u0027ÃÂ¢ÃÂÃÂ\u0027;\r\n                btn.style.cssText = \u0027position:fixed;bottom:20px;left:20px;width:56px;height:56px;border-radius:50%;background:#1976d2;color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;\u0027;\r\n                \r\n                btn.addEventListener(\u0027click\u0027, function() { history.back(); });\r\n                btn.addEventListener(\u0027touchstart\u0027, function() { this.style.transform = \u0027scale(0.9)\u0027; });\r\n                btn.addEventListener(\u0027touchend\u0027, function() { this.style.transform = \u0027scale(1)\u0027; });\r\n                \r\n                document.body.appendChild(btn);\r\n            }\r\n            btn.style.display = \u0027flex\u0027;\r\n        }\r\n\r\n        // Boot immediately on the form view\r\n        buildMobileBackButton();\r\n\r\n        // Native browser-level tracking engine that Frappe cannot intercept or erase\r\n        if (!window._backBtnWired) {\r\n            window.addEventListener(\u0027popstate\u0027, function() { setTimeout(buildMobileBackButton, 200); });\r\n            window.addEventListener(\u0027hashchange\u0027, function() { setTimeout(buildMobileBackButton, 200); });\r\n            \r\n            // Intercept app-wide user clicks that trigger transitions\r\n            document.addEventListener(\u0027click\u0027, function() { \r\n                setTimeout(buildMobileBackButton, 200); \r\n                setTimeout(buildMobileBackButton, 600); // Back-up catch for slow loading pages\r\n            });\r\n            \r\n            window._backBtnWired = true;\r\n        }\r\n    }\r\n});",
+    "doctype":  "Client Script"
+}

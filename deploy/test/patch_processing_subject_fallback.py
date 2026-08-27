@@ -1,0 +1,62 @@
+import json
+import sys
+import urllib.parse
+import urllib.request
+import urllib.error
+
+BASE_URL = "https://test.erpnext.am"
+AUTH = "token af78cbd691f0b2e:b26698573b80f5e"
+HEADERS = {
+    "Authorization": AUTH,
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 ERPNextPatch/1.0",
+}
+SCRIPT_NAME = "Task-after-save-account-details-processing"
+
+
+def enc(value):
+    return urllib.parse.quote(value, safe="")
+
+
+def request(method, path, payload=None):
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(BASE_URL + path, data=data, headers=HEADERS, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=60) as res:
+            raw = res.read().decode("utf-8")
+            return json.loads(raw) if raw else {}
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", "replace")
+        raise RuntimeError(f"{method} {path} failed: {e.code} {body[:1200]}") from e
+
+
+def main():
+    print(f"Patching Processing subject fallback on TEST only: {BASE_URL}")
+    doc = request("GET", f"/api/resource/{enc('Server Script')}/{enc(SCRIPT_NAME)}")["data"]
+    script = doc.get("script") or ""
+
+    old = '''new_task.subject = doc.get("custom_account_details_subject") or doc.subject or "Account Details: Processing"
+            new_task.custom_account_details_subject = doc.get("custom_account_details_subject") or doc.subject'''
+    new = '''entry_subject = doc.get("custom_account_details_subject")
+            if entry_subject:
+                new_task.subject = entry_subject
+                new_task.custom_account_details_subject = entry_subject
+            else:
+                new_task.subject = "Account Details: Processing"'''
+    if old not in script and new not in script:
+        raise RuntimeError("Expected Processing subject assignment block not found")
+    script = script.replace(old, new, 1)
+
+    request("PUT", f"/api/resource/{enc('Server Script')}/{enc(SCRIPT_NAME)}", {"script": script, "disabled": 0})
+    print("Updated Server Script: Task-after-save-account-details-processing")
+    print("Patch complete on TEST. Empty/default Entry subject now creates Processing title.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as exc:
+        print(str(exc), file=sys.stderr)
+        sys.exit(1)

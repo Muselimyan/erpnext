@@ -1,0 +1,189 @@
+﻿{
+    "created_at":  "2026-08-03T15:48:23+04:00",
+    "mode":  "DryRun",
+    "test":  "https://test.erpnext.am",
+    "main":  "https://erpnext.am",
+    "backup_dir":  "C:\\Users\\Levon\\Windsurf\\erpnext\\deploy\\prod\\backups\\promote-test-to-main-20260803-154812",
+    "results":  [
+                    {
+                        "doctype":  "DocType",
+                        "name":  "Account Detail Attachment",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "DocType",
+                        "name":  "Surgical Kit Template Item",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "DocType",
+                        "name":  "Surgical Kit Template",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "DocType",
+                        "name":  "Telegram Notification User",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "DocType",
+                        "name":  "Telegram Settings",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Dispatch Case-custom_select_surgical_kit_template",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_next_task_assign_to",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_select_surgical_kit_template",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_account_photos",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_assigned_to",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_is_team_queue_task",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_team_notified",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-custom_team_queue_role",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-dispatch_case",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Custom Field",
+                        "name":  "Task-sales_invoice",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Property Setter",
+                        "name":  "Purchase Receipt-provisional_expense_account-hidden",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Property Setter",
+                        "name":  "Task-main-field_order",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Property Setter",
+                        "name":  "Task-main-show_title_field_in_link",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Dispatch Case-Template Auto Fill",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Task - Load Surgical Kit Template",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Dispatch Case-Item Code Toggle",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Global-Mobile Back Button",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Task-Accept Start",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Task-Account Details UI Cleanup",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Client Script",
+                        "name":  "Task-List Toggle Filters",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Server Script",
+                        "name":  "Task-Account Details Default Assignment",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Server Script",
+                        "name":  "Telegram Task Assignment Notification",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Server Script",
+                        "name":  "Telegram Task Status Update",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Server Script",
+                        "name":  "task_list_filtered",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Server Script",
+                        "name":  "Task-after-save-dispatch-flow",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Workspace",
+                        "name":  "Build",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Workspace",
+                        "name":  "Integrations",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Workspace",
+                        "name":  "Users",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Workspace",
+                        "name":  "Website",
+                        "action":  "update"
+                    },
+                    {
+                        "doctype":  "Surgical Kit Template",
+                        "name":  "Hip Surgery Standard Kit",
+                        "action":  "create"
+                    },
+                    {
+                        "doctype":  "Telegram Notification User",
+                        "name":  "levonaghinyan77@gmail.com",
+                        "action":  "create"
+                    }
+                ]
+}

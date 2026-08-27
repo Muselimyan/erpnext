@@ -16,7 +16,7 @@ Starting point created on 2026-08-10.
 | Environment | Version | URL | Site | Server snapshot directory |
 |---|---:|---|---|---|
 | Prod | `P-1.1.5` | `https://erpnext.am` | `161.97.83.156` | `/root/erpnext-version-snapshots/prod_P-1.1.5_20260814T154801Z` |
-| Test | `T-1.1.5` | `https://test.erpnext.am` | `test.erpnext.am` | `/root/erpnext-version-snapshots/test_T-1.1.5_20260814T154159Z` |
+| Test | `T-1.1.13` | `https://test.erpnext.am` | `test.erpnext.am` | `/root/erpnext-version-snapshots/test_T-1.1.13_20260827T111608Z` |
 
 ## Snapshot contents
 
@@ -32,7 +32,7 @@ Each snapshot contains:
 
 The clean server-side index for this starting point is:
 
-`/root/erpnext-version-snapshots/VERSION_INDEX_20260814T154159Z_T-1.1.5.txt` and `/root/erpnext-version-snapshots/VERSION_INDEX_20260814T154801Z_P-1.1.5.txt`
+`/root/erpnext-version-snapshots/VERSION_INDEX_20260827T111608Z_T-1.1.13.txt` and `/root/erpnext-version-snapshots/VERSION_INDEX_20260814T154801Z_P-1.1.5.txt`
 
 ## Safety rule
 

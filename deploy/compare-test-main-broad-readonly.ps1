@@ -4,7 +4,7 @@ param()
 Set-StrictMode -Off
 $ErrorActionPreference = "Stop"
 
-$ConfigPath = Join-Path $PSScriptRoot "export.ps1"
+$ConfigPath = Join-Path $PSScriptRoot "prod\export.ps1"
 $Config = Get-Content $ConfigPath -Raw
 $ApiKey = [regex]::Match($Config, '\$ApiKey\s*=\s*"([^"\r\n]+)"').Groups[1].Value
 $ApiSec = [regex]::Match($Config, '\$ApiSec\s*=\s*"([^"\r\n]+)"').Groups[1].Value

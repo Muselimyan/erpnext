@@ -1,5 +1,5 @@
 ﻿{
-    "checked_at":  "2026-07-21T13:43:21+04:00",
+    "checked_at":  "2026-08-03T18:13:29+04:00",
     "sites":  {
                   "test":  "https://test.erpnext.am",
                   "main":  "https://erpnext.am"
@@ -7,8 +7,8 @@
     "doctypes":  [
                      {
                          "doctype":  "Custom Field",
-                         "test_count":  132,
-                         "main_count":  132,
+                         "test_count":  135,
+                         "main_count":  135,
                          "only_test":  [
 
                                        ],
@@ -21,8 +21,8 @@
                      },
                      {
                          "doctype":  "Property Setter",
-                         "test_count":  208,
-                         "main_count":  208,
+                         "test_count":  209,
+                         "main_count":  209,
                          "only_test":  [
 
                                        ],
@@ -35,8 +35,8 @@
                      },
                      {
                          "doctype":  "Client Script",
-                         "test_count":  33,
-                         "main_count":  33,
+                         "test_count":  35,
+                         "main_count":  35,
                          "only_test":  [
 
                                        ],
@@ -49,8 +49,8 @@
                      },
                      {
                          "doctype":  "Server Script",
-                         "test_count":  55,
-                         "main_count":  55,
+                         "test_count":  58,
+                         "main_count":  58,
                          "only_test":  [
 
                                        ],
@@ -77,8 +77,8 @@
                      },
                      {
                          "doctype":  "Workspace",
-                         "test_count":  23,
-                         "main_count":  23,
+                         "test_count":  22,
+                         "main_count":  22,
                          "only_test":  [
 
                                        ],
@@ -86,7 +86,7 @@
 
                                        ],
                          "different":  [
-
+                                           "Integrations"
                                        ]
                      },
                      {
@@ -119,10 +119,10 @@
                      },
                      {
                          "doctype":  "DocType",
-                         "test_count":  15,
-                         "main_count":  14,
+                         "test_count":  19,
+                         "main_count":  19,
                          "only_test":  [
-                                           "Account Detail Attachment"
+
                                        ],
                          "only_main":  [
 

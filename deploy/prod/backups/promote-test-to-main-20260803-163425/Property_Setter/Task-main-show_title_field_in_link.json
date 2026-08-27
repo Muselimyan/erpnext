@@ -1,0 +1,16 @@
+﻿{
+    "name":  "Task-main-show_title_field_in_link",
+    "owner":  "ai-agent@internal.com",
+    "creation":  "2026-07-15 14:52:33.187150",
+    "modified":  "2026-07-15 14:52:33.187150",
+    "modified_by":  "ai-agent@internal.com",
+    "docstatus":  0,
+    "idx":  0,
+    "is_system_generated":  0,
+    "doctype_or_field":  "DocType",
+    "doc_type":  "Task",
+    "property":  "show_title_field_in_link",
+    "property_type":  "Data",
+    "value":  "1",
+    "doctype":  "Property Setter"
+}
