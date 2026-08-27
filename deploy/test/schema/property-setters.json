@@ -1,5 +1,5 @@
 ﻿{
-    "count":  208,
+    "count":  209,
     "records":  [
                     {
                         "name":  "Supplier-naming_series-reqd",
@@ -3271,22 +3271,6 @@
                         "doctype":  "Property Setter"
                     },
                     {
-                        "name":  "Task-main-field_order",
-                        "owner":  "levonaghinyan77@gmail.com",
-                        "creation":  "2026-06-29 17:29:09.530728",
-                        "modified":  "2026-06-29 17:29:09.530728",
-                        "modified_by":  "levonaghinyan77@gmail.com",
-                        "docstatus":  0,
-                        "idx":  0,
-                        "is_system_generated":  0,
-                        "doctype_or_field":  "DocType",
-                        "doc_type":  "Task",
-                        "property":  "field_order",
-                        "property_type":  "Data",
-                        "value":  "[\"subject\", \"task_access_policy\", \"completed_at\", \"task_kind\", \"custom_is_team_queue_task\", \"custom_team_queue_role\", \"custom_team_queue_status\", \"custom_accepted_by\", \"custom_accepted_at\", \"custom_team_notified\", \"purchase_order\", \"sales_order\", \"customer\", \"other_items\", \"other_budget\", \"other_supplier\", \"sales_invoice\", \"approval_outcome\", \"approval_note\", \"warehouse_pickup_photo\", \"custom_delivery_photo\", \"warehouse_dropoff_photo\", \"driver_handover_note\", \"payment_entry\", \"current_debt_amd\", \"debt_threshold_amd\", \"dispatch_group_id\", \"surgery_case\", \"dispatch_case\", \"dispatch_case_status\", \"delivery_status\", \"pickup_status\", \"custom_product_work_section\", \"custom_task_product_summary\", \"custom_product_lines\", \"custom_barcode_section\", \"custom_task_scan_barcode\", \"custom_task_scan_qty\", \"custom_task_scan_result\", \"custom_product_work_column\", \"custom_task_product_warning\", \"custom_task_add_item_code\", \"custom_task_add_qty\", \"custom_task_add_batch_no\", \"custom_task_add_unit_price\", \"return_pickup_driver\", \"scheduled_return_date\", \"new_payment_amount\", \"payment_method_dc\", \"payment_reference_dc\", \"total_outstanding\", \"custom_case_profit\", \"custom_total_amount_paid\", \"available_advance_credit\", \"open_invoices\", \"payment_history\", \"project\", \"issue\", \"type\", \"color\", \"is_group\", \"column_break0\", \"status\", \"priority\", \"task_weight\", \"parent_task\", \"completed_by\", \"completed_on\", \"custom_account_details_section\", \"custom_account_photos\", \"section_break_dafi\", \"is_template\", \"column_break_vvfp\", \"start\", \"duration\", \"sb_timeline\", \"exp_start_date\", \"expected_time\", \"column_break_11\", \"exp_end_date\", \"progress\", \"is_milestone\", \"sb_details\", \"description\", \"dependencies_tab\", \"sb_depends_on\", \"depends_on\", \"depends_on_tasks\", \"sb_actual\", \"act_start_date\", \"actual_time\", \"column_break_15\", \"act_end_date\", \"sb_costing\", \"total_costing_amount\", \"column_break_20\", \"total_billing_amount\", \"more_info_tab\", \"sb_more_info\", \"company\", \"review_date\", \"closing_date\", \"column_break_22\", \"department\", \"lft\", \"rgt\", \"old_parent\", \"template_task\"]",
-                        "doctype":  "Property Setter"
-                    },
-                    {
                         "name":  "Dispatch Case-case_items-allow_on_submit",
                         "owner":  "ai-agent@internal.com",
                         "creation":  "2026-06-30 14:54:20.889134",
@@ -3485,22 +3469,6 @@
                         "doctype":  "Property Setter"
                     },
                     {
-                        "name":  "Task-main-show_title_field_in_link",
-                        "owner":  "ai-agent@internal.com",
-                        "creation":  "2026-07-15 14:52:33.187150",
-                        "modified":  "2026-07-15 14:52:33.187150",
-                        "modified_by":  "ai-agent@internal.com",
-                        "docstatus":  0,
-                        "idx":  0,
-                        "is_system_generated":  0,
-                        "doctype_or_field":  "DocType",
-                        "doc_type":  "Task",
-                        "property":  "show_title_field_in_link",
-                        "property_type":  "Data",
-                        "value":  "1",
-                        "doctype":  "Property Setter"
-                    },
-                    {
                         "name":  "Item-main-show_title_field_in_link",
                         "owner":  "ai-agent@internal.com",
                         "creation":  "2026-07-15 15:09:00.044280",
@@ -3514,6 +3482,55 @@
                         "property":  "show_title_field_in_link",
                         "property_type":  "Check",
                         "value":  "1",
+                        "doctype":  "Property Setter"
+                    },
+                    {
+                        "name":  "Purchase Receipt-provisional_expense_account-hidden",
+                        "owner":  "ai-agent@internal.com",
+                        "creation":  "2026-07-21 14:16:33.713901",
+                        "modified":  "2026-07-21 14:16:33.713901",
+                        "modified_by":  "ai-agent@internal.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "is_system_generated":  1,
+                        "doctype_or_field":  "DocField",
+                        "doc_type":  "Purchase Receipt",
+                        "field_name":  "provisional_expense_account",
+                        "property":  "hidden",
+                        "property_type":  "Check",
+                        "value":  "1",
+                        "doctype":  "Property Setter"
+                    },
+                    {
+                        "name":  "Task-main-show_title_field_in_link",
+                        "owner":  "levonaghinyan77@gmail.com",
+                        "creation":  "2026-07-27 17:52:21.273074",
+                        "modified":  "2026-07-27 17:52:21.273074",
+                        "modified_by":  "levonaghinyan77@gmail.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "is_system_generated":  0,
+                        "doctype_or_field":  "DocType",
+                        "doc_type":  "Task",
+                        "property":  "show_title_field_in_link",
+                        "property_type":  "Check",
+                        "value":  "1",
+                        "doctype":  "Property Setter"
+                    },
+                    {
+                        "name":  "Task-main-field_order",
+                        "owner":  "levonaghinyan77@gmail.com",
+                        "creation":  "2026-07-27 17:52:21.543284",
+                        "modified":  "2026-07-27 17:52:21.543284",
+                        "modified_by":  "levonaghinyan77@gmail.com",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "is_system_generated":  0,
+                        "doctype_or_field":  "DocType",
+                        "doc_type":  "Task",
+                        "property":  "field_order",
+                        "property_type":  "Data",
+                        "value":  "[\"subject\", \"task_access_policy\", \"completed_at\", \"task_kind\", \"custom_assigned_to\", \"custom_next_task_assign_to\", \"custom_is_team_queue_task\", \"custom_team_queue_role\", \"custom_team_queue_status\", \"custom_accepted_by\", \"custom_accepted_at\", \"custom_team_notified\", \"purchase_order\", \"sales_order\", \"customer\", \"other_items\", \"other_budget\", \"other_supplier\", \"sales_invoice\", \"approval_outcome\", \"approval_note\", \"warehouse_pickup_photo\", \"custom_delivery_photo\", \"warehouse_dropoff_photo\", \"driver_handover_note\", \"payment_entry\", \"current_debt_amd\", \"debt_threshold_amd\", \"dispatch_group_id\", \"surgery_case\", \"custom_select_surgical_kit_template\", \"dispatch_case\", \"dispatch_case_status\", \"delivery_status\", \"pickup_status\", \"custom_product_work_section\", \"custom_task_product_summary\", \"custom_product_lines\", \"custom_barcode_section\", \"custom_task_scan_barcode\", \"custom_task_scan_qty\", \"custom_task_scan_result\", \"custom_product_work_column\", \"custom_task_product_warning\", \"custom_task_add_item_code\", \"custom_task_add_qty\", \"custom_task_add_batch_no\", \"custom_task_add_unit_price\", \"return_pickup_driver\", \"scheduled_return_date\", \"new_payment_amount\", \"payment_method_dc\", \"payment_reference_dc\", \"total_outstanding\", \"custom_case_profit\", \"custom_total_amount_paid\", \"available_advance_credit\", \"open_invoices\", \"payment_history\", \"project\", \"issue\", \"type\", \"color\", \"is_group\", \"column_break0\", \"status\", \"priority\", \"task_weight\", \"parent_task\", \"completed_by\", \"completed_on\", \"custom_account_details_section\", \"custom_account_photos\", \"section_break_dafi\", \"is_template\", \"column_break_vvfp\", \"start\", \"duration\", \"sb_timeline\", \"exp_start_date\", \"expected_time\", \"column_break_11\", \"exp_end_date\", \"progress\", \"is_milestone\", \"sb_details\", \"description\", \"dependencies_tab\", \"sb_depends_on\", \"depends_on\", \"depends_on_tasks\", \"sb_actual\", \"act_start_date\", \"actual_time\", \"column_break_15\", \"act_end_date\", \"sb_costing\", \"total_costing_amount\", \"column_break_20\", \"total_billing_amount\", \"more_info_tab\", \"sb_more_info\", \"company\", \"review_date\", \"closing_date\", \"column_break_22\", \"department\", \"lft\", \"rgt\", \"old_parent\", \"template_task\"]",
                         "doctype":  "Property Setter"
                     }
                 ]
