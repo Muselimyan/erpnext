@@ -47,8 +47,8 @@ function apply_task_accept_edit_lock(frm) {
             frm.refresh_fields();
             $(frm.wrapper).find('input, textarea, select, .ql-editor, .like-disabled-input').prop('disabled', false).css({'pointer-events': '', 'opacity': '', 'background-color': ''});
             $(frm.wrapper).find('.btn-attach, .btn-open, .grid-add-row, .grid-remove-rows').show();
-            // Update gallery mode to editable
-            if (frm._photoGalleries) { Object.values(frm._photoGalleries).forEach(function(g) { g.setMode('editable'); }); }
+            // Update gallery mode to editable (only for galleries whose config allows editing)
+            if (frm._photoGalleries) { Object.values(frm._photoGalleries).forEach(function(g) { if (g._configEditable) g.setMode('editable'); }); }
         } else {
             frm.disable_save();
             frm.set_intro('You must accept this task before you can edit it. Click <b>Accept / Start Task</b>.', 'yellow');

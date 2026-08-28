@@ -140,6 +140,7 @@ window.PhotoGallery = function(opts) {
     this._thumbnailSize = opts.thumbnailSize || {w: 76, h: 76};
     this._onChange = opts.onChange || null;
     this._onUpload = opts.onUpload || null; // called with {url, filename} after each successful upload
+    this._configEditable = opts.configEditable !== false; // whether config allows editing (false = always readonly)
     this._destroyed = false;
     this._render();
 };
@@ -395,6 +396,7 @@ window.PhotoGallery.prototype._uploadFile = function(file) {
             frm._photoGalleries[config.key] = new window.PhotoGallery({
                 container: container,
                 mode: mode,
+                configEditable: config.editable,
                 photos: photos,
                 maxPhotos: 5,
                 label: config.label,
