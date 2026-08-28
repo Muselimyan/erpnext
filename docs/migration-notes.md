@@ -277,7 +277,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - **[ ]** Create Directors Workspace (Option B, Doc 10.1A section 7): Workspace named `Directors — Operations` with shortcuts to the above saved views.
 - **[ ]** Assign real staff to operational roles so single-owner / team-ownership enforcement works: `Ops - Order Accepting`, `Ops - Inventory`, `Ops - Returns`, `Ops - Delivery`, `Ops - Accounting`, `Ops - Directors`, `Delivery Driver`.
 - **[ ]** Review any existing Tasks in status `Working` / `Completed` that have 0 or 2+ assignees — clean them up before go-live, as the governance script will reject saves on those tasks.
-- **[ ]** `Surgery Case` link field on Task (`surgery_case`, Link → Surgery Case) deferred until the Surgery Case DocType is created (future doc).
+- ~~**[ ]** `Surgery Case` link field on Task~~ — **DELETED 2026-08-28**: Surgery Case system removed entirely.
 
 ### Notes / Known Issues
 - Deployment script: `deploy/doc10a-deploy.ps1` — idempotent, `-Mode Check` / `-Mode Deploy`.
@@ -315,12 +315,12 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - Shows a `frappe.msgprint` warning popup listing all shortage lines.
 - Warning-only — does NOT block saving.
 
-### Pending / To-Do
+### ~~Pending / To-Do~~ OBSOLETE (deleted 2026-08-28)
 - **[ ]** Configure Item masters: serial number tracking ON for tools where individual instruments have unique identity; batch number tracking ON for implants/consumables; expiry date on batches for expiry-tracked items (FEFO).
-- **[ ]** Create real `Collection Set` records for each set the company uses (templates only; actual per-case dispatching is in Doc 12).
-- **[ ]** Verify `Ops - Inventory` and `Ops - Delivery` roles are assigned to the correct staff before using Set Type editing.
-- **[ ]** `Surgery Case` DocType and full dispatch/return/invoice workflow deferred to Doc 12.
-- **[ ]** `Task-surgery_case` field on Task (Link → Surgery Case) deferred to Doc 12 when Surgery Case DocType exists.
+- ~~**[ ]** Create real `Collection Set` records~~ — **DELETED**: Collection Set DocType removed
+- ~~**[ ]** Verify `Ops - Inventory` and `Ops - Delivery` roles~~ — N/A for Collection Set
+- ~~**[ ]** `Surgery Case` DocType~~ — **DELETED**: Surgery Case DocType removed
+- ~~**[ ]** `Task-surgery_case` field on Task~~ — **DELETED**: Custom field removed
 
 ### Notes / Known Issues
 - Deployment script: `deploy/doc11a-deploy.ps1` — idempotent, `-Mode Check` / `-Mode Deploy`.
@@ -391,13 +391,13 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - `returned_qty` + `lost_damaged_qty`: editable only in Return Pickup In Transit/Returns Verification states.
 - `used_qty`: always read-only (computed by server).
 
-### Pending / To-Do (Doc 12A)
-- **[ ]** Assign real staff to `Ops - Order Accepting`, `Ops - Inventory`, `Ops - Delivery`, `Ops - Returns`, `Ops - Accounting` roles before going live.
-- **[ ]** Create real `Surgery Case` records using the deployed workflow.
-- **[ ]** Configure `client_location_warehouse` for each doctor — named `<Doctor Code> - Inmed` under the `Clients - Inmed` group warehouse.
-- **[ ]** Enable serial/batch tracking on Item masters per Doc 11 guidelines (serial for tools, batch+expiry for implants/consumables).
-- **[ ]** Verify Task `task_kind` options include `"Delivery"`, `"Pickup Returns"`, `"Return drop-off at warehouse"` — these are used by the server script's `make_task()` helper.
-- **[ ]** Clean up stray diagnostic Workflow Action Master record `"TestAction888"` created during deployment debugging (harmless but untidy).
+### ~~Pending / To-Do (Doc 12A)~~ OBSOLETE (deleted 2026-08-28)
+- ~~**[ ]** Assign real staff~~ — roles still exist; used by Dispatch Case workflow
+- ~~**[ ]** Create real `Surgery Case` records~~ — **DELETED**: entire system removed
+- ~~**[ ]** Configure `client_location_warehouse`~~ — done via Dispatch Case flow
+- ~~**[ ]** Enable serial/batch tracking~~ — still relevant for Dispatch Case
+- ~~**[ ]** Verify Task `task_kind` options~~ — still relevant for Dispatch Case
+- ~~**[ ]** Clean up stray Workflow Action Master `"TestAction888"`~~ — Workflow deleted
 
 ### Notes / Known Issues (Doc 12A)
 - **`Workflow State` and `Workflow Action Master` must pre-exist**: Frappe v14 validates `Workflow Document State.state` as a Link→`Workflow State` and `Workflow Transition.action` as a Link→`Workflow Action Master`. The deploy script now creates all 12 states and 11 action master records before creating the Workflow document.
@@ -496,8 +496,8 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 | Reorder setup (Doc 08A) | ⬜ | Thresholds need per-item review |
 | Debt threshold automation (Doc 09A) | ✅ | Scheduled script deployed |
 | Task system (Doc 10A) | ✅ | Deployed |
-| Collection Set templates (Doc 11A) | ✅ | Deployed |
-| Surgery Case workflow (Doc 12A) | ✅ | Deployed |
+| Collection Set templates (Doc 11A) | ❌ | **DELETED 2026-08-28** — never used, superseded by Dispatch Case |
+| Surgery Case workflow (Doc 12A) | ❌ | **DELETED 2026-08-28** — never used, superseded by Dispatch Case |
 | Reporting pack (Doc 13A) | ✅ | Deployed |
 | Staff assigned to operational roles | ⬜ | Pending |
 | Doctor client-location warehouses exist | ⬜ | Warehouses exist; verify all active doctors have one |
@@ -511,7 +511,7 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 - **Scenario C** — Debt threshold escalation: exceed threshold → Debt Collection task auto-created
 - **Scenario D** — Procurement: draft PO → director approval → goods receipt → supplier invoice
 - **Scenario E** — Reorder list: low-stock items appear, grouped by supplier
-- **Scenario F** — Surgery case end-to-end: dispatch → deliver → pickup → returns verify → usage derive → invoice
+- ~~**Scenario F** — Surgery case end-to-end~~ — **REMOVED**: Surgery Case deleted 2026-08-28, superseded by Dispatch Case (Scenario A covers this flow)
 - **Scenario G** — Permanent set replenishment (if applicable)
 
 ### To-Do (Doc 14 — go-live gate)
@@ -574,3 +574,52 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 - **[ ]** Validate profit columns in `RPT — Sales — Sold Items Detail` and `RPT — Stock — Near Expiry Value at Risk` after Standard Buying prices are populated.
 - **[ ]** Confirm `RPT — Sales — Comparative Periods` filter date ranges are intuitive for directors.
 - **[ ]** Review workspace shortcut order with operations lead — reorder if needed via doc15c re-run.
+
+---
+
+## Surgery Case System Deletion (2026-08-28)
+
+**Reason:** The entire Surgery Case system (Docs 11A, 12A) was deployed but **never used** — 0 records ever created. It has been fully superseded by the Unified Dispatch Case flow (Doc 16). Verified on production (cloned to test 2026-07-15): zero Surgery Cases, zero Collection Sets, zero linked Tasks/Stock Entries/Invoices.
+
+### What Was Deleted (from test.erpnext.am)
+
+**Server Scripts (3):**
+- `Surgery-Case-before-save` — 279-line orchestrator on Surgery Case
+- `Collection-Set-validate-readiness` — stock readiness check on Collection Set
+- `Surgery-Set-Type-validate-readiness` — duplicate of above
+
+**Client Scripts (2):**
+- `Surgery-Case-field-locking` — field lock by workflow state
+- `Task - Load Surgical Kit Template` — dead code (targeted Dispatch Case from Task context, loaded from Collection Set)
+
+**Workflow (1):**
+- `Surgery Case Workflow` — 12 states, 11 transitions, `is_active=1` but never exercised
+
+**Custom Fields (4):**
+- `Task-surgery_case` (Link → Surgery Case)
+- `Stock Entry-surgery_case` (Link → Surgery Case)
+- `Sales Invoice-surgery_case` (Link → Surgery Case)
+- `Task-custom_select_surgical_kit_template` (Link → Surgical Kit Template, 0 Tasks used it)
+
+**Custom DocTypes (5):**
+- `Surgery Case Serial Exception` (child table)
+- `Surgery Case Item` (child table)
+- `Surgery Case` (parent)
+- `Collection Set Item` (child table)
+- `Collection Set` (parent)
+
+**Field removed from Dispatch Case DocType:**
+- `surgery_set_type` (Link → Collection Set) — 0 Dispatch Cases used it
+
+**Dispatch Case-Form client script edited:**
+- Removed `surgery_set_type` handler and hide-line (dead code referencing deleted Collection Set)
+
+### What Was Preserved (actively used)
+
+- `Surgical Kit Template` DocType — 1 record ("Hip Surgery Standard Kit"), 16 Dispatch Cases reference it
+- `Dispatch Case-Template Auto Fill.js` — loads items from Surgical Kit Template
+- `custom_select_surgical_kit_template` field on Dispatch Case — actively used
+
+### Pending (Prod)
+- **[ ]** Execute same deletions on `erpnext.am` (prod) when ready
+- **[ ]** Docs 11, 11A, 12, 12A are now historical — consider archiving or adding deprecation headers

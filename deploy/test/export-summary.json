@@ -1,19 +1,19 @@
 ﻿{
     "env":  "Test",
-    "exported_at":  "2026-08-27T19:54:54Z",
+    "exported_at":  "2026-08-28T20:15:26Z",
     "base_url":  "https://test.erpnext.am",
     "schema":  {
-                   "custom-fields":  137,
+                   "custom-fields":  130,
                    "notifications":  5,
                    "client-scripts":  39,
-                   "server-scripts":  62,
-                   "workflows":  1,
-                   "property-setters":  209,
+                   "server-scripts":  59,
+                   "workflows":  0,
+                   "property-setters":  207,
                    "role-profiles":  6,
                    "workspaces":  22,
                    "print-formats":  1,
                    "reports":  49,
-                   "custom-doctypes":  19
+                   "custom-doctypes":  14
                },
     "data":  {
                  "company":  1,
@@ -33,8 +33,8 @@
                  "brands":  1,
                  "task-access-policies":  23
              },
-    "gaps_count":  0,
+    "gaps_count":  1,
     "gaps":  [
-
+                 "Workflow : none configured"
              ]
 }
