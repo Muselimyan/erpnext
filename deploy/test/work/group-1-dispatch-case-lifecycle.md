@@ -24,12 +24,12 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 | LEGACY-02 | ~~Sales Order parallel flow (7 scripts) still active~~ | ~~Risk~~ **RESOLVED** | — |
 | LEGACY-03 | ~~Duplicate Collection Set validation scripts~~ | ~~Low~~ **RESOLVED** | — |
 | LEGACY-04 | ~~Stock Entry dispatch gate disabled but documented as part of flow~~ | ~~Info~~ **RESOLVED** | — |
-| GAP-01 | No stock availability check at Pack completion | Medium | 0.92 |
-| GAP-02 | Missing role restrictions for Return Call and Returns restocking tasks | Low | 0.90 |
+| GAP-01 | ~~No stock availability check at Pack completion~~ | ~~Medium~~ **ACCEPTED** | — |
+| GAP-02 | ~~Missing role restrictions for Return Call and Debt Closure Approval~~ | ~~Low~~ **FIXED** | — |
 | GAP-03 | Outstanding calculation ignores total_paid_amount | Medium | 0.88 |
 | GAP-04 | Discount approval task uses hardcoded team email | Low | 0.90 |
 | GAP-05 | ~~Two different template-loading mechanisms active~~ | ~~Low~~ **RESOLVED** | — |
-| GAP-06 | ignore_validate bypasses all stock safety on auto-created SEs | Medium | 0.95 |
+| GAP-06 | ~~ignore_validate bypasses all stock safety on auto-created SEs~~ | ~~Medium~~ **ACCEPTED** | — |
 | GAP-07 | Dispatch Case submitted without Order Entry task gets no Pack task | Low | 0.85 |
 | DESIGN-01 | Client-side form lock mirrors server-side but is UI-only | Info | 0.95 |
 | DESIGN-02 | Schema shows fewer client scripts than extracted files | Needs Verification | 0.70 |
@@ -349,29 +349,19 @@ At step 3, the stock was already in `Returns - Inmed` (moved there at step 2). T
 
 ## 6. Findings — Documentation Gaps
 
-### GAP-01: No Stock Availability Check at Pack Completion
-**Severity: MEDIUM | Confidence: 0.92**
+### GAP-01: ~~No Stock Availability Check at Pack Completion~~ ACCEPTED
+**Status: ACCEPTED (by design, 2026-08-28)**
 
-**Evidence:** `Task-after-save-dispatch-flow.py` lines 224–228
+> `ignore_stock_validation = True` is intentional for the current phase. Products are not yet fully stocked in `Main - Inmed`, so enforcing stock availability would block all operations. Will be revisited once warehouse inventory is populated.
 
-**Problem:** When the Pack task is completed, the script immediately creates a Stock Entry from `Main - Inmed` → `Delivery In-Transit - Inmed` with `ignore_stock_validation = True`. There is **no check** that `Main - Inmed` actually has sufficient stock.
+### GAP-02: ~~Missing Role Restrictions for Task Kinds~~ FIXED
+**Status: FIXED (2026-08-28)**
 
-**Comparison:** ~~The Surgery Case flow checked stock at the "Dispatch Picking" transition~~ — Surgery Case deleted 2026-08-28, but the principle (blocking on insufficient stock) should be adopted for Dispatch Case.
-
-**Impact:** Packing could proceed even when items are out of stock, creating stock entries with impossible movements. The `ignore_stock_validation` flag ensures no error, but the stock ledger becomes inaccurate.
-
-**Doc 16 §6.3** states the Pack task is about physically preparing items — if items aren't available, the packer should be blocked. But the code doesn't block.
-
-### GAP-02: Missing Role Restrictions for Two Task Kinds
-**Severity: LOW | Confidence: 0.90**
-
-**Evidence:** `dispatch_task_accept.py` lines 16–29
-
-**Problem:** The `TASK_KIND_ALLOWED_ROLES` map does not include entries for:
-- `Return Call` — Doc 16 §6.5 assigns to "Office Team" / `Ops - Returns`
-- `Returns restocking` — Doc 16 §6.8 assigns to `Ops - Returns`
-
-When `allowed` is empty (line 31), the role check is bypassed (line 38: `if allowed and not has_allowed_role`). Anyone with any role can accept these tasks.
+> **Resolution:** Added two missing entries to `TASK_KIND_ALLOWED_ROLES` in `dispatch_task_accept.py`:
+> - `"Return Call": ["Ops - Returns", "Ops - Order Accepting"]`
+> - `"Debt Closure Approval": ["Ops - Directors"]`
+>
+> Note: The original audit also listed `Returns restocking` as missing, but it was already present in the map. The actual second gap was `Debt Closure Approval`, which existed in the gates script but not the accept map.
 
 ### GAP-03: Outstanding Calculation Ignores total_paid_amount
 **Severity: MEDIUM | Confidence: 0.88**
@@ -410,31 +400,10 @@ todo.allocated_to = "directors.team@example.com"
 > | ~~C1 (Form.js)~~ | ~~`surgery_set_type`~~ | ~~`Collection Set`~~ | **DELETED** |
 > | C8 (Template Auto Fill) | `custom_select_surgical_kit_template` | `Surgical Kit Template` | **Active** (1 template, 16 DCs use it) |
 
-### GAP-06: `ignore_validate` Bypasses All Stock Safety
-**Severity: MEDIUM | Confidence: 0.95**
+### GAP-06: ~~`ignore_validate` Bypasses All Stock Safety~~ ACCEPTED
+**Status: ACCEPTED (by design, 2026-08-28)**
 
-**Evidence:** `Task-after-save-dispatch-flow.py` lines 61–66
-
-```python
-se.flags.ignore_permissions = True
-se.flags.ignore_validate = True
-frappe.flags.ignore_stock_validation = True
-se.insert()
-se.submit()
-frappe.flags.ignore_stock_validation = False
-```
-
-**Problem:** Every auto-created Stock Entry bypasses:
-- Permission checks
-- All DocType validation (including required fields, value constraints)
-- Stock availability checks
-- Serial/batch validation
-- Expiry validation
-- Negative stock prevention
-
-This was likely done to avoid blocking the automated flow, but it means **any data error silently creates corrupt stock ledger entries** rather than failing loudly.
-
-**Comparison:** ~~The Surgery Case flow used `insert(ignore_permissions=True)` without `ignore_validate`~~ — Surgery Case deleted 2026-08-28, but the principle (failing loudly on bad data) is worth adopting for Dispatch Case.
+> Same rationale as GAP-01. `ignore_validate` and `ignore_stock_validation` are intentional during the current phase while warehouse inventory is being populated. Will be revisited once products are fully stocked in `Main - Inmed`.
 
 ### GAP-07: Direct DC Submission Without Order Entry Gets No Pack Task
 **Severity: LOW | Confidence: 0.85**

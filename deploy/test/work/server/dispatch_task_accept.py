@@ -27,6 +27,8 @@ TASK_KIND_ALLOWED_ROLES = {
     "Discount Approval": ["Ops - Directors"],
     "Purchase Approval": ["Ops - Directors"],
     "Write-off Approval": ["Ops - Directors"],
+    "Return Call": ["Ops - Returns", "Ops - Order Accepting"],
+    "Debt Closure Approval": ["Ops - Directors"],
 }
 allowed = TASK_KIND_ALLOWED_ROLES.get(task.task_kind) or []
 user_roles = frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role")
