@@ -1,18 +1,18 @@
 ﻿{
     "env":  "Test",
-    "exported_at":  "2026-08-28T20:15:26Z",
+    "exported_at":  "2026-08-29T00:36:30Z",
     "base_url":  "https://test.erpnext.am",
     "schema":  {
-                   "custom-fields":  130,
+                   "custom-fields":  118,
                    "notifications":  5,
-                   "client-scripts":  39,
-                   "server-scripts":  59,
+                   "client-scripts":  38,
+                   "server-scripts":  52,
                    "workflows":  0,
-                   "property-setters":  207,
+                   "property-setters":  195,
                    "role-profiles":  6,
                    "workspaces":  22,
                    "print-formats":  1,
-                   "reports":  49,
+                   "reports":  47,
                    "custom-doctypes":  14
                },
     "data":  {

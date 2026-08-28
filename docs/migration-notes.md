@@ -623,3 +623,50 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 ### Pending (Prod)
 - **[ ]** Execute same deletions on `erpnext.am` (prod) when ready
 - **[ ]** Docs 11, 11A, 12, 12A are now historical — consider archiving or adding deprecation headers
+
+---
+
+## Sales Order Flow Deletion (2026-08-28)
+
+**Reason:** The entire Sales Order parallel flow (Doc 09/09A) was deployed but **never used** — 0 Sales Orders, 0 SO-linked Tasks, 0 Delivery Notes, 0 SO-linked Stock Entries ever created. Superseded by the Unified Dispatch Case flow (Doc 16). Additionally, `Task-before-save-discount-approval-writeback` contained a **latent bug** that would block Dispatch Case discount approval by throwing when `sales_order` was empty on a DC-linked task.
+
+### What Was Deleted (from test.erpnext.am)
+
+**Server Scripts (7):**
+- `Sales Order-after-submit-pack-task` — creates Pack task when SO submitted
+- `Sales Order-before-save-discount-approval` — 245-line discount detection/approval on SO
+- `Task-before-save-discount-approval-writeback` — writes approval back to SO, creates Pack task (**latent bug: would block DC discount approval**)
+- `Task-before-save-pack-complete-creates-delivery-task` — creates Delivery task when SO Pack completes
+- `Delivery Note-before-submit-delivery-gate` — validates DN against SO discount/prepayment
+- `Stock Entry-before-submit-dispatch-gate` (was disabled) — dispatch staging gate for SO flow
+- `Stock Entry-before-save-no-client-wh` (was disabled) — blocked SO stock from client warehouses
+
+**Client Scripts (1):**
+- `SO-customer-autofill` — auto-fills hospital/doctor on SO form
+
+**Custom Fields on Sales Order (10):**
+- `hospital`, `hospital_branch`, `doctor_name`
+- `is_prepaid`, `prepayment_required_amount_amd`, `prepayment_payment_entry`
+- `discount_approval_status`, `discount_approval_task`, `discount_approval_note`
+- `manual_pricing_reason`
+
+**Custom Fields on other DocTypes (2):**
+- `Task-sales_order` (Link → Sales Order)
+- `Stock Entry-sales_order` (Link → Sales Order)
+
+**Property Setters on Sales Order (12):**
+- Print format, field visibility settings (`base_rounded_total`, `rounded_total`, `in_words`, `scan_barcode`, `tax_id`, `utm_analytics_section`, `disable_rounded_total`)
+
+**Custom Reports (2):**
+- `RPT — Ops — Prepaid Orders Awaiting Delivery`
+- `RPT — Pricing — Sales Orders With Manual Rate Edits`
+
+### What Was Preserved
+
+- The Sales Order DocType itself (standard ERPNext, not custom)
+- All standard ERPNext Sales Order functionality remains available
+- The Dispatch Case discount approval flow (`Dispatch-Case-after-save.py` + `Task-after-save-dispatch-flow.py` lines 274-283) is unaffected and now works without the R4 blocker
+
+### Pending (Prod)
+- **[ ]** Execute same deletions on `erpnext.am` (prod) when ready
+- **[ ]** Doc 09, 09A are now historical — consider archiving or adding deprecation headers

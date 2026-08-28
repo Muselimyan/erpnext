@@ -11,7 +11,7 @@
 
 The Dispatch Case lifecycle is **substantially implemented and functional** as the new unified dispatch coordinator. The core task chain (Order Entry → Pack → Delivery → Return Call → Pickup Returns → Returns Inspection → Restock → Invoice → Debt Collection) is complete and matches Doc 16 with minor deviations.
 
-However, this audit identified **5 original findings** (3 fixed, 2 reclassified as not-bugs), **7 documentation gaps**, **4 legacy/dead-code risks** (2 since resolved by Surgery Case deletion), and **3 design concerns**. Summary of bug resolutions:
+However, this audit identified **5 original findings** (3 fixed, 2 reclassified as not-bugs), **7 documentation gaps** (1 resolved), **4 legacy/dead-code risks** (all 4 resolved by Surgery Case + Sales Order deletions), and **3 design concerns** (1 resolved). Summary of bug resolutions:
 
 | # | Finding | Severity | Confidence |
 |---|---------|----------|------------|
@@ -21,9 +21,9 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 | BUG-04 | ~~"Invoiced" state never set by any script~~ | ~~Medium~~ **FIXED** | 0.95 |
 | BUG-05 | ~~`Task-Product Lines Display.js` sets wrong default warehouse~~ | ~~Medium~~ **FIXED** | 0.95 |
 | LEGACY-01 | ~~Surgery Case orchestrator still active alongside Dispatch Case~~ | ~~Risk~~ **RESOLVED** | — |
-| LEGACY-02 | Sales Order parallel flow (4 scripts) still active | Risk | 0.95 |
+| LEGACY-02 | ~~Sales Order parallel flow (7 scripts) still active~~ | ~~Risk~~ **RESOLVED** | — |
 | LEGACY-03 | ~~Duplicate Collection Set validation scripts~~ | ~~Low~~ **RESOLVED** | — |
-| LEGACY-04 | Stock Entry dispatch gate disabled but documented as part of flow | Info | 0.95 |
+| LEGACY-04 | ~~Stock Entry dispatch gate disabled but documented as part of flow~~ | ~~Info~~ **RESOLVED** | — |
 | GAP-01 | No stock availability check at Pack completion | Medium | 0.92 |
 | GAP-02 | Missing role restrictions for Return Call and Returns restocking tasks | Low | 0.90 |
 | GAP-03 | Outstanding calculation ignores total_paid_amount | Medium | 0.88 |
@@ -52,7 +52,7 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 | S5 | `Dispatch Case-packing-problem-alerts.py` | DocType Event | Dispatch Case | After Save | **Yes** | 60 |
 | S6 | `Task-after-save-dispatch-flow.py` | DocType Event | Task | After Save | **Yes** | 289 |
 | S7 | `Task-before-save-dispatch-gates.py` | DocType Event | Task | Before Save | **Yes** | 134 |
-| S8 | `Task-before-save-pack-complete-creates-delivery-task.py` | DocType Event | Task | Before Save | **Yes** | 86 |
+| ~~S8~~ | ~~`Task-before-save-pack-complete-creates-delivery-task.py`~~ | ~~DocType Event~~ | ~~Task~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~86~~ |
 | S9 | `dispatch_case_packing_scan.py` | API | — | — | **Yes** | 158 |
 | S10 | `dispatch_task_accept.py` | API | — | — | **Yes** | 86 |
 | S11 | `task_create_dispatch_case.py` | API | — | — | **Yes** | 30 |
@@ -60,18 +60,18 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 | S13 | `task_update_return_item_quantities.py` | API | — | — | **Yes** | 49 |
 | S14 | `task_mark_item_packed.py` | API | — | — | **Yes** | 44 |
 | S15 | `task_mark_items_packed_batch.py` | API | — | — | **Yes** | 40 |
-| S16 | `Delivery Note-before-submit-delivery-gate.py` | DocType Event | Delivery Note | Before Submit | **Yes** | 30 |
-| S17 | `Stock Entry-before-submit-dispatch-gate.py` | DocType Event | Stock Entry | Before Submit | **No** | 61 |
+| ~~S16~~ | ~~`Delivery Note-before-submit-delivery-gate.py`~~ | ~~DocType Event~~ | ~~Delivery Note~~ | ~~Before Submit~~ | **DELETED 2026-08-28** | ~~30~~ |
+| ~~S17~~ | ~~`Stock Entry-before-submit-dispatch-gate.py`~~ | ~~DocType Event~~ | ~~Stock Entry~~ | ~~Before Submit~~ | **DELETED 2026-08-28** | ~~61~~ |
 
 **Related server scripts (parallel/legacy flows — also analyzed):**
 
 | # | File | Type | DocType | Event | Enabled | Lines |
 |---|------|------|---------|-------|---------|-------|
 | ~~R1~~ | ~~`Surgery-Case-before-save.py`~~ | ~~DocType Event~~ | ~~Surgery Case~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~279~~ |
-| R2 | `Sales Order-after-submit-pack-task.py` | DocType Event | Sales Order | After Submit | **Yes** | 72 |
-| R3 | `Sales Order-before-save-discount-approval.py` | DocType Event | Sales Order | Before Save | **Yes** | 245 |
-| R4 | `Task-before-save-discount-approval-writeback.py` | DocType Event | Task | Before Save | **Yes** | 103 |
-| R5 | `Stock Entry-before-save-no-client-wh.py` | DocType Event | Stock Entry | Before Save | **No** | 24 |
+| ~~R2~~ | ~~`Sales Order-after-submit-pack-task.py`~~ | ~~DocType Event~~ | ~~Sales Order~~ | ~~After Submit~~ | **DELETED 2026-08-28** | ~~72~~ |
+| ~~R3~~ | ~~`Sales Order-before-save-discount-approval.py`~~ | ~~DocType Event~~ | ~~Sales Order~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~245~~ |
+| ~~R4~~ | ~~`Task-before-save-discount-approval-writeback.py`~~ | ~~DocType Event~~ | ~~Task~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~103~~ |
+| ~~R5~~ | ~~`Stock Entry-before-save-no-client-wh.py`~~ | ~~DocType Event~~ | ~~Stock Entry~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~24~~ |
 | ~~R6~~ | ~~`Collection-Set-validate-readiness.py`~~ | ~~DocType Event~~ | ~~Collection Set~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~47~~ |
 | ~~R7~~ | ~~`Surgery-Set-Type-validate-readiness.py`~~ | ~~DocType Event~~ | ~~Collection Set~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~47~~ |
 
@@ -111,8 +111,8 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 |-------------|-----------------|
 | `custom-doctypes.json` | `Dispatch Case` (submittable, autoname `DC-.YYYY.-.#####`), `Dispatch Case Item`, `Debt Collection Invoice`, `Debt Collection Payment`. ~~Surgery Case, Collection Set~~ **DELETED** |
 | `custom-fields.json` | 10 custom fields on Dispatch Case, 10 on Dispatch Case Item. ~~surgery_case on Task/SE/SI~~ **DELETED** |
-| `server-scripts.json` | 59 total server scripts (post-deletion). ~~Surgery-Case-before-save, Collection-Set-validate-readiness, Surgery-Set-Type-validate-readiness~~ **DELETED** |
-| `client-scripts.json` | 39 total client scripts. ~~Surgery-Case-field-locking, Task - Load Surgical Kit Template~~ **DELETED** |
+| `server-scripts.json` | 52 total server scripts (post-deletion). ~~Surgery Case scripts (3), SO flow scripts (7)~~ **DELETED** |
+| `client-scripts.json` | 38 total client scripts. ~~Surgery-Case-field-locking, Task - Load Surgical Kit Template, SO-customer-autofill~~ **DELETED** |
 
 ---
 
@@ -217,23 +217,23 @@ Draft ──(save with discount)──→ Awaiting Approval
 
 ## 3. Active vs Disabled Script Inventory
 
-### 3.1 Disabled Scripts in Group 1
+### 3.1 ~~Disabled Scripts in Group 1~~ (both now DELETED 2026-08-28)
 
-| Script | DocType | Event | Why disabled | Impact |
-|--------|---------|-------|-------------|--------|
-| `Stock Entry-before-submit-dispatch-gate.py` | Stock Entry | Before Submit | Replaced by gates inside `Task-after-save-dispatch-flow.py` and `Task-before-save-dispatch-gates.py` | Old Sales Order flow gate. Validates discount approval, delivery photo, prepayment for dispatch-staging SEs. Not needed for Dispatch Case flow since SEs are auto-created with `ignore_validate`. |
-| `Stock Entry-before-save-no-client-wh.py` | Stock Entry | Before Save | Disabled | Prevented standard-sale stock from moving into client warehouses. Disabled because Dispatch Case flow legitimately moves stock to client warehouses. |
+| Script | DocType | Event | Status |
+|--------|---------|-------|--------|
+| ~~`Stock Entry-before-submit-dispatch-gate.py`~~ | Stock Entry | Before Submit | **DELETED** — old SO dispatch gate |
+| ~~`Stock Entry-before-save-no-client-wh.py`~~ | Stock Entry | Before Save | **DELETED** — old SO client-WH blocker |
 
 ### 3.2 Legacy Scripts Still Active
 
 | Script | DocType | Why still active | Risk |
 |--------|---------|-----------------|------|
 | ~~`Surgery-Case-before-save.py`~~ | ~~Surgery Case~~ | **DELETED 2026-08-28** — 0 records ever existed | ~~LEGACY-01~~ **RESOLVED** |
-| `Sales Order-after-submit-pack-task.py` | Sales Order | Old Sales Order flow still operational | See LEGACY-02 |
-| `Sales Order-before-save-discount-approval.py` | Sales Order | Old Sales Order discount approval | See LEGACY-02 |
-| `Task-before-save-discount-approval-writeback.py` | Task | Old SO discount approval writeback | See LEGACY-02 |
-| `Task-before-save-pack-complete-creates-delivery-task.py` | Task | Old SO Pack→Delivery chain | See LEGACY-02 |
-| `Delivery Note-before-submit-delivery-gate.py` | Delivery Note | Old Sales Order delivery validation | See LEGACY-02 |
+| ~~`Sales Order-after-submit-pack-task.py`~~ | ~~Sales Order~~ | **DELETED 2026-08-28** — 0 SOs ever existed | ~~LEGACY-02~~ **RESOLVED** |
+| ~~`Sales Order-before-save-discount-approval.py`~~ | ~~Sales Order~~ | **DELETED 2026-08-28** | ~~LEGACY-02~~ **RESOLVED** |
+| ~~`Task-before-save-discount-approval-writeback.py`~~ | ~~Task~~ | **DELETED 2026-08-28** — had latent DC bug | ~~LEGACY-02~~ **RESOLVED** |
+| ~~`Task-before-save-pack-complete-creates-delivery-task.py`~~ | ~~Task~~ | **DELETED 2026-08-28** | ~~LEGACY-02~~ **RESOLVED** |
+| ~~`Delivery Note-before-submit-delivery-gate.py`~~ | ~~Delivery Note~~ | **DELETED 2026-08-28** | ~~LEGACY-02~~ **RESOLVED** |
 | ~~`Surgery-Case-field-locking.js`~~ | ~~Surgery Case~~ | **DELETED 2026-08-28** | ~~RESOLVED~~ |
 
 ---
@@ -326,48 +326,24 @@ At step 3, the stock was already in `Returns - Inmed` (moved there at step 2). T
 >
 > Preserved: `Surgical Kit Template` DocType (1 record, 16 Dispatch Cases use it) and `Dispatch Case-Template Auto Fill.js`.
 
-### LEGACY-02: Sales Order Parallel Flow (4 Scripts) Still Active
-**Severity: RISK | Confidence: 0.95**
+### LEGACY-02: ~~Sales Order Parallel Flow (7 Scripts) Still Active~~ RESOLVED
+**Status: RESOLVED (2026-08-28)**
 
-**Evidence:** Scripts R2, R3, R4, S8, S16 — all enabled
-
-**Problem:** A complete parallel operational flow exists for Sales Order-based dispatches:
-
-| Step | Script | What it does |
-|------|--------|-------------|
-| 1 | `Sales Order-before-save-discount-approval.py` (R3) | Detects discounts on SO, creates Discount Approval task |
-| 2 | `Sales Order-after-submit-pack-task.py` (R2) | Creates Pack task when SO is submitted |
-| 3 | `Task-before-save-discount-approval-writeback.py` (R4) | Writes approval result back to SO, creates Pack task if approved |
-| 4 | `Task-before-save-pack-complete-creates-delivery-task.py` (S8) | Creates Delivery task when SO-linked Pack completes |
-| 5 | `Delivery Note-before-submit-delivery-gate.py` (S16) | Validates discount/prepayment for DN submission |
-
-This flow is **separate from the Dispatch Case flow** — it keys on `sales_order` rather than `dispatch_case`. The two flows do not share deduplication:
-- S8 checks for existing Delivery tasks by `sales_order`
-- S6 checks for existing Delivery tasks by `dispatch_case`
-
-**Collision risk:** If a Task somehow has both `sales_order` and `dispatch_case` set, duplicate tasks could be created. In practice, Pack tasks created by the Dispatch Case flow (via `make_task()` in S6) set `dispatch_case` but not `sales_order`, so S8 would skip them (it returns early if `sales_order` is empty). The risk is low but the parallel flow adds confusion.
-
-**Assessment:** These scripts should eventually be disabled when all Sales Order-based operations are migrated to Dispatch Case. No sunset timeline is documented.
+> **Resolution:** The entire Sales Order parallel flow was **deleted** from test.erpnext.am on 2026-08-28. Live verification confirmed **0 Sales Orders**, 0 SO-linked Tasks, 0 Delivery Notes, and 0 SO-linked Stock Entries ever existed.
+>
+> Deleted: 7 server scripts (R2, R3, R4, S8, S16, S17, R5), 1 client script (`SO-customer-autofill`), 10 custom fields on Sales Order, 2 link fields (`Task-sales_order`, `Stock Entry-sales_order`), 12 Property Setters, 2 custom reports.
+>
+> **Latent bug fixed:** R4 (`Task-before-save-discount-approval-writeback`) would have blocked DC discount approval by throwing `frappe.throw("Discount Approval task must be linked to a Sales Order.")` when completing a DC-linked Discount Approval task (which has no `sales_order`).
 
 ### LEGACY-03: ~~Duplicate Collection Set Validation Scripts~~ RESOLVED
 **Status: RESOLVED (2026-08-28)**
 
 > **Resolution:** Both `Collection-Set-validate-readiness.py` (R6) and `Surgery-Set-Type-validate-readiness.py` (R7) were **deleted** along with the `Collection Set` DocType (0 records). The duplicate code issue no longer exists.
 
-### LEGACY-04: Stock Entry Dispatch Gate Disabled
-**Severity: INFO | Confidence: 0.95**
+### LEGACY-04: ~~Stock Entry Dispatch Gate Disabled~~ RESOLVED
+**Status: RESOLVED (2026-08-28)**
 
-**Evidence:** `Stock Entry-before-submit-dispatch-gate.py` (S17) — Disabled: 1
-
-**Context:** This script validated dispatch-staging Stock Entries (Main → Delivery In-Transit) by checking:
-- SO linkage required
-- Discount approval status
-- Delivery Task and warehouse pickup photo
-- Prepayment validation
-
-**Why disabled:** In the Dispatch Case flow, Stock Entries are auto-created by `Task-after-save-dispatch-flow.py` with `ignore_validate = True`, bypassing any Before Submit validation. The gate logic moved into `Task-before-save-dispatch-gates.py`.
-
-**Doc 16B assessment:** Marked as "✅ KEEP — Old Surgery Case SE gate — keep for old cases." But since it's disabled, it provides no protection for old cases either.
+> **Resolution:** `Stock Entry-before-submit-dispatch-gate.py` (S17) was **deleted** as part of the Sales Order flow cleanup. It was already disabled and referenced SO-specific fields that no longer exist.
 
 ---
 
@@ -524,7 +500,7 @@ Some early documentation (Doc 05) uses `- WH` suffix. Doc 16A §2 Prerequisites 
 |---------|-------|---------|-----------|
 | Dispatch Case | Before Save | S1 (used_qty calc + discount), S2 (lock submitted) | **No conflict** — S1 calculates fields, S2 gates editing. Order doesn't matter. |
 | Dispatch Case | After Save | S4 (discount approval task), S5 (packing problem alerts) | **No conflict** — independent concerns. S4 creates tasks, S5 monitors packing status. |
-| Task | Before Save | S7 (dispatch gates), S8 (pack→delivery for SO), R4 (SO discount writeback) + others from Group 2 | **Low risk** — S7 handles dispatch-case tasks, S8/R4 handle sales-order tasks. But execution order is undefined in ERPNext Server Script; if S7 throws, S8 won't execute (which is fine). |
+| Task | Before Save | S7 (dispatch gates) + others from Group 2. ~~S8, R4 deleted~~ | **No conflict** — S7 handles dispatch-case tasks. S8/R4 (SO flow) deleted 2026-08-28. |
 | Task | After Save | S6 (main orchestrator) + others from Group 2 | **Low risk** — S6 only acts on tasks with `dispatch_case` set. |
 | ~~Collection Set~~ | ~~Before Save~~ | ~~R6 + R7~~ | **DELETED** 2026-08-28 — see LEGACY-03 |
 
@@ -579,7 +555,7 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 | ~~Collection Set as item template~~ | ~~C1 loads from Collection Set~~ | ✅ **DELETED** — replaced by Surgical Kit Template |
 | Dispatch Case is read-only dashboard (Doc 16 §13) | C1 locks items, C2 locks submitted | ✅ Partial (items editable with `allow_items_edit`) |
 | Surgery Case superseded | ~~Surgery Case script still active~~ **DELETED 2026-08-28** | ✅ **RESOLVED** |
-| Sales Order flow superseded | SO flow scripts still active | ⚠️ LEGACY-02 |
+| Sales Order flow superseded | ~~SO flow scripts still active~~ **DELETED 2026-08-28** | ✅ **RESOLVED** |
 
 ---
 
@@ -588,7 +564,7 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 | # | Item | Why it can't be confirmed offline |
 |---|------|----------------------------------|
 | ~~V1~~ | ~~Whether any Surgery Cases are still in-flight~~ | **RESOLVED**: 0 records. Surgery Case DocType deleted 2026-08-28 |
-| V2 | Whether any Sales Orders are still being created (not migrated to DC) | Requires checking recent SO creation dates |
+| ~~V2~~ | ~~Whether any Sales Orders are still being created~~ | **RESOLVED**: 0 Sales Orders ever created. SO flow deleted 2026-08-28 |
 | V3 | Whether `directors.team@example.com` is a valid, enabled user | Requires user table check |
 | ~~V4~~ | ~~Whether `Surgical Kit Template` DocType has any records~~ | **RESOLVED**: 1 record ("Hip Surgery Standard Kit"), 16 Dispatch Cases reference it |
 | V5 | Remove `Invoiced` from Dispatch Case status field options in live ERPNext schema | Schema change needed (BUG-04 resolution) |
@@ -623,7 +599,7 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 
 ### Medium-term (cleanup sprint)
 
-9. **Sunset plan for Sales Order flow**: Document a timeline for disabling R2, R3, R4, S8, S16. Verify no new Sales Orders are being created.
+9. ~~**Sunset plan for Sales Order flow**~~: **DONE** — entire SO flow deleted 2026-08-28 (0 records, never used, latent R4 bug fixed).
 
 10. ~~**Sunset plan for Surgery Case flow**~~: **DONE** — entire Surgery Case system deleted 2026-08-28 (0 records, never used).
 
@@ -642,10 +618,10 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 | Task system gates (`Task-before-save-policy.py`, lock scripts) | Group 2 (Task System) | Group 2 should verify these don't conflict with Group 1 gates |
 | Payment recording (`Task-before-save-payment-recording.py`, `Task-after-save-advance-payment.py`) | Group 3 (Financial Automation) | Debt Collection task flow continues in Group 3 |
 | Packing scan and barcode handling | Group 4 (Barcode/Inventory) | FEFO warnings, batch handling in scan API |
-| Discount approval on Sales Order | Group 5 (Sales Order Legacy) | Parallel flow with Dispatch Case discount approval |
+| ~~Discount approval on Sales Order~~ | ~~Group 5 (Sales Order Legacy)~~ | **RESOLVED** — SO flow deleted 2026-08-28 |
 | Reporting on Dispatch Case states | Group 6 (Reporting) | `Invoiced` state removed — verify no reports reference it |
 | ~~Surgery Case interaction~~ | ~~Group 7 (Legacy Migration)~~ | **RESOLVED** — Surgery Case system deleted 2026-08-28 |
 
 ---
 
-*End of Group 1 audit. Document version 1.0 (2026-08-27), updated 1.1 (2026-08-28: Surgery Case deletion reflected).*
+*End of Group 1 audit. Document version 1.0 (2026-08-27), updated 1.1 (2026-08-28: Surgery Case deletion), updated 1.2 (2026-08-28: Sales Order flow deletion).*
