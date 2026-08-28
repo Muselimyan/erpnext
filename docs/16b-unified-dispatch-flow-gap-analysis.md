@@ -139,8 +139,8 @@ Write-off Approval
 | `customer` | Customer | ✅ EXISTS | |
 | `dispatch_group_id` | Dispatch Group ID | ✅ EXISTS | |
 | `surgery_case` | Surgery Case | ✅ EXISTS | Legacy link, kept for old cases |
-| `warehouse_pickup_photo` | Warehouse Pickup Photo | ✅ EXISTS | Reusable as `delivery_photo` for Delivery task "Delivered" state |
-| `warehouse_dropoff_photo` | Warehouse Drop-off Photo | ✅ EXISTS | Reusable as return drop-off photo for Return Pickup "Returned to Warehouse" state |
+| ~~`warehouse_pickup_photo`~~ | ~~Warehouse Pickup Photo~~ | **REMOVED** | Replaced by File records (Doc 18) |
+| ~~`warehouse_dropoff_photo`~~ | ~~Warehouse Drop-off Photo~~ | **REMOVED** | Replaced by File records (Doc 18) |
 | `driver_handover_note` | Driver Handover Note | ✅ EXISTS | Reusable as handover note in Delivery task |
 | `payment_entry` | Payment Entry | ✅ EXISTS | |
 | `current_debt_amd` | Current Debt (AMD) | ✅ EXISTS | Used by old debt monitoring script |
@@ -158,7 +158,7 @@ Write-off Approval
 | `open_invoices` | Open Invoices | ✅ EXISTS | Table → `Debt Collection Invoice` child DocType |
 | `payment_history` | Payment History | ✅ EXISTS | Table → `Debt Collection Payment` child DocType |
 
-**Note on reuse:** `warehouse_pickup_photo`, `warehouse_dropoff_photo`, and `driver_handover_note` already exist and can be reused in the new multi-state task logic — no new fields needed for these. The gate server scripts will be updated to check them at the new state transition points.
+**Note on reuse:** `driver_handover_note` already exists and can be reused in the new multi-state task logic. Photo fields (`warehouse_pickup_photo`, `warehouse_dropoff_photo`) have been removed — photos now use File records checked by `task_has_image()` (see Doc 18).
 
 ---
 

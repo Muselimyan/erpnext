@@ -1,4 +1,4 @@
-﻿# Doc 12 — Surgery Set Operational Workflow (End-to-End)
+# Doc 12 — Surgery Set Operational Workflow (End-to-End)
 
 ## 1) Purpose
 Define the day-to-day operational workflow for **surgery set/box** cases from request → dispatch → usage → return pickup → returns receiving → invoicing.
@@ -388,9 +388,10 @@ Goal: drivers should not need detailed ERPNext knowledge.
 
 Driver action (few clicks):
 1) Open the assigned delivery Task.
-2) Attach the Warehouse Pickup Photo (taken at `Main - WH` pickup, after packing, before leaving).
-3) On delivery, record a short handover note (example: who it was handed to).
-4) Mark as completed (optionally attach delivery proof photo if you decide later).
+2) On delivery, record a short handover note (example: who it was handed to).
+3) Mark as completed.
+
+Note: The Warehouse Pickup Photo is attached at the **Pack** stage (not the Delivery stage). See Doc 18.
 
 Back-office action (Delivery Coordinator):
 1) Click the workflow action to move the case to `Delivered`.
@@ -663,8 +664,8 @@ Additional reporting enabled by serial/batch tracking:
   - “What does Client X owe us?”
 - The system supports reconciliation:
   - Delivered = Used + Returned (+ Lost/Damaged)
-- Delivery tasks capture warehouse-pickup photo evidence.
-- Return drop-off tasks capture warehouse drop-off photo evidence.
+- Pack tasks capture warehouse-pickup photo evidence (required for Pack task completion). See Doc 18.
+- Pickup Returns tasks capture warehouse drop-off photo evidence (required before marking Returned to Warehouse). See Doc 18.
 
 Serial/batch acceptance:
 - Dispatch cannot be finalized unless serials/batches are recorded for tracked items.

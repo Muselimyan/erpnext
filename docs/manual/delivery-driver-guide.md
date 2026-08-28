@@ -1,4 +1,4 @@
-﻿# Delivery Driver Guide
+# Delivery Driver Guide
 
 **Purpose:** Simple step-by-step reference for the Delivery Driver role. Covers everything you need to do in ERPNext for deliveries and return pickups. You only ever work from your Task inbox — you do not need to open any other part of the system.
 
@@ -50,9 +50,7 @@ When you physically pick up the packed box from the warehouse:
 
 After the client receives the items:
 
-1. On the task, **attach the delivery photo** (required — you cannot mark as Delivered without a photo):
-   - Click the 📎 attachment icon on the task form
-   - Take a photo of the handover moment (items with the client, or client signing/receiving) and upload it
+1. (No photo required on the Delivery task — photo evidence is captured at the Pack stage.)
 2. Fill in the **Driver Handover Note** field:
    - Write the name and role of the person who received the items
    - Example: `Received by Dr. Petrosyan's nurse, Ana Sargsyan, at Erebuni MC reception`
@@ -65,7 +63,6 @@ After the client receives the items:
 - Your task is now complete
 
 **❌ If you see an error:**
-- `"Delivery photo is required"` → attach a photo before changing to Delivered
 - `"Handover Note is required"` → fill in the handover note field first
 
 ---
@@ -130,7 +127,7 @@ When you have physically handed the items to the warehouse team:
 | When | Action in ERPNext |
 |---|---|
 | You pick up delivery box from warehouse | Delivery task → Status = `Picked Up` → Save |
-| You hand items to the client | Delivery task → attach photo + fill handover note → Status = `Delivered` → Save |
+| You hand items to the client | Delivery task → fill handover note → Status = `Delivered` → Save |
 | You collect return items from client | Return Pickup task → fill handover note → Status = `Picked Up` → Save |
 | You drop return items at warehouse | Return Pickup task → attach photo → Status = `Returned to Warehouse` → Save |
 
@@ -138,7 +135,7 @@ When you have physically handed the items to the warehouse team:
 
 ## Quick rules
 
-- **Always attach a photo** before marking as Delivered or Returned to Warehouse — the system will not let you proceed without it
+- **Always attach a drop-off photo** before marking as Returned to Warehouse (Delivery tasks do not require a photo) — the system will not let you proceed without it
 - **Always fill the handover note** — write the name of the person who received or handed over the items
 - **Do not skip steps** — if you mark Delivered without first marking Picked Up, the task history will be incomplete
 - **If the task is not in your list** — ask your coordinator to assign it to you; do not take actions on tasks assigned to someone else without coordinator approval

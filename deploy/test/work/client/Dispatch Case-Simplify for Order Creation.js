@@ -50,19 +50,11 @@ frappe.ui.form.on("Dispatch Case", {
                 }
             });
             
-            // Hide Photos section
+            // Hide Photos section (no photos exist during order creation)
             if (frm.fields_dict.photo_section) {
                 frm.fields_dict.photo_section.df.hidden = 1;
                 frm.refresh_field("photo_section");
             }
-            
-            // Hide photo fields
-            const photo_fields = ["delivery_photo", "return_dropoff_photo"];
-            photo_fields.forEach(function(fieldname) {
-                if (frm.fields_dict[fieldname]) {
-                    frm.set_df_property(fieldname, "hidden", 1);
-                }
-            });
             
             // Hide packing scan fields (these are custom fields)
             const packing_fields = [

@@ -5,6 +5,18 @@
 # Disabled: 0
 # ---
 
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
+
+def is_image_url(url):
+    return (url or "").lower().split("?")[0].endswith(IMAGE_EXTENSIONS)
+
+def task_has_image(task_name):
+    """Check if a Task has at least one attached image File record."""
+    files = frappe.get_all("File", filters={"attached_to_doctype": "Task", "attached_to_name": task_name}, fields=["file_url"])
+    images = [f.file_url for f in files if is_image_url(f.file_url)]
+    print(f"[Photo] task_has_image({task_name}): total_files={len(files)}, images={len(images)}, urls={images[:5]}")
+    return len(images) > 0
+
 # Mandatory: task must be accepted before any save/change/complete
 if doc.task_kind and doc.status != "Template" and doc.status != "Cancelled":
     accept_gate_before = doc.get_doc_before_save()
@@ -63,11 +75,12 @@ else:
     ds_changing = (doc.task_kind == "Delivery" and doc.delivery_status != before_ds)
     ps_changing = (doc.task_kind == "Pickup Returns" and doc.pickup_status != before_ps)
 
-    # Pack task: require pickup photo before completing
+    # Pack task: require at least one image before completing
     if is_completing and doc.task_kind == "Pack / prepare items":
-        has_photo = doc.warehouse_pickup_photo or frappe.db.exists("File", {"attached_to_doctype": "Task", "attached_to_name": doc.name, "attached_to_field": "warehouse_pickup_photo"})
+        has_photo = task_has_image(doc.name)
+        print(f"[Photo] {frappe.utils.now()} task={doc.name} Pack completion gate: has_image={has_photo}, result={'PASS' if has_photo else 'BLOCKED'}")
         if not has_photo:
-            frappe.throw("Warehouse Pickup Photo is required before completing the Pack / prepare items task.")
+            frappe.throw("At least one photo is required before completing the Pack / prepare items task.")
 
     # Delivery: must go through Picked Up before Delivered
     if ds_changing and doc.delivery_status == "Delivered" and before_ds != "Picked Up":
@@ -91,9 +104,10 @@ else:
 
     # Auto-complete Return Pickup task when Returned to Warehouse
     if ps_changing and doc.pickup_status == "Returned to Warehouse":
-        has_dropoff = doc.warehouse_dropoff_photo or frappe.db.exists("File", {"attached_to_doctype": "Task", "attached_to_name": doc.name, "attached_to_field": "warehouse_dropoff_photo"})
+        has_dropoff = task_has_image(doc.name)
+        print(f"[Photo] {frappe.utils.now()} task={doc.name} Pickup Returns dropoff gate: has_image={has_dropoff}, result={'PASS' if has_dropoff else 'BLOCKED'}")
         if not has_dropoff:
-            frappe.throw("Drop-off Photo (Warehouse Drop-off Photo) is required before marking Returned to Warehouse.")
+            frappe.throw("At least one photo is required before marking Returned to Warehouse.")
         doc.status = "Completed"
 
     # Pack completion: all items must be checked as packed

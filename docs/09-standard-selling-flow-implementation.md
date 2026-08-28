@@ -228,13 +228,8 @@ Doc 09 requires:
 2) Select DocType: `Task`.
 3) Add fields:
 
-- Label: `Warehouse Pickup Photo`
-  - Fieldname: `warehouse_pickup_photo`
-  - Fieldtype: `Attach`
-
-- Label: `Warehouse Drop-off Photo`
-  - Fieldname: `warehouse_dropoff_photo`
-  - Fieldtype: `Attach`
+- ~~`warehouse_pickup_photo` (Attach)~~ — **REMOVED** (Doc 18: photos use File records)
+- ~~`warehouse_dropoff_photo` (Attach)~~ — **REMOVED** (Doc 18: photos use File records)
 
 4) Save.
 
@@ -650,22 +645,9 @@ if so.discount_approval_status in ("Pending", "Rejected"):
         "Complete the Discount Approval task (Approved) or remove the discount."
     )
 
-# Warehouse pickup photo gate (Doc 09)
-tasks = frappe.get_all(
-    "Task",
-    filters={
-        "task_kind": "Delivery",
-        "sales_order": so.name,
-        "status": ["!=", "Cancelled"],
-    },
-    fields=["name", "warehouse_pickup_photo"],
-)
-
-if not tasks:
-    frappe.throw("Dispatch staging requires an existing Delivery Task linked to this Sales Order.")
-
-if not any(t.get("warehouse_pickup_photo") for t in tasks):
-    frappe.throw("Warehouse Pickup Photo must be attached to the Delivery Task before dispatch staging.")
+# Warehouse pickup photo gate — SUPERSEDED (Doc 18)
+# Photo gate now checks Pack task (not Delivery task) using task_has_image().
+# See Task-before-save-dispatch-gates.py and Stock Entry-before-submit-dispatch-gate.py.
 
 # Prepaid gate
 if so.is_prepaid:
@@ -796,8 +778,9 @@ if not is_becoming_completed:
 if doc.task_kind != "Return drop-off at warehouse":
     return
 
-if not doc.warehouse_dropoff_photo:
-    frappe.throw("Warehouse Drop-off Photo is required to complete this task.")
+# SUPERSEDED (Doc 18): now uses task_has_image(doc.name) to check File records
+# if not task_has_image(doc.name):
+#     frappe.throw("At least one photo is required.")
 
 if not doc.completed_at:
     doc.completed_at = now_datetime()

@@ -1,5 +1,7 @@
 # Doc 10A — Task System Foundations (Implementation / ERPNext Setup Guide)
 
+> **Note:** Photo requirements have been revised. See **Doc 18 — Photo System** for the current authoritative rules. Key change: the pickup photo requirement is on the **Pack** task (not the Delivery task), and Delivery tasks have no photo requirement. This implementation doc (10A) reflects the original design and has not been fully updated.
+
 ## 1) Purpose
 This is a **step-by-step setup guide** to implement the operational rules defined in:
 - **Doc 10 — Task System Foundations (Operational)**
@@ -83,8 +85,8 @@ Doc 10 also requires that Task completion time is captured.
 
 ### 4.1 Add fields
 In `Customize Form` → `Task`, add:
-- `warehouse_pickup_photo` (Attach) — Label: `Warehouse Pickup Photo`
-- `warehouse_dropoff_photo` (Attach) — Label: `Warehouse Drop-off Photo`
+- ~~`warehouse_pickup_photo`~~ — REMOVED (see Doc 18: photos use File records now)
+- ~~`warehouse_dropoff_photo`~~ — REMOVED (see Doc 18: photos use File records now)
 - `completed_at` (Datetime) — Label: `Completed At` — Read Only
 
 Save.
@@ -324,14 +326,10 @@ if is_becoming_completed and doc.task_kind and not is_admin_override(user_roles)
         roles_text = ", ".join([f"'{r}'" for r in allowed_roles])
         frappe.throw(f"Only users with roles {roles_text} can complete Task Kind '{doc.task_kind}'.")
 
-# Mandatory attachments (Doc 10 section 7)
-if is_becoming_completed and doc.task_kind == "Delivery":
-    if not doc.warehouse_pickup_photo:
-        frappe.throw("Warehouse Pickup Photo is required to complete a Delivery task.")
-
-if is_becoming_completed and doc.task_kind == "Return drop-off at warehouse":
-    if not doc.warehouse_dropoff_photo:
-        frappe.throw("Warehouse Drop-off Photo is required to complete a Return drop-off at warehouse task.")
+# Mandatory attachments — SUPERSEDED by Doc 18
+# Photo gates now use task_has_image(doc.name) which checks File records.
+# Delivery tasks no longer require photos. Pack and Pickup Returns tasks do.
+# See Task-before-save-dispatch-gates.py for current implementation.
 
 # Single-owner enforcement (Doc 10 section 2 + 6)
 # Notes:

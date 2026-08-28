@@ -18,6 +18,10 @@ FINANCE_TEAM = "finance.team@example.com"
 OFFICE_TEAM = "office.team@example.com"
 ORDER_CREATION_TEAM = "order.creation.team@example.com"
 
+
+
+
+
 if not doc.dispatch_case:
     pass
 else:
@@ -180,8 +184,6 @@ else:
 
     # Delivery: Delivered
     if ds_changed and doc.delivery_status == "Delivered":
-        if doc.warehouse_pickup_photo:
-            frappe.db.set_value("Dispatch Case", doc.dispatch_case, "delivery_photo", doc.warehouse_pickup_photo)
         se = create_se(DELIVERY_TRANSIT_WH, case.client_location_warehouse, all_items(case))
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Delivered", "delivery_stock_entry": se.name if se else ""})
         case.reload()
@@ -202,17 +204,9 @@ else:
 
     # Return Pickup: Returned to Warehouse
     if ps_changed and doc.pickup_status == "Returned to Warehouse":
-        if doc.warehouse_dropoff_photo:
-            frappe.db.set_value("Dispatch Case", doc.dispatch_case, "return_dropoff_photo", doc.warehouse_dropoff_photo)
         se = create_se(RETURN_PICKUP_TRANSIT_WH, RETURNS_WH, all_items(case))
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Returns Received", "return_receive_stock_entry": se.name if se else ""})
         ret_tid = make_task("Returns processing / verification", f"Inspect returns: {short_customer(case.customer)} ({case.name})", RETURNS_TEAM, "Open Dispatch Case and fill returned_qty for each item.", "returns_inspection_task", doc.dispatch_case, case.customer, source_task=doc.name)
-        # Copy pickup photo from Pack task to Returns task
-        pack_task_name = case.pack_task
-        if pack_task_name and ret_tid:
-            pack_photo = frappe.db.get_value("Task", pack_task_name, "warehouse_pickup_photo")
-            if pack_photo:
-                frappe.db.set_value("Task", ret_tid, "custom_delivery_photo", pack_photo, update_modified=False)
 
     # Order Entry task Completed - create Pack task
     if is_completing and doc.task_kind == "Order entry":

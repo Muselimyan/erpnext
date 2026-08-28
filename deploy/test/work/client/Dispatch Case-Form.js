@@ -9,11 +9,10 @@ frappe.ui.form.on("Dispatch Case", {
         frm.set_df_property("client_location_warehouse", "reqd", 0);
         if (frm.fields_dict.customer) frm.fields_dict.customer.df.reqd = 0;
         if (frm.fields_dict.client_location_warehouse) frm.fields_dict.client_location_warehouse.df.reqd = 0;
-        // Hide fields: client, warehouse, item template, notes
+        // Hide fields: client, warehouse, notes
         setTimeout(function() {
             $(frm.wrapper).find('[data-fieldname="customer"]').closest('.frappe-control').hide();
             $(frm.wrapper).find('[data-fieldname="client_location_warehouse"]').closest('.frappe-control').hide();
-            $(frm.wrapper).find('[data-fieldname="surgery_set_type"]').closest('.frappe-control').hide();
             $(frm.wrapper).find('[data-fieldname="notes"]').closest('.frappe-control').hide();
             // Mobile: hide extra fields
             if (window.innerWidth <= 768) {
@@ -80,23 +79,5 @@ frappe.ui.form.on("Dispatch Case", {
     allow_items_edit: function(frm) {
         frm.refresh_fields();
         frm.script_manager.trigger("refresh");
-    },
-    surgery_set_type: function(frm) {
-        if (!frm.doc.surgery_set_type) return;
-        frappe.call({
-            method: "frappe.client.get",
-            args: { doctype: "Collection Set", name: frm.doc.surgery_set_type },
-            callback: function(r) {
-                if (!r.message) return;
-                frm.clear_table("case_items");
-                (r.message.items || []).forEach(function(row) {
-                    var nr = frm.add_child("case_items");
-                    nr.item_code = String(row.item || "");
-                    nr.dispatched_qty = row.qty || 1;
-                    nr.unit_price = row.rate || 0;
-                });
-                frm.refresh_field("case_items");
-            }
-        });
     }
 });

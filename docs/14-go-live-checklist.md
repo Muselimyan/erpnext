@@ -1,4 +1,4 @@
-﻿# Doc 14 — Go-Live Readiness Checklist (Functional)
+# Doc 14 — Go-Live Readiness Checklist (Functional)
 
 ## 1) Purpose
 This document is a functional readiness checklist for go-live.
@@ -168,7 +168,7 @@ Pass criteria:
   - Confirm Delivery task auto-created for Delivery team. Case status = `Packed`.
 - `Delivery Driver` sets Delivery Status to `Picked Up` on the Delivery task.
   - Confirm case status → `In Transit`.
-- `Delivery Driver` attaches delivery photo, fills Driver Handover Note, sets Delivery Status to `Delivered`.
+- `Delivery Driver` fills Driver Handover Note, sets Delivery Status to `Delivered`.
   - Confirm Delivery Stock Entry auto-submitted (to internal consumption path since no-return).
   - Confirm Consumption Stock Entry auto-submitted.
   - Confirm draft Sales Invoice auto-created (quantities = `dispatched_qty`).
@@ -242,8 +242,8 @@ Pass criteria (Doc 16 acceptance intent):
 - Finance records full payment on Debt Collection task. Case → `Closed`.
 
 Driver evidence checks:
-- Delivery task: delivery photo required before `Delivered`.
-- Return Pickup task: drop-off photo required before `Returned to Warehouse`.
+- Pack task: pickup photo required before completion (see Doc 18).
+- Pickup Returns task: drop-off photo required before `Returned to Warehouse` (see Doc 18).
 
 Template check:
 - If tested with a Collection Set template, confirm **Load from Template** on the Dispatch Case auto-fills Case Items from the template.

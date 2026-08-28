@@ -1,4 +1,4 @@
-﻿# Dispatch Case — Standard Sale (No Return) Walkthrough
+# Dispatch Case — Standard Sale (No Return) Walkthrough
 
 **Purpose:** Step-by-step test script to verify the complete unified dispatch flow for a standard sale (no items expected to return). Run as a smoke test after deployment or after any server script changes.
 
@@ -164,7 +164,7 @@
 
 ### Sub-step 4b — Mark as Delivered
 
-4. Attach a **delivery photo**: click the attachment icon on the task, upload a photo.
+4. (No delivery photo required — photo evidence is on the Pack task.)
 5. Fill in **Driver Handover Note**: note who received the items at the client location.
 6. Set **Delivery Status** to `Delivered` and Save.
 
@@ -178,7 +178,6 @@
 - `used_qty` on each Case Item row = `dispatched_qty`
 
 **❌ Should NOT happen (gate blocks — correct behavior):**
-- Error "Delivery photo is required" if you try to set Delivered without a photo → attach photo first
 - Error "Handover Note is required" → fill the note field first
 
 ---

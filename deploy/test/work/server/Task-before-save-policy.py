@@ -5,6 +5,18 @@
 # Disabled: 0
 # ---
 
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
+
+def is_image_url(url):
+    return (url or "").lower().split("?")[0].endswith(IMAGE_EXTENSIONS)
+
+def task_has_image(task_name):
+    """Check if a Task has at least one attached image File record."""
+    files = frappe.get_all("File", filters={"attached_to_doctype": "Task", "attached_to_name": task_name}, fields=["file_url"])
+    images = [f.file_url for f in files if is_image_url(f.file_url)]
+    print(f"[Photo] task_has_image({task_name}): total_files={len(files)}, images={len(images)}, urls={images[:5]}")
+    return len(images) > 0
+
 before = doc.get_doc_before_save()
 before_status = before.status if before else None
 is_becoming_completed = (doc.status == "Completed" and before_status != "Completed")
@@ -60,13 +72,15 @@ if is_becoming_completed and doc.task_kind and not is_admin_override(user_roles)
 # Old-flow mandatory attachments (only for tasks NOT linked to a Dispatch Case)
 if not doc.dispatch_case:
     if is_becoming_completed and doc.task_kind == "Delivery":
-        has_pickup = doc.warehouse_pickup_photo or frappe.db.exists("File", {"attached_to_doctype": "Task", "attached_to_name": doc.name, "attached_to_field": "warehouse_pickup_photo"})
-        if not has_pickup:
-            frappe.throw("Warehouse Pickup Photo is required to complete a Delivery task.")
+        has_img = task_has_image(doc.name)
+        print(f"[Photo] {frappe.utils.now()} task={doc.name} policy Delivery gate (no DC): has_image={has_img}, result={'PASS' if has_img else 'BLOCKED'}")
+        if not has_img:
+            frappe.throw("At least one photo is required to complete a Delivery task.")
     if is_becoming_completed and doc.task_kind == "Return drop-off at warehouse":
-        has_dropoff = doc.warehouse_dropoff_photo or frappe.db.exists("File", {"attached_to_doctype": "Task", "attached_to_name": doc.name, "attached_to_field": "warehouse_dropoff_photo"})
-        if not has_dropoff:
-            frappe.throw("Warehouse Drop-off Photo is required to complete a Return drop-off at warehouse task.")
+        has_img = task_has_image(doc.name)
+        print(f"[Photo] {frappe.utils.now()} task={doc.name} policy Return drop-off gate (no DC): has_image={has_img}, result={'PASS' if has_img else 'BLOCKED'}")
+        if not has_img:
+            frappe.throw("At least one photo is required to complete a Return drop-off at warehouse task.")
 assigned_users = get_assigned_users(doc)
 is_becoming_working = (doc.status == "Working" and before_status != "Working")
 # TEMPORARILY DISABLED FOR LAUNCH - assignment validation causes issues with accept workflow

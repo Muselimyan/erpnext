@@ -197,8 +197,8 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 **Custom Fields — Task** (7 added):
 - `sales_order` — Link → Sales Order; used by Delivery and Discount Approval tasks.
 - `customer` — Link → Customer; used by Debt Collection, Distribute Payment, and Discount Approval tasks.
-- `warehouse_pickup_photo` — Attach; required on Delivery task before dispatch staging can proceed.
-- `warehouse_dropoff_photo` — Attach; required on `Return drop-off at warehouse` task completion.
+- ~~`warehouse_pickup_photo`~~ — **REMOVED** (Doc 18: photos now use File records; gate uses `task_has_image()`)
+- ~~`warehouse_dropoff_photo`~~ — **REMOVED** (Doc 18: photos now use File records; gate uses `task_has_image()`)
 - `payment_entry` — Link → Payment Entry; used by Distribute Payment tasks.
 - `current_debt_amd` — Currency; populated by debt scheduler on Debt Collection tasks.
 - `debt_threshold_amd` — Currency; snapshot of the threshold at time of debt escalation.
@@ -212,7 +212,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - `Stock Entry-before-submit-dispatch-gate` — Stock Entry / Before Submit: for `Main → Delivery In-Transit - Inmed` transfers, enforces: (1) Sales Order link required, (2) discount not Pending/Rejected, (3) Delivery Task with Warehouse Pickup Photo exists, (4) prepaid gate if `is_prepaid = 1`.
 - `Stock Entry-before-save-no-client-wh` — Stock Entry / Before Save: blocks any Stock Entry linked to a Sales Order from staging into any warehouse under `Clients - Inmed`.
 - `Delivery Note-before-submit-delivery-gate` — Delivery Note / Before Submit: enforces all rows issue from `Delivery In-Transit - Inmed`; re-checks discount and prepaid gates for each linked Sales Order.
-- `Task-before-save-return-dropoff-photo` — Task / Before Save: when a `Return drop-off at warehouse` task is completed, requires `warehouse_dropoff_photo` to be attached.
+- ~~`Task-before-save-return-dropoff-photo`~~ — **DISABLED** (replaced by `task_has_image()` in dispatch gates; see Doc 18).
 - `Scheduled-debt-collection` — Scheduler Event / Hourly: scans all Customers with a `debt_threshold_amd > 0`; for any whose GL net-receivable exceeds the threshold, creates or updates a Debt Collection task assigned to the first active director.
 - `Payment Entry-after-submit-distribute-payment` — Payment Entry / After Submit: for Receive payments from Customers, creates a Distribute Payment task assigned to the first active director (idempotent — skips if an open task already exists for the same PE).
 
@@ -264,7 +264,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 2. Validate that the `Task Access Policy` record exists.
 3. **Edit enforcement**: only the owning team may edit a Task (Directors / System Manager bypass).
 4. **Completion enforcement**: only the owning team may mark a Task Completed (Directors / System Manager bypass).
-5. **Mandatory photos**: Delivery → `warehouse_pickup_photo`; Return drop-off → `warehouse_dropoff_photo`.
+5. **Mandatory photos**: Pack → at least one image File; Pickup Returns → at least one image File (checked by `task_has_image()`; see Doc 18). Delivery tasks no longer require photos.
 6. **Single-owner rule**: Tasks in status other than Open/Cancelled must have exactly 1 assignee, and that assignee must belong to the owning team.
 7. **`completed_at` timestamp**: stamped on first transition to Completed.
 

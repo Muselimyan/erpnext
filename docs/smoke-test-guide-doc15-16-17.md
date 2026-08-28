@@ -176,7 +176,7 @@ Pass condition:
 
 Pass condition:
 
-- If delivery photo/handover note is required, ERPNext blocks completion until filled.
+- If handover note is required, ERPNext blocks completion until filled. (Delivery photo is not required; see Doc 18.)
 
 Then fill required fields and complete delivery.
 

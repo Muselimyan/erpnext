@@ -13,13 +13,7 @@ function account_details_entry_ui_cleanup(frm) {
         "custom_task_choose_product",
         "custom_task_product_qty",
         "custom_task_add_batch_no",
-        "custom_task_add_unit_price",
-        "custom_warehouse_pickup_photo",
-        "custom_warehouse_drop_off_photo",
-        "custom_warehouse_dropoff_photo",
-        "custom_pickup_photo",
-        "custom_drop_off_photo",
-        "custom_dropoff_photo"
+        "custom_task_add_unit_price"
     ];
 
     hideFields.forEach(function(fieldname) {

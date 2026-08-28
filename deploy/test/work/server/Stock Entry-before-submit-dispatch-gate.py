@@ -5,6 +5,18 @@
 # Disabled: 1
 # ---
 
+IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
+
+def is_image_url(url):
+    return (url or "").lower().split("?")[0].endswith(IMAGE_EXTENSIONS)
+
+def task_has_image(task_name):
+    """Check if a Task has at least one attached image File record."""
+    files = frappe.get_all("File", filters={"attached_to_doctype": "Task", "attached_to_name": task_name}, fields=["file_url"])
+    images = [f.file_url for f in files if is_image_url(f.file_url)]
+    print(f"[Photo] task_has_image({task_name}): total_files={len(files)}, images={len(images)}, urls={images[:5]}")
+    return len(images) > 0
+
 if doc.stock_entry_type == "Material Transfer":
     MAIN_WH = "Main - Inmed"
     DELIVERY_IN_TRANSIT_WH = "Delivery In-Transit - Inmed"
@@ -37,14 +49,14 @@ if doc.stock_entry_type == "Material Transfer":
                 "sales_order": so.name,
                 "status": ["!=", "Cancelled"],
             },
-            fields=["name", "warehouse_pickup_photo"],
+            fields=["name"],
         )
 
         if not tasks:
             frappe.throw("Dispatch staging requires an existing Delivery Task linked to this Sales Order.")
 
-        if not any(t.get("warehouse_pickup_photo") for t in tasks):
-            frappe.throw("Warehouse Pickup Photo must be attached to the Delivery Task before dispatch staging.")
+        if not any(task_has_image(t.name) for t in tasks):
+            frappe.throw("At least one photo must be attached to the Delivery Task before dispatch staging.")
 
         if so.is_prepaid:
             if not so.prepayment_payment_entry:

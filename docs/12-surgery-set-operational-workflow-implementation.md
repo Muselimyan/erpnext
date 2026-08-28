@@ -1,4 +1,6 @@
-﻿# Doc 12A — Surgery Set Workflow (Implementation / ERPNext Setup Guide)
+# Doc 12A — Surgery Set Workflow (Implementation / ERPNext Setup Guide)
+
+> **Photo rules update:** This doc references the original photo design where the Delivery task required a Warehouse Pickup Photo. This has been revised: the pickup photo requirement is now on the **Pack** task, and Delivery tasks have no photo requirement. See **Doc 18 — Photo System** for current rules.
 
 ## 1) Purpose
 This is a **step-by-step setup guide** to implement the workflow described in **Doc 12 — Surgery Set Operational Workflow**.
@@ -436,8 +438,8 @@ We will use a Task field to store the pickup completion timestamp.
    - `dispatch_group_id` (Data) — Label: `Dispatch Group ID`
    - `surgery_case` (Link → `Surgery Case`) — Label: `Surgery Case`
    - `task_kind` (Select) — Label: `Task Kind`
-   - `warehouse_pickup_photo` (Attach) — Label: `Warehouse Pickup Photo`
-   - `warehouse_dropoff_photo` (Attach) — Label: `Warehouse Drop-off Photo`
+   - ~~`warehouse_pickup_photo`~~ — REMOVED (photos now use File records; see Doc 18)
+   - ~~`warehouse_dropoff_photo`~~ — REMOVED (photos now use File records; see Doc 18)
    - `completed_at` (Datetime) — Label: `Completed At` — Read Only
 4) Save.
 

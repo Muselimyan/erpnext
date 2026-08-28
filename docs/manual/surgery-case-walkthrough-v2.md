@@ -183,7 +183,7 @@
 **Login as:** `Delivery Driver`
 
 1. Still on the Delivery task (or reopen it).
-2. Attach a **delivery photo** (required).
+2. (No delivery photo required — photo evidence is on the Pack task.)
 3. Fill **Driver Handover Note** (who received at client location).
 4. Set **Delivery Status** to `Delivered` and Save.
 
@@ -193,7 +193,6 @@
 - **Return Call task** (Kind: `Return Call`) auto-created for the office/returns workflow
 
 **❌ Should NOT happen (gate blocks — correct behavior):**
-- Error "Delivery photo is required" — attach photo first
 - Error "Handover Note is required" — fill the note first
 
 ---
@@ -417,7 +416,6 @@ Order entry task (manual)
 | Scan does not work | Barcode workflow is optional/future while batch/serial tracking is temporarily disabled |
 | FEFO warning blocks the scan | FEFO should be warning-only when barcode tracking is re-enabled; check `dispatch_case_packing_scan` script |
 | Delivery SE not auto-submitted on Delivered | `Task-after-save-dispatch-flow` script error or disabled |
-| "Delivery photo is required" | Attach photo before setting Delivered |
 | Return Call task not created | Dispatch Case `return_expected` is unchecked — this is the no-return path |
 | "Drop-off photo is required" | Attach photo before setting Returned to Warehouse |
 | Returns Inspection task not created after Return Pickup | `Task-after-save-dispatch-flow` script; verify it is enabled |

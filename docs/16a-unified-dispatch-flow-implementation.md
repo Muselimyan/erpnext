@@ -1,6 +1,9 @@
-﻿# Doc 16A — Unified Dispatch Flow (Implementation / ERPNext Setup Guide)
+# Doc 16A — Unified Dispatch Flow (Implementation / ERPNext Setup Guide)
 
 > **Status note — historical setup guide:** This document contains original implementation/setup snippets and may include outdated embedded server-script examples. For current deployed workflow behavior, use `docs/16-unified-dispatch-flow.md` and `docs/manual/surgery-case-walkthrough-v2.md`. Do not treat embedded code snippets in this file as the current live source of truth without comparing them to deployed scripts.
+
+>
+> **Photo rules:** Photo requirements for tasks have been revised. See **Doc 18 — Photo System**. Key change: Delivery tasks have no photo; the pickup photo is on the Pack task.
 
 ## 1) Purpose
 
@@ -194,10 +197,8 @@ Open `Customize Form` → `Task`. Add the following fields (in addition to any a
   ```
 - Default: *(blank)*
 
-### 5.7 Delivery photo (written by driver, also saved to Dispatch Case)
-- Label: `Delivery Photo`
-- Fieldname: `delivery_photo`
-- Fieldtype: `Attach`
+### 5.7 Delivery photo ~~(written by driver, also saved to Dispatch Case)~~ — SUPERSEDED
+> **Note:** The `delivery_photo` field on Task has been removed. Photos are now managed via File records and the PhotoGallery component. Dispatch Case shows photos via live lookup from linked Tasks. See Doc 18 for current architecture.
 
 ### 5.8 Handover note
 - Label: `Handover Note`
@@ -412,8 +413,8 @@ Closed
 
 | Fieldname | Label | Fieldtype | Notes |
 |---|---|---|---|
-| `delivery_photo` | Delivery Photo | Attach | Read Only — copied from Delivery task |
-| `return_dropoff_photo` | Return Drop-off Photo | Attach | Read Only — copied from Return Pickup task |
+| `delivery_photo` | Delivery Photo | Attach | **Hidden (legacy)** — no longer populated; DC uses live gallery from Pack task |
+| `return_dropoff_photo` | Return Drop-off Photo | Attach | **Hidden (legacy)** — no longer populated; DC uses live gallery from Pickup Returns task |
 
 4) Save.
 
@@ -589,18 +590,11 @@ is_becoming_completed = (doc.status == "Completed" and before_status != "Complet
 delivery_advancing = (doc.task_kind == "Delivery" and doc.delivery_status != before_delivery_status)
 pickup_advancing = (doc.task_kind == "Pickup Returns" and doc.pickup_status != before_pickup_status)
 
-# --- Delivery task → "Delivered": mirror optional photo to Dispatch Case ---
-if delivery_advancing and doc.delivery_status == "Delivered":
-    # Photo is optional; if provided, copy to Dispatch Case for visibility
-    if doc.delivery_photo and doc.dispatch_case:
-        frappe.db.set_value("Dispatch Case", doc.dispatch_case, "delivery_photo", doc.delivery_photo)
-
-# --- Gate: Return Pickup task → "Returned to Warehouse" requires delivery_photo ---
-if pickup_advancing and doc.pickup_status == "Returned to Warehouse":
-    if not doc.delivery_photo:
-        frappe.throw("Drop-off Photo is required before marking as Returned to Warehouse.")
-    if doc.dispatch_case:
-        frappe.db.set_value("Dispatch Case", doc.dispatch_case, "return_dropoff_photo", doc.delivery_photo)
+# --- SUPERSEDED (Doc 18) ---
+# Photo propagation to Dispatch Case has been removed.
+# DC now displays photos via live client-side gallery from linked Tasks' File records.
+# Photo gates now use task_has_image(doc.name) which checks File records directly.
+# See Doc 18 and Task-before-save-dispatch-gates.py for current implementation.
 
 # --- Gate: Pack task completion requires serial/batch filled on all Case Items ---
 if is_becoming_completed and doc.task_kind == "Pack / prepare items":

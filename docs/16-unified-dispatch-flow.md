@@ -211,7 +211,7 @@ Templates are not mandatory — the items table can be filled manually.
 - Items list (descriptions and quantities — no prices)
 - Link to Dispatch Case (for reference only)
 - `delivery_status` field: `Todo → Picked Up → Delivered`
-- Photo attachment field (visible when status = `Picked Up`)
+- ~~Photo attachment field~~ (Doc 18: Delivery tasks have no photos)
 - Handover note field (visible when status = `Picked Up`)
 
 **State transitions:**
@@ -221,15 +221,15 @@ Templates are not mandatory — the items table can be filled manually.
 - No Stock Entry fires at this stage.
   *(Stock was already moved from Main → Delivery In-Transit by the Pack task. At Picked Up, items are physically with the driver and remain in Delivery In-Transit.)*
 - Case state → `In Transit`
-- Photo attachment and Handover Note fields become visible
+- Handover Note field becomes visible
 
 **Picked Up → Delivered** (driver has handed items to client):
-- Driver may attach delivery photo (optional)
+- ~~Driver may attach delivery photo (optional)~~ — **Superseded by Doc 18:** Delivery tasks have no photo requirement or photo field. Photo evidence is on the Pack task.
 - Driver fills Handover Note (who received the items)
 - Driver taps "Mark as Delivered"
 - **SE auto-submitted:** `Delivery In-Transit → Client Location Warehouse`
 - Case state → `Delivered`
-- If a photo is attached, it is also written to `delivery_photo` field on Dispatch Case
+- ~~If a photo is attached, it is also written to `delivery_photo` field on Dispatch Case~~ (Doc 18: no delivery photo)
 
 **On Delivered — two paths:**
 
@@ -296,7 +296,7 @@ Templates are not mandatory — the items table can be filled manually.
 - Driver taps "Mark as Returned to Warehouse"
 - **SE auto-submitted:** `Return Pickup In-Transit → Returns WH`
 - Case state → `Returns Received`
-- Photo is also written to `return_dropoff_photo` field on Dispatch Case
+- ~~Photo is also written to `return_dropoff_photo` field on Dispatch Case~~ (Doc 18: DC shows photos via live gallery from Task)
 - **Task 6.7** (Returns Inspection) created for Returns Team
 
 ---
@@ -596,6 +596,6 @@ The Dispatch Case form is a **read-only status overview** for managers and coord
 - Case Items table with dispatched / returned / used quantities per item
 - The currently active task and its assignee
 - Payment status: invoice amount, paid amount, outstanding
-- Delivery and drop-off photos
+- Pack pickup photo and return drop-off photo (see Doc 18)
 
 No buttons to click on the form. No workflow transitions to trigger manually.

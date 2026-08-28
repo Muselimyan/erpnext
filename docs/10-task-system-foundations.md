@@ -86,10 +86,10 @@ Typical links:
 - `Sales Order` (for normal orders)
 
 Attachments:
-- Optional
+- **Warehouse Pickup Photo** (required) — photo taken at Main - WH after packing, before the driver leaves. See Doc 18.
 
 Completion definition:
-- Items are packed and ready for dispatch picking.
+- Items are packed, photo is attached, and task is ready for dispatch picking.
 
 ### 4.3 Dispatch picking / hand-off (serial/batch selection checkpoint)
 Purpose:
@@ -122,10 +122,8 @@ Typical links:
 - or the specific document (example: `Surgery Case`)
 
 Attachments:
-- Required at go-live:
-  - **Warehouse Pickup Photo** (photo taken at `Main - WH` pickup, after packing, before leaving)
-- Optional:
-  - delivery proof (if you later decide it’s needed)
+- None required. Photo evidence is captured at the Pack stage, not Delivery. See Doc 18.
+- Optional: delivery proof (if you later decide it's needed)
 
 Completion definition:
 - Driver confirms delivery is done.
@@ -341,24 +339,27 @@ This is an operational decision. Implementation steps belong in Doc 10A.
 ---
 
 ## 7) Mandatory attachment policy (critical controls)
-### 7.1 Warehouse pickup photo requirement (outgoing)
+> **Full photo system specification:** See **Doc 18 — Photo System** for complete rules, field visibility, permission model, upload limits, propagation, and observability.
+
+### 7.1 Pack task pickup photo requirement (outgoing)
 Rule:
-- A `Delivery` task cannot be marked **Completed** unless a Warehouse Pickup Photo is attached.
+- A `Pack / prepare items` task cannot be marked **Completed** unless a Warehouse Pickup Photo is attached (photo taken at `Main - WH` after packing, before the driver leaves).
 
 Reason:
-- This is your operational proof that the driver physically took the package from `Main - WH`.
+- This is your operational proof that items were packed and ready for dispatch.
+
+Note: This requirement is on the **Pack** task, not the Delivery task. The Delivery task has no photo requirement.
 
 ### 7.2 Return drop-off photo requirement (incoming)
 Rule:
-- A `Return drop-off at warehouse` task cannot be marked **Completed** unless a Drop-off Photo is attached.
+- A `Pickup Returns` task cannot advance to "Returned to Warehouse" unless a Drop-off Photo is attached.
 
 Reason:
 - This is your operational proof that the package was brought back and handed to the Returns Team.
 
-### 7.3 Delivery proof (optional)
-If you later require delivery proof:
-- Introduce a separate attachment requirement for `Delivery` tasks.
-- Keep it optional until you explicitly decide it’s needed, because it adds driver friction.
+### 7.3 Delivery photo (not required)
+Delivery tasks do not require photos. The driver's job is to deliver; photo evidence is captured at the packing stage (Pack task).
+- If you later decide delivery proof is needed, introduce a separate attachment requirement on the Delivery task.
 
 ---
 
@@ -440,8 +441,8 @@ Recommended dimensions:
 
 ## 12) Acceptance criteria
 - Every key operational step has a Task with a clear owner.
-- Delivery tasks capture warehouse-pickup photo evidence.
-- Return drop-off tasks capture warehouse drop-off photo evidence.
+- Pack tasks capture warehouse-pickup photo evidence (required for completion).
+- Pickup Returns tasks capture warehouse drop-off photo evidence (required before marking Returned to Warehouse).
 - Coordinators can see, at any moment:
   - which deliveries/pickups are assigned to which driver
   - which tasks are overdue or stuck

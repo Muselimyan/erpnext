@@ -49,6 +49,7 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `16b-unified-dispatch-flow-gap-analysis.md` | 🟡 No core implementation gap remains; `Dispatch - Task Queues` workspace deployed; business workflow still needs smoke test |
 | `17-purchase-cost-and-valuation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
 | `17a-purchase-cost-and-valuation-implementation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete; LCV flow needs smoke test |
+| `18-photo-system.md` | Photo system requirements - authoritative reference; deployed logging on test; corrections to other docs applied |
 | `ERPNext Barcode/FIXES_DOCUMENTATION.md` | 🟡 Barcode logic prepared; live Purchase Receipt deployment/smoke test still required |
 | `ERPNext Barcode/IMPLEMENTATION_READY.md` | 🟡 Barcode implementation-ready; live deployment/smoke test still required |
 
@@ -331,6 +332,11 @@ These statuses describe whether the matching ERPNext area is already in working 
 **File**: `17a-purchase-cost-and-valuation-implementation.md`
 - **Purpose**: Step-by-step ERPNext setup — Item hs_code/import_tax_rate fields, LCV import-duty pre-fill client script, operating procedures for PR/LCV/PI, deploy script skeleton, and smoke tests. Full prod state analysis included.
 - **Current status**: Technical deployment complete; purchase-costing smoke test and master data remain.
+
+### 18 — Photo System
+**File**: `18-photo-system.md`
+- **Purpose**: Complete photo requirements for the Task system — which task kinds require/allow/prohibit photos, completion gates, propagation rules, field visibility, permission model, upload limits, and observability.
+- **Current status**: Authoritative reference. Supersedes photo sections in Docs 10/12/16 where they conflict.
 
 ---
 
