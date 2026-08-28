@@ -1,7 +1,7 @@
 # Production Audit — Group 1: Dispatch Case Lifecycle
 
-> **Audit date**: 2026-08-27
-> **Auditor**: Automated code analysis (no live-server access)
+> **Audit date**: 2026-08-27 (updated 2026-08-28)
+> **Auditor**: Automated code analysis + live verification on test.erpnext.am
 > **Scope**: Every deployed script, schema record, and documentation reference related to the Dispatch Case lifecycle
 > **Evidence base**: Extracted files under `deploy/test/work/`, schema JSON under `deploy/test/schema/`, documentation under `docs/`
 
@@ -11,7 +11,7 @@
 
 The Dispatch Case lifecycle is **substantially implemented and functional** as the new unified dispatch coordinator. The core task chain (Order Entry → Pack → Delivery → Return Call → Pickup Returns → Returns Inspection → Restock → Invoice → Debt Collection) is complete and matches Doc 16 with minor deviations.
 
-However, this audit identified **5 original findings** (2 fixed, 2 reclassified as not-bugs, 1 remaining), **7 documentation gaps**, **4 legacy/dead-code risks**, and **3 design concerns**. Summary of bug resolutions:
+However, this audit identified **5 original findings** (3 fixed, 2 reclassified as not-bugs), **7 documentation gaps**, **4 legacy/dead-code risks** (2 since resolved by Surgery Case deletion), and **3 design concerns**. Summary of bug resolutions:
 
 | # | Finding | Severity | Confidence |
 |---|---------|----------|------------|
@@ -20,15 +20,15 @@ However, this audit identified **5 original findings** (2 fixed, 2 reclassified 
 | ~~BUG-03~~ | ~~Lost/damaged qty not invoiced~~ | ~~Medium~~ **RECLASSIFIED** | — |
 | BUG-04 | ~~"Invoiced" state never set by any script~~ | ~~Medium~~ **FIXED** | 0.95 |
 | BUG-05 | ~~`Task-Product Lines Display.js` sets wrong default warehouse~~ | ~~Medium~~ **FIXED** | 0.95 |
-| LEGACY-01 | Surgery Case orchestrator still active alongside Dispatch Case | Risk | 0.97 |
+| LEGACY-01 | ~~Surgery Case orchestrator still active alongside Dispatch Case~~ | ~~Risk~~ **RESOLVED** | — |
 | LEGACY-02 | Sales Order parallel flow (4 scripts) still active | Risk | 0.95 |
-| LEGACY-03 | Duplicate Collection Set validation scripts | Low | 0.98 |
+| LEGACY-03 | ~~Duplicate Collection Set validation scripts~~ | ~~Low~~ **RESOLVED** | — |
 | LEGACY-04 | Stock Entry dispatch gate disabled but documented as part of flow | Info | 0.95 |
 | GAP-01 | No stock availability check at Pack completion | Medium | 0.92 |
 | GAP-02 | Missing role restrictions for Return Call and Returns restocking tasks | Low | 0.90 |
 | GAP-03 | Outstanding calculation ignores total_paid_amount | Medium | 0.88 |
 | GAP-04 | Discount approval task uses hardcoded team email | Low | 0.90 |
-| GAP-05 | Two different template-loading mechanisms active | Low | 0.85 |
+| GAP-05 | ~~Two different template-loading mechanisms active~~ | ~~Low~~ **RESOLVED** | — |
 | GAP-06 | ignore_validate bypasses all stock safety on auto-created SEs | Medium | 0.95 |
 | GAP-07 | Dispatch Case submitted without Order Entry task gets no Pack task | Low | 0.85 |
 | DESIGN-01 | Client-side form lock mirrors server-side but is UI-only | Info | 0.95 |
@@ -67,13 +67,13 @@ However, this audit identified **5 original findings** (2 fixed, 2 reclassified 
 
 | # | File | Type | DocType | Event | Enabled | Lines |
 |---|------|------|---------|-------|---------|-------|
-| R1 | `Surgery-Case-before-save.py` | DocType Event | Surgery Case | Before Save | **Yes** | 279 |
+| ~~R1~~ | ~~`Surgery-Case-before-save.py`~~ | ~~DocType Event~~ | ~~Surgery Case~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~279~~ |
 | R2 | `Sales Order-after-submit-pack-task.py` | DocType Event | Sales Order | After Submit | **Yes** | 72 |
 | R3 | `Sales Order-before-save-discount-approval.py` | DocType Event | Sales Order | Before Save | **Yes** | 245 |
 | R4 | `Task-before-save-discount-approval-writeback.py` | DocType Event | Task | Before Save | **Yes** | 103 |
 | R5 | `Stock Entry-before-save-no-client-wh.py` | DocType Event | Stock Entry | Before Save | **No** | 24 |
-| R6 | `Collection-Set-validate-readiness.py` | DocType Event | Collection Set | Before Save | **Yes** | 47 |
-| R7 | `Surgery-Set-Type-validate-readiness.py` | DocType Event | Collection Set | Before Save | **Yes** | 47 |
+| ~~R6~~ | ~~`Collection-Set-validate-readiness.py`~~ | ~~DocType Event~~ | ~~Collection Set~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~47~~ |
+| ~~R7~~ | ~~`Surgery-Set-Type-validate-readiness.py`~~ | ~~DocType Event~~ | ~~Collection Set~~ | ~~Before Save~~ | **DELETED 2026-08-28** | ~~47~~ |
 
 **Client scripts analyzed (12 total):**
 
@@ -92,7 +92,7 @@ However, this audit identified **5 original findings** (2 fixed, 2 reclassified 
 | C11 | `Task-Create Dispatch Case Items.js` | Task | **Yes** | 77 |
 | C12 | `Task-Product Lines Display.js` | Task | **No (DISABLED)** | 78 |
 
-**Also reviewed:** `Surgery-Case-field-locking.js` (Surgery Case, enabled, 17 lines).
+**Also reviewed (now deleted):** ~~`Surgery-Case-field-locking.js`~~ — **DELETED 2026-08-28** along with entire Surgery Case system.
 
 ### 1.2 Documentation References
 
@@ -109,10 +109,10 @@ However, this audit identified **5 original findings** (2 fixed, 2 reclassified 
 
 | Schema file | Relevant records |
 |-------------|-----------------|
-| `custom-doctypes.json` | `Dispatch Case` (submittable, autoname `DC-.YYYY.-.#####`), `Dispatch Case Item`, `Debt Collection Invoice`, `Debt Collection Payment` |
-| `custom-fields.json` | 10 custom fields on Dispatch Case, 10 on Dispatch Case Item |
-| `server-scripts.json` | 62 total server scripts (52 enabled, 10 disabled) |
-| `client-scripts.json` | 39 total client scripts (37 enabled, 2 disabled) |
+| `custom-doctypes.json` | `Dispatch Case` (submittable, autoname `DC-.YYYY.-.#####`), `Dispatch Case Item`, `Debt Collection Invoice`, `Debt Collection Payment`. ~~Surgery Case, Collection Set~~ **DELETED** |
+| `custom-fields.json` | 10 custom fields on Dispatch Case, 10 on Dispatch Case Item. ~~surgery_case on Task/SE/SI~~ **DELETED** |
+| `server-scripts.json` | 59 total server scripts (post-deletion). ~~Surgery-Case-before-save, Collection-Set-validate-readiness, Surgery-Set-Type-validate-readiness~~ **DELETED** |
+| `client-scripts.json` | 39 total client scripts. ~~Surgery-Case-field-locking, Task - Load Surgical Kit Template~~ **DELETED** |
 
 ---
 
@@ -228,13 +228,13 @@ Draft ──(save with discount)──→ Awaiting Approval
 
 | Script | DocType | Why still active | Risk |
 |--------|---------|-----------------|------|
-| `Surgery-Case-before-save.py` (279 lines) | Surgery Case | In-flight Surgery Cases from before the Dispatch Case migration | See LEGACY-01 |
+| ~~`Surgery-Case-before-save.py`~~ | ~~Surgery Case~~ | **DELETED 2026-08-28** — 0 records ever existed | ~~LEGACY-01~~ **RESOLVED** |
 | `Sales Order-after-submit-pack-task.py` | Sales Order | Old Sales Order flow still operational | See LEGACY-02 |
 | `Sales Order-before-save-discount-approval.py` | Sales Order | Old Sales Order discount approval | See LEGACY-02 |
 | `Task-before-save-discount-approval-writeback.py` | Task | Old SO discount approval writeback | See LEGACY-02 |
 | `Task-before-save-pack-complete-creates-delivery-task.py` | Task | Old SO Pack→Delivery chain | See LEGACY-02 |
 | `Delivery Note-before-submit-delivery-gate.py` | Delivery Note | Old Sales Order delivery validation | See LEGACY-02 |
-| `Surgery-Case-field-locking.js` | Surgery Case | UI locking for old Surgery Case | Low risk |
+| ~~`Surgery-Case-field-locking.js`~~ | ~~Surgery Case~~ | **DELETED 2026-08-28** | ~~RESOLVED~~ |
 
 ---
 
@@ -258,7 +258,7 @@ At step 3, the stock was already in `Returns - Inmed` (moved there at step 2). T
 - Returns WH: +dispatched (drop-off) − used (consumption) − returned (restock) = **lost_damaged_qty** ✓
 - Main WH: −dispatched (pack) + returned (restock) = **−(used + lost_damaged)** ✓
 
-**Note:** The Surgery Case flow (`Surgery-Case-before-save.py`) has the same structural issue but does not use `ignore_stock_validation`, so it would fail loudly. That script should be evaluated separately when it is sunset.
+**Note:** ~~The Surgery Case flow had the same structural issue~~ — **RESOLVED**: Surgery Case system deleted 2026-08-28 (0 records ever created).
 
 ---
 
@@ -298,7 +298,7 @@ At step 3, the stock was already in `Returns - Inmed` (moved there at step 2). T
 > - `manual/surgery-case-walkthrough-v2.md`: Removed `Invoiced` reference
 > - `manual/standard-sale-walkthrough.md`: Removed `Invoiced` reference
 >
-> **Note:** The `Invoiced` state should also be removed from the Dispatch Case DocType `status` field options in ERPNext (live schema change). The Surgery Case Workflow retains its own `Invoiced` state — that is a separate DocType with a separate Frappe Workflow and is unaffected.
+> **Note:** The `Invoiced` state should also be removed from the Dispatch Case DocType `status` field options in ERPNext (live schema change). ~~The Surgery Case Workflow retains its own `Invoiced` state~~ — **RESOLVED**: Surgery Case Workflow deleted 2026-08-28.
 
 ---
 
@@ -317,26 +317,14 @@ At step 3, the stock was already in `Returns - Inmed` (moved there at step 2). T
 
 ## 5. Findings — Legacy / Dead Code Risks
 
-### LEGACY-01: Surgery Case Orchestrator Still Active
-**Severity: RISK | Confidence: 0.97**
+### LEGACY-01: ~~Surgery Case Orchestrator Still Active~~ RESOLVED
+**Status: RESOLVED (2026-08-28)**
 
-**Evidence:** `Surgery-Case-before-save.py` — 279 lines, **Disabled: 0** (active)
-
-**Problem:** Doc 16 states: *"The Dispatch Case replaces both the Sales Order and the Surgery Case."* However, the full Surgery Case workflow orchestrator remains active. It handles:
-- Template item loading (lines 62–67)
-- Stock shortage warnings (lines 70–79)
-- Delivery/return task creation (lines 91–105)
-- State machine transitions: Preparing → Dispatch Picking → Dispatched → Delivered → Return Pickup Scheduled → Return Pickup In Transit → Returns Verification → Returns Received → Usage Derived → Invoiced → Closed
-- Stock Entry creation and submission at each transition
-- Serial-tracked tool accountability (lines 204–277)
-- Sales Invoice creation (lines 241–254)
-
-**Interaction risk:** Both Surgery Case and Dispatch Case create tasks with identical `task_kind` values (`Delivery`, `Pickup Returns`, `Returns processing / verification`, etc.). The Task gate scripts (`Task-before-save-dispatch-gates.py`) key on `dispatch_case` being present. If a task has `surgery_case` but not `dispatch_case`, the dispatch gates won't fire, but the task policy script (`Task-before-save-policy.py`) will still enforce role checks.
-
-**Assessment:** Keeping this active is likely intentional for in-flight Surgery Cases created before the Dispatch Case migration. But:
-- No sunset date is documented
-- No protection prevents creating NEW Surgery Cases
-- The Surgery Case uses a Frappe Workflow (`workflow_state`) while Dispatch Case uses a status field — different mechanisms
+> **Resolution:** The entire Surgery Case system was **deleted** from test.erpnext.am on 2026-08-28. Live verification confirmed **0 Surgery Case records** ever existed, along with 0 Collection Sets, 0 linked Tasks, 0 linked Stock Entries, and 0 linked Sales Invoices.
+>
+> Deleted: `Surgery-Case-before-save.py` (server script), `Surgery-Case-field-locking.js` (client script), `Surgery Case Workflow` (12 states), `Surgery Case` DocType + children, `Collection Set` DocType + child, `Collection-Set-validate-readiness.py`, `Surgery-Set-Type-validate-readiness.py`, custom fields `surgery_case` on Task/Stock Entry/Sales Invoice, `surgery_set_type` field on Dispatch Case, and dead `surgery_set_type` handler in `Dispatch Case-Form.js`.
+>
+> Preserved: `Surgical Kit Template` DocType (1 record, 16 Dispatch Cases use it) and `Dispatch Case-Template Auto Fill.js`.
 
 ### LEGACY-02: Sales Order Parallel Flow (4 Scripts) Still Active
 **Severity: RISK | Confidence: 0.95**
@@ -361,19 +349,10 @@ This flow is **separate from the Dispatch Case flow** — it keys on `sales_orde
 
 **Assessment:** These scripts should eventually be disabled when all Sales Order-based operations are migrated to Dispatch Case. No sunset timeline is documented.
 
-### LEGACY-03: Duplicate Collection Set Validation Scripts
-**Severity: LOW | Confidence: 0.98**
+### LEGACY-03: ~~Duplicate Collection Set Validation Scripts~~ RESOLVED
+**Status: RESOLVED (2026-08-28)**
 
-**Evidence:** `Collection-Set-validate-readiness.py` (R6) and `Surgery-Set-Type-validate-readiness.py` (R7)
-
-**Problem:** Both scripts are:
-- Enabled
-- Attached to DocType: `Collection Set`, Event: `Before Save`
-- **Contain identical code** (47 lines each, character-for-character match)
-
-Both will execute on every Collection Set save, computing stock shortages twice and showing duplicate `frappe.msgprint` warnings.
-
-**Root cause:** R7 was likely the original script when the DocType was called "Surgery Set Type". When renamed to "Collection Set", a new script (R6) was created but the old one was not disabled.
+> **Resolution:** Both `Collection-Set-validate-readiness.py` (R6) and `Surgery-Set-Type-validate-readiness.py` (R7) were **deleted** along with the `Collection Set` DocType (0 records). The duplicate code issue no longer exists.
 
 ### LEGACY-04: Stock Entry Dispatch Gate Disabled
 **Severity: INFO | Confidence: 0.95**
@@ -401,7 +380,7 @@ Both will execute on every Collection Set save, computing stock shortages twice 
 
 **Problem:** When the Pack task is completed, the script immediately creates a Stock Entry from `Main - Inmed` → `Delivery In-Transit - Inmed` with `ignore_stock_validation = True`. There is **no check** that `Main - Inmed` actually has sufficient stock.
 
-**Comparison:** The Surgery Case flow (`Surgery-Case-before-save.py` lines 110–117) checks stock at the "Dispatch Picking" transition and throws if insufficient.
+**Comparison:** ~~The Surgery Case flow checked stock at the "Dispatch Picking" transition~~ — Surgery Case deleted 2026-08-28, but the principle (blocking on insufficient stock) should be adopted for Dispatch Case.
 
 **Impact:** Packing could proceed even when items are out of stock, creating stock entries with impossible movements. The `ignore_stock_validation` flag ensures no error, but the stock ledger becomes inaccurate.
 
@@ -445,21 +424,15 @@ todo.allocated_to = "directors.team@example.com"
 
 **Comparison:** The Sales Order discount approval script (`Sales Order-before-save-discount-approval.py`) dynamically looks up Director users by role — a more robust approach.
 
-### GAP-05: Two Different Template-Loading Mechanisms
-**Severity: LOW | Confidence: 0.85**
+### GAP-05: ~~Two Different Template-Loading Mechanisms~~ RESOLVED
+**Status: RESOLVED (2026-08-28)**
 
-**Evidence:** `Dispatch Case-Form.js` (C1) lines 84–101 and `Dispatch Case-Template Auto Fill.js` (C8) lines 7–45
-
-**Problem:** Two separate mechanisms load item templates into the Dispatch Case:
-
-| Mechanism | Trigger field | Template DocType | Field names used |
-|-----------|--------------|-----------------|-----------------|
-| C1 (Form.js) | `surgery_set_type` | `Collection Set` | `row.item`, `row.qty`, `row.rate` |
-| C8 (Template Auto Fill) | `custom_select_surgical_kit_template` | `Surgical Kit Template` | `item.item_code`, `item.item_name`, `item.qty` |
-
-Doc 16 and 16A reference `Collection Set` as the canonical template DocType. `Surgical Kit Template` is not mentioned in current documentation but exists as a custom field and has a dedicated client script.
-
-**Impact:** Users see two different template selection fields. Data may be split across two template DocTypes.
+> **Resolution:** The `Collection Set` DocType (0 records) was deleted along with the `surgery_set_type` field on Dispatch Case and its handler in `Dispatch Case-Form.js`. Only one template mechanism remains:
+>
+> | Mechanism | Trigger field | Template DocType | Status |
+> |-----------|--------------|-----------------|--------|
+> | ~~C1 (Form.js)~~ | ~~`surgery_set_type`~~ | ~~`Collection Set`~~ | **DELETED** |
+> | C8 (Template Auto Fill) | `custom_select_surgical_kit_template` | `Surgical Kit Template` | **Active** (1 template, 16 DCs use it) |
 
 ### GAP-06: `ignore_validate` Bypasses All Stock Safety
 **Severity: MEDIUM | Confidence: 0.95**
@@ -485,7 +458,7 @@ frappe.flags.ignore_stock_validation = False
 
 This was likely done to avoid blocking the automated flow, but it means **any data error silently creates corrupt stock ledger entries** rather than failing loudly.
 
-**Comparison:** The Surgery Case flow uses only `insert(ignore_permissions=True)` without `ignore_validate` — it would fail if stock data is inconsistent, which is safer for data integrity.
+**Comparison:** ~~The Surgery Case flow used `insert(ignore_permissions=True)` without `ignore_validate`~~ — Surgery Case deleted 2026-08-28, but the principle (failing loudly on bad data) is worth adopting for Dispatch Case.
 
 ### GAP-07: Direct DC Submission Without Order Entry Gets No Pack Task
 **Severity: LOW | Confidence: 0.85**
@@ -553,7 +526,7 @@ Some early documentation (Doc 05) uses `- WH` suffix. Doc 16A §2 Prerequisites 
 | Dispatch Case | After Save | S4 (discount approval task), S5 (packing problem alerts) | **No conflict** — independent concerns. S4 creates tasks, S5 monitors packing status. |
 | Task | Before Save | S7 (dispatch gates), S8 (pack→delivery for SO), R4 (SO discount writeback) + others from Group 2 | **Low risk** — S7 handles dispatch-case tasks, S8/R4 handle sales-order tasks. But execution order is undefined in ERPNext Server Script; if S7 throws, S8 won't execute (which is fine). |
 | Task | After Save | S6 (main orchestrator) + others from Group 2 | **Low risk** — S6 only acts on tasks with `dispatch_case` set. |
-| Collection Set | Before Save | R6 + R7 (identical code) | **Duplicate** — see LEGACY-03 |
+| ~~Collection Set~~ | ~~Before Save~~ | ~~R6 + R7~~ | **DELETED** 2026-08-28 — see LEGACY-03 |
 
 ### 8.2 Idempotency Analysis
 
@@ -603,9 +576,9 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 | Debt Collection task per customer | S6 creates/updates | ✅ Match |
 | Batch/serial tracking temporarily disabled | Pack task doesn't require batch/serial | ✅ Match |
 | Warehouse names `- Inmed` | All scripts use `- Inmed` | ✅ Match (doc 16A) |
-| Collection Set as item template | C1 loads from Collection Set | ✅ Match |
+| ~~Collection Set as item template~~ | ~~C1 loads from Collection Set~~ | ✅ **DELETED** — replaced by Surgical Kit Template |
 | Dispatch Case is read-only dashboard (Doc 16 §13) | C1 locks items, C2 locks submitted | ✅ Partial (items editable with `allow_items_edit`) |
-| Surgery Case superseded | Surgery Case script still active | ⚠️ LEGACY-01 |
+| Surgery Case superseded | ~~Surgery Case script still active~~ **DELETED 2026-08-28** | ✅ **RESOLVED** |
 | Sales Order flow superseded | SO flow scripts still active | ⚠️ LEGACY-02 |
 
 ---
@@ -614,10 +587,10 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 
 | # | Item | Why it can't be confirmed offline |
 |---|------|----------------------------------|
-| V1 | Whether any Surgery Cases are still in-flight | Requires database query: `SELECT count(*) FROM "tabSurgery Case" WHERE workflow_state NOT IN ('Closed','Cancelled')` |
+| ~~V1~~ | ~~Whether any Surgery Cases are still in-flight~~ | **RESOLVED**: 0 records. Surgery Case DocType deleted 2026-08-28 |
 | V2 | Whether any Sales Orders are still being created (not migrated to DC) | Requires checking recent SO creation dates |
 | V3 | Whether `directors.team@example.com` is a valid, enabled user | Requires user table check |
-| V4 | Whether `Surgical Kit Template` DocType has any records | Requires database check |
+| ~~V4~~ | ~~Whether `Surgical Kit Template` DocType has any records~~ | **RESOLVED**: 1 record ("Hip Surgery Standard Kit"), 16 Dispatch Cases reference it |
 | V5 | Remove `Invoiced` from Dispatch Case status field options in live ERPNext schema | Schema change needed (BUG-04 resolution) |
 | V6 | Whether any existing DCs have `client_location_warehouse = "Main - Inmed"` from the old script (BUG-05 fixed — script disabled) | Requires DC table scan to clean up legacy data |
 | V7 | Whether any orphan Stock Entries exist from duplicate SE creation | Requires SE table scan for unlinked dispatch-related SEs |
@@ -642,7 +615,7 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 
 5. ~~**Fix BUG-04**~~: **FIXED** — `Invoiced` state removed from all docs (Doc 16 §6.9/§10, Doc 16A §7/§9.3, both walkthroughs). Still need to remove from Dispatch Case DocType status field options in live ERPNext.
 
-6. **Disable LEGACY-03**: Disable `Surgery-Set-Type-validate-readiness.py` (keep `Collection-Set-validate-readiness.py`).
+6. ~~**Disable LEGACY-03**~~: **DONE** — both scripts deleted along with Collection Set DocType (2026-08-28).
 
 7. **Add stock availability check** (GAP-01): Before creating the dispatch SE at Pack completion, check stock in `Main - Inmed` and warn or block.
 
@@ -652,13 +625,13 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 
 9. **Sunset plan for Sales Order flow**: Document a timeline for disabling R2, R3, R4, S8, S16. Verify no new Sales Orders are being created.
 
-10. **Sunset plan for Surgery Case flow**: Document a timeline for disabling R1. Verify no in-flight Surgery Cases remain.
+10. ~~**Sunset plan for Surgery Case flow**~~: **DONE** — entire Surgery Case system deleted 2026-08-28 (0 records, never used).
 
-11. **Consolidate template loading**: Choose one template DocType (Collection Set or Surgical Kit Template) and disable the other mechanism.
+11. ~~**Consolidate template loading**~~: **DONE** — Collection Set deleted, only Surgical Kit Template remains (2026-08-28).
 
 12. **Reduce ignore_validate scope**: Consider removing `ignore_validate` and `ignore_stock_validation` from `create_se()`, or at minimum adding pre-flight stock checks.
 
-13. **Re-export schema**: Update `deploy/test/schema/client-scripts.json` to resolve DESIGN-02.
+13. ~~**Re-export schema**~~: **DONE** — schema re-exported 2026-08-28 after Surgery Case deletion.
 
 ---
 
@@ -671,8 +644,8 @@ This is the correct workaround for `frappe.share.add()` not being available in R
 | Packing scan and barcode handling | Group 4 (Barcode/Inventory) | FEFO warnings, batch handling in scan API |
 | Discount approval on Sales Order | Group 5 (Sales Order Legacy) | Parallel flow with Dispatch Case discount approval |
 | Reporting on Dispatch Case states | Group 6 (Reporting) | `Invoiced` state removed — verify no reports reference it |
-| Surgery Case interaction | Group 7 (Legacy Migration) | LEGACY-01 needs dedicated analysis |
+| ~~Surgery Case interaction~~ | ~~Group 7 (Legacy Migration)~~ | **RESOLVED** — Surgery Case system deleted 2026-08-28 |
 
 ---
 
-*End of Group 1 audit. Document version 1.0.*
+*End of Group 1 audit. Document version 1.0 (2026-08-27), updated 1.1 (2026-08-28: Surgery Case deletion reflected).*
