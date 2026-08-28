@@ -139,6 +139,7 @@ window.PhotoGallery = function(opts) {
     this._addButtonLabel = opts.addButtonLabel || '+ Add Photos';
     this._thumbnailSize = opts.thumbnailSize || {w: 76, h: 76};
     this._onChange = opts.onChange || null;
+    this._onUpload = opts.onUpload || null; // called with {url, filename} after each successful upload
     this._destroyed = false;
     this._render();
 };
@@ -277,9 +278,10 @@ window.PhotoGallery.prototype._uploadFile = function(file) {
     .then(function(r) { return r.json(); })
     .then(function(data) {
         if (data.message && data.message.file_url) {
-            var photo = { url: data.message.file_url, filename: data.message.file_name || file.name };
+            var photo = { url: data.message.file_url, filename: data.message.file_name || file.name, file_record: data.message.name || null };
             self._photos.push(photo);
-            window._photoLog && window._photoLog('gallery', 'uploaded: url=' + photo.url + ' filename=' + photo.filename);
+            window._photoLog && window._photoLog('gallery', 'uploaded: url=' + photo.url + ' filename=' + photo.filename + ' file_record=' + photo.file_record);
+            self._onUpload && self._onUpload(photo);
             self._onChange && self._onChange();
             self._render();
         } else {
@@ -302,16 +304,20 @@ window.PhotoGallery.prototype._uploadFile = function(file) {
     function isImage(url) { return IMAGE_RE.test(url || ''); }
 
     function getTaskPhotoConfig(frm) {
-        var kind = (frm.doc.task_kind || '').toLowerCase().trim();
-        if (kind === 'pack / prepare items') return { key: 'pack', editable: true, label: 'Warehouse Pickup Photos', sourceTask: frm.doc.name };
-        if (kind === 'pickup returns') return { key: 'pickup_returns', editable: true, label: 'Warehouse Drop-off Photos', sourceTask: frm.doc.name };
-        if (kind === 'returns processing / verification') return { key: 'inspect', editable: false, label: 'Pack / Prepare Photos', sourceTask: null, needsPackLookup: true };
-        if (kind.indexOf('other') !== -1 || kind.indexOf('entry') !== -1 || kind.indexOf('processing') !== -1) {
-            if (kind.indexOf('invoice') === -1 && kind.indexOf('restocking') === -1 && kind.indexOf('debt') === -1 && kind.indexOf('returns processing') === -1) {
+        var kind = (frm.doc.task_kind || '').trim();
+        switch (kind) {
+            case 'Pack / prepare items':
+                return { key: 'pack', editable: true, label: 'Warehouse Pickup Photos', sourceTask: frm.doc.name };
+            case 'Pickup Returns':
+                return { key: 'pickup_returns', editable: true, label: 'Warehouse Drop-off Photos', sourceTask: frm.doc.name };
+            case 'Returns processing / verification':
+                return { key: 'inspect', editable: false, label: 'Pack / Prepare Photos', sourceTask: null, needsPackLookup: true };
+            case 'Other: Entry':
+            case 'Other: Processing':
                 return { key: 'other', editable: true, label: 'Task Photos', sourceTask: frm.doc.name };
-            }
+            default:
+                return null;
         }
-        return null;
     }
 
     function fetchImageFiles(taskName, callback) {
@@ -392,7 +398,32 @@ window.PhotoGallery.prototype._uploadFile = function(file) {
                 photos: photos,
                 maxPhotos: 5,
                 label: config.label,
-                onChange: function() { frm.dirty(); }
+                onChange: function() { frm.dirty(); },
+                onUpload: function(photo) {
+                    // Immediately attach the uploaded file to this Task
+                    if (!photo.file_record) {
+                        window._photoWarn && window._photoWarn('form', 'onUpload: no file_record name, cannot attach');
+                        return;
+                    }
+                    window._photoLog && window._photoLog('form', 'onUpload: attaching file ' + photo.file_record + ' to Task/' + frm.doc.name);
+                    frappe.call({
+                        method: 'frappe.client.set_value',
+                        args: {
+                            doctype: 'File',
+                            name: photo.file_record,
+                            fieldname: JSON.stringify({
+                                attached_to_doctype: 'Task',
+                                attached_to_name: frm.doc.name
+                            })
+                        },
+                        callback: function() {
+                            window._photoLog && window._photoLog('form', 'onUpload: attach DONE file=' + photo.file_record + ' -> Task/' + frm.doc.name);
+                        },
+                        error: function(err) {
+                            window._photoErr && window._photoErr('form', 'onUpload: attach FAILED file=' + photo.file_record, err);
+                        }
+                    });
+                }
             });
         }
         window._photoLog && window._photoLog('form', 'gallery "' + config.key + '" ready: mode=' + mode + ' photos=' + photos.length);
@@ -464,53 +495,11 @@ window.PhotoGallery.prototype._uploadFile = function(file) {
                 var initialUrls = initial.map(function(p) { return p.url; });
                 var currentUrls = current.map(function(p) { return p.url; });
 
-                // ADDED: urls in current but not in initial → attach to task
-                var added = currentUrls.filter(function(u) { return initialUrls.indexOf(u) === -1; });
-                // REMOVED: urls in initial but not in current → delete from server
+                // Files are attached immediately on upload (via onUpload callback).
+                // after_save only handles deletion of removed photos.
                 var removed = initialUrls.filter(function(u) { return currentUrls.indexOf(u) === -1; });
 
-                window._photoLog && window._photoLog('form', 'after_save gallery="' + key + '": added=' + added.length + ' removed=' + removed.length);
-
-                // Attach new files to task
-                added.forEach(function(url) {
-                    frappe.call({
-                        method: 'frappe.client.get_list',
-                        args: {
-                            doctype: 'File',
-                            filters: { file_url: url },
-                            fields: ['name', 'attached_to_doctype', 'attached_to_name'],
-                            limit_page_length: 5,
-                            order_by: 'creation desc'
-                        },
-                        callback: function(r) {
-                            var files = r.message || [];
-                            // Find the unattached one (or any matching)
-                            var target = files.find(function(f) { return !f.attached_to_doctype; }) || files[0];
-                            if (target) {
-                                window._photoLog && window._photoLog('form', 'attaching file ' + target.name + ' to task ' + frm.doc.name + ' (was attached_to=' + (target.attached_to_doctype || 'none') + '/' + (target.attached_to_name || 'none') + ')');
-                                frappe.call({
-                                    method: 'frappe.client.set_value',
-                                    args: {
-                                        doctype: 'File',
-                                        name: target.name,
-                                        fieldname: JSON.stringify({
-                                            attached_to_doctype: 'Task',
-                                            attached_to_name: frm.doc.name
-                                        })
-                                    },
-                                    callback: function() {
-                                        window._photoLog && window._photoLog('form', 'attach DONE: file=' + target.name + ' -> Task/' + frm.doc.name);
-                                    },
-                                    error: function(err) {
-                                        window._photoErr && window._photoErr('form', 'attach FAILED: file=' + target.name, err);
-                                    }
-                                });
-                            } else {
-                                window._photoWarn && window._photoWarn('form', 'after_save: no File record found for url=' + url + ' (cannot attach to task)');
-                            }
-                        }
-                    });
-                });
+                window._photoLog && window._photoLog('form', 'after_save gallery="' + key + '": removed=' + removed.length);
 
                 // Delete removed files
                 removed.forEach(function(url) {

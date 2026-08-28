@@ -5,15 +5,11 @@
 # Disabled: 0
 # ---
 
-IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
-
-def is_image_url(url):
-    return (url or "").lower().split("?")[0].endswith(IMAGE_EXTENSIONS)
-
 def task_has_image(task_name):
     """Check if a Task has at least one attached image File record."""
+    exts = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
     files = frappe.get_all("File", filters={"attached_to_doctype": "Task", "attached_to_name": task_name}, fields=["file_url"])
-    images = [f.file_url for f in files if is_image_url(f.file_url)]
+    images = [f.file_url for f in files if (f.file_url or "").lower().split("?")[0].endswith(exts)]
     print(f"[Photo] task_has_image({task_name}): total_files={len(files)}, images={len(images)}, urls={images[:5]}")
     return len(images) > 0
 

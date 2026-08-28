@@ -123,12 +123,13 @@ Rules:
 
 Field: `custom_account_photos` (Photos) — Table field with `Account Detail Attachment` child rows
 
-### 4.7 Other (Entry / Processing)
+### 4.7 Other: Entry / Other: Processing
 **Photos: ALLOWED (not required)**
 
 Purpose: General-purpose photo attachments for miscellaneous tasks.
 
 Rules:
+- Matched by exact task_kind: `"Other: Entry"` or `"Other: Processing"` only.
 - Users may attach up to 5 photos.
 - Gallery labeled "Task Photos".
 - Users must see thumbnail previews of all attached photos.
@@ -138,7 +139,7 @@ Rules:
 ### 4.8 All other task kinds
 **Photos: NONE (default)**
 
-Any task kind not listed above should not display photo upload controls or photo galleries. The default behavior is no photos.
+Any task kind not listed above should not display photo upload controls or photo galleries. The default behavior is no photos. Task kind matching uses exact string comparison (no substring matching).
 
 ---
 
@@ -177,8 +178,8 @@ The locking system (`Task-Lock Unaccepted`) provides a backup safety net by sett
 
 ### 6.4 Upload mechanism
 - Files are uploaded via `fetch('/api/method/upload_file')` as private files in `Home/Attachments`.
-- Uploaded files are initially unattached (no `attached_to_doctype`/`attached_to_name`).
-- On form save (`after_save`), newly uploaded files are attached to the Task by setting both `attached_to_doctype` and `attached_to_name` atomically via `frappe.client.set_value`.
+- Immediately after a successful upload, the `onUpload` callback fires and attaches the File to the Task by setting `attached_to_doctype` and `attached_to_name` via `frappe.client.set_value`.
+- This ensures the File record is linked to the Task before any subsequent save, so server-side `before_save` gates (e.g., photo completion checks) can find the photo.
 
 ---
 
