@@ -10,17 +10,6 @@ MAIN_WH = "Main - Inmed"
 DELIVERY_TRANSIT_WH = "Delivery In-Transit - Inmed"
 RETURN_PICKUP_TRANSIT_WH = "Return Pickup In-Transit - Inmed"
 RETURNS_WH = "Returns - Inmed"
-INVENTORY_TEAM = "inventory.team@example.com"
-DELIVERY_TEAM = "delivery.team@example.com"
-RETURNS_TEAM = "returns.team@example.com"
-ACCOUNTING_TEAM = "accounting.team@example.com"
-FINANCE_TEAM = "finance.team@example.com"
-OFFICE_TEAM = "office.team@example.com"
-ORDER_CREATION_TEAM = "order.creation.team@example.com"
-
-
-
-
 
 if not doc.dispatch_case:
     pass
@@ -32,6 +21,14 @@ else:
     is_completing = (doc.status == "Completed" and before_status != "Completed")
     ds_changed = (doc.task_kind == "Delivery" and doc.delivery_status != before_ds)
     ps_changed = (doc.task_kind == "Pickup Returns" and doc.pickup_status != before_ps)
+
+    # Read team user mappings from Task Access Policy (single source of truth)
+    team_map = {}
+    for p in frappe.get_all("Task Access Policy", fields=["name", "default_team_user"], limit_page_length=0):
+        if p.default_team_user:
+            team_map[p.name] = p.default_team_user
+
+    print(f"[Dispatch] {frappe.utils.now()} task={doc.name} kind={doc.task_kind} dc={doc.dispatch_case} completing={is_completing} ds_changed={ds_changed} ps_changed={ps_changed} team_map_entries={len(team_map)}")
 
     def create_se(src_wh, tgt_wh, items, purpose="Material Transfer"):
         se_items = []
@@ -94,6 +91,7 @@ else:
         cust = customer or frappe.db.get_value("Dispatch Case", dc_name, "customer")
         existing = frappe.db.exists("Task", {"dispatch_case": dc_name, "task_kind": kind, "status": ["not in", ["Completed", "Cancelled"]]})
         if existing:
+            print(f"[Dispatch] {frappe.utils.now()} task={doc.name} skipped: kind={kind} dc={dc_name} existing={existing}")
             return existing
         t = frappe.get_doc({
             "doctype": "Task", "subject": subject, "task_kind": kind, "task_access_policy": kind,
@@ -121,6 +119,7 @@ else:
         todo.assigned_by = frappe.session.user
         todo.flags.ignore_permissions = True
         todo.insert()
+        print(f"[Dispatch] {frappe.utils.now()} task={doc.name} created: kind={kind} new_task={t.name} assignee={assignee} dc={dc_name}")
         return t.name
 
     def create_invoice(c):
@@ -144,8 +143,7 @@ else:
         si.insert()
         frappe.db.set_value("Dispatch Case", c.name, "sales_invoice", si.name)
 
-    def create_or_update_debt_task(c, outstanding, inv_name):
-        FINANCE_TEAM = "finance.team@example.com"
+    def create_or_update_debt_task(c, outstanding, inv_name, team_user):
         existing = frappe.db.get_value("Task", {"customer": c.customer, "task_kind": "Debt Collection", "status": ["not in", ["Completed", "Cancelled"]]}, "name")
         inv_row = {"dispatch_case": c.name, "sales_invoice": inv_name, "invoice_amount": outstanding, "paid_amount": 0, "outstanding_amount": outstanding}
         if existing:
@@ -165,10 +163,10 @@ else:
             t.flags.ignore_permissions = True
             t.insert()
             # FIXED: Update _assign via db (assign_to module not available in RestrictedPython)
-            frappe.db.set_value("Task", t.name, "_assign", json.dumps([FINANCE_TEAM]))
+            frappe.db.set_value("Task", t.name, "_assign", json.dumps([team_user]))
             todo = frappe.new_doc("ToDo")
             todo.status = "Open"
-            todo.allocated_to = FINANCE_TEAM
+            todo.allocated_to = team_user
             todo.reference_type = "Task"
             todo.reference_name = t.name
             todo.description = t.subject
@@ -191,10 +189,10 @@ else:
             c_se = create_se(case.client_location_warehouse, "", all_items(case), "Material Issue")
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"consumption_stock_entry": c_se.name if c_se else "", "status": "Invoice Pending"})
             create_invoice(case)
-            make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", ACCOUNTING_TEAM, f"Review and submit draft Sales Invoice for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name)
+            make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review and submit draft Sales Invoice for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name)
         else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Awaiting Return Pickup")
-            make_task("Return Call", f"Return call: {short_customer(case.customer)} ({case.name})", OFFICE_TEAM, f"Waiting for {case.customer} to call regarding return pickup. Fill in details and assign to driver.", "return_waiting_task", doc.dispatch_case, case.customer, source_task=doc.name)
+            make_task("Return Call", f"Return call: {short_customer(case.customer)} ({case.name})", team_map.get("Return Call", ""), f"Waiting for {case.customer} to call regarding return pickup. Fill in details and assign to driver.", "return_waiting_task", doc.dispatch_case, case.customer, source_task=doc.name)
 
     # Return Pickup: Picked Up
     if ps_changed and doc.pickup_status == "Picked Up":
@@ -206,13 +204,13 @@ else:
     if ps_changed and doc.pickup_status == "Returned to Warehouse":
         se = create_se(RETURN_PICKUP_TRANSIT_WH, RETURNS_WH, all_items(case))
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Returns Received", "return_receive_stock_entry": se.name if se else ""})
-        ret_tid = make_task("Returns processing / verification", f"Inspect returns: {short_customer(case.customer)} ({case.name})", RETURNS_TEAM, "Open Dispatch Case and fill returned_qty for each item.", "returns_inspection_task", doc.dispatch_case, case.customer, source_task=doc.name)
+        ret_tid = make_task("Returns processing / verification", f"Inspect returns: {short_customer(case.customer)} ({case.name})", team_map.get("Returns processing / verification", ""), "Open Dispatch Case and fill returned_qty for each item.", "returns_inspection_task", doc.dispatch_case, case.customer, source_task=doc.name)
 
     # Order Entry task Completed - create Pack task
     if is_completing and doc.task_kind == "Order entry":
         case.reload()
         items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
-        make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", INVENTORY_TEAM, f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name)
+        make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", team_map.get("Pack / prepare items", ""), f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name)
 
     # Pack task Completed
     if is_completing and doc.task_kind == "Pack / prepare items":
@@ -220,13 +218,13 @@ else:
         se = create_se(MAIN_WH, DELIVERY_TRANSIT_WH, all_items(case))
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Packed", "dispatch_stock_entry": se.name if se else ""})
         items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
-        make_task("Delivery", f"Deliver: {short_customer(case.customer)} ({case.name})", DELIVERY_TEAM, f"Deliver to {case.customer}\nDest: {case.client_location_warehouse}\n\n{items_txt}", "delivery_task", doc.dispatch_case, case.customer, source_task=doc.name)
+        make_task("Delivery", f"Deliver: {short_customer(case.customer)} ({case.name})", team_map.get("Delivery", ""), f"Deliver to {case.customer}\nDest: {case.client_location_warehouse}\n\n{items_txt}", "delivery_task", doc.dispatch_case, case.customer, source_task=doc.name)
 
     # Return Call Completed
     if is_completing and doc.task_kind == "Return Call":
         case.reload()
         if case.status == "Awaiting Return Pickup":
-            driver = doc.return_pickup_driver or DELIVERY_TEAM
+            driver = doc.return_pickup_driver or team_map.get("Pickup Returns", "")
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Return Pickup Scheduled")
             items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
             tid = make_task("Pickup Returns", f"Pickup Returns: {short_customer(case.customer)} ({case.name})", driver, f"Collect from {case.customer}\nAt: {case.client_location_warehouse}\n\n{items_txt}", "return_pickup_task", doc.dispatch_case, case.customer, source_task=doc.name)
@@ -242,13 +240,13 @@ else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "consumption_stock_entry", c_se.name if c_se else "")
         create_invoice(case)
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Invoice Pending")
-        make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", ACCOUNTING_TEAM, f"Review draft invoice for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name)
+        make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review draft invoice for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name)
         u = used_items(case)
         r = returned_items(case)
         if r:
             used_txt = "\n".join(f"- {ic} x{q}" for ic, q, sn, bn in u) if u else "None"
             ret_txt = "\n".join(f"- {ic} x{q}" for ic, q, sn, bn in r)
-            make_task("Returns restocking", f"Restock returns: {short_customer(case.customer)} ({case.name})", RETURNS_TEAM, f"Used items:\n{used_txt}\n\nReturned items to restock:\n{ret_txt}", "restock_task", doc.dispatch_case, case.customer, source_task=doc.name)
+            make_task("Returns restocking", f"Restock returns: {short_customer(case.customer)} ({case.name})", team_map.get("Returns restocking", ""), f"Used items:\n{used_txt}\n\nReturned items to restock:\n{ret_txt}", "restock_task", doc.dispatch_case, case.customer, source_task=doc.name)
     # Restock task Completed
     if is_completing and doc.task_kind == "Returns restocking":
         case.reload()
@@ -269,7 +267,7 @@ else:
                 frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Closed")
             else:
                 frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Payment Pending")
-                create_or_update_debt_task(case, outstanding, inv_name)
+                create_or_update_debt_task(case, outstanding, inv_name, team_map.get("Debt Collection", ""))
 
     # Discount Approval Completed
     if is_completing and doc.task_kind == "Discount Approval":
@@ -277,7 +275,7 @@ else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Confirmed", "discount_approval_status": "Approved"})
             case.reload()
             items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
-            make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", INVENTORY_TEAM, f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name)
+            make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", team_map.get("Pack / prepare items", ""), f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name)
         else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Draft", "discount_approval_status": "Rejected"})
-            make_task("Order entry", f"Discount rejected - {short_customer(case.customer)}", ORDER_CREATION_TEAM, "Discount rejected by Directors. Open Dispatch Case, fix prices, save again.", None, doc.dispatch_case, case.customer, source_task=doc.name)
+            make_task("Order entry", f"Discount rejected - {short_customer(case.customer)}", team_map.get("Order entry", ""), "Discount rejected by Directors. Open Dispatch Case, fix prices, save again.", None, doc.dispatch_case, case.customer, source_task=doc.name)

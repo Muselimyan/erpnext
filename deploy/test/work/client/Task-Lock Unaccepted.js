@@ -20,6 +20,7 @@ function apply_task_accept_edit_lock(frm) {
     var accepted_by = frm.doc.custom_accepted_by || '';
     var is_accepted_by_me = accepted_by && accepted_by === frappe.session.user;
     var can_edit = is_admin || is_accepted_by_me;
+    console.log('[TaskLock] check', {task: frm.doc.name, accepted_by: accepted_by, user: frappe.session.user, can_edit: can_edit, is_admin: is_admin});
     setTimeout(function() {
         if (can_edit) {
             frm.enable_save();
@@ -64,8 +65,5 @@ function apply_task_accept_edit_lock(frm) {
             if (frm._photoGalleries) { Object.values(frm._photoGalleries).forEach(function(g) { g.setMode('readonly'); }); }
         }
 
-        $(frm.wrapper).find('[data-fieldname="custom_is_team_queue_task"]').closest('.frappe-control').hide();
-        $(frm.wrapper).find('[data-fieldname="custom_team_notified"]').closest('.frappe-control').hide();
-        $(frm.wrapper).find('[data-fieldname="custom_team_queue_status"]').closest('.frappe-control').hide();
     }, 700);
 }

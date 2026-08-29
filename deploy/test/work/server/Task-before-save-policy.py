@@ -17,28 +17,21 @@ before = doc.get_doc_before_save()
 before_status = before.status if before else None
 is_becoming_completed = (doc.status == "Completed" and before_status != "Completed")
 DIRECTOR_ROLE = "Ops - Directors"
-TASK_KIND_ALLOWED_ROLES = {
-    "Order entry": ["Ops - Order Accepting", "Ops - Order Creating"],
-    "Pack / prepare items": ["Ops - Inventory"],
-    "Dispatch picking / hand-off": ["Ops - Delivery"],
-    "Delivery": ["Delivery Driver", "Ops - Delivery"],
-    "Return to warehouse (aborted delivery / cancelled order)": ["Delivery Driver", "Ops - Delivery"],
-    "Return Call": ["Ops - Order Accepting", "Ops - Order Creating", "Ops - Delivery", "Ops - Returns", "Ops - Inventory"],
-    "Pickup Returns": ["Delivery Driver", "Ops - Delivery", "Ops - Returns"],
-    "Return drop-off at warehouse": ["Delivery Driver", "Ops - Delivery"],
-    "Returns processing / verification": ["Ops - Returns", "Ops - Inventory"],
-    "Returns restocking": ["Ops - Returns"],
-    "Invoice preparation / create invoice": ["Ops - Accounting"],
-    "Debt Collection": ["Ops - Finance", "Ops - Directors"],
-    "Distribute Payment": ["Ops - Finance", "Ops - Directors"],
-    "Payment Received": ["Ops - Finance", "Ops - Directors"],
-    "Discount Approval": ["Ops - Directors"],
-    "Purchase Approval": ["Ops - Directors"],
-    "Write-off Approval": ["Ops - Directors"],
-    "Account Details: Entry": ["Ops - Accounting", "Ops - Finance", "Ops - Directors"],
-    "Account Details: Processing": ["Ops - Accounting", "Ops - Finance", "Ops - Directors"],
-    "Other": ["Ops - Order Accepting", "Ops - Order Creating", "Ops - Inventory", "Ops - Returns", "Ops - Delivery", "Ops - Accounting", "Ops - Directors", "Ops - Finance", "Delivery Driver"],
-}
+
+# Read role and team mappings from Task Access Policy (single source of truth)
+allowed_roles = []
+default_team = ""
+policy = None
+if doc.task_kind:
+    try:
+        policy = frappe.get_doc("Task Access Policy", doc.task_kind)
+        allowed_roles = [r.role for r in (policy.allowed_roles or [])]
+        default_team = policy.default_team_user or ""
+    except Exception:
+        pass
+
+print(f"[Policy] {frappe.utils.now()} task={doc.name} kind={doc.task_kind} policy_found={'yes' if policy else 'no'} roles={len(allowed_roles)} default_team={default_team}")
+
 def current_user_roles():
     return set(frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role"))
 def has_any_role(user_roles, allowed_roles):
@@ -53,17 +46,32 @@ def get_assigned_users(task_doc):
 def user_has_allowed_role(user, allowed_roles):
     user_roles = set(frappe.get_all("Has Role", filters={"parent": user}, pluck="role"))
     return any(r in user_roles for r in (allowed_roles or []))
+
+# Default team user assignment: if task_kind is set and custom_assigned_to is empty, assign to default team user
+if doc.task_kind and not doc.custom_assigned_to:
+    if default_team:
+        doc.custom_assigned_to = default_team
+        print(f"[Policy] {frappe.utils.now()} task={doc.name} default_assign: team={default_team}")
+
+# Always sync _assign from custom_assigned_to (single source of truth)
+if doc.custom_assigned_to:
+    doc.set("_assign", json.dumps([doc.custom_assigned_to]))
+    print(f"[Policy] {frappe.utils.now()} task={doc.name} assign_sync: user={doc.custom_assigned_to}")
+else:
+    doc.set("_assign", "[]")
+
 if doc.task_kind and not doc.task_access_policy:
     doc.task_access_policy = doc.task_kind
 if doc.task_access_policy and not frappe.db.exists("Task Access Policy", doc.task_access_policy):
     frappe.throw("Task Access Policy '" + doc.task_access_policy + "' does not exist.")
 user_roles = current_user_roles()
-allowed_roles = TASK_KIND_ALLOWED_ROLES.get(doc.task_kind) or []
 if before and doc.task_kind and not is_admin_override(user_roles):
     if not has_any_role(user_roles, allowed_roles):
+        print(f"[Policy] {frappe.utils.now()} task={doc.name} role_check: user={frappe.session.user} allowed={allowed_roles} result=BLOCKED")
         frappe.throw("You are not allowed to edit Task Kind '" + doc.task_kind + "'.")
 if is_becoming_completed and doc.task_kind and not is_admin_override(user_roles):
     if not has_any_role(user_roles, allowed_roles):
+        print(f"[Policy] {frappe.utils.now()} task={doc.name} completing: user={frappe.session.user} allowed={allowed_roles} result=BLOCKED")
         frappe.throw("Only " + ", ".join(allowed_roles) + " can complete Task Kind '" + doc.task_kind + "'.")
 # Old-flow mandatory attachments (only for tasks NOT linked to a Dispatch Case)
 if not doc.dispatch_case:

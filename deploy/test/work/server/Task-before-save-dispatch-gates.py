@@ -18,6 +18,7 @@ if doc.task_kind and doc.status != "Template" and doc.status != "Cancelled":
     accept_gate_before = doc.get_doc_before_save()
     accept_gate_is_new = not accept_gate_before
     if not accept_gate_is_new and not doc.custom_accepted_by:
+        print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=acceptance kind={doc.task_kind} accepted_by= result=BLOCKED")
         frappe.throw("You must Accept this task before making any changes or completing it.")
 
 # Sync customer from Task to Dispatch Case
@@ -32,13 +33,14 @@ is_completing_global = (doc.status == "Completed" and before_status != "Complete
 if is_completing_global:
     # Block completion if assignment is being changed in the same save
     old_assigned_user = before.custom_assigned_to if before else None
-    old_assigned_team = before.custom_team_queue_role if before else None
-    if (doc.custom_assigned_to or "") != (old_assigned_user or "") or (doc.custom_team_queue_role or "") != (old_assigned_team or ""):
+    if (doc.custom_assigned_to or "") != (old_assigned_user or ""):
         frappe.throw("You cannot reassign and complete a task at the same time. Save the reassignment first.")
     accepted_by = doc.custom_accepted_by or frappe.db.get_value("Task", doc.name, "custom_accepted_by")
     if not accepted_by and frappe.session.user != "Administrator":
+        print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=completion kind={doc.task_kind} user={frappe.session.user} accepted_by= result=BLOCKED")
         frappe.throw("You must accept this task before completing it. Click Accept / Start Task first.")
     if accepted_by and accepted_by != frappe.session.user and frappe.session.user != "Administrator":
+        print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=completion kind={doc.task_kind} user={frappe.session.user} accepted_by={accepted_by} result=BLOCKED")
         frappe.throw("Only the user who accepted this task (" + accepted_by + ") can complete it.")
 
 # Order entry completion: require submitted Dispatch Case

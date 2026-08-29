@@ -47,7 +47,7 @@ frappe.listview_settings['Task'].refresh = function(listview) {
                     var description = descParts.join("<br>");
                     frappe.call({
                         method: "frappe.client.save",
-                        args: { doc: JSON.stringify({ doctype: "Task", subject: subject, description: description, task_kind: "Order entry", status: "Open", custom_team_queue_role: "Ops - Order Creating", custom_assigned_to: "" }) },
+                        args: { doc: JSON.stringify({ doctype: "Task", subject: subject, description: description, task_kind: "Order entry", status: "Open", custom_assigned_to: "" }) },
                         callback: function(r) {
                             if (r && r.message) {
                                 frappe.show_alert({message: __("Task {0} created", [r.message.name]), indicator: "green"});

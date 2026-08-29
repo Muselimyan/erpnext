@@ -7,6 +7,7 @@
 
 if doc.get("task_kind") == "Other: Entry" and doc.get("status") == "Completed":
     if not frappe.db.exists("Task", {"task_kind": "Other: Processing", "subject": "Other: Processing", "depends_on_tasks": ["like", "%" + doc.name + "%"]}):
+        print(f"[OtherFlow] {frappe.utils.now()} task={doc.name} Other: Entry completed, creating Processing task")
         new_task = frappe.new_doc("Task")
         new_task.subject = "Other: Processing"
         new_task.task_kind = "Other: Processing"
@@ -20,13 +21,10 @@ if doc.get("task_kind") == "Other: Entry" and doc.get("status") == "Completed":
             new_task.description = doc.description
         if doc.get("custom_next_task_assign_to"):
             new_task.custom_assigned_to = doc.custom_next_task_assign_to
-        elif doc.get("custom_assigned_to"):
-            new_task.custom_assigned_to = doc.custom_assigned_to
-        new_task.custom_is_team_queue_task = 1
-        new_task.custom_team_queue_status = "Open For Team"
         new_task.append("depends_on", {"task": doc.name})
         new_task.flags.ignore_permissions = True
         new_task.insert()
+        print(f"[OtherFlow] {frappe.utils.now()} task={doc.name} created Processing task={new_task.name} assigned_to={new_task.custom_assigned_to}")
         files = frappe.get_all("File", filters={"attached_to_doctype": "Task", "attached_to_name": doc.name}, fields=["file_url", "file_name", "is_private", "attached_to_field", "folder"])
         for f in files:
             if not f.file_url:

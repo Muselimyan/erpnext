@@ -8,6 +8,7 @@
 frappe.ui.form.on('Task', {
     refresh: function(frm) {
         if (frm.is_new()) return;
+        if (frm.is_dirty()) return;
         var now = Date.now();
         var last = frm.__last_auto_reload || 0;
         // Only auto-reload if more than 5 seconds since last reload/save
@@ -19,6 +20,7 @@ frappe.ui.form.on('Task', {
                 async: true,
                 callback: function(r) {
                     if (r && r.message && r.message.modified !== frm.doc.modified) {
+                        console.log('[TaskAuto] reloading', {task: frm.doc.name, server_modified: r.message.modified, local_modified: frm.doc.modified});
                         frm.reload_doc();
                     }
                 }

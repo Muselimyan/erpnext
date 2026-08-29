@@ -1,6 +1,6 @@
 ﻿// Name: Task-List Toggle Filters
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
 
 frappe.listview_settings['Task'] = frappe.listview_settings['Task'] || {};

@@ -5,7 +5,8 @@
 
 frappe.ui.form.on("Task", {
     refresh(frm) {
-        if (frm.doc.task_kind === "Account details") return;
+        if (frm.doc.task_kind === "Account Details: Entry" || frm.doc.task_kind === "Account Details: Processing") return;
+        console.log('[TaskPack] refresh', {task: frm.doc.name, kind: frm.doc.task_kind, status: frm.doc.status, dc: frm.doc.dispatch_case || ''});
         frm.dashboard.clear_comment();
         if (frm.doc.dispatch_case) {
             frm.dashboard.add_comment(
@@ -23,12 +24,3 @@ frappe.ui.form.on("Task", {
     }
 });
 
-frappe.listview_settings["Task"] = frappe.listview_settings["Task"] || {};
-frappe.listview_settings["Task"].onload = function(listview) {
-    listview.page.add_inner_button(__("My Team Queue"), function() {
-        listview.filter_area.clear();
-        listview.filter_area.add([["Task", "custom_is_team_queue_task", "=", 1]]);
-        listview.filter_area.add([["Task", "custom_team_queue_status", "=", "Open For Team"]]);
-        listview.refresh();
-    });
-};

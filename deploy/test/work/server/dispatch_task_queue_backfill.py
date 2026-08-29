@@ -2,7 +2,7 @@
 # Type: API
 # DocType: 
 # Event: Before Insert
-# Disabled: 0
+# Disabled: 1
 # ---
 
 TASK_KIND_TEAM_ROLE = {

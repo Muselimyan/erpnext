@@ -99,7 +99,7 @@ frappe.listview_settings['Task'].onload = function(listview) {
     }
 
     function applyToggleFilter() {
-        console.log("[TaskToggle] applyToggleFilter called", TOGGLE_STATE);
+        console.log('[TaskToggle] filter changed', {my_tasks: TOGGLE_STATE.my_tasks, open_tasks: TOGGLE_STATE.open_tasks, completed: TOGGLE_STATE.completed});
         frappe.call({
             method: "task_list_filtered",
             args: {
@@ -109,7 +109,8 @@ frappe.listview_settings['Task'].onload = function(listview) {
             },
             callback: function(r) {
                 var names = (r && r.message) || [];
-                console.log("[TaskToggle] API returned " + names.length + " tasks");
+                console.log('[TaskToggle] loaded', {count: names.length});
+
                 window._taskToggleNames = names;
                 // Use cur_list to set filters
                 var lv = cur_list || listview;

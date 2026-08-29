@@ -53,14 +53,6 @@ function account_details_entry_ui_cleanup(frm) {
 }
 frappe.ui.form.on("Task", {
     custom_assigned_to(frm) {
-        if (frm.doc.custom_assigned_to) {
-            frm.set_value("custom_team_queue_role", "");
-        }
-    },
-    custom_team_queue_role(frm) {
-        if (frm.doc.custom_team_queue_role) {
-            frm.set_value("custom_assigned_to", "");
-        }
     },
     status(frm) {
         if (frm.doc.status === "Completed" && !frm.doc.completed_on) {
@@ -167,7 +159,6 @@ frappe.ui.form.on("Task", {
         }
         
         // Unified assignment UI
-        frm.toggle_display("custom_team_queue_role", false);
         frm.set_df_property("custom_assigned_to", "label", "Assign To");
         frm.set_df_property("custom_next_task_assign_to", "label", "Next Task: Assign To");
         
@@ -189,13 +180,7 @@ frappe.ui.form.on("Task", {
             $(frm.wrapper).find('.form-shared').hide();
         } catch(e) {}
         // Hide internal fields for clean UI
-        frm.toggle_display("custom_is_team_queue_task", false);
-        frm.toggle_display("custom_team_queue_status", false);
-        frm.toggle_display("custom_team_notified", false);
         frm.toggle_display("custom_accepted_by", false);
-        if (frm.doc.custom_accepted_by) {
-            frm.toggle_display("custom_team_queue_role", false);
-        }
         frm.set_df_property("subject", "reqd", 0);
         if (frm.fields_dict.subject && frm.fields_dict.subject.df) {
             frm.fields_dict.subject.df.reqd = 0;
@@ -211,7 +196,7 @@ frappe.ui.form.on("Task", {
         // Mobile: hide clutter fields for clean mobile UI
         if (window.innerWidth <= 768) {
             setTimeout(function() {
-                var hideFields = ["custom_is_team_queue_task","custom_team_queue_status","custom_accepted_at","custom_team_notified","custom_task_add_batch_no","custom_task_add_unit_price"];
+                var hideFields = ["custom_accepted_at","custom_task_add_batch_no","custom_task_add_unit_price"];
                 hideFields.forEach(function(fn) {
                     $(frm.wrapper).find("[data-fieldname=\"" + fn + "\"]").closest(".frappe-control").hide();
                 });
@@ -253,6 +238,7 @@ frappe.ui.form.on("Task", {
                 var btn = $('<button id="complete-task-btn" class="btn" style="background-color:#e74c3c;color:#fff;font-weight:bold;font-size:13px;padding:7px 20px;border:none;border-radius:5px;cursor:pointer;margin-top:8px;display:block;">Complete Task</button>');
                 btn.on("click", function() {
                     if (btn.data("busy")) return;
+                    console.log('[TaskAccept] complete clicked', {task: frm.doc.name, status: frm.doc.status, hasUnsaved: frm.is_dirty()});
                     var originalStatus = frm.doc.status;
                     var originalCompletedOn = frm.doc.completed_on;
                     var hasUnsavedWork = frm.is_dirty();
@@ -283,10 +269,12 @@ frappe.ui.form.on("Task", {
                         })
                         .then(function() {
                             clearTimeout(timeoutId);
+                            console.log('[TaskAccept] completed', {task: frm.doc.name});
                             btn.css("background-color", "#27ae60").text("Completed \u2713");
                             return frm.reload_doc();
                         })
                         .catch(function(err) {
+                            console.error('[TaskAccept] complete failed', {task: frm.doc.name, error: err.message || err});
                             frm.doc.status = originalStatus;
                             if (frm.doc.completed_on !== originalCompletedOn) {
                                 frm.doc.completed_on = originalCompletedOn || "";
@@ -311,13 +299,15 @@ frappe.ui.form.on("Task", {
             if (window.innerWidth <= 768) {
                 var mAccept = $("<button id=\"mobile-accept-btn\" style=\"width:100%;padding:16px;font-size:18px;font-weight:bold;background:#1976d2;color:#fff;border:none;border-radius:10px;margin:10px 0 20px 0;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,0.2);\">Accept / Start Task</button>");
                 mAccept.on("click", function() {
+                    console.log('[TaskAccept] accept clicked', {task: frm.doc.name, kind: frm.doc.task_kind, user: frappe.session.user, is_new: frm.is_new(), is_dirty: frm.is_dirty()});
                     var doAcceptM = function() {
+                        console.log('[TaskAccept] calling dispatch_task_accept', {task: frm.doc.name});
                         frappe.call({
                             method: "dispatch_task_accept",
                             args: { task_name: ((frm.doc && frm.doc.name && frm.doc.name.indexOf("new-") !== 0) ? frm.doc.name : "") },
                             freeze: true,
                             freeze_message: __("Accepting task..."),
-                            callback: function() { frm.reload_doc(); }
+                            callback: function() { console.log('[TaskAccept] accepted', {task: frm.doc.name}); frm.reload_doc(); }
                         });
                     };
                     if (frm.is_new() || frm.dirty()) {
@@ -329,13 +319,16 @@ frappe.ui.form.on("Task", {
                 $(frm.wrapper).find(".form-layout").prepend(mAccept);
             }
             frm.add_custom_button(__("Accept / Start Task"), function() {
+                console.log('[TaskAccept] accept clicked (desktop)', {task: frm.doc.name, kind: frm.doc.task_kind, user: frappe.session.user});
                 var doAccept = function() {
+                    console.log('[TaskAccept] calling dispatch_task_accept', {task: frm.doc.name});
                     frappe.call({
                         method: "dispatch_task_accept",
                         args: { task_name: ((frm.doc && frm.doc.name && frm.doc.name.indexOf("new-") !== 0) ? frm.doc.name : "") },
                         freeze: true,
                         freeze_message: __("Accepting task..."),
                         callback: function() {
+                            console.log('[TaskAccept] accepted', {task: frm.doc.name});
                             frm.reload_doc();
                         }
                     });

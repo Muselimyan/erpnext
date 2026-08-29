@@ -25,7 +25,7 @@ frappe.ui.form.on("Task", {
 function task_account_details_ui_cleanup(frm) {
     if (!frm || frm.doctype !== "Task") return;
     var taskKind = String(frm.doc.task_kind || '').trim().toLowerCase();
-    var is_account_details = taskKind === "account details";
+    var is_account_details = taskKind === "account details: entry" || taskKind === "account details: processing";
     var account_only_hide = [
         "custom_product_work_section",
         "custom_task_product_summary",
@@ -146,7 +146,7 @@ function task_account_details_ui_cleanup(frm) {
 function task_account_details_prepare_subject(frm) {
     if (!frm || frm.doctype !== "Task") return;
     var taskKind = String(frm.doc.task_kind || '').trim().toLowerCase();
-    if (taskKind !== "account details") return;
+    if (taskKind !== "account details: entry" && taskKind !== "account details: processing") return;
     if (!String(frm.doc.subject || '').trim()) {
         frm.set_value("subject", "Account details");
     }
@@ -154,7 +154,8 @@ function task_account_details_prepare_subject(frm) {
 
 function task_account_details_add_new_accept_button(frm) {
     if (!frm || !frm.is_new || !frm.is_new()) return;
-    if (String(frm.doc.task_kind || '').trim().toLowerCase() !== "account details") return;
+    var addBtnKind = String(frm.doc.task_kind || '').trim().toLowerCase();
+    if (addBtnKind !== "account details: entry" && addBtnKind !== "account details: processing") return;
     if (frm.page && frm.page.clear_inner_toolbar) {
         frm.page.clear_inner_toolbar();
     }

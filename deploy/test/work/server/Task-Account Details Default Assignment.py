@@ -2,7 +2,7 @@
 # Type: DocType Event
 # DocType: Task
 # Event: Before Save
-# Disabled: 0
+# Disabled: 1
 # ---
 
 if doc.get("task_kind") == "Account details":
