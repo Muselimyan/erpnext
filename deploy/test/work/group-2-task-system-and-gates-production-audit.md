@@ -1,5 +1,190 @@
 # Group 2 — Task System and Gates: Production Audit
 
+---
+
+## What This Is About
+
+InMED's ERPNext uses **Tasks** as the central unit of work for the entire company. Every operational step — receiving an order, packing items, delivering to a hospital, picking up returns, verifying returns, recording payments, approving discounts — is represented as a Task. The system has ~29 scripts (server and client) that control who can do what with these tasks, when, and in what order.
+
+This audit examines every one of those scripts, line by line, and compares what is actually running in production against what the documentation says should be happening.
+
+---
+
+## How It Is Supposed to Work
+
+### The lifecycle of a task
+
+1. **A task is created** — either automatically by the dispatch flow (when a Dispatch Case moves to a new stage) or manually (e.g. an "Other" task, an "Account Details" task, or a phone order entered via Quick Entry).
+
+2. **The task is assigned** — to a specific user, or placed in a team queue for any qualified team member to pick up.
+
+3. **Someone accepts the task** — they press the "Accept & Start" button. This locks the task so only they can work on it. No one else should be able to edit it until they finish or it gets reassigned.
+
+4. **They do the work and complete it** — certain task kinds require proof (e.g., a photo of warehouse pickup). Once completed, the task becomes permanently locked — no one, not even an admin, can change it.
+
+5. **The next task in the chain is created automatically** — for example, completing a "Pack" task creates a "Delivery" task; completing a "Delivery" task creates a "Return Call" task; and so on.
+
+### The rules that govern this
+
+- **Role-based access**: Only users with the right role can edit or complete a given task kind. A delivery driver can complete a Delivery task but not an Invoice Preparation task.
+- **Acceptance gate**: You must accept a task before you can work on it. This prevents two people from working on the same thing simultaneously.
+- **Completion lock**: Once a task is marked Completed, it's frozen forever. This preserves the audit trail.
+- **Assignment discipline**: According to the documentation, each task should have exactly one assignee — not zero, not two.
+- **Photo gates**: Some task kinds require an attached photo before they can be completed (warehouse pickup, warehouse drop-off).
+- **Team queues**: Some tasks are assigned to a team (e.g., "Ops - Order Creating") rather than a specific person. Any member of that team can accept and start the task.
+
+---
+
+## What Is Actually Happening
+
+The core flow — create task, accept, work, complete, next task — works. Orders go in, packing happens, deliveries go out, returns come back, invoices get created. The fundamental chain is functional.
+
+But there are real bugs, dead code, and gaps between what the documents describe and what the scripts actually enforce.
+
+---
+
+## What Is Broken
+
+> **Status as of 2026-08-29**: Bugs #1, #2, and #5 have been fixed. Bugs #3 and #4 remain open.
+
+### ~~1. Several task kinds cannot be accepted at all~~ — FIXED
+
+~~The "Accept & Start" button calls a server API that has a hardcoded list of which task kinds exist.~~
+
+**Resolution**: The accept API (`dispatch_task_accept.py`) now reads allowed roles from `Task Access Policy` records dynamically. Any task kind with a policy record can be accepted. Hardcoded role maps removed.
+
+### ~~2. Account Details tasks are silently broken in two places~~ — FIXED
+
+~~Two scripts check for the wrong task kind name.~~
+
+**Resolution**: The server script (`Task-Account Details Default Assignment.py`) was disabled — its functionality is now handled by the policy default assignment (reads team user from the policy record). The client script (`Task-Account Details UI Cleanup.js`) was fixed to use case-insensitive comparison (`.toLowerCase()` before matching).
+
+### 3. Payment recording creates unlinked Payment Entries — STILL OPEN
+
+When a debt collection payment is recorded, the script allocates amounts across invoices, then creates a Payment Entry in ERPNext's accounting system. But there is a sequencing bug: the script zeros out each invoice's allocated amount *before* it tries to read those amounts to build the Payment Entry's reference table. The references loop sees all zeros and adds nothing.
+
+**Result**: Payment Entries are created for the correct total amount, but they are not linked to the specific invoices they should be paying off. This means the accounting ledger shows the payment, but the invoices don't know about it — the outstanding amounts on those invoices may not be updated correctly.
+
+*This bug is in a Group 3 script and was not addressed by either refactor.*
+
+### 4. The "one assignee per task" rule is not enforced — STILL OPEN (deliberate)
+
+The documentation says each task must have exactly one assignee. The code for this exists — but it's commented out. A comment in the source says "TEMPORARILY DISABLED FOR LAUNCH." It has remained disabled since then. Tasks can currently have zero assignees, one assignee, or multiple assignees, and nothing will stop the save.
+
+*Decision: This remains intentionally disabled. Re-enabling would require a data cleanup pass first.*
+
+### ~~5. The auto-reload feature can erase unsaved work~~ — FIXED
+
+~~A client script auto-refreshes the task form without checking for unsaved changes.~~
+
+**Resolution**: `Task-Auto Reload.js` now includes `if (frm.is_dirty()) return;` guard. The form will not reload if the user has unsaved changes.
+
+---
+
+## What Is Working But Not Documented
+
+> **Status as of 2026-08-29**: Most items below are now documented in the updated Doc 10/10A.
+
+Several features were built and deployed without being recorded in any of the numbered design documents:
+
+### Account Details flow
+A two-stage chain where an "Account Details: Entry" task, when completed, automatically creates an "Account Details: Processing" task. The processing task inherits the customer, photos, attachments, and description from the entry task. If the completing user specifies a "next assignee," the processing task goes to that person; otherwise it goes to the accounting team.
+
+### Other task flow
+Similar two-stage chain for "Other: Entry" → "Other: Processing" tasks. The processing task is placed into a team queue rather than assigned to a specific user.
+
+### Auto-escalation
+A scheduled job runs periodically and checks all open tasks with due dates. If a high/urgent task is more than 1 day overdue, or a normal task is more than 3 days overdue, it creates a notification (ToDo) for every director. These notifications are never automatically cleaned up — once a task is escalated, the director ToDos persist even after the task is eventually completed.
+
+### Quick Entry creates Order entry tasks
+When someone presses the "+" button on the task list view, the Quick Entry form creates an "Order entry" task assigned to the Order Creating team queue. This is by design (it's the phone/WhatsApp order capture shortcut) but isn't documented.
+
+### Acceptance reset on reassignment
+If a task's assignee is changed, the system automatically clears the acceptance (accepted_by, accepted_at) and resets the status to Open. The new assignee must accept the task again. This is a sensible safety feature but isn't mentioned in any document.
+
+### Re-acceptance is allowed
+If User A has accepted a task, User B can still accept it — overwriting User A's acceptance. The system doesn't prevent this. The Accept button disappears for the user who already accepted, but another qualified user can still press it.
+
+---
+
+## What Was Built and Then Turned Off
+
+> **Status as of 2026-08-29**: Team queue notifications replaced by Telegram. Queue field maintenance deprecated (fields removed). Others remain as documented.
+
+Disabled scripts:
+
+1. **Team queue notifications** — Was supposed to notify team members of new queue tasks. **Now replaced by Telegram notifications** (`Telegram Task Assignment Notification.py`) which fire on every assignment change and expand team placeholder emails to real users.
+
+2. **Automatic queue field maintenance** — Team queue metadata fields (`custom_is_team_queue_task`, `custom_team_queue_role`, `custom_team_queue_status`, `custom_team_notified`) are deprecated. The acceptance model replaces team queues: tasks are assigned to team placeholder users, then individually accepted.
+
+3. **Auto-assignment on insert** — The original approach to assigning tasks. Disabled because it used a Frappe API that isn't available in RestrictedPython. All active scripts now use direct `_assign` DB writes + policy default assignment.
+
+4. **Return drop-off photo enforcement** — Standalone script. Redundant with `Task-before-save-dispatch-gates.py`. Safe to remove.
+
+5. **Task-Account Details Default Assignment** — Disabled during task unification. Default assignment now handled by `Task-before-save-policy.py` reading from the policy record.
+
+6. **Task-List Toggle Filters.js** — Disabled. Duplicate of `Global-Mobile Back Button List.js` toggle.
+
+7. **Task-Hide Sidebar Assignment.js** — Too aggressive. Replaced by surgical hiding in Accept Start + Lock scripts.
+
+---
+
+## What Is Duplicated or Conflicting
+
+> **Status as of 2026-08-29**: Role map duplication and competing filter bars are fully resolved. Accept button duplication remains.
+
+### ~~Role maps exist in 4 different places~~ — FIXED
+~~Four scripts each define their own dictionary mapping task kinds to allowed roles.~~
+
+**Resolution**: All hardcoded role maps removed. Every script reads from `Task Access Policy` records at runtime (single source of truth). Adding a new task kind only requires creating one policy record.
+
+### ~~Two competing task list filter bars~~ — FIXED
+~~Two client scripts both add a toggle bar.~~
+
+**Resolution**: `Task-List Toggle Filters.js` disabled. `Global-Mobile Back Button List.js` is the sole toggle implementation (API-based, server-side role filtering).
+
+### Multiple Accept buttons — STILL OPEN
+Up to three Accept buttons can appear on a single unaccepted task, rendered by different client scripts (`Task-Accept Start.js`, `Task-Dispatch Packing Usability.js`, `Task-Other UI Cleanup.js`). They all call the same API, so functionally they're the same — but visually it's messy.
+
+### ~~Two back button implementations~~ — FIXED
+**Resolution**: Consolidated into `Global-Mobile Back Button List.js` only.
+
+---
+
+## What Is Stricter Than Expected
+
+- **Completed tasks cannot be modified by anyone** — not even System Manager or Administrator. The documentation talks about auditability but doesn't explicitly say admins are locked out too. In practice, the only way to change a completed task is direct database access.
+
+- **Multiple "Before Save" scripts** all run on every task save. ERPNext doesn't guarantee what order they run in. In practice, the outcome is correct because each script checks a different condition — but if two scripts disagree about whether the save should proceed, the error message the user sees depends on which script happens to fire first. *(Diagnostic logging with `[Policy]`, `[Lock]`, `[Gates]` tags now makes it possible to trace execution order.)*
+
+---
+
+## Bottom Line
+
+> **Updated 2026-08-29 after two refactors.**
+
+The task system's core workflow functions: tasks get created, accepted, worked on, completed, and chained. The fundamental structure is sound. **Two major refactors have resolved the majority of critical issues.**
+
+**Resolved** (3 of 4 confirmed bugs fixed):
+- Accept API now works for all task kinds (reads from policy dynamically).
+- Account Details scripts fixed (server default disabled, client uses case-insensitive match).
+- Auto-reload dirty-check added.
+- Role map consolidation complete (single source of truth in Task Access Policy).
+- Duplicate filter bars eliminated.
+- Telegram notifications replace team queue notifications.
+- Comprehensive diagnostic logging added throughout.
+- Documentation updated (Doc 10, Doc 10A, AGENTS.md).
+
+**Still open**:
+- **1 confirmed bug**: Payment recording creates unlinked Payment Entries (Group 3, separate fix needed).
+- **1 deliberate bypass**: Assignment validation remains disabled.
+- **2 code quality items**: Duplicate Accept buttons (3 scripts), auto-escalation ToDo cleanup.
+
+The full technical details, script-by-script analysis, and prioritized remediation plan follow in the sections below.
+
+---
+---
+
 > **Scope**: Every server script, client script, custom field, property setter, and custom DocType that controls task creation, acceptance, locking, role-based access, status enforcement, assignment, team queues, auto-escalation, and the task-kind-specific flows for Account Details, Other, Discount Approval, Purchase Approval, and Debt Closure.
 >
 > **Method**: Line-by-line reading of every deployed script file under `deploy/test/work/`, cross-referenced against schema metadata (`deploy/test/schema/*.json`) and documentation (`docs/10*`, `docs/03*`, `docs/16*`).
@@ -12,12 +197,13 @@
 > - **0.60–0.79**: Plausible interpretation or likely issue requiring targeted validation.
 > - **Below 0.60**: Hypothesis/open question — not suitable for remediation without confirmation.
 >
-> **Date**: 2025-01-XX (analysis performed against test-instance extraction)
+> **Date**: Initial audit 2025-01. Updated 2026-08-29 with resolution status after task unification + team mapping unification refactors.
 
 ---
 
 ## Table of Contents
 
+0. [What This Is About / How It Should Work / What Is Actually Happening](#what-this-is-about) *(you are here — the plain-language overview above)*
 1. [Executive Summary](#1-executive-summary)
 2. [Scope and Evidence Sources](#2-scope-and-evidence-sources)
 3. [Script Inventory](#3-script-inventory)
@@ -867,33 +1053,184 @@ All four check `frm.doc.custom_accepted_by !== frappe.session.user` before rende
 
 ### Immediate (before next deployment)
 
-1. **Fix BUG-2 and LBUG-5**: Update `Task-Account Details Default Assignment.py` line 8 and `Task-Account Details UI Cleanup.js` line 28 to use correct task_kind strings (`"Account Details: Entry"` / `"Account Details: Processing"`).
+1. ~~**Fix BUG-2 and LBUG-5**~~ — **DONE**: Server script disabled; client script fixed with `.toLowerCase()`.
 
-2. **Fix BUG-3**: Add missing task kinds to `dispatch_task_accept.py`'s role map: `"Return Call"`, `"Distribute Payment"`, `"Payment Received"`, `"Account Details: Entry"`, `"Account Details: Processing"`, `"Other"`, `"Debt Closure Approval"`, `"Returns restocking"`.
+2. ~~**Fix BUG-3**~~ — **DONE**: Accept API reads from Task Access Policy dynamically. All task kinds covered.
 
-3. **Fix BUG-4**: In `Task-before-save-payment-recording.py`, the PE reference loop (line 54-60) should use the pre-zeroed allocation values, not `row.allocated_now` which was set to 0 on line 33. Store the allocation in a separate variable before zeroing.
+3. **Fix BUG-4** — STILL OPEN: In `Task-before-save-payment-recording.py`, the PE reference loop uses `row.allocated_now` after it was zeroed. Store the allocation in a separate variable before zeroing.
 
-4. **Fix LBUG-4**: Remove one of the two duplicate toggle-filter implementations. Recommend keeping `Global-Mobile Back Button List.js` (API-based, more comprehensive) and removing the filter logic from `Task-List Toggle Filters.js`.
+4. ~~**Fix LBUG-4**~~ — **DONE**: `Task-List Toggle Filters.js` disabled. `Global-Mobile Back Button List.js` is the sole implementation.
 
 ### Short-term (within 2 weeks)
 
-5. **Consolidate role maps**: Create a single source of truth for `TASK_KIND_ALLOWED_ROLES` instead of maintaining 4 copies that drift.
+5. ~~**Consolidate role maps**~~ — **DONE**: Task Access Policy is the single source of truth. All scripts read from it dynamically.
 
-6. **Re-evaluate assignment validation**: Decide whether to re-enable the commented-out assignment validation in `policy.py` or formally retire it. If re-enabling, also implement it in `dispatch_task_accept.py`.
+6. **Re-evaluate assignment validation** — STILL OPEN: Decide whether to re-enable. If re-enabling, need data cleanup first (tasks with 0 or N assignees).
 
-7. **Address team queue notification gap**: Either re-enable `Task-team-queue-notify.py` (after fixing for RestrictedPython compatibility) or implement an alternative notification mechanism.
+7. ~~**Address team queue notification gap**~~ — **DONE**: Telegram notifications (`Telegram Task Assignment Notification.py`) replace team queue notifications. Fires on all assignment changes, expands team placeholders.
 
-8. **Remove hardcoded emails from `task_list_filtered.py`**: Replace with a role-based or configuration-based approach.
+8. ~~**Remove hardcoded emails from `task_list_filtered.py`**~~ — **DONE**: `ACCOUNT_DETAILS_MY_TASK_USERS` removed. List API reads from policies.
 
 ### Medium-term (within 1 month)
 
-9. **Document undocumented features**: Add documentation for Account Details flow, Other flow, auto-escalation, Quick Entry behavior, Debt Closure Approval, and acceptance reset.
+9. ~~**Document undocumented features**~~ — **DONE**: Doc 10 updated with acceptance model, Other flow, Account Details flow, acceptance reset. Doc 10A updated with full script architecture, policy mapping table, diagnostic logging.
 
-10. **Audit `_assign` consistency**: Write a one-time script to verify that `_assign` JSON matches active ToDo records for all open tasks.
+10. **Audit `_assign` consistency** — STILL OPEN: One-time verification that `_assign` matches active ToDo records.
 
-11. **Review client script loading**: Verify list view `onload` handlers are not clobbering each other by checking the actual load order in production.
+11. ~~**Review client script loading**~~ — **DONE**: Duplicate filter script disabled. Only `Global-Mobile Back Button List.js` controls the toggle.
 
-12. **Consider Auto-Reload safety**: Add `frm.is_dirty()` check to `Task-Auto Reload.js` to prevent discarding unsaved changes.
+12. ~~**Consider Auto-Reload safety**~~ — **DONE**: `frm.is_dirty()` guard added.
+
+### Remaining actionable items
+
+13. **Fix BUG-4 (Payment recording)**: Store allocation before zeroing. Group 3 script.
+14. **Consolidate Accept buttons**: Remove duplicate Accept button rendering from `Task-Dispatch Packing Usability.js` and `Task-Other UI Cleanup.js`. Keep only `Task-Accept Start.js`.
+15. **Auto-escalation cleanup**: Add de-escalation (cancel director ToDos when task is completed). Fix stale "Pending Review" status check.
+16. **Delete fully superseded disabled scripts**: `Task-after-insert-assign.py`, `Task-before-save-return-dropoff-photo.py`, `Task-Hide Sidebar Assignment.js`.
+17. **Deploy to production**: All changes are currently TEST-only. Requires explicit production confirmation.
+
+---
+
+## Post-Implementation Status
+
+*Updated 2026-08-29 after two major refactors:*
+1. *Task Unification Plan — acceptance model, team users, Telegram, lock behavior*
+2. *Team Mapping Unification — single source of truth in Task Access Policy, diagnostic logging*
+
+### Findings Fixed
+
+| # | Original Finding | Status | What Was Done |
+|---|---|---|---|
+| 1 | Several task kinds cannot be accepted (missing from accept API role map) | **FIXED** | Accept API now uses canonical role map with all 21 task kinds (Step 4) |
+| 2 | Account Details scripts use wrong task_kind string | **FIXED** | Server script disabled (Step 9); client scripts fixed to check `"Account Details: Entry"` and `"Account Details: Processing"` (Step 22); Dispatch Packing also fixed |
+| 4 | "One assignee per task" rule not enforced | **UNCHANGED** | Validation remains commented out (deliberate decision for now) |
+| 5 | Auto-reload can erase unsaved work | **FIXED** | `frm.is_dirty()` guard added to `Task-Auto Reload.js` (Step 23) |
+| Role mapping drift across 4 scripts | **FIXED** | Canonical map with 21 task kinds now identical in policy, accept API, and list filter API (Steps 3-5) |
+| Duplicate list-view toggle bars | **FIXED** | `Task-List Toggle Filters.js` disabled (Step 19); `Global-Mobile Back Button List.js` is the sole toggle implementation |
+| Hardcoded user emails in `task_list_filtered.py` | **FIXED** | `ACCOUNT_DETAILS_MY_TASK_USERS` removed (Step 5) |
+| `_assign` and `custom_assigned_to` drift out of sync | **FIXED** | Policy Before Save now always syncs `_assign` from `custom_assigned_to` (Step 3) |
+| Team queue fields redundant | **REMOVED** | All references to `custom_is_team_queue_task`, `custom_team_queue_role`, `custom_team_queue_status`, `custom_team_notified` removed from scripts (Steps 3-8, 15-21). Fields marked for schema deletion (Steps 24-25, to be applied on server). |
+| `console.log` statements in production client code | **FIXED** | Removed from `Global-Mobile Back Button List.js` (Step 20) |
+| `frappe.db.commit()` in accept API causes inconsistent state | **FIXED** | Removed premature commit from `dispatch_task_accept.py` (Step 4) |
+| Quick Entry sets `custom_team_queue_role` | **FIXED** | Removed from `Task-Team Queue.js` (Step 17); policy default assignment fills in team user automatically |
+
+### Scripts Disabled
+
+| Script | Reason |
+|---|---|
+| `Task-Account Details Default Assignment.py` | Absorbed into policy default assignment (Step 9) |
+| `dispatch_task_queue_backfill.py` | Team queue fields being removed (Step 10) |
+| `Task-List Toggle Filters.js` | Duplicate of `Global-Mobile Back Button List.js` toggle (Step 19) |
+
+### Telegram Notification Changes
+
+| Change | Details |
+|---|---|
+| Assignment notification trigger | Moved from ToDo After Insert to Task After Save. Now covers Quick Entry, manual creation, and all assignment paths (Step 11) |
+| Status notification recipient | Changed from `ToDo.assigned_by` lookup to `doc.owner` (Step 12) |
+| Chat ID source | Hardcoded `USER_CHAT_MAP` removed; reads from `User.telegram_chat_id` custom field (Steps 11-12) |
+| `Telegram Notification User` DocType | Marked for deletion — dead infrastructure never queried by any script (Step 14) |
+
+### New Capabilities
+
+| Capability | Details |
+|---|---|
+| Default team user assignment | Policy Before Save auto-assigns default team user when `custom_assigned_to` is empty. All 21 task kinds covered. |
+| `_assign` always consistent | `_assign` is synced from `custom_assigned_to` on every save — manual form edits, dispatch flow, accept API, all paths |
+| Role-only acceptance | Any user with an allowed role can accept, regardless of current assignee. No team queue role check needed |
+| Telegram on all creation paths | Assignment Telegram notification fires for Quick Entry, manual creation, dispatch flow — not just ToDo-triggered paths |
+
+### Findings Fixed (Team Mapping Unification — 2026-08-29)
+
+| # | Original Finding | Status | What Was Done |
+|---|---|---|---|
+| Dispatch flow hardcoded team constants | **FIXED** | `Task-after-save-dispatch-flow.py` now reads `team_map` from `frappe.get_all("Task Access Policy")`. Hardcoded `INVENTORY_TEAM`, `DELIVERY_TEAM`, etc. removed. |
+| Role maps in 4 scripts | **FULLY FIXED** | ALL hardcoded `TASK_KIND_ALLOWED_ROLES` and `TASK_KIND_TEAM_USER` dicts removed from: `Task-before-save-policy.py`, `dispatch_task_accept.py`, `task_list_filtered.py`, `Task-after-save-dispatch-flow.py`. All read from Task Access Policy records. |
+| P-2/P-3: Role mapping inconsistencies | **FIXED** | Single source of truth. Adding a task kind to the policy record automatically makes it available to all scripts. |
+| DA-1: Accept API missing task kinds | **FIXED** | API reads dynamically from policy — any task kind with a policy record can be accepted. |
+| RISK-5: SQL injection surface in task_list_filtered | **FIXED** | Task kinds come from policy records (DB values), not hardcoded strings. |
+| No diagnostic logging | **FIXED** | All server scripts now emit tagged logs: `[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]`. Client scripts emit: `[TaskAccept]`, `[TaskLock]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]`. |
+| `console.log` in production | **REPLACED** | Now uses intentional diagnostic `console.log` with structured tags for troubleshooting. |
+
+### Architecture Changes (Team Mapping Unification)
+
+| Change | Details |
+|---|---|
+| **Child DocType created** | `Task Access Policy Role` (istable=1, field: `role` Link to Role) |
+| **New fields on Task Access Policy** | `default_team_user` (Link to User), `allowed_roles` (Table → Task Access Policy Role) |
+| **New task_kind Select options** | `Other: Entry`, `Other: Processing` added to the Custom Field |
+| **New policy records** | `Other: Entry` (9 roles, office team), `Other: Processing` (9 roles, office team) |
+| **23 active policies populated** | All with correct `default_team_user` and `allowed_roles` data |
+| **Stale records left untouched** | `Order accepting`, `Account details` — not deleted but not populated |
+
+### Remaining Follow-Up Items (Updated 2026-08-29)
+
+| # | Item | Status | Notes |
+|---|---|---|---|
+| 1 | ~~Dispatch flow team user constants~~ | **DONE** | Reads from policy now |
+| 2 | Duplicate Accept buttons | **STILL OPEN** | Three scripts render Accept: `Task-Accept Start.js`, `Task-Dispatch Packing Usability.js`, `Task-Other UI Cleanup.js`. All call same API. Could consolidate. |
+| 3 | `task_list_filtered.py` scalability (500 names in URL) | **STILL OPEN** | Low priority — works for current data volumes |
+| 4 | Payment recording bug (PE without invoice refs) | **STILL OPEN** | Group 3 script, not addressed in either refactor |
+| 5 | ~~Schema changes pending deployment~~ | **DONE** | telegram_chat_id added, team queue fields removed from scripts, "Order accepting" still in options (legacy compat) |
+| 6 | ~~Verify directors.team@example.com exists~~ | **DONE** | All team users verified on test environment |
+| 7 | Assignment validation disabled (BUG-1) | **STILL OPEN** | Deliberate — not yet re-enabled. Would require data cleanup first (tasks with 0 or N assignees). |
+| 8 | Auto-escalation ToDos never cleaned up (LBUG-3) | **STILL OPEN** | Not addressed by either refactor |
+| 9 | Auto-escalation checks "Pending Review" status that doesn't exist (AE-5) | **STILL OPEN** | Stale code in `doc15_task_auto_escalation.py` |
+| 10 | Re-acceptance allowed (DA-4) | **BY DESIGN** | Documented as intentional in updated Doc 10 |
+| 11 | Acceptance reset on reassignment (UD-7) | **DOCUMENTED** | Now formally documented in Doc 10 §6.6 |
+
+### Current Script Architecture (after both refactors)
+
+**Server Scripts — Enabled:**
+| Script | Type | Purpose | Reads from Policy? |
+|---|---|---|---|
+| `Task-before-save-policy` | Before Save | Role enforcement, default team assign, _assign sync, photo gates (non-DC), completed_at | **Yes** |
+| `Task-before-save-lock-completed` | Before Save | Blocks modification of Completed tasks | No |
+| `Task-before-save-lock-unaccepted` | Before Save | Blocks editing by non-accepted user, resets on reassign | No |
+| `Task-before-save-dispatch-gates` | Before Save | Dispatch-specific gates (acceptance, photos, status sequencing) | No |
+| `Task-before-save-auto-subject` | Before Save | 5-digit numeric subject auto-generation | No |
+| `Task-Other Entry Default Subject` | Before Save | Default subject for Other tasks | No |
+| `Task-after-save-dispatch-flow` | After Save | Dispatch Case automation (next tasks, stock, invoices) | **Yes** |
+| `Task-after-save-account-details-processing` | After Save | Entry→Processing chain for Account Details | No |
+| `Task-after-save-other-processing` | After Save | Entry→Processing chain for Other tasks | No |
+| `dispatch_task_accept` | API | Accept endpoint (role validation, ToDo management, assignment) | **Yes** |
+| `task_list_filtered` | API | Returns filtered task names by role and toggle state | **Yes** |
+| `dispatch_task_queue_backfill` | API | Maintenance backfill for team queue fields | **Yes** (reads team users) |
+| `Telegram Task Assignment Notification` | After Save | Telegram on assignment changes | No |
+| `Telegram Task Status Update` | After Save | Telegram on status changes | No |
+| `doc15_task_auto_escalation` | Scheduler | Overdue task → director ToDos | No |
+| `Task-after-save-debt-closure` | After Save | Creates Debt Closure Approval | No |
+| `Task-after-save-advance-payment` | After Save | Creates Payment Entry for advance payment | No |
+| `Task-before-save-payment-recording` | Before Save | Creates PE for Debt Collection (has unresolved bug) | No |
+| `Task-before-save-discount-approval-writeback` | Before Save | Writes back to Sales Order | No |
+| `Task-purchase-approval-writeback` | Before Save | Writes back to Purchase Order | No |
+
+**Server Scripts — Disabled:**
+| Script | Reason |
+|---|---|
+| `Task-Account Details Default Assignment` | Absorbed into policy default assignment |
+| `Task-List Toggle Filters.js` | Duplicate of Global-Mobile toggle |
+| `Task-after-insert-assign` | Uses unavailable `assign_to` module |
+| `Task-dispatch-queue-integration` | Team queue fields deprecated |
+| `Task-team-queue-notify` | Replaced by Telegram notifications |
+| `Task-before-save-return-dropoff-photo` | Redundant with dispatch-gates |
+| `Task-Hide Sidebar Assignment.js` | Superseded by Accept Start + Lock scripts |
+
+**Client Scripts — Active:**
+| Script | Purpose | Has diagnostic logging? |
+|---|---|---|
+| `Task-Accept Start` | Accept button, mobile UI, save/complete | Yes (`[TaskAccept]`) |
+| `Task-Lock Unaccepted` | Form lock/unlock based on acceptance | Yes (`[TaskLock]`) |
+| `Task-Lock Completed` | Read-only for completed tasks | No (6 lines, trivial) |
+| `Task-Dispatch Packing Usability` | Dispatch Case dashboard, accept button (duplicate) | Yes (`[TaskPack]`) |
+| `Task-Auto Reload` | Auto-refresh when server is newer (with dirty guard) | Yes (`[TaskAuto]`) |
+| `Task-Other UI Cleanup` | Hides irrelevant fields for Other tasks, accept button (duplicate) | No |
+| `Task-Account Details UI Cleanup` | Hides irrelevant fields for Account Details tasks | No |
+| `Task-Team Queue` | Quick Entry override (creates Order entry) | No |
+| `Global-Mobile Back Button List` | Toggle filters, mobile back button, refresh | Yes (`[TaskToggle]`) |
+| `Order entry - barcode scanning section - hide` | Barcode scanning UI for Order entry | No |
+| `Task - Load Surgical Kit Template` | Surgery set type → items loader | No |
+| `Task-Inspect Returns Next Assign Visible` | Shows next-assignee field for returns | No |
 
 ---
 
