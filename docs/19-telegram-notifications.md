@@ -238,7 +238,8 @@ The following items existed before the current implementation and are now dead/u
 
 | Item | Status | Notes |
 |---|---|---|
-| `Telegram Notification User` DocType | **Dead** | Created 2026-07-22 but never wired into any script. Chat IDs are now on the User record directly. Safe to delete. |
+| `Telegram Notification User` DocType | **Deleted** | Created 2026-07-22 but never wired into any script. Chat IDs are now on the User record directly. Deleted from test 2026-08-29. |
+| `DATUREX Task Push` notification | **Disabled** | Was a System Notification (bell icon) for new Tasks. Legacy from mobile-app evaluation. Disabled 2026-08-29 — Telegram is now the sole external notification channel. |
 | Hardcoded `USER_CHAT_MAP` dictionaries | **Removed** | Both scripts previously had hardcoded email→chat_id maps. Now read from `User.telegram_chat_id`. |
 | ToDo-based trigger (old assignment script) | **Removed** | The old assignment notification fired on `ToDo After Insert`. Now fires on `Task After Save` — covers all assignment paths (Quick Entry, manual, dispatch flow, accept API). |
 | `Task-team-queue-notify.py` (disabled) | **Superseded** | Was supposed to notify on team queue entry. Replaced by the assignment notification which fires for all assignment changes including team assignments. |
@@ -254,7 +255,8 @@ Before deploying Telegram notifications to production:
 3. **Populate `telegram_chat_id`** for all users who should receive notifications.
 4. **Verify team placeholder users** exist and have correct Ops-* roles on production.
 5. **Test with one user** before enabling for all (set only one user's chat_id, trigger a task assignment, verify message arrives).
-6. **Delete `Telegram Notification User` DocType** on production (dead infrastructure, never used).
+6. **Disable `DATUREX Task Push` notification** on production (legacy, already disabled on test).
+7. **Delete `Telegram Notification User` DocType** on production if it exists (already deleted on test).
 
 ---
 

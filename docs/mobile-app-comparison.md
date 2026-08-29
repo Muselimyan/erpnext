@@ -1,5 +1,7 @@
 # ERPNext Mobile App Comparison — Push Notifications for Delivery Drivers
 
+> **SUPERSEDED** — None of the apps below were adopted. Telegram Bot notifications were built instead. See [Doc 19 — Telegram Notifications](19-telegram-notifications.md).
+
 **Requirement:** Notify delivery drivers on their phone when a new Task is assigned to them.
 **Server:** Self-hosted ERPNext v16.14.0, Docker, `erpnext.am`
 **Date:** Jul 2026

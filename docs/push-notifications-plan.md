@@ -1,5 +1,7 @@
 # Push Notifications for Delivery Drivers — Implementation Plan
 
+> **SUPERSEDED** — This plan was never implemented. Telegram Bot notifications were built instead. See [Doc 19 — Telegram Notifications](19-telegram-notifications.md).
+
 **Goal:** Enable push notifications on the ERPNext mobile app for delivery drivers so they receive alerts when new tasks are created or assigned.
 
 **Mobile app confirmed:** [ERPNext Workflow](https://play.google.com/store/apps/details?id=com.midocean.erpnextworkflow) by Midocean Technologies (`com.midocean.erpnextworkflow`)
