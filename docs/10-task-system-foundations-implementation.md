@@ -1,6 +1,14 @@
 # Doc 10A — Task System Foundations (Implementation / ERPNext Setup Guide)
 
-> **Note:** Photo requirements have been revised. See **Doc 18 — Photo System** for the current authoritative rules. Key change: the pickup photo requirement is on the **Pack** task (not the Delivery task), and Delivery tasks have no photo requirement. This implementation doc (10A) reflects the original design and has not been fully updated.
+> **Major revision (2026-08):** The task system was significantly refactored. Key changes from the original design below:
+> - **Acceptance model**: Tasks must be explicitly accepted before editing/completing (section 6 rewritten).
+> - **Lock model**: Only the accepted user can edit; others see read-only.
+> - **Team mapping unification**: All role/team mappings are now stored in `Task Access Policy` records (not hardcoded in scripts). See section 6A.
+> - **Telegram notifications**: Assignment changes trigger Telegram messages to affected users.
+> - **Diagnostic logging**: All server scripts emit tagged logs (`[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]`); client scripts emit `[TaskAccept]`, `[TaskLock]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]`.
+> - **Photo requirements**: See **Doc 18 — Photo System** for current authoritative rules.
+> - **Other: Entry / Other: Processing**: New task kinds for ad-hoc workflows.
+> - The script code in section 6.1 is **obsolete** — see section 6A for the current architecture.
 
 ## 1) Purpose
 This is a **step-by-step setup guide** to implement the operational rules defined in:
@@ -43,20 +51,30 @@ Doc 10 requires the same Task system to support multiple operational processes.
    - Fieldname: `task_kind`
    - Fieldtype: `Select`
    - Options (one per line, exactly):
+     - Order accepting *(legacy, do not use for new tasks)*
      - Order entry
      - Pack / prepare items
      - Dispatch picking / hand-off
      - Delivery
+     - Return Call
      - Return to warehouse (aborted delivery / cancelled order)
      - Pickup Returns
      - Return drop-off at warehouse
      - Returns processing / verification
+     - Returns restocking
      - Invoice preparation / create invoice
      - Debt Collection
      - Distribute Payment
+     - Payment Received
      - Discount Approval
      - Purchase Approval
      - Write-off Approval
+     - Account Details: Entry
+     - Account Details: Processing
+     - Other
+     - Other: Entry
+     - Other: Processing
+     - Debt Closure Approval
 4) Save.
 
 ### 3.2 Add standard “link back” fields (recommended)
@@ -139,20 +157,24 @@ Doc 10 defines the operational policy for:
 This section implements those decisions in ERPNext.
 
 ### 5.3 Create standard roles for task ownership (recommended)
-Create roles that represent your teams (names are examples; keep consistent):
+Create roles that represent your teams:
 - `Ops - Order Accepting`
+- `Ops - Order Creating`
 - `Ops - Inventory`
 - `Ops - Returns`
 - `Ops - Delivery`
 - `Ops - Accounting`
+- `Ops - Finance`
 - `Ops - Directors`
+- `Delivery Driver`
 
 Then ensure each user has exactly the role(s) for their team.
 
 Note:
 - Drivers should have `Delivery Driver`.
 - Dispatch coordinators should have `Ops - Delivery`.
-- Directors/coordinators typically need visibility across teams.
+- Finance team handles debt collection, payments.
+- Directors/coordinators typically need `Ops - Directors` for override access.
 
 ### 5.4 Implement Task Access Policies (visibility)
 Doc 10 requires that each Task Kind is assigned a **Task Access Policy**, and each worker is granted access to one or more policies.
@@ -169,21 +191,32 @@ Doc 10 requires that each Task Kind is assigned a **Task Access Policy**, and ea
    - `notes` (Small Text) → optional
 5) Save.
 
-Create records (recommended: one per Task Kind):
+Create records (one per Task Kind). Current list:
 - Order entry
 - Pack / prepare items
 - Dispatch picking / hand-off
 - Delivery
+- Return Call
 - Return to warehouse (aborted delivery / cancelled order)
 - Pickup Returns
 - Return drop-off at warehouse
 - Returns processing / verification
+- Returns restocking
 - Invoice preparation / create invoice
 - Debt Collection
 - Distribute Payment
+- Payment Received
 - Discount Approval
 - Purchase Approval
 - Write-off Approval
+- Account Details: Entry
+- Account Details: Processing
+- Other
+- Other: Entry
+- Other: Processing
+- Debt Closure Approval
+
+Each record now also stores `default_team_user` and `allowed_roles` (see section 6A).
 
 #### 5.4.2 Add `task_access_policy` field on `Task`
 1) Open `Customize Form`.
@@ -377,6 +410,97 @@ if is_becoming_completed and not doc.completed_at:
    - Task Kind = `Pack / prepare items`
 9) Try to complete it as a user without the `Ops - Inventory` role:
    - Must fail.
+
+---
+
+## 6A) Current implementation architecture (2026-08 refactor)
+
+> This section supersedes the script in 6.1. The old script is kept above for historical reference only.
+
+### Overview of deployed Server Scripts
+
+| Script name | Type | Purpose |
+|---|---|---|
+| `Task-before-save-policy` | Before Save | Reads allowed roles and default team from Task Access Policy. Enforces role checks, auto-assigns default team, syncs `_assign`, photo gates for non-DC tasks, sets `completed_at`. |
+| `Task-before-save-lock-unaccepted` | Before Save | Enforces acceptance lock: unaccepted tasks cannot be edited. Resets acceptance on reassignment. |
+| `Task-before-save-dispatch-gates` | Before Save | Enforces dispatch-specific gates: acceptance required, photo requirements, delivery status sequencing, pack item verification, invoice submission check, etc. |
+| `dispatch_task_accept` | API | Accept endpoint: validates role, cancels old ToDos, sets accepted_by/at, updates assignment, creates new ToDo. |
+| `task_list_filtered` | API | Returns filtered task names based on user roles and toggle state (my/open/completed). Reads from policy records. |
+| `Task-after-save-dispatch-flow` | After Save | Dispatch Case automation: creates next-step tasks, stock entries, invoices, debt tasks. Uses `team_map` from policies. |
+| `Task-after-save-other-processing` | After Save | When "Other: Entry" completes, creates "Other: Processing" task with attachments. |
+| `Telegram Task Assignment Notification` | After Save | Sends Telegram messages when assignment changes. Expands team placeholders to real users. |
+| `Telegram Task Status Update` | After Save | Sends Telegram status updates to task owner on key status changes. |
+
+### Overview of deployed Client Scripts
+
+| Script name | Purpose |
+|---|---|
+| `Task-Accept Start` | Renders Accept button and Complete button. Calls `dispatch_task_accept` API. |
+| `Task-Lock Unaccepted` | Locks/unlocks form fields based on acceptance status. |
+| `Task-Dispatch Packing Usability` | Dispatch Case helper comments, packing-specific UI. |
+| `Global-Mobile Back Button List` | Mobile back button, toggle filter bar (My/Open/Completed), calls `task_list_filtered`. |
+| `Task-Auto Reload` | Auto-reloads task form when server has newer data. |
+
+### Task Access Policy (single source of truth for mappings)
+
+The `Task Access Policy` DocType stores:
+- `policy_name` (= Task Kind name, used as the primary key)
+- `default_team_user` (Link to User) — the team placeholder email
+- `allowed_roles` (child table: `Task Access Policy Role`) — roles that may access this kind
+
+**All Server Scripts read from these records at runtime.** There are no hardcoded role dictionaries or team constants in any script. To change a mapping, edit the policy record in ERPNext.
+
+Child DocType: `Task Access Policy Role` (istable=1, module=Custom, custom=1)
+- Field: `role` (Link to Role, required, in_list_view)
+
+### Canonical team/role mappings (as of 2026-08)
+
+| Task Kind | Default Team User | Allowed Roles |
+|---|---|---|
+| Order entry | order.creation.team@example.com | Ops - Order Accepting, Ops - Order Creating |
+| Pack / prepare items | inventory.team@example.com | Ops - Inventory |
+| Dispatch picking / hand-off | delivery.team@example.com | Ops - Delivery |
+| Delivery | delivery.team@example.com | Delivery Driver, Ops - Delivery |
+| Return Call | office.team@example.com | Ops - Returns, Ops - Order Accepting |
+| Return to warehouse... | delivery.team@example.com | Delivery Driver, Ops - Delivery |
+| Pickup Returns | delivery.team@example.com | Delivery Driver, Ops - Delivery, Ops - Returns |
+| Return drop-off at warehouse | delivery.team@example.com | Delivery Driver, Ops - Delivery |
+| Returns processing / verification | returns.team@example.com | Ops - Returns, Ops - Inventory |
+| Returns restocking | returns.team@example.com | Ops - Returns |
+| Invoice preparation / create invoice | accounting.team@example.com | Ops - Accounting |
+| Debt Collection | finance.team@example.com | Ops - Finance, Ops - Directors |
+| Distribute Payment | finance.team@example.com | Ops - Finance, Ops - Directors |
+| Payment Received | finance.team@example.com | Ops - Finance, Ops - Directors |
+| Discount Approval | directors.team@example.com | Ops - Directors |
+| Purchase Approval | directors.team@example.com | Ops - Directors |
+| Write-off Approval | directors.team@example.com | Ops - Directors |
+| Account Details: Entry | accounting.team@example.com | Ops - Accounting, Ops - Finance, Ops - Directors |
+| Account Details: Processing | accounting.team@example.com | Ops - Accounting, Ops - Finance, Ops - Directors |
+| Other | office.team@example.com | All Ops roles + Delivery Driver |
+| Other: Entry | office.team@example.com | All Ops roles + Delivery Driver |
+| Other: Processing | office.team@example.com | All Ops roles + Delivery Driver |
+| Debt Closure Approval | directors.team@example.com | Ops - Directors |
+
+### Stale/legacy policy records (do NOT populate)
+- `Order accepting` — superseded by "Order entry"
+- `Account details` — superseded by "Account Details: Entry" / "Account Details: Processing"
+
+### Diagnostic logging
+
+All scripts emit structured logs using `print()` (server) or `console.log()` (client). Each tag is grep-able:
+
+**Server tags:** `[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]`, `[Photo]`
+
+**Client tags:** `[TaskAccept]`, `[TaskLock]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]`
+
+### Deployment
+
+Deploy script: `deploy/test/scripts/deploy-team-mapping-unification.ps1`
+- Creates child DocType, adds custom fields, populates policy records, deploys all scripts.
+- Supports `-Mode Check` (dry run) and `-Mode Deploy`.
+
+Previous refactor deploy: `deploy/test/scripts/deploy-task-unification.ps1`
+- Created team users, Telegram fields, migrated stale data, deployed scripts.
 
 ---
 

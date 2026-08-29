@@ -268,40 +268,102 @@ Attachments:
 Completion definition:
 - Approver explicitly accepted/rejected with a note.
 
+### 4.12 Other / Other: Entry / Other: Processing
+Purpose:
+- Catch-all for ad-hoc tasks that don't belong to a specific workflow stage.
+- `Other: Entry` is used for intake/recording work; `Other: Processing` for follow-up.
+- When `Other: Entry` is completed, an `Other: Processing` task is automatically created with the same attachments and description.
+
+Primary owner:
+- Office team (accessible by all operational roles)
+
+Attachments:
+- Optional
+
+Completion definition:
+- As defined by the task creator.
+
 ---
 
 ## 5) Task statuses (standard meanings)
 ERPNext provides Task statuses; use them with consistent meaning.
 
-Recommended meanings:
+Meanings:
 - **Open**
-  - Task exists and is ready to be started.
+  - Task exists and is assigned to a team/user but has not yet been accepted.
 - **Working**
-  - Assignee is actively working on it.
-- **Pending Review / Pending** (choose one consistent label you will use)
-  - Work done by assignee, waiting for a coordinator/manager check.
+  - A user has explicitly **accepted** the task and is actively working on it.
 - **Completed**
-  - Done and accepted.
+  - Done.
 - **Cancelled**
   - No longer needed (must include a short reason in the task description or notes).
 
-Operational rule:
+Operational rules:
 - Don’t use `Completed` as “we tried”. Use `Cancelled` for abandoned work, with a reason.
 
 ---
 
-## 6) Assignment rules
-- **Exactly one owner**
-  - Each operational task must have one primary assignee.
-- **If multiple people must act, create multiple tasks**
-  - Example: driver pickup + returns counting are different responsibilities.
-- **Reassignment policy**
-  - Reassigning a task is allowed, but the new assignee must be explicit.
-  - If a task is reassigned, add a short note (why and when).
-- **No driver stock responsibilities**
-  - Drivers should only be assigned tasks that are driver-friendly and do not require Stock Entry/Sales knowledge.
+## 6) Assignment, acceptance, and lock model
 
-### 6.1 Team ownership enforcement (required)
+### 6.1 Default assignment (team placeholders)
+When a task is created by automation (dispatch flow, "Other: Entry" chain, etc.):
+- It is assigned to the **default team user** for that Task Kind (a placeholder email like `delivery.team@example.com`).
+- The task starts in status **Open**.
+- Telegram notifications are sent to all real users who share the team's operational role.
+
+### 6.2 Acceptance (mandatory before editing/completing)
+Rules:
+- A user must explicitly **accept** a task before they can edit or complete it.
+- Acceptance is performed via the "Accept / Start Task" button (calls `dispatch_task_accept` API).
+- On acceptance:
+  - `custom_accepted_by` and `custom_accepted_at` are set.
+  - `custom_assigned_to` and `_assign` are updated to the accepting user.
+  - Status changes to **Working**.
+  - Existing open ToDos for the team placeholder are cancelled; a new ToDo is created for the accepting user.
+- Role check: only users with an allowed role for the task's kind may accept it. Administrators and System Managers bypass this check.
+
+### 6.3 Lock (only the accepted user may edit)
+Rules:
+- Once a task is accepted, **only the user who accepted it** may edit or complete it.
+- Other users (including those with the correct role) see the task as read-only on the client.
+- Administrators and System Managers bypass the lock.
+- If the task is reassigned, acceptance is reset (status reverts to Open, `custom_accepted_by` is cleared), and the new assignee must accept again.
+
+### 6.4 Team ownership and role enforcement
+Rules:
+- Each Task Kind has a set of **allowed roles** (stored in the Task Access Policy record).
+- Only users with at least one allowed role may accept, edit, or complete that task kind.
+- Directors (`Ops - Directors`) and System Managers override all role checks.
+- Enforcement happens at both save time (Server Script) and accept time (API).
+
+### 6.5 Visibility (task list filtering)
+Rules:
+- The task list API (`task_list_filtered`) shows a user only:
+  - Tasks whose kind has a role the user possesses.
+  - Tasks assigned to the user or to a team placeholder.
+- Administrators see all tasks.
+- Toggle filters: "My Tasks", "Open Tasks", "Completed" control the query.
+
+### 6.6 Reassignment
+- Reassigning a task (changing `custom_assigned_to`) resets acceptance.
+- The new assignee must accept before editing.
+- A task cannot be reassigned and completed in the same save.
+
+### 6.7 General rules
+- **Exactly one owner** - Each operational task must have one primary assignee.
+- **If multiple people must act, create multiple tasks** (driver pickup + returns counting are different responsibilities).
+- **No driver stock responsibilities** - Drivers should only be assigned tasks that are driver-friendly.
+
+### 6.8 Task Access Policy (canonical mapping)
+The **Task Access Policy** DocType is the single source of truth for:
+- **default_team_user**: the team placeholder email assigned when a task is created.
+- **allowed_roles**: the child table of roles that may see/accept/edit/complete that task kind.
+
+There is one Task Access Policy record per Task Kind. Scripts read from these records at runtime rather than using hardcoded dictionaries. To change which team owns a task kind or which roles can access it, update the policy record.
+
+> **Superseded:** The old 6.1/6.2 sections describing team ownership enforcement and visibility policy are now implemented via the mechanisms above (sections 6.2-6.5). The old sections described the *intent*; the current implementation uses acceptance + lock + role-filtered list API.
+
+### (Legacy) Team ownership enforcement
 Rules:
 - A Task must only be assigned to a person from the Task Kind’s owning team.
 - Only the Task Kind’s owning team may edit the task (except Directors/Coordinators).
