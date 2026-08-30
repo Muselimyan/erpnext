@@ -25,7 +25,7 @@ Non-goals:
   - If stock is in a warehouse, that warehouse’s owner team is responsible for it.
 
 - **In-transit stock must be short-lived**
-  - If stock stays in `Delivery In-Transit - WH` or `Return Pickup In-Transit - WH` for “too long”, the workflow is stuck.
+  - If stock stays in `Delivery In-Transit - Inmed` or `Return Pickup In-Transit - Inmed` for “too long”, the workflow is stuck.
 
 - **Tracked items must remain traceable end-to-end**
   - For batch/serial items, missing identifiers are not “data noise”; they break recall/accountability.
@@ -47,7 +47,7 @@ Directors should be able to answer:
 Operations should be able to answer:
 - What is in transit right now?
 - What company-owned stock is sitting at client locations (Dispatch Case return-expected path and/or permanent sets)?
-- What is waiting in `Returns - WH` to be processed?
+- What is waiting in `Returns - Inmed` to be processed?
 - Which item templates (Collection Sets) are currently short on inventory?
 
 ### 3.3 Purchasing leads (daily/weekly)
@@ -82,7 +82,7 @@ Primary truth:
 - Stock Balance for the relevant client location warehouse
 
 How to view / filter:
-- Filter by one client location warehouse (not the group `Clients - WH`).
+- Filter by one client location warehouse (not the group `Clients - Inmed`).
 - Optionally filter by Item Group (implants vs instruments) for operational review.
 
 Interpretation:
@@ -107,10 +107,10 @@ What it answers:
 - “What is packed and handed to delivery, but not yet delivered?”
 
 Primary truth:
-- Stock Balance for `Delivery In-Transit - WH`
+- Stock Balance for `Delivery In-Transit - Inmed`
 
 How to view / filter:
-- Filter to the `Delivery In-Transit - WH` warehouse.
+- Filter to the `Delivery In-Transit - Inmed` warehouse.
 - Group by Item for a quick risk scan.
 
 Interpretation:
@@ -120,7 +120,7 @@ Red flags:
 - Items stuck here overnight / multiple days
 
 Additional red flag (cancellations):
-- Items in `Delivery In-Transit - WH` where the related Dispatch Case is cancelled
+- Items in `Delivery In-Transit - Inmed` where the related Dispatch Case is cancelled
   - usually means an aborted delivery package was not returned through the returns checkpoint.
 
 What it usually means:
@@ -135,7 +135,7 @@ What it answers:
 - “What was picked up from client locations and is currently with delivery, not yet received/verified at warehouse?”
 
 Primary truth:
-- Stock Balance for `Return Pickup In-Transit - WH`
+- Stock Balance for `Return Pickup In-Transit - Inmed`
 
 Interpretation:
 - This location should be short-lived. It represents physical packages in the delivery chain.
@@ -154,7 +154,7 @@ What it answers:
 - “How much work is sitting in returns processing right now?”
 
 Primary truth:
-- Stock Balance for `Returns - WH`
+- Stock Balance for `Returns - Inmed`
 
 Interpretation:
 - This is not sellable stock yet; it is “returned but not checked”.
@@ -173,7 +173,7 @@ What it answers:
 - “Which driver currently has what?”
 
 Primary truth:
-- Stock is still stored by warehouse (`Delivery In-Transit - WH`, `Return Pickup In-Transit - WH`).
+- Stock is still stored by warehouse (`Delivery In-Transit - Inmed`, `Return Pickup In-Transit - Inmed`).
 - "by person" is derived from:
   - dispatch/pickup assignment records and/or tasks linked to the Dispatch Case (Doc 10 / Doc 16).
 

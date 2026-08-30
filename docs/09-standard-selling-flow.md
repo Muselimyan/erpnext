@@ -82,12 +82,12 @@ Operational rule:
 
 ## 5) Warehouses and stock movement rules (standard sales)
 Standard sales uses only:
-- `Main - WH`
-- `Delivery In-Transit - WH`
+- `Main - Inmed`
+- `Delivery In-Transit - Inmed`
 
 Rules (alignment with Doc 05):
 - Outgoing staging is allowed:
-  - `Main - WH` → `Delivery In-Transit - WH`
+  - `Main - Inmed` → `Delivery In-Transit - Inmed`
 - Standard delivery completion must remove stock from company-owned warehouses.
 - Client location warehouses must not be used for standard sales.
 
@@ -142,7 +142,7 @@ Operational checklist:
   - choose correct serials
 - For expiry-tracked items:
   - follow FEFO (First-Expiry-First-Out): pick the earliest-expiry batch first
-  - if a fresher batch is selected while an older-expiring batch is available in `Main - WH`, the system must alert
+  - if a fresher batch is selected while an older-expiring batch is available in `Main - Inmed`, the system must alert
 - Pack safely and label the package if needed
 
 Outcome:
@@ -153,9 +153,9 @@ Purpose:
 - Ensure the system’s “in transit” view matches physical reality.
 
 Operational rules:
-- Stock must be staged into `Delivery In-Transit - WH` before the driver leaves (so in-transit reporting is correct).
+- Stock must be staged into `Delivery In-Transit - Inmed` before the driver leaves (so in-transit reporting is correct).
 - Driver does not post stock.
-- Driver must attach a Warehouse Pickup Photo on the `Delivery` Task before leaving `Main - WH`.
+- Driver must attach a Warehouse Pickup Photo on the `Delivery` Task before leaving `Main - Inmed`.
 
 Prepaid gate (only for prepaid orders):
 - Do not stage/dispatch a prepaid order until Accounting confirms the required upfront amount was recorded.
@@ -347,12 +347,12 @@ Stage-based handling (recommended baseline):
   - Cancel the `Delivery` task (if created) with reason “Order cancelled before pickup”.
   - Ensure the packed items are returned to normal shelf locations by the Inventory team.
 - Stock effect:
-  - If no stock was moved out of `Main - WH` yet, the system stock stays correct.
-  - If stock was already staged into `Delivery In-Transit - WH`, treat it as case (3) below.
+  - If no stock was moved out of `Main - Inmed` yet, the system stock stays correct.
+  - If stock was already staged into `Delivery In-Transit - Inmed`, treat it as case (3) below.
 
 3) Cancelled after dispatch staging / while in transit (driver has the package)
 - Meaning:
-  - Goods are already in `Delivery In-Transit - WH` and physically with delivery.
+  - Goods are already in `Delivery In-Transit - Inmed` and physically with delivery.
 - Operational actions:
   - Cancel the Sales Order with a short reason.
   - Cancel the `Delivery` task with a reason “Delivery aborted / order cancelled in transit”.
@@ -363,7 +363,7 @@ Stage-based handling (recommended baseline):
   - Require a warehouse drop-off photo as evidence on the return-to-warehouse flow.
 - Stock effect:
   - The package must re-enter warehouse control via the returns verification pattern (Doc 05).
-  - Route: `Delivery In-Transit - WH` → `Returns - WH` → `Main - WH`.
+  - Route: `Delivery In-Transit - Inmed` → `Returns - Inmed` → `Main - Inmed`.
 
 4) Cancelled after delivery (true return)
 - Meaning:
@@ -401,7 +401,7 @@ Minimum reporting outcomes this flow must support:
 
 Operations:
 - what is pending packing
-- what is staged in `Delivery In-Transit - WH`
+- what is staged in `Delivery In-Transit - Inmed`
 - what is delivered today / this week
 
 Accounting:
@@ -421,7 +421,7 @@ Optional analytics (when filled):
 
 ## 13) Acceptance criteria
 - Standard sales never moves stock into client location warehouses.
-- In-transit visibility is reliable (what left `Main - WH` is visible in `Delivery In-Transit - WH` until delivered).
+- In-transit visibility is reliable (what left `Main - Inmed` is visible in `Delivery In-Transit - Inmed` until delivered).
 - Tracked items (batch/serial) are issued with correct identifiers recorded.
 - Discounts follow a director approval checkpoint.
 - Debt threshold exceedance creates/maintains a director Debt Collection task.

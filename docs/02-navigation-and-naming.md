@@ -56,7 +56,7 @@ Rule:
 
 ### 4.2 Separators and formatting
 - Use ` — ` (space dash space) to separate concepts in a title.
-- Use ` - ` inside warehouse names only (because ERPNext default warehouse naming uses ` - WH`).
+- Use ` - ` inside warehouse names only (because ERPNext default warehouse naming uses ` - Inmed`).
 - Avoid special characters except dash and parentheses.
 
 ### 4.3 Codes
@@ -81,18 +81,18 @@ Warehouse names must support:
 
 ### 6.1 Global warehouse naming
 Use the ERPNext standard suffix:
-- ` - WH`
+- ` - Inmed`
 
 Recommended top-level structure:
-- `Main - WH`
-- `Clients - WH`
-- `Delivery In-Transit - WH`
-- `Return Pickup In-Transit - WH`
-- `Returns - WH`
+- `Main - Inmed`
+- `Clients - Inmed`
+- `Delivery In-Transit - Inmed`
+- `Return Pickup In-Transit - Inmed`
+- `Returns - Inmed`
 
 ### 6.2 Client location warehouses
 Rule:
-- One warehouse per **client location group** (doctor + hospital + branch) under `Clients - WH`.
+- One warehouse per **client location group** (doctor + hospital + branch) under `Clients - Inmed`.
 
 Operational note:
 - Client location warehouses may contain company-owned stock for:
@@ -100,15 +100,15 @@ Operational note:
   - permanent on-site surgery sets (consignment-like)
 
 Recommended naming pattern:
-- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH`
+- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
 
 If the client is a hospital (no named doctor):
-- `<Hospital Code> — <Hospital/Branch Name> - WH`
+- `<Hospital Code> — <Hospital/Branch Name> - Inmed`
 
 Examples:
-- `D014 — Dr. S. Mkrtchyan @ H021 — Shengavit Clinic (Branch 2) - WH`
-- `D014 — Dr. S. Mkrtchyan @ H014 — Erebouni Medical Center - WH`
-- `H021 — Shengavit Clinic (Branch 2) - WH`
+- `D014 — Dr. S. Mkrtchyan @ H021 — Shengavit Clinic (Branch 2) - Inmed`
+- `D014 — Dr. S. Mkrtchyan @ H014 — Erebouni Medical Center - Inmed`
+- `H021 — Shengavit Clinic (Branch 2) - Inmed`
 
 ---
 

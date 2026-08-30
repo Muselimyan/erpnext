@@ -86,7 +86,7 @@ Typical links:
 - `Sales Order` (for normal orders)
 
 Attachments:
-- **Warehouse Pickup Photo** (required) — photo taken at Main - WH after packing, before the driver leaves. See Doc 18.
+- **Warehouse Pickup Photo** (required) — photo taken at Main - Inmed after packing, before the driver leaves. See Doc 18.
 
 Completion definition:
 - Items are packed, photo is attached, and task is ready for dispatch picking.
@@ -405,7 +405,7 @@ This is an operational decision. Implementation steps belong in Doc 10A.
 
 ### 7.1 Pack task pickup photo requirement (outgoing)
 Rule:
-- A `Pack / prepare items` task cannot be marked **Completed** unless a Warehouse Pickup Photo is attached (photo taken at `Main - WH` after packing, before the driver leaves).
+- A `Pack / prepare items` task cannot be marked **Completed** unless a Warehouse Pickup Photo is attached (photo taken at `Main - Inmed` after packing, before the driver leaves).
 
 Reason:
 - This is your operational proof that items were packed and ready for dispatch.

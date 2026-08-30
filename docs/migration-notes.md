@@ -134,7 +134,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 ### Notes / Known Issues
 - Deployment script: `deploy/doc07a-deploy.ps1` — idempotent, reads credentials from `export.ps1`. Run with `-Mode Check` to verify state, `-Mode Deploy` to create/update.
 - The `Purchase Order-validate-one-supplier` script is registered as `Before Save` (not `Validate`) because `Validate` is not an accepted `doctype_event` value in this ERPNext instance.
-- `Main - WH` placeholder used in Doc 07 documentation maps to `Main - Inmed` in production — scripts use the production name.
+- All documentation now uses production warehouse names (`Main - Inmed`, etc.) — the old `- WH` placeholders were renamed in the DESIGN-03 cleanup (2026-08-30).
 - Supplier master at deployment time: **2 suppliers** (`ZMD`, `CHUNLI`). 245 items → `ZMD`, 1 item → `CHUNLI`. No new suppliers were added as part of Doc 07A.
 - Production snapshot updated post-deployment: `deploy/schema/custom-fields.json` (37 records), `deploy/schema/server-scripts.json` (9 records).
 
@@ -236,7 +236,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - `Task-before-save-discount-approval-writeback` uses `frappe.db.set_value()` (not `so.save()`) because the Sales Order is submitted when the director completes the task — `Document.save()` on a submitted doc raises `ValidationError` regardless of `ignore_permissions`.
 - `Delivery Note-before-submit-delivery-gate` blocks ALL Delivery Notes whose rows don't issue from `Delivery In-Transit - Inmed`. This is intentional for this system (all deliveries use the standard two-step staging flow).
 - `Stock Entry-before-save-no-client-wh` only enforces when `sales_order` is set on the Stock Entry (to avoid blocking non-sales movements).
-- Warehouse name placeholders in Doc 09 documentation (`Main - WH`, `Delivery In-Transit - WH`, `Clients - WH`) map to production names `Main - Inmed`, `Delivery In-Transit - Inmed`, `Clients - Inmed` — all scripts use the production names.
+- All documentation now uses production warehouse names (`Main - Inmed`, `Delivery In-Transit - Inmed`, `Clients - Inmed`) — the old `- WH` placeholders were renamed in the DESIGN-03 cleanup (2026-08-30).
 
 ---
 
@@ -441,7 +441,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - 28 shortcuts: all 16 reports + 4 DocType shortcuts for Surgery Case state views + 6 Task queue DocType shortcuts + 2 legacy views (Collection Sets, Price Overrides)
 
 ### Warehouse names in SQL
-All queries use `- Inmed` suffix (e.g., `'Main - Inmed'`, `'Clients - Inmed'`), not `- WH` as shown in the doc template.
+All queries and documentation use `- Inmed` suffix (e.g., `'Main - Inmed'`, `'Clients - Inmed'`).
 
 ### What requires manual steps (not deployable via REST API)
 Named saved list views cannot be shared across users via the REST API in Frappe v14. The following views from Doc 13A §5.7 and §5.13 must be created manually per user or by a System Manager opening the relevant DocType list, applying filters, and saving:

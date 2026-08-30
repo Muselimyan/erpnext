@@ -151,7 +151,7 @@ Confirm you can answer:
 Red-flag readiness:
 - You have at least one “stuck workflow” detector:
   - stock in transit warehouses for too long
-  - backlog in `Returns - WH`
+  - backlog in `Returns - Inmed`
 
 ---
 
@@ -214,7 +214,7 @@ Pass criteria:
 Pass criteria:
 - Create a draft PO for Supplier A.
 - Director approval occurs.
-- Receive goods into `Main - WH`.
+- Receive goods into `Main - Inmed`.
 - If you test a pack-breakable item (buy box, stock/sell single), confirm stock enters correctly using the conversion policy.
 - For tracked items, serial/batch/expiry is recorded correctly.
 - Accounting creates supplier invoice record.

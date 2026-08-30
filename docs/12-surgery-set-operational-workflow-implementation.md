@@ -32,11 +32,11 @@ Do not start Doc 12A until these are done:
 - Doc 03A — roles and permissions exist (Ops roles).
 - Doc 04A — clients are modeled as `Customer` (no separate Doctor master) and context fields exist.
 - Doc 05A — warehouse model exists:
-  - `Main - WH`
-  - `Delivery In-Transit - WH`
-  - `Clients - WH` group + client-location leaf warehouses
-  - `Return Pickup In-Transit - WH`
-  - `Returns - WH`
+  - `Main - Inmed`
+  - `Delivery In-Transit - Inmed`
+  - `Clients - Inmed` group + client-location leaf warehouses
+  - `Return Pickup In-Transit - Inmed`
+  - `Returns - Inmed`
 - Doc 06A — item tracking is configured (serial/batch/expiry) and FEFO warning exists.
 - Doc 10A — Task system exists (Task Kind + Task Access Policy) and mandatory photo enforcement exists:
   - `Delivery` requires `Warehouse Pickup Photo`
@@ -388,14 +388,14 @@ When users click a workflow action on a Surgery Case, automation will create rec
 
 Target behavior (minimum):
 - `Preparing` → `Dispatch Picking`
-  - Gate: if planned Dispatched Qty is more than what is available in `Main - WH`, block and tell the user to reduce quantities (partial dispatch is allowed)
-  - Create Stock Entry as Draft: `Main - WH` → `Delivery In-Transit - WH`
+  - Gate: if planned Dispatched Qty is more than what is available in `Main - Inmed`, block and tell the user to reduce quantities (partial dispatch is allowed)
+  - Create Stock Entry as Draft: `Main - Inmed` → `Delivery In-Transit - Inmed`
   - Warehouse selects serials/batches (for tracked items) and submits
 - `Dispatch Picking` → `Dispatched`
   - Gate: block if dispatch Stock Entry is not submitted
 - `Dispatched` → `Delivered`
   - Gate: block unless the `Delivery` task is completed (Warehouse Pickup Photo required by Doc 10A)
-  - Create + submit Stock Entry: `Delivery In-Transit - WH` → `Client Location Warehouse`
+  - Create + submit Stock Entry: `Delivery In-Transit - Inmed` → `Client Location Warehouse`
   - Must copy the same serials/batches that were submitted on the dispatch Stock Entry
 - `Delivered` → `Return Pickup Scheduled`
   - Create (or update) a Pickup Returns Task assigned to the selected return pickup delivery person
@@ -404,8 +404,8 @@ Target behavior (minimum):
   - Gate: block unless Pickup Returns task is completed
 - `Return Pickup In Transit` → `Returns Verification`
   - Gate: block unless Return drop-off at warehouse task is completed (Warehouse Drop-off Photo required by Doc 10A)
-  - Create Stock Entry #1 as Draft (backdated to pickup time): `Client Location Warehouse` → `Return Pickup In-Transit - WH`
-  - Create Stock Entry #2 as Draft (receipt time): `Return Pickup In-Transit - WH` → `Returns - WH`
+  - Create Stock Entry #1 as Draft (backdated to pickup time): `Client Location Warehouse` → `Return Pickup In-Transit - Inmed`
+  - Create Stock Entry #2 as Draft (receipt time): `Return Pickup In-Transit - Inmed` → `Returns - Inmed`
   - Returns Team selects returned serials/batches (for tracked items) and submits
 - `Returns Verification` → `Returns Received`
   - Gate: block if return Stock Entries are not submitted
@@ -474,10 +474,10 @@ import frappe
 from frappe.utils import now_datetime
 from frappe.desk.form.assign_to import add as add_assignment
 
-MAIN_WH = "Main - WH"
-DELIVERY_TRANSIT_WH = "Delivery In-Transit - WH"
-RETURN_TRANSIT_WH = "Return Pickup In-Transit - WH"
-RETURNS_WH = "Returns - WH"
+MAIN_WH = "Main - Inmed"
+DELIVERY_TRANSIT_WH = "Delivery In-Transit - Inmed"
+RETURN_TRANSIT_WH = "Return Pickup In-Transit - Inmed"
+RETURNS_WH = "Returns - Inmed"
 
 def split_serials(serial_no_field):
     if not serial_no_field:
@@ -549,7 +549,7 @@ if after_state == "Draft" and doc.surgery_set_type:
                 },
             )
 
-    # Draft-only warning: show shortages from Main - WH without blocking Draft.
+    # Draft-only warning: show shortages from Main - Inmed without blocking Draft.
     warnings = []
     for row in (doc.case_items or []):
         planned = float(row.dispatched_qty or 0)
@@ -560,7 +560,7 @@ if after_state == "Draft" and doc.surgery_set_type:
             warnings.append(f"{row.item}: planned {planned}, available {actual}, missing {planned - actual}")
 
     if warnings:
-        text = "Draft stock warning (Main - WH):\n" + "\n".join(warnings)
+        text = "Draft stock warning (Main - Inmed):\n" + "\n".join(warnings)
         if hasattr(doc, "shortage_note"):
             doc.shortage_note = text
         frappe.msgprint(text, title="Stock warning (Draft)")
@@ -633,7 +633,7 @@ if not state_changed:
 
 # Transition: Preparing -> Dispatch Picking (stock gate + draft dispatch Stock Entry)
 if before_state == "Preparing" and after_state == "Dispatch Picking":
-    # Gate: check stock availability in Main - WH (Level 1: actual_qty only)
+    # Gate: check stock availability in Main - Inmed (Level 1: actual_qty only)
     shortages = []
     for it in dispatch_items:
         actual = get_actual_qty(it["item_code"], MAIN_WH)
@@ -641,7 +641,7 @@ if before_state == "Preparing" and after_state == "Dispatch Picking":
             shortages.append(f"{it['item_code']}: need {it['qty']}, have {actual}")
     if shortages:
         frappe.throw(
-            "Insufficient stock in Main - WH for the planned Dispatched Qty.\n"
+            "Insufficient stock in Main - Inmed for the planned Dispatched Qty.\n"
             "Reduce Dispatched Qty lines (partial dispatch is allowed) and try again.\n\n"
             + "\n".join(shortages)
         )
@@ -961,8 +961,8 @@ Create one sample Surgery Case so you can test that automation + stock movement 
 Prerequisite sample masters (from earlier docs):
 - Customer: `D001 — Dr. A. Petrosyan`
 - Hospital context Customer: `H001 — Erebuni MC`
-- Client location warehouse (leaf under `Clients - WH`):
-  - `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
+- Client location warehouse (leaf under `Clients - Inmed`):
+  - `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - Inmed`
 - Collection Set: `Ortho Basic Set (Sample)` (Doc 11A)
 - Items exist with tracking:
   - `TOOL-001` (serial-tracked)
@@ -976,7 +976,7 @@ Prerequisite sample masters (from earlier docs):
    - Client: `D001 — Dr. A. Petrosyan`
    - Hospital: `H001 — Erebuni MC`
    - Hospital Branch: `Main`
-   - Client Location Warehouse: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
+   - Client Location Warehouse: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - Inmed`
    - Doctor Name: (leave empty; optional)
    - Surgery Date: today + 2 days (example)
    - Collection Set: `Ortho Basic Set (Sample)`
@@ -1009,7 +1009,7 @@ This section is the step-by-step daily procedure that Doc 12 defines. It assumes
 ### 8.6.3 Step 3 — Dispatch picking + submit dispatch stock entry
 1) Use the Workflow action to move the case from `Preparing` → `Dispatch Picking`.
 2) Expected result:
-   - Draft `dispatch_stock_entry` is created: `Main - WH` → `Delivery In-Transit - WH`.
+   - Draft `dispatch_stock_entry` is created: `Main - Inmed` → `Delivery In-Transit - Inmed`.
 3) Open the draft dispatch Stock Entry.
 4) Select actual serial numbers / batch numbers for tracked items.
 5) Submit the Stock Entry.
@@ -1024,7 +1024,7 @@ This section is the step-by-step daily procedure that Doc 12 defines. It assumes
 5) Delivery Coordinator uses the Workflow action to move the case `Dispatched` → `Delivered`.
 6) Expected result:
    - `delivery_stock_entry` is created/submitted:
-     - `Delivery In-Transit - WH` → `client_location_warehouse`
+     - `Delivery In-Transit - Inmed` → `client_location_warehouse`
      - same batches/serials as dispatch
 
 ### 8.6.5 Step 7–8 — Return pickup + drop-off at warehouse
@@ -1044,8 +1044,8 @@ This section is the step-by-step daily procedure that Doc 12 defines. It assumes
 4) Move the case `Return Pickup In Transit` → `Returns Verification`.
 5) Expected result:
    - Draft return Stock Entries are created:
-     - `client_location_warehouse` → `Return Pickup In-Transit - WH` (posting time = pickup task time)
-     - `Return Pickup In-Transit - WH` → `Returns - WH` (receipt time)
+     - `client_location_warehouse` → `Return Pickup In-Transit - Inmed` (posting time = pickup task time)
+     - `Return Pickup In-Transit - Inmed` → `Returns - Inmed` (receipt time)
 6) Returns Team opens the return Stock Entries, selects returned serials/batches, and submits them.
 7) Move the case `Returns Verification` → `Returns Received`.
 
@@ -1172,18 +1172,18 @@ Next:
 Some client locations keep a surgery set permanently on-site. Doc 12 requires that you still maintain location-truth in the stock ledger.
 
 Implementation rule:
-- Permanent on-site sets are represented as stock in the client location warehouse under `Clients - WH`.
+- Permanent on-site sets are represented as stock in the client location warehouse under `Clients - Inmed`.
 
 ### 13.1 Initial placement (one-time)
 Goal: place the baseline stock into the client location warehouse.
 
 1) Create Stock Entry (Material Transfer):
-   - From Warehouse: `Main - WH`
-   - To Warehouse: `Delivery In-Transit - WH`
+   - From Warehouse: `Main - Inmed`
+   - To Warehouse: `Delivery In-Transit - Inmed`
    - Include the items/qty being placed
 2) Submit.
 3) Create Stock Entry (Material Transfer):
-   - From Warehouse: `Delivery In-Transit - WH`
+   - From Warehouse: `Delivery In-Transit - Inmed`
    - To Warehouse: the client location warehouse
 4) Submit.
 
@@ -1191,7 +1191,7 @@ Goal: place the baseline stock into the client location warehouse.
 1) After surgery usage, Returns/Warehouse posts a Stock Entry (Material Issue) from the client location warehouse for the used/missing quantities.
 2) Accounting invoices the used quantities (standard selling documents).
 3) Warehouse replenishes stock back into the client location warehouse using the same staging pattern:
-   - `Main - WH` → `Delivery In-Transit - WH` → client location warehouse.
+   - `Main - Inmed` → `Delivery In-Transit - Inmed` → client location warehouse.
 
 ---
 

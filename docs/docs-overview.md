@@ -134,15 +134,15 @@ These statuses describe whether the matching ERPNext area is already in working 
 **File**: `05-warehouses-and-stock-rules.md`
 - **Purpose**: Implement client-level stock visibility.
 - **Key decisions embedded**:
-  - One warehouse per doctor-hospital-branch client location group under `Clients - WH`
+  - One warehouse per doctor-hospital-branch client location group under `Clients - Inmed`
   - Staging warehouses for logistics:
-    - `Delivery In-Transit - WH`
-    - `Return Pickup In-Transit - WH`
+    - `Delivery In-Transit - Inmed`
+    - `Return Pickup In-Transit - Inmed`
   - Delivery person “has what” is tracked via assignment records and derived in reporting (no per-driver warehouses)
 - **Outputs**:
   - Warehouse tree
   - Stock movement rules (which documents move stock)
-  - Returns destination policy (`Returns - WH` vs direct to main)
+  - Returns destination policy (`Returns - Inmed` vs direct to main)
 
 ### 05A — Warehouses, Stock Rules (Implementation)
 **File**: `05-warehouses-and-stock-rules-implementation.md`
@@ -211,7 +211,7 @@ These statuses describe whether the matching ERPNext area is already in working 
 ### 09A — Selling: Standard Orders (Implementation) *(Superseded by Doc 16A)*
 **File**: `09-standard-selling-flow-implementation.md`
 > **⚠️ Superseded by Doc 16A — Unified Dispatch Flow (Implementation). Retained for historical reference only.**
-- **Purpose**: Step-by-step ERPNext setup for standard sales flow, dispatch staging via `Delivery In-Transit - WH`, discount approval gate, prepaid gate, debt escalation tasks, and payment distribution tasks.
+- **Purpose**: Step-by-step ERPNext setup for standard sales flow, dispatch staging via `Delivery In-Transit - Inmed`, discount approval gate, prepaid gate, debt escalation tasks, and payment distribution tasks.
 
 ### 09.1 — Discounts and Approvals
 **Planned file**: `09.1-discounts-and-approvals.md`

@@ -47,27 +47,27 @@ Rule:
 
 ### 3.1 Top-level structure
 Recommended leaf warehouses:
-- `Main - WH`
+- `Main - Inmed`
   - Your sellable stock location.
 
-- `Delivery In-Transit - WH`
+- `Delivery In-Transit - Inmed`
   - Outgoing staging.
   - Meaning: physically packed and handed to delivery team / driver, but not yet delivered.
 
-- `Clients - WH` (group only)
+- `Clients - Inmed` (group only)
   - Parent group for all client location warehouses.
 
-- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH` (one per doctor-hospital-branch group)
+- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed` (one per doctor-hospital-branch group)
   - Meaning: stock physically at that client location group **when it is still company-owned** (surgery sets, consignment-like flows, pending return/usage workflows).
 
 Alternative (if the client is a hospital with no named doctor):
-- `<Hospital Code> — <Hospital/Branch Name> - WH`
+- `<Hospital Code> — <Hospital/Branch Name> - Inmed`
 
-- `Return Pickup In-Transit - WH`
+- `Return Pickup In-Transit - Inmed`
   - Incoming staging.
   - Meaning: physically picked up from a client location, with driver, not yet received/verified by warehouse.
 
-- `Returns - WH`
+- `Returns - Inmed`
   - Returns receiving / verification area.
   - Meaning: physically returned and inside your building, but still in the “returns processing” zone (counting, verification, cleaning, repack).
 
@@ -101,7 +101,7 @@ This section defines who is responsible for stock accuracy in each warehouse.
 Rule:
 - Every warehouse must have a named owner team. If nobody owns a warehouse, stock accuracy will drift.
 
-- `Main - WH`
+- `Main - Inmed`
   - Owner: Inventory team
   - Expected behavior:
     - receiving
@@ -109,7 +109,7 @@ Rule:
     - picking
     - cycle counts
 
-- `Delivery In-Transit - WH`
+- `Delivery In-Transit - Inmed`
   - Owner: Delivery team (coordination), but inventory team must ensure correct packing.
   - Expected behavior:
     - short-lived stock location
@@ -126,7 +126,7 @@ Control:
       - pending return/usage reconciliation for surgery cases, or
       - baseline “permanent set” stock kept at a client location (consignment-like)
 
-- `Return Pickup In-Transit - WH`
+- `Return Pickup In-Transit - Inmed`
   - Owner: Delivery team
   - Expected behavior:
     - stock exists here only between pickup and warehouse receipt
@@ -134,7 +134,7 @@ Control:
 Control:
 - If stock remains here for “too long”, it indicates a stuck pickup workflow.
 
-- `Returns - WH`
+- `Returns - Inmed`
   - Owner: Returns team / Inventory team
   - Expected behavior:
     - counting/verification happens here
@@ -162,7 +162,7 @@ Operational control:
 
 FEFO rule (critical):
 - For expiry-tracked items, batch selection must follow **FEFO** (First-Expiry-First-Out).
-- If a user selects a fresher batch while an older-expiring batch is available in `Main - WH`, the system must alert.
+- If a user selects a fresher batch while an older-expiring batch is available in `Main - Inmed`, the system must alert.
 
 Business reason:
 - Recall and traceability is based on stock movements by batch/serial.
@@ -173,10 +173,10 @@ This section is the heart of the document.
 
 ### 6.1 Outgoing delivery staging (common pattern)
 Meaning:
-- Before a driver leaves, items are staged in `Delivery In-Transit - WH`.
+- Before a driver leaves, items are staged in `Delivery In-Transit - Inmed`.
 
 Allowed move:
-- `Main - WH` → `Delivery In-Transit - WH`
+- `Main - Inmed` → `Delivery In-Transit - Inmed`
 
 ### 6.1A Aborted delivery / cancellation after staging (standard sales redirect)
 Meaning:
@@ -184,12 +184,12 @@ Meaning:
 
 Allowed moves (recommended baseline):
 1) Return into warehouse control:
-   - `Delivery In-Transit - WH` → `Returns - WH`
+   - `Delivery In-Transit - Inmed` → `Returns - Inmed`
 2) After verification/repack (if needed):
-   - `Returns - WH` → `Main - WH`
+   - `Returns - Inmed` → `Main - Inmed`
 
 Operational intent:
-- Use `Returns - WH` as the controlled checkpoint to ensure:
+- Use `Returns - Inmed` as the controlled checkpoint to ensure:
   - quantities are correct
   - tracked items (batch/serial) remain correctly recorded
   - you do not silently re-shelve a package with unknown integrity
@@ -205,16 +205,16 @@ Important:
 ### 6.2 Surgery set delivery to client location (Doc 12)
 Allowed moves:
 1) Dispatch staging:
-   - `Main - WH` → `Delivery In-Transit - WH`
+   - `Main - Inmed` → `Delivery In-Transit - Inmed`
 2) Delivery completion:
-   - `Delivery In-Transit - WH` → `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH`
+   - `Delivery In-Transit - Inmed` → `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
 
 Control:
 - For tracked items, dispatch must not be considered complete until the dispatch stock movement is submitted with correct serial/batch selection.
 
 ### 6.3 Return pickup staging (Doc 12)
 Allowed move:
-- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH` → `Return Pickup In-Transit - WH`
+- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed` → `Return Pickup In-Transit - Inmed`
 
 Operational intent:
 - Drivers do not count quantities.
@@ -224,20 +224,20 @@ Operational intent:
 ### 6.4 Return receiving / verification
 Allowed moves:
 1) Pickup staging to returns zone:
-   - `Return Pickup In-Transit - WH` → `Returns - WH`
+   - `Return Pickup In-Transit - Inmed` → `Returns - Inmed`
 2) Optional after verification:
-   - `Returns - WH` → `Main - WH`
+   - `Returns - Inmed` → `Main - Inmed`
 
 Additional standard-sales return path (rare exception):
-- If goods are returned by a client after a standard sale (ownership already transferred), they must still enter through `Returns - WH` for verification before re-entering `Main - WH`.
+- If goods are returned by a client after a standard sale (ownership already transferred), they must still enter through `Returns - Inmed` for verification before re-entering `Main - Inmed`.
 
-Why `Returns - WH` exists:
+Why `Returns - Inmed` exists:
 - It creates a clean separation:
   - “returned but not checked”
   - vs “checked and ready for sellable stock”
 
 Additional rule (recommended):
-- Only the Returns Team should be allowed to move stock out of `Returns - WH`.
+- Only the Returns Team should be allowed to move stock out of `Returns - Inmed`.
 
 ### 6.5 Consumption / usage (surgery sets)
 Operational definition:
@@ -256,12 +256,12 @@ Important:
 - This is not optional for traceable implants.
 - If consumption is not posted correctly, your recall-by-consumed reporting becomes unreliable.
 
-### 6.6 Purchase receiving (how stock enters `Main - WH`)
+### 6.6 Purchase receiving (how stock enters `Main - Inmed`)
 Allowed move:
-- Supplier → `Main - WH`
+- Supplier → `Main - Inmed`
 
 Operational rule:
-- All stock that becomes sellable must enter the system into `Main - WH` first (unless you intentionally define a quarantine warehouse later).
+- All stock that becomes sellable must enter the system into `Main - Inmed` first (unless you intentionally define a quarantine warehouse later).
 
 ### 6.7 Stock corrections (cycle counts, mistakes)
 Allowed move:
@@ -276,7 +276,7 @@ Operational rule:
 ## 7) What is not allowed (common failure modes)
 These are rules that prevent stock from becoming untrustworthy.
 
-- Do not transact on `Clients - WH` (group).
+- Do not transact on `Clients - Inmed` (group).
 - Do not “fix” problems by posting random receipts/issues without an operational reason.
 - Do not bypass the in-transit warehouses when you need in-transit reporting.
 - Do not leave stock sitting in in-transit warehouses for long periods.
@@ -295,14 +295,14 @@ With this model, you can run the business day-to-day.
 
 ### 8.2 In-transit stock
 - Stock Balance for:
-  - `Delivery In-Transit - WH`
-  - `Return Pickup In-Transit - WH`
+  - `Delivery In-Transit - Inmed`
+  - `Return Pickup In-Transit - Inmed`
 
 Operational interpretation:
 - Any stock in these warehouses is “work in progress” and must have an owner and a linked task/assignment.
 
 ### 8.3 Returns processing workload
-- Stock sitting in `Returns - WH` indicates returns waiting for processing.
+- Stock sitting in `Returns - Inmed` indicates returns waiting for processing.
 
 ### 8.4 Recall reporting
 - Batch recall (consumed): derived from net movements into/out of client location warehouses.

@@ -33,12 +33,12 @@ Recommended practice:
 ## 2) Core rules (must always be true)
 ### 2.1 Inventory location truth
 - If items are physically at a client location (doctor or hospital) and still company-owned, they must be in the correct client location warehouse.
-  - Example (doctor at hospital/branch): `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH`
-  - Example (hospital client, no named doctor): `<Hospital Code> — <Hospital/Branch Name> - WH`
+  - Example (doctor at hospital/branch): `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
+  - Example (hospital client, no named doctor): `<Hospital Code> — <Hospital/Branch Name> - Inmed`
 
 ### 2.2 In-transit staging
-- Outgoing dispatch staging warehouse: `Delivery In-Transit - WH`
-- Return pickup staging warehouse: `Return Pickup In-Transit - WH`
+- Outgoing dispatch staging warehouse: `Delivery In-Transit - Inmed`
+- Return pickup staging warehouse: `Return Pickup In-Transit - Inmed`
 - Do **not** create a warehouse per delivery person.
 
 Important:
@@ -55,7 +55,7 @@ For permanent on-site sets:
 This is the baseline rule for the per-surgery case workflow.
 
 - When a client calls to schedule a return pickup, they typically do **not** provide usage quantities.
-- Usage is identified when the package returns and is checked at `Returns - WH` (or `Main - WH`).
+- Usage is identified when the package returns and is checked at `Returns - Inmed` (or `Main - Inmed`).
 
 For permanent on-site sets:
 - Usage is identified from the replenishment request/order (the client orders what was used/missing to restore the set).
@@ -83,7 +83,7 @@ Operational meaning:
 
 FEFO rule (critical):
 - For expiry-tracked items, batch selection must follow **FEFO** (First-Expiry-First-Out).
-- If a user selects a fresher batch while an older-expiring batch is available in `Main - WH`, the system must alert.
+- If a user selects a fresher batch while an older-expiring batch is available in `Main - Inmed`, the system must alert.
 
 Control rule:
 - The system should block closing a case until all dispatched serial-tracked tools are either:
@@ -186,10 +186,10 @@ When a single client request includes standard items + one or more surgery cases
 
 ### 4.2 Stock movement documents
 Use **Stock Entry** for all warehouse-to-warehouse movement stages:
-- `Main - WH` → `Delivery In-Transit - WH`
-- `Delivery In-Transit - WH` → `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH`
-- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH` → `Return Pickup In-Transit - WH`
-- `Return Pickup In-Transit - WH` → `Returns - WH` (and optionally to `Main - WH`)
+- `Main - Inmed` → `Delivery In-Transit - Inmed`
+- `Delivery In-Transit - Inmed` → `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
+- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed` → `Return Pickup In-Transit - Inmed`
+- `Return Pickup In-Transit - Inmed` → `Returns - Inmed` (and optionally to `Main - Inmed`)
 
 Serial/batch requirement:
 - For serial-tracked items, Stock Entry Items must carry the serial numbers.
@@ -219,12 +219,12 @@ Recommended statuses (minimum):
 1) Draft (created, not yet approved for preparation)
 2) Preparing
 3) Dispatch Picking (dispatch Stock Entry drafted; serial/batch selection happens here)
-4) Dispatched (dispatch Stock Entry submitted; stock is in `Delivery In-Transit - WH`)
+4) Dispatched (dispatch Stock Entry submitted; stock is in `Delivery In-Transit - Inmed`)
 5) Delivered (delivery Stock Entry submitted; stock is in client location warehouse)
 6) Return Pickup Scheduled
 7) Return Pickup In Transit (logistics in progress)
 8) Returns Verification (returns counted; return Stock Entries drafted and validated)
-9) Returns Received (return Stock Entries submitted; stock is back in `Returns - WH`)
+9) Returns Received (return Stock Entries submitted; stock is back in `Returns - Inmed`)
 10) Usage Derived
 11) Invoiced
 12) Closed
@@ -282,7 +282,7 @@ Important:
    - Fill the **Case Items** table with the exact items/qty you intend to send (Dispatched Qty).
    - If you dispatch items that are not in the template, add them here.
 4) System/Operator must ensure the correct Client Location Warehouse is set:
-   - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH`
+   - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
 5) Set Status = `Draft`.
 6) Save.
 
@@ -342,7 +342,7 @@ Action (Preparing Team):
 
 System automation (required):
 - Create the dispatch Stock Entry as **Draft**:
-  - `Main - WH` → `Delivery In-Transit - WH`
+  - `Main - Inmed` → `Delivery In-Transit - Inmed`
   - Items/Qty copied from the case’s **Case Items** (Dispatched Qty)
   - Linked back to the Surgery Case (and optionally Dispatch Group ID)
 
@@ -355,7 +355,7 @@ Warehouse action (required for traceable items):
 
 FEFO control:
 - For expiry-tracked items, batch selection must follow FEFO.
-- If a fresher batch is selected while an older-expiring batch is available in `Main - WH`, the system must alert.
+- If a fresher batch is selected while an older-expiring batch is available in `Main - Inmed`, the system must alert.
 
 Then update the case:
 - Click workflow action to move the case to `Dispatched`.
@@ -398,7 +398,7 @@ Back-office action (Delivery Coordinator):
 
 System automation (required):
 - On transition to `Delivered`, the system creates and submits the delivery Stock Entry:
-  - `Delivery In-Transit - WH` → the client location warehouse
+  - `Delivery In-Transit - Inmed` → the client location warehouse
   - Items/Qty copied from **Case Items** (Dispatched Qty)
   - Linked back to the Surgery Case (and optionally Dispatch Group ID)
 
@@ -473,9 +473,9 @@ Action (single data entry point):
 
 System automation (required):
 - Create the return Stock Entries as **Draft**, based on Returned Qty:
-  1) client location warehouse → `Return Pickup In-Transit - WH`
+  1) client location warehouse → `Return Pickup In-Transit - Inmed`
      - Posting Date/Time = pickup time (from the pickup Task)
-  2) `Return Pickup In-Transit - WH` → `Returns - WH` (or `Main - WH`)
+  2) `Return Pickup In-Transit - Inmed` → `Returns - Inmed` (or `Main - Inmed`)
      - Posting Date/Time = receipt time
 
 Returns Team action (required for traceable items):
@@ -495,8 +495,8 @@ Serial/batch defaults (recommended):
 Note:
 - This is the only step where quantities are newly entered after Step 0.
 
-Optional (if you use `Returns - WH` as a staging location):
-- After checking, move items from `Returns - WH` to `Main - WH` via Stock Entry.
+Optional (if you use `Returns - Inmed` as a staging location):
+- After checking, move items from `Returns - Inmed` to `Main - Inmed` via Stock Entry.
 
 
 ### Step 10 — Derive usage and reconcile (Returns Team)
@@ -590,7 +590,7 @@ Key differences vs a Surgery Case:
 Goal: establish the baseline set stock at the client location as company-owned stock.
 
 Stock movement model:
-- `Main - WH` → `Delivery In-Transit - WH` → the client location warehouse
+- `Main - Inmed` → `Delivery In-Transit - Inmed` → the client location warehouse
 
 ### 6A.2 Replenishment cycle (repeat after usage)
 Goal: bill for what was used and restore the set stock at the client location.
@@ -618,7 +618,7 @@ Two acceptable approaches (choose one policy and apply consistently):
 - **Policy (decided):** lost/damaged items are invoiced to the client as a fee, at the item's normal unit price/discount — the same rate as a used item. This applies uniformly across item categories, with no per-case director escalation required. Stock is written off from the client location warehouse immediately regardless of when the invoice is created. (See `docs/implementation-questions.md` #17.)
 
 ### 7.4 Case cancelled before delivery
-- If stock is already in `Delivery In-Transit - WH`, transfer back to `Main - WH`.
+- If stock is already in `Delivery In-Transit - Inmed`, transfer back to `Main - Inmed`.
 - Close case as Cancelled (if you implement a Cancelled status).
 
 ### 7.5 Individual (non-surgery-set) item returns
@@ -627,7 +627,7 @@ Sometimes clients return individual items (wrong item, extra item, unopened item
 Logistics (same approach as surgery returns):
 - Use the same return pickup Task + staging warehouses.
 - Stock moves:
-  - client location warehouse → `Return Pickup In-Transit - WH` → `Returns - WH`.
+  - client location warehouse → `Return Pickup In-Transit - Inmed` → `Returns - Inmed`.
 
 Accounting note:
 - The financial document handling (credit note / return invoice logic) will be defined in the standard selling docs, but the pickup/stock movement logistics remain the same.
@@ -636,8 +636,8 @@ Accounting note:
 
 ## 8) Operational reporting produced by this workflow
 - Items at each client location (company-owned at client): Stock Balance for the relevant client location warehouse
-- Items currently in delivery transit: Stock Balance for `Delivery In-Transit - WH`
-- Items currently in return pickup transit: Stock Balance for `Return Pickup In-Transit - WH`
+- Items currently in delivery transit: Stock Balance for `Delivery In-Transit - Inmed`
+- Items currently in return pickup transit: Stock Balance for `Return Pickup In-Transit - Inmed`
 - Unpaid invoices per client
 - Clients exceeding their debt threshold
 

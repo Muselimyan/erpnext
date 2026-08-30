@@ -6,7 +6,7 @@ This is a step-by-step guide to implement:
 
 It covers:
 - Creating the warehouse tree (group vs leaf)
-- Creating the `Clients - WH` group and client location warehouses (doctor + hospital + branch)
+- Creating the `Clients - Inmed` group and client location warehouses (doctor + hospital + branch)
 - Stock Settings guardrails that protect data quality
 - A validation checklist to confirm the structure works
 
@@ -36,13 +36,13 @@ You will use:
 Before creating warehouses, confirm the naming pattern from Doc 02.
 
 Rules:
-- All warehouses use the suffix: ` - WH`
+- All warehouses use the suffix: ` - Inmed`
 
 Client location warehouse naming patterns (from Doc 05):
 - Doctor-client location:
-  - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital Name> / <Branch Name> - WH`
+  - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital Name> / <Branch Name> - Inmed`
 - Hospital-client location (no named doctor):
-  - `<Hospital Code> — <Hospital Name> / <Branch Name> - WH`
+  - `<Hospital Code> — <Hospital Name> / <Branch Name> - Inmed`
 
 Important note about ERPNext naming:
 - ERPNext often appends the company abbreviation to warehouse names automatically.
@@ -50,72 +50,72 @@ Important note about ERPNext naming:
 
 Operational rule (critical):
 - Only leaf warehouses should contain stock.
-- Do not post any Stock Entry into group warehouses (example: `Clients - WH`).
+- Do not post any Stock Entry into group warehouses (example: `Clients - Inmed`).
 
 ---
 
 ## 4) Create the warehouse tree
 Create the warehouses in this order.
 
-### 4.1 Create `Main - WH`
+### 4.1 Create `Main - Inmed`
 Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `Main - WH`
+   - Warehouse Name: `Main - Inmed`
    - Is Group: OFF
 4) Save.
 
 Resulting warehouse should display as:
-- `Main - WH` (possibly with an additional company suffix)
+- `Main - Inmed` (possibly with an additional company suffix)
 
-### 4.2 Create `Delivery In-Transit - WH`
+### 4.2 Create `Delivery In-Transit - Inmed`
 Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `Delivery In-Transit - WH`
+   - Warehouse Name: `Delivery In-Transit - Inmed`
    - Is Group: OFF
 4) Save.
 
 Result:
-- `Delivery In-Transit - WH` (possibly with an additional company suffix)
+- `Delivery In-Transit - Inmed` (possibly with an additional company suffix)
 
-### 4.3 Create `Clients - WH` (group)
+### 4.3 Create `Clients - Inmed` (group)
 Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `Clients - WH`
+   - Warehouse Name: `Clients - Inmed`
    - Is Group: ON
 4) Save.
 
 Result:
-- `Clients - WH` (possibly with an additional company suffix)
+- `Clients - Inmed` (possibly with an additional company suffix)
 
-### 4.4 Create `Return Pickup In-Transit - WH`
+### 4.4 Create `Return Pickup In-Transit - Inmed`
 Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `Return Pickup In-Transit - WH`
+   - Warehouse Name: `Return Pickup In-Transit - Inmed`
    - Is Group: OFF
 4) Save.
 
 Result:
-- `Return Pickup In-Transit - WH` (possibly with an additional company suffix)
+- `Return Pickup In-Transit - Inmed` (possibly with an additional company suffix)
 
-### 4.5 Create `Returns - WH`
+### 4.5 Create `Returns - Inmed`
 Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `Returns - WH`
+   - Warehouse Name: `Returns - Inmed`
    - Is Group: OFF
 4) Save.
 
 Result:
-- `Returns - WH` (possibly with an additional company suffix)
+- `Returns - Inmed` (possibly with an additional company suffix)
 
 ---
 
@@ -138,8 +138,8 @@ Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
-   - Parent Warehouse: `Clients - WH`
+   - Warehouse Name: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - Inmed`
+   - Parent Warehouse: `Clients - Inmed`
    - Is Group: OFF
 4) Save.
 
@@ -150,8 +150,8 @@ Steps:
 1) Open `Warehouse`.
 2) Click `New`.
 3) Set:
-   - Warehouse Name: `H001 — Erebuni MC / Main - WH`
-   - Parent Warehouse: `Clients - WH`
+   - Warehouse Name: `H001 — Erebuni MC / Main - Inmed`
+   - Parent Warehouse: `Clients - Inmed`
    - Is Group: OFF
 4) Save.
 
@@ -195,22 +195,22 @@ Implementation anchor:
 After creating warehouses:
 
 ### 8.1 Tree correctness
-- Confirm `Clients - WH` is a group warehouse.
+- Confirm `Clients - Inmed` is a group warehouse.
 - Confirm all client location warehouses are leaf warehouses.
-- Confirm no stock transactions are posted to `Clients - WH`.
+- Confirm no stock transactions are posted to `Clients - Inmed`.
 
 Spot-check (required):
 - Open each warehouse record and confirm:
-  - `Clients - WH` has `Is Group` = ON
-  - leaf warehouses (`Main - WH`, `Delivery In-Transit - WH`, `Return Pickup In-Transit - WH`, `Returns - WH`, and each client location warehouse) have `Is Group` = OFF
+  - `Clients - Inmed` has `Is Group` = ON
+  - leaf warehouses (`Main - Inmed`, `Delivery In-Transit - Inmed`, `Return Pickup In-Transit - Inmed`, `Returns - Inmed`, and each client location warehouse) have `Is Group` = OFF
 
 ### 8.2 Report sanity checks
 Open `Stock Balance`:
-- Filter Warehouse = `Main - WH` and confirm it returns results.
-- Filter Warehouse = `Delivery In-Transit - WH` (should normally be near-empty outside active deliveries).
-- Filter Warehouse = `Return Pickup In-Transit - WH` (should normally be near-empty outside active pickups).
-- Filter Warehouse = `Returns - WH` (should reflect current returns processing workload).
-- Filter Warehouse = one client location warehouse (example: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`) and confirm it is initially empty.
+- Filter Warehouse = `Main - Inmed` and confirm it returns results.
+- Filter Warehouse = `Delivery In-Transit - Inmed` (should normally be near-empty outside active deliveries).
+- Filter Warehouse = `Return Pickup In-Transit - Inmed` (should normally be near-empty outside active pickups).
+- Filter Warehouse = `Returns - Inmed` (should reflect current returns processing workload).
+- Filter Warehouse = one client location warehouse (example: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - Inmed`) and confirm it is initially empty.
 
 ### 8.3 Operational discipline check
 - Confirm there is an agreed daily/weekly routine to investigate any quantities left in either in-transit warehouse.
@@ -221,7 +221,7 @@ Open `Stock Balance`:
 - The warehouse tree exists exactly as defined in Doc 05.
 - You can create a new client location group and consistently add its:
   - Customer records (Doc 04)
-  - Client location warehouse under `Clients - WH` (this doc)
+  - Client location warehouse under `Clients - Inmed` (this doc)
 - Stock reports cleanly show:
   - what is in main
   - what is in transit

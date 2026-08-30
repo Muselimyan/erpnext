@@ -23,7 +23,7 @@ Doc 08 depends on these already-decided rules:
 - Each item has exactly one supplier (Doc 06 / Doc 07).
 - Purchasing flow is PO → Receipt → Invoice, with director PO approval (Doc 07).
 - Warehouses represent physical responsibility (Doc 05).
-  - Sellable stock is primarily in `Main - WH`.
+  - Sellable stock is primarily in `Main - Inmed`.
   - Client location warehouses represent company-owned stock at client locations (surgery cases and permanent on-site sets).
 
 ---
@@ -42,7 +42,7 @@ Doc 08 depends on these already-decided rules:
   - Wrong UOM, wrong supplier assignment, or wrong variant structure will produce wrong reorder decisions.
 
 - **Do not confuse ‘company-owned somewhere’ with ‘sellable now’**
-  - Stock at hospitals pending return and stock in `Returns - WH` may be company-owned but may not be available for immediate sale.
+  - Stock at hospitals pending return and stock in `Returns - Inmed` may be company-owned but may not be available for immediate sale.
 
 ---
 
@@ -50,7 +50,7 @@ Doc 08 depends on these already-decided rules:
 To keep everyone aligned, use these concepts consistently:
 
 - **Sellable on-hand**
-  - What is physically in `Main - WH` and can be picked today.
+  - What is physically in `Main - Inmed` and can be picked today.
 
 - **Committed demand**
   - Quantities you have promised or effectively reserved for near-future operations.
@@ -64,12 +64,12 @@ To keep everyone aligned, use these concepts consistently:
 
 - **Non-sellable / uncertain stock**
   - Company-owned quantities that are not guaranteed sellable today:
-    - `Clients - WH` (company-owned at-client stock: pending return / usage reconciliation, and permanent on-site sets)
-    - `Return Pickup In-Transit - WH`
-    - `Returns - WH`
+    - `Clients - Inmed` (company-owned at-client stock: pending return / usage reconciliation, and permanent on-site sets)
+    - `Return Pickup In-Transit - Inmed`
+    - `Returns - Inmed`
 
 Operational rule:
-- The reorder list must primarily protect the ability to ship from `Main - WH`.
+- The reorder list must primarily protect the ability to ship from `Main - Inmed`.
 - Non-sellable / uncertain stock should be shown as informational, but should not be counted as available for reorder calculations.
 
 ---
@@ -114,7 +114,7 @@ This section defines the logic without prescribing exact ERPNext fields.
 Reorder decisions should be based on **net availability**, not raw on-hand.
 
 Conceptually:
-- `Net available today` = `Sellable on-hand in Main - WH` − `Committed demand`
+- `Net available today` = `Sellable on-hand in Main - Inmed` − `Committed demand`
 
 If you use an inbound-aware view:
 - `Net available with inbound` = `Net available today` + `Expected inbound supply`

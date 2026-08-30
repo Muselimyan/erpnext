@@ -53,7 +53,7 @@ This requirements file is the authoritative functional scope for the docs that f
 - **Set Instance / Surgery Case**: one real event (one dispatch to a client location for a surgery) that results in consumption + return.
 - **Client Location Group**: a physical delivery/usage location identity used for stock tracking.
   - Defined as a (Client / Customer) + (optional Hospital) + (Hospital Branch) combination when applicable.
-  - Each Client Location Group has its own warehouse under `Clients - WH`.
+  - Each Client Location Group has its own warehouse under `Clients - Inmed`.
 - **Company-owned at client location**: items physically at a client location that are still owned by the company.
   - This includes both pending-return surgery cases and permanent on-site sets.
 - **Delivery In-Transit**: items picked/prepared and handed to a delivery person, but not yet delivered to the client location.
@@ -63,7 +63,7 @@ This requirements file is the authoritative functional scope for the docs that f
 ### 6.1 Inventory location tracking for clients
 To know “what items are currently at which client location group” at any time, items that are physically at a client location and still company-owned must be represented as stock in ERPNext at that client location warehouse.
 
-- **Decision**: create one warehouse per **Client Location Group** under a parent warehouse group: `Clients - WH`.
+- **Decision**: create one warehouse per **Client Location Group** under a parent warehouse group: `Clients - Inmed`.
 - Stock transfers to/from client location warehouses will be used to represent dispatch and returns.
 
 ### 6.2 Surgery set template representation
@@ -84,12 +84,12 @@ To know “what items are currently at which client location group” at any tim
 
 ### 6.5.3 FEFO for expiry-tracked items (critical)
 - **Decision**: for items that have expiry dates, stock selection during packing/dispatch/consumption must follow **FEFO** (First-Expiry-First-Out).
-- **Decision**: if a user selects a “fresher” batch while an older-expiring batch is available in `Main - WH`, the system must **alert** (so the team does not silently consume fresh stock while old stock expires).
+- **Decision**: if a user selects a “fresher” batch while an older-expiring batch is available in `Main - Inmed`, the system must **alert** (so the team does not silently consume fresh stock while old stock expires).
 
 ### 6.5.1 Delivery and return staging warehouses
 - **Decision**: use two staging warehouses:
-  - `Delivery In-Transit - WH` (outgoing)
-  - `Return Pickup In-Transit - WH` (incoming)
+  - `Delivery In-Transit - Inmed` (outgoing)
+  - `Return Pickup In-Transit - Inmed` (incoming)
 
 ### 6.5.2 Delivery person allocation tracking (no per-driver warehouses)
 - **Decision**: when items are in an in-transit warehouse, it must be possible to report which delivery person currently has them.
@@ -331,7 +331,7 @@ Required stages (minimum):
 - Order intake (order team)
 - Prepare shipment/set (preparing team)
 - Deliver to client location (delivery team)
-  - **Mandatory**: attach a photo at warehouse pickup (before leaving `Main - WH`)
+  - **Mandatory**: attach a photo at warehouse pickup (before leaving `Main - Inmed`)
 - If standard order: invoice task (accounting)
 - If surgery set:
   - Wait for surgery completion / receive usage info (separate role/team)
@@ -355,8 +355,8 @@ Additional requirement:
 ### 7.7 Reporting requirements
 Must support operational reporting, including:
 - Items and quantities currently located at each client location (company-owned at client)
-- Items and quantities currently in `Delivery In-Transit - WH`, grouped by delivery person (derived from assignment records)
-- Items and quantities currently in `Return Pickup In-Transit - WH`, grouped by delivery person (derived from assignment records)
+- Items and quantities currently in `Delivery In-Transit - Inmed`, grouped by delivery person (derived from assignment records)
+- Items and quantities currently in `Return Pickup In-Transit - Inmed`, grouped by delivery person (derived from assignment records)
 - Sold history per client
 - Price override list / price lookup by client
 - Prepaid orders awaiting delivery (clients paid upfront but delivery is still pending)

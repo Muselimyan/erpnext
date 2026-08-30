@@ -7,8 +7,8 @@ This is a **step-by-step ERPNext setup guide** to implement the operational rule
 This guide implements:
 - Standard Sales flow: Sales Order → dispatch staging → delivery → Sales Invoice → Payment
 - The required warehouse rules:
-  - standard sales uses `Main - WH` and `Delivery In-Transit - WH` only
-  - standard sales must not use client location warehouses (`Clients - WH`)
+  - standard sales uses `Main - Inmed` and `Delivery In-Transit - Inmed` only
+  - standard sales must not use client location warehouses (`Clients - Inmed`)
 - Discount approvals (director hard gate before delivery)
 - Prepaid orders (payment confirmation gate before dispatch)
 - Debt threshold escalation (Debt Collection task for directors)
@@ -25,9 +25,9 @@ Do not start Doc 09A until these are done:
   - optional Sales Order / Sales Invoice context fields:
     - `hospital`, `hospital_branch`, `doctor_name`
 - Doc 05A — warehouses exist:
-  - `Main - WH`
-  - `Delivery In-Transit - WH`
-  - `Returns - WH` (needed for aborted deliveries / cancellations in transit)
+  - `Main - Inmed`
+  - `Delivery In-Transit - Inmed`
+  - `Returns - Inmed` (needed for aborted deliveries / cancellations in transit)
 - Doc 06A — item tracking is correct (batch/expiry/serial where required) and FEFO warning exists.
 - Doc 10A — Task system exists with Task Kinds and Task Access Policies, including:
   - `Discount Approval`
@@ -220,7 +220,7 @@ Operational rule implemented later by scripts:
 
 ## 6) Task fields needed for standard sales gates
 Doc 09 requires:
-- Delivery driver attaches Warehouse Pickup Photo before leaving `Main - WH`.
+- Delivery driver attaches Warehouse Pickup Photo before leaving `Main - Inmed`.
 - For aborted deliveries / cancellations in transit, driver must attach warehouse drop-off photo.
 
 ### 6.1 Add Task attachment fields (required)
@@ -271,15 +271,15 @@ If your `Task` DocType does not already have approval fields:
 
 ## 7) Stock movement implementation for standard sales (required)
 Doc 09 stock rule:
-- Stage outgoing packages into `Delivery In-Transit - WH` before driver leaves.
+- Stage outgoing packages into `Delivery In-Transit - Inmed` before driver leaves.
 - Delivery completion removes stock from company-owned warehouses.
 
 Implementation decision (go-live safe):
 - Use **two steps**:
   1) `Stock Entry (Material Transfer)` to stage:
-     - `Main - WH` → `Delivery In-Transit - WH`
+     - `Main - Inmed` → `Delivery In-Transit - Inmed`
   2) `Delivery Note` to deliver:
-     - source warehouse = `Delivery In-Transit - WH`
+     - source warehouse = `Delivery In-Transit - Inmed`
 
 ### 7.1 Create a custom field to link staging Stock Entry to a Sales Order
 1) Open `Customize Form`.
@@ -307,8 +307,8 @@ Implementation decision (go-live safe):
    1) Open `Stock Entry` → `New`.
    2) Stock Entry Type: `Material Transfer`.
    3) Set:
-      - From Warehouse: `Main - WH`
-      - To Warehouse: `Delivery In-Transit - WH`
+      - From Warehouse: `Main - Inmed`
+      - To Warehouse: `Delivery In-Transit - Inmed`
       - Sales Order: select the Sales Order
    4) Add items exactly matching what will be delivered.
    5) For tracked items: select batch/serials correctly.
@@ -316,13 +316,13 @@ Implementation decision (go-live safe):
    7) Submit.
 
 Expected result:
-- Stock is visible in `Delivery In-Transit - WH`.
+- Stock is visible in `Delivery In-Transit - Inmed`.
 
 ### 7.3 Delivery completion procedure (Inventory / Delivery coordinator)
 1) Open the Sales Order.
 2) Click `Create` → `Delivery Note`.
 3) On Delivery Note:
-   - Set Warehouse = `Delivery In-Transit - WH`
+   - Set Warehouse = `Delivery In-Transit - Inmed`
 4) Ensure item quantities match staged stock.
 5) Save.
 6) Submit.
@@ -602,7 +602,7 @@ so.save(ignore_permissions=True)
 5) Save.
 
 ### 8.4 Server Script: block dispatch staging if discount approval is missing/rejected
-This blocks the stock staging step (`Main - WH` → `Delivery In-Transit - WH`).
+This blocks the stock staging step (`Main - Inmed` → `Delivery In-Transit - Inmed`).
 
 1) Open `Server Script`.
 2) Click `New`.
@@ -617,8 +617,8 @@ This blocks the stock staging step (`Main - WH` → `Delivery In-Transit - WH`).
 if doc.stock_entry_type != "Material Transfer":
     return
 
-MAIN_WH = "Main - WH"
-DELIVERY_IN_TRANSIT_WH = "Delivery In-Transit - WH"
+MAIN_WH = "Main - Inmed"
+DELIVERY_IN_TRANSIT_WH = "Delivery In-Transit - Inmed"
 
 to_wh = doc.get("to_warehouse")
 from_wh = doc.get("from_warehouse")
@@ -669,9 +669,9 @@ if so.is_prepaid:
 
 ### 8.5 Server Script: block staging into client location warehouses (required)
 Doc 09 rule:
-- Standard sales must never move stock into `Clients - WH`.
+- Standard sales must never move stock into `Clients - Inmed`.
 
-This script blocks Stock Entries that try to move standard sales staging into any warehouse under `Clients - WH`.
+This script blocks Stock Entries that try to move standard sales staging into any warehouse under `Clients - Inmed`.
 
 1) Open `Server Script`.
 2) Click `New`.
@@ -682,7 +682,7 @@ This script blocks Stock Entries that try to move standard sales staging into an
 4) Paste:
 
 ```python
-CLIENTS_ROOT = "Clients - WH"
+CLIENTS_ROOT = "Clients - Inmed"
 
 # Only enforce if the document is linked to a Sales Order.
 if not doc.get("sales_order"):
@@ -704,17 +704,17 @@ for row in (doc.items or []):
     )
 
     if is_client_wh:
-        frappe.throw("Standard sales must not move stock into client location warehouses (Clients - WH).")
+        frappe.throw("Standard sales must not move stock into client location warehouses (Clients - Inmed).")
 ```
 
 5) Save.
 
-### 8.6 Server Script: enforce Delivery Note issues only from `Delivery In-Transit - WH`
+### 8.6 Server Script: enforce Delivery Note issues only from `Delivery In-Transit - Inmed`
 Doc 09 rule:
 - Standard delivery completion must remove stock from company-owned warehouses.
 
 Implementation decision:
-- For standard sales, Delivery Notes must always issue from `Delivery In-Transit - WH`.
+- For standard sales, Delivery Notes must always issue from `Delivery In-Transit - Inmed`.
 
 1) Open `Server Script`.
 2) Click `New`.
@@ -725,7 +725,7 @@ Implementation decision:
 4) Paste:
 
 ```python
-DELIVERY_IN_TRANSIT_WH = "Delivery In-Transit - WH"
+DELIVERY_IN_TRANSIT_WH = "Delivery In-Transit - Inmed"
 
 for row in (doc.items or []):
     if row.warehouse != DELIVERY_IN_TRANSIT_WH:
@@ -1147,7 +1147,7 @@ Doc 09 requires stage-based handling depending on where the physical goods are.
 
 ### 12.3 Cancelled after dispatch staging / while in transit
 Meaning:
-- Stock is already in `Delivery In-Transit - WH` and physically with delivery.
+- Stock is already in `Delivery In-Transit - Inmed` and physically with delivery.
 
 Operational steps:
 1) Cancel the Sales Order with a short reason.
@@ -1164,13 +1164,13 @@ Operational steps:
 4) Driver attaches `Warehouse Drop-off Photo` on that task.
 5) Driver completes the task.
 6) Inventory/Returns team creates Stock Entry (Material Transfer) to return stock to warehouse control:
-   - From Warehouse: `Delivery In-Transit - WH`
-   - To Warehouse: `Returns - WH`
+   - From Warehouse: `Delivery In-Transit - Inmed`
+   - To Warehouse: `Returns - Inmed`
    - Select the correct batch/serials.
 7) Returns team verifies the package and re-stocks:
    - Stock Entry (Material Transfer)
-     - From Warehouse: `Returns - WH`
-     - To Warehouse: `Main - WH`
+     - From Warehouse: `Returns - Inmed`
+     - To Warehouse: `Main - Inmed`
 8) Close/cancel any leftover Tasks linked to the cancelled order.
 
 ### 12.4 Cancelled after delivery (true return)
@@ -1182,8 +1182,8 @@ Operational steps:
 
 ## 13) Validation checklist (must pass before go-live)
 ### 13.1 Warehouse rules
-- Dispatch staging moves stock only `Main - WH` → `Delivery In-Transit - WH`.
-- Standard sales does not move stock into `Clients - WH`.
+- Dispatch staging moves stock only `Main - Inmed` → `Delivery In-Transit - Inmed`.
+- Standard sales does not move stock into `Clients - Inmed`.
 
 ### 13.2 Discount approval gate
 - Create a Sales Order with a line discount.

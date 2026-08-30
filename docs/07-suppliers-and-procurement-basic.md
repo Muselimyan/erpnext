@@ -180,12 +180,12 @@ Operational rules:
   - serial/batch/expiry must be captured for tracked items (per tracking policy)
 
 Pack-breaking note (buy boxes, sell singles):
-- If an item is stocked/sold as singles but purchased in boxes, receiving must apply the correct UOM conversion so stock enters `Main - WH` accurately.
+- If an item is stocked/sold as singles but purchased in boxes, receiving must apply the correct UOM conversion so stock enters `Main - Inmed` accurately.
 - For expiry-tracked items, prefer the single-Item + UOM-conversion model so batch/expiry stays on one Item identity.
 
 Warehouse destination:
 - Normal receiving destination is your main sellable stock location (Doc 05):
-  - `Main - WH`
+  - `Main - Inmed`
 
 Exceptions:
 - Current policy: no quarantine/inspection step at go-live.

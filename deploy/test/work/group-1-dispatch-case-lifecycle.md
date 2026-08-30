@@ -30,10 +30,10 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 | GAP-04 | ~~Discount approval task uses hardcoded team email~~ | ~~Low~~ **FIXED** | — |
 | GAP-05 | ~~Two different template-loading mechanisms active~~ | ~~Low~~ **RESOLVED** | — |
 | GAP-06 | ~~ignore_validate bypasses all stock safety on auto-created SEs~~ | ~~Medium~~ **ACCEPTED** | — |
-| GAP-07 | Dispatch Case submitted without Order Entry task gets no Pack task | Low | 0.85 |
-| DESIGN-01 | Client-side form lock mirrors server-side but is UI-only | Info | 0.95 |
-| DESIGN-02 | Schema shows fewer client scripts than extracted files | Needs Verification | 0.70 |
-| DESIGN-03 | Warehouse names use "- Inmed" (production) vs "- WH" (some docs) | Info | 0.95 |
+| GAP-07 | ~~Dispatch Case submitted without Order Entry task gets no Pack task~~ | ~~Low~~ **ACCEPTED** | — |
+| DESIGN-01 | ~~Client-side form lock mirrors server-side but is UI-only~~ | ~~Info~~ **ACCEPTED** | — |
+| DESIGN-02 | ~~Schema shows fewer client scripts than extracted files~~ | ~~Needs Verification~~ **RESOLVED** | — |
+| DESIGN-03 | ~~Warehouse names use "- Inmed" (production) vs "- WH" (some docs)~~ | ~~Info~~ **FIXED** | — |
 
 ---
 
@@ -396,59 +396,29 @@ outstanding = inv_total - (case.prepaid_amount or 0)
 
 > Same rationale as GAP-01. `ignore_validate` and `ignore_stock_validation` are intentional during the current phase while warehouse inventory is being populated. Will be revisited once products are fully stocked in `Main - Inmed`.
 
-### GAP-07: Direct DC Submission Without Order Entry Gets No Pack Task
-**Severity: LOW | Confidence: 0.85**
+### GAP-07: ~~Direct DC Submission Without Order Entry Gets No Pack Task~~ ACCEPTED
+**Status: ACCEPTED (2026-08-30)**
 
-**Evidence:** `Dispatch-Case-before-submit.py` line 14
-
-```python
-# Do NOT create Pack task here - it will be created when Order Entry task is completed
-```
-
-**Problem:** If a privileged user (Director, System Manager) submits a Dispatch Case directly without going through the Order Entry task workflow, no Pack task is created. The case will sit in `Confirmed` status indefinitely.
-
-The Pack task is created only when:
-1. An Order Entry task linked to this DC is completed (S6 line 218–221), OR
-2. A Discount Approval task is approved (S6 line 281–286)
-
-**Mitigation:** In normal operation, DCs are always created from Order Entry tasks. But the code path exists for direct submission.
+> **Analysis:** 80 of 95 submitted DCs have no `order_entry_task` — all created before August 5 (before the Order Entry task workflow was active). All 15 DCs created since August 5 use the proper Order Entry → Pack task chain. 57 of the 80 legacy DCs are stuck in "Confirmed" as predicted. The direct-submission code path still exists but is no longer used in practice — all new DCs are created via the "Create Dispatch Case" button on Order Entry tasks.
 
 ---
 
 ## 7. Findings — Design Notes
 
-### DESIGN-01: Client-Side Lock Mirrors Server-Side
-**Severity: INFO | Confidence: 0.95**
+### DESIGN-01: ~~Client-Side Lock Mirrors Server-Side~~ ACCEPTED
+**Status: ACCEPTED (2026-08-30)**
 
-`Dispatch Case-Lock Submitted.js` (C2) disables the save button for non-privileged users on submitted DCs. `Dispatch-Case-before-save-lock-submitted.py` (S2) enforces the same rule server-side.
+> Correct defensive design — client-side lock (C2) improves UX, server-side lock (S2) provides actual protection. Both check the same privileged roles. No action needed.
 
-This is **correct defensive design** — the client-side lock improves UX, the server-side lock provides actual protection. Both check the same privileged roles: `Ops - Directors`, `System Manager`, `Administrator`.
+### DESIGN-02: ~~Schema vs Extracted File Count Discrepancy~~ RESOLVED
+**Status: RESOLVED (2026-08-30)**
 
-Minor discrepancy: S2 also checks `doc.flags.ignore_permissions` as a bypass, which C2 cannot check. This is expected (server scripts set this flag programmatically).
+> The schema has been re-exported multiple times since the original audit. The current export shows 38 client scripts, consistent with extracted files. The original discrepancy was from comparing an outdated schema snapshot.
 
-### DESIGN-02: Schema vs Extracted File Count Discrepancy
-**Severity: NEEDS VERIFICATION | Confidence: 0.70**
+### DESIGN-03: ~~Warehouse Names — "- Inmed" vs "- WH"~~ FIXED
+**Status: FIXED (2026-08-30)**
 
-The client-scripts schema shows 5 Dispatch Case scripts, but the extracted files include at least 10 Dispatch Case client scripts. Possible explanations:
-- Schema was exported at a different time than the files
-- Some scripts were added after the last schema export
-- Schema subagent search may have been incomplete
-
-This should be verified by re-exporting `client-scripts.json` from production.
-
-### DESIGN-03: Warehouse Names — "- Inmed" vs "- WH"
-**Severity: INFO | Confidence: 0.95**
-
-All deployed scripts consistently use the `- Inmed` suffix:
-- `Main - Inmed`
-- `Delivery In-Transit - Inmed`
-- `Return Pickup In-Transit - Inmed`
-- `Returns - Inmed`
-- `Clients - Inmed`
-
-Some early documentation (Doc 05) uses `- WH` suffix. Doc 16A §2 Prerequisites explicitly lists `- Inmed` names. Production uses `- Inmed`.
-
-**Assessment:** Not a bug. The `- Inmed` suffix is the ERPNext company abbreviation convention. Documentation should be updated for consistency, but production is correct.
+> All `- WH` warehouse name placeholders across documentation have been renamed to `- Inmed` to match production. Affected files: Docs 02, 04, 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 18, requirements, docs-overview, migration-notes, implementation-questions, and ai-agent-api-access-guide.
 
 ---
 

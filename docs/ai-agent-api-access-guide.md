@@ -115,7 +115,7 @@ Content-Type: application/json
 
 ### Run a Query Report
 ```
-GET /api/method/frappe.desk.query_report.run?report_name=Stock Balance&filters={"warehouse":"Main - WH"}
+GET /api/method/frappe.desk.query_report.run?report_name=Stock Balance&filters={"warehouse":"Main - Inmed"}
 ```
 
 ---
@@ -177,7 +177,7 @@ For complex checks that the REST resource API can't express, create a Script API
 | Submit a document | `POST /api/method/frappe.client.submit` body: `{"doc": {...}}` |
 | Cancel a document | `POST /api/method/frappe.client.cancel` body: `{"doctype":"..","name":".."}` |
 | Run report | `GET /api/method/frappe.desk.query_report.run?report_name=...` |
-| Get stock balance | `GET /api/resource/Bin?filters=[["warehouse","=","Main - WH"]]` |
+| Get stock balance | `GET /api/resource/Bin?filters=[["warehouse","=","Main - Inmed"]]` |
 | List Server Scripts | `GET /api/resource/Server Script` |
 
 ---

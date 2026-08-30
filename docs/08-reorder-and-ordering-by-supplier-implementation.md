@@ -22,8 +22,8 @@ Non-goals:
 Do not start Doc 08A until these are done:
 
 - Doc 05A — Warehouse tree exists.
-  - `Main - WH` exists and is where sellable stock is received.
-  - `Clients - WH`, `Returns - WH`, `Return Pickup In-Transit - WH`, `Delivery In-Transit - WH` exist (Doc 05).
+  - `Main - Inmed` exists and is where sellable stock is received.
+  - `Clients - Inmed`, `Returns - Inmed`, `Return Pickup In-Transit - Inmed`, `Delivery In-Transit - Inmed` exist (Doc 05).
 - Doc 06A — Item catalog is correct.
   - Each sellable stock item (and each purchasable variant) exists as its own Item.
   - UOM and conversion factors are correct.
@@ -67,13 +67,13 @@ Important operational rule from Doc 08:
 ---
 
 ## 4) Enable and configure reorder per Item (including variants)
-### 4.1 Reorder thresholds must be set only for `Main - WH`
+### 4.1 Reorder thresholds must be set only for `Main - Inmed`
 Doc 08 rule:
-- The reorder list must primarily protect ability to ship from `Main - WH`.
+- The reorder list must primarily protect ability to ship from `Main - Inmed`.
 - Hospital/returns/in-transit stock is informational only and must not be counted as available.
 
 Implementation decision (required):
-- Configure reorder rows **only** for `Main - WH`.
+- Configure reorder rows **only** for `Main - Inmed`.
 
 ### 4.2 Step-by-step: set reorder values on an Item
 Repeat these steps for every Item you want the reorder list to manage.
@@ -82,7 +82,7 @@ Repeat these steps for every Item you want the reorder list to manage.
 2) Open the target Item (example: `CONS-001`).
 3) Scroll to the `Reorder` section (may be called `Item Reorder`).
 4) Add a row:
-   - Warehouse: `Main - WH`
+   - Warehouse: `Main - Inmed`
    - Warehouse Reorder Level: (use the policy below)
    - Warehouse Reorder Qty: (use the policy below)
 5) Save.
@@ -125,16 +125,16 @@ ERPNext implementation approach (go-live safe):
 - Use ERPNext’s built-in `Stock Reorder` / `Material Requests` style view where available.
 - If that view is not enabled in your instance, use a Saved Report / List View approach:
   - `Item` list filtered to items with reorder configured
-  - combine with stock balance reports for Main - WH
+  - combine with stock balance reports for Main - Inmed
 
 Because ERPNext setups vary by version, use this fixed approach that works in all cases:
 
-### 5.1 Create a Saved Report: Stock Balance for `Main - WH`
+### 5.1 Create a Saved Report: Stock Balance for `Main - Inmed`
 1) Open report `Stock Balance`.
 2) Set filters:
-   - Warehouse: `Main - WH`
+   - Warehouse: `Main - Inmed`
    - Include UOM: Stock UOM
-3) Save the report as: `Stock Balance — Main - WH`.
+3) Save the report as: `Stock Balance — Main - Inmed`.
 
 ### 5.2 Create a Saved List View: Items that have reorder configured
 1) Open `Item` list.
@@ -155,10 +155,10 @@ Operational note:
 If your ERPNext has `Stock Reorder` (or similar):
 1) Use global search to find `Stock Reorder`.
 2) Open it.
-3) Filter Warehouse = `Main - WH`.
+3) Filter Warehouse = `Main - Inmed`.
 4) Confirm it lists items based on the reorder rows defined in section 4.
 
-Save a view (if allowed) as: `Reorder — Main - WH`.
+Save a view (if allowed) as: `Reorder — Main - Inmed`.
 
 ---
 
@@ -286,7 +286,7 @@ Operational rule:
 
 ## 8) Buyer operating routine (daily + weekly)
 ### 8.1 Daily quick check (10–20 minutes)
-1) Open `Reorder — Main - WH` (or the `Stock Reorder` page).
+1) Open `Reorder — Main - Inmed` (or the `Stock Reorder` page).
 2) Sort by urgency (below threshold).
 3) Focus on:
    - critical fast movers
@@ -309,7 +309,7 @@ Doc 08 rule:
 - For expiry-tracked items, quantity alone is not enough.
 
 Procedure:
-1) Before ordering an expiry-tracked item, open `Batch-Wise Balance History` (or equivalent) for the item in `Main - WH`.
+1) Before ordering an expiry-tracked item, open `Batch-Wise Balance History` (or equivalent) for the item in `Main - Inmed`.
 2) Identify:
    - quantities expiring within the lead-time window
    - quantities expiring within the coverage window
@@ -322,7 +322,7 @@ Procedure:
 - At any time, a buyer can open the reorder view (or saved report) and see what is low.
 
 ### 10.2 Variant correctness
-- If a variant family exists, each variant has its own reorder row for `Main - WH`.
+- If a variant family exists, each variant has its own reorder row for `Main - Inmed`.
 
 ### 10.3 Supplier grouping
 - Every reorder-managed item has exactly one supplier.

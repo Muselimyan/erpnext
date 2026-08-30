@@ -195,7 +195,7 @@ Operational meaning:
 
 FEFO rule (critical):
 - For expiry-tracked items, batch selection must follow **FEFO** (First-Expiry-First-Out): use the batch with the earliest expiry first.
-- If a user selects a “fresher” batch while an older-expiring batch is available in `Main - WH`, the system must alert.
+- If a user selects a “fresher” batch while an older-expiring batch is available in `Main - Inmed`, the system must alert.
 
 Business outcomes:
 - Recall reporting by consumed batch (Doc 11)

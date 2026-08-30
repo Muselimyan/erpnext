@@ -141,7 +141,7 @@ from `tabBin` b
 join `tabWarehouse` w on w.name = b.warehouse
 join `tabItem` i on i.name = b.item_code
 where
-  w.parent_warehouse = 'Clients - WH'
+  w.parent_warehouse = 'Clients - Inmed'
   and w.is_group = 0
   and b.actual_qty > 0
   and (%(client_location_warehouse)s is null or %(client_location_warehouse)s = '' or b.warehouse = %(client_location_warehouse)s)

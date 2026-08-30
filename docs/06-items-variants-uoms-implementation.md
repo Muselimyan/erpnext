@@ -441,10 +441,10 @@ Pack-breaking policy test:
 - A serial-tracked tool can be received with serial recorded.
 
 FEFO warning test:
-- Create two batches in `Main - WH` for the same item:
+- Create two batches in `Main - Inmed` for the same item:
   - Batch A expiry sooner
   - Batch B expiry later
-- Create a `Stock Entry` that issues/moves stock from `Main - WH`.
+- Create a `Stock Entry` that issues/moves stock from `Main - Inmed`.
 - Select Batch B (later expiry) and submit.
 - Confirm the FEFO warning appears.
 

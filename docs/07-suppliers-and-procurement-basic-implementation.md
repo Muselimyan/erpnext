@@ -21,7 +21,7 @@ Non-goals:
 Do not start Doc 07A until these are done:
 
 - Doc 03A — Roles and permissions are configured.
-- Doc 05A — Warehouse tree exists, and `Main - WH` exists.
+- Doc 05A — Warehouse tree exists, and `Main - Inmed` exists.
 - Doc 06A — Item catalog exists, and each purchasable Item (including each variant) is created.
 - Doc 10A — Task system exists, including:
   - `task_kind` field on `Task`
@@ -518,13 +518,13 @@ Later, when the Purchase Invoice exists, allocate the advance payment to that in
 Operational rule:
 - Stock becomes yours only through receiving.
 
-### 9.0 Server Script: enforce receiving into `Main - WH` and require expiry on expiry-tracked batches
+### 9.0 Server Script: enforce receiving into `Main - Inmed` and require expiry on expiry-tracked batches
 Doc 07 rule:
-- Normal receiving destination is `Main - WH`.
+- Normal receiving destination is `Main - Inmed`.
 - For tracked items, receiving must capture the required tracking data.
 
 This script enforces:
-- all receipt rows must land in `Main - WH`
+- all receipt rows must land in `Main - Inmed`
 - for items that require expiry date tracking, the selected Batch must have an expiry date
 
 1) Open `Server Script`.
@@ -536,7 +536,7 @@ This script enforces:
 4) Paste:
 
 ```python
-MAIN_WH = "Main - WH"
+MAIN_WH = "Main - Inmed"
 
 for row in (doc.items or []):
     if row.warehouse != MAIN_WH:
@@ -565,7 +565,7 @@ for row in (doc.items or []):
 1) Open the approved Purchase Order.
 2) Click `Create` → `Purchase Receipt`.
 3) On the Purchase Receipt:
-   - Set `Set Warehouse` = `Main - WH`.
+   - Set `Set Warehouse` = `Main - Inmed`.
 4) For each line item:
    - Enter the actual quantity that arrived.
    - For tracked items:
@@ -645,7 +645,7 @@ Later, when goods arrive, receiving still happens based on physical reality.
 
 ### 12.2 Three-way truth model
 - A submitted PO does not change stock balances.
-- A Purchase Receipt increases stock in `Main - WH`.
+- A Purchase Receipt increases stock in `Main - Inmed`.
 - A Purchase Invoice does not increase stock unless you explicitly enable `Update Stock`.
 
 Additional enforcement tests:
@@ -656,7 +656,7 @@ Additional enforcement tests:
 - Receive a serial-tracked item and confirm serials are captured.
 
 ### 12.3.1 Receiving destination
-- Try to submit a Purchase Receipt where a row Warehouse is not `Main - WH`: submission is blocked.
+- Try to submit a Purchase Receipt where a row Warehouse is not `Main - Inmed`: submission is blocked.
 
 ### 12.4 Partial delivery
 - Create a PO for Qty 100.

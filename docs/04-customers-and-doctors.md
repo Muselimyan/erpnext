@@ -54,7 +54,7 @@ Operational meaning:
 
 ### 3.3 Client Location Groups (doctor + hospital + branch) are warehouses
 Decision (new requirement):
-- Each (doctor + hospital + hospital branch) group is a distinct physical location for company-owned stock and must have its own warehouse under `Clients - WH`.
+- Each (doctor + hospital + hospital branch) group is a distinct physical location for company-owned stock and must have its own warehouse under `Clients - Inmed`.
 
 Operational meaning:
 - One client (doctor) can have multiple location warehouses (one per hospital/branch they operate at).
@@ -186,7 +186,7 @@ Optional hospital-level (when the Hospital field is filled):
 ### 8.1 Invariants
 - Every client has exactly one Customer record.
 - Every active doctor-hospital-branch location used for company-owned stock tracking has:
-  - exactly one location warehouse under `Clients - WH` (Doc 05)
+  - exactly one location warehouse under `Clients - Inmed` (Doc 05)
 - Creating a client under time pressure must not permanently degrade reporting quality (provisional + review process exists).
 
 ### 8.2 Acceptance criteria

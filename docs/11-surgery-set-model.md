@@ -35,8 +35,8 @@ To always know what is physically at each client location, represent those items
 
 **Invariant**
 - If an item is physically at a client location (doctor or hospital) and is still company-owned, then the item quantity must exist in ERPNext in the correct client location warehouse.
-  - Example (doctor at hospital/branch): `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH`
-  - Example (hospital client, no named doctor): `<Hospital Code> — <Hospital/Branch Name> - WH`
+  - Example (doctor at hospital/branch): `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
+  - Example (hospital client, no named doctor): `<Hospital Code> — <Hospital/Branch Name> - Inmed`
 
 This avoids custom reporting logic and makes standard stock reports accurate.
 
@@ -70,16 +70,16 @@ This model is compatible with the same Item tracking rules (serial tools, batch/
 ## 4) Entities (what exists in the system)
 ### 4.1 Warehouses
 Create a simple structure:
-- `Main - WH`
-- `Delivery In-Transit - WH` (outgoing staging)
-- `Clients - WH` (group)
-  - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - WH` (one per doctor-hospital-branch group)
-- `Return Pickup In-Transit - WH` (incoming staging)
-- `Returns - WH`
+- `Main - Inmed`
+- `Delivery In-Transit - Inmed` (outgoing staging)
+- `Clients - Inmed` (group)
+  - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed` (one per doctor-hospital-branch group)
+- `Return Pickup In-Transit - Inmed` (incoming staging)
+- `Returns - Inmed`
 
 Notes
-- Do not transact on the group warehouse `Clients - WH`.
-- Returns go directly back to sellable stock (via `Returns - WH` or directly to `Main - WH`, depending on how you prefer to operationalize returns in Doc 12).
+- Do not transact on the group warehouse `Clients - Inmed`.
+- Returns go directly back to sellable stock (via `Returns - Inmed` or directly to `Main - Inmed`, depending on how you prefer to operationalize returns in Doc 12).
 - Do not create a warehouse per delivery person; while items are in an in-transit warehouse, “who has it” is tracked via assignment records and derived in reporting.
 
 ### 4.2 Customers (Clients)
@@ -169,11 +169,11 @@ Important:
 For each surgery case, inventory movements must result in correct stock positions:
 
 - When dispatching the box:
-  - stock moves from `Main - WH` to `Delivery In-Transit - WH`
-  - then from `Delivery In-Transit - WH` to the correct client location warehouse
+  - stock moves from `Main - Inmed` to `Delivery In-Transit - Inmed`
+  - then from `Delivery In-Transit - Inmed` to the correct client location warehouse
 - When unused items return:
-  - stock moves from the client location warehouse to `Return Pickup In-Transit - WH`
-  - then from `Return Pickup In-Transit - WH` back to `Returns - WH` (or `Main - WH`)
+  - stock moves from the client location warehouse to `Return Pickup In-Transit - Inmed`
+  - then from `Return Pickup In-Transit - Inmed` back to `Returns - Inmed` (or `Main - Inmed`)
 - When items are consumed and invoiced:
   - stock must be reduced from the client location warehouse as part of the sales transaction
 
@@ -230,13 +230,13 @@ Without custom reports, you can answer:
 - “What items are currently at Client X?”
   - Stock Balance filtered by the client location warehouse
 - “Which clients currently hold Item Y?”
-  - Stock Balance filtered by item across `Clients - WH` subtree
+  - Stock Balance filtered by item across `Clients - Inmed` subtree
 
 You can also answer:
 - “What items are currently in delivery transit?”
-  - Stock Balance for `Delivery In-Transit - WH`
+  - Stock Balance for `Delivery In-Transit - Inmed`
 - “What items are currently in return pickup transit?”
-  - Stock Balance for `Return Pickup In-Transit - WH`
+  - Stock Balance for `Return Pickup In-Transit - Inmed`
 
 With batch/serial tracking enabled, you can also support recall and accountability reporting.
 
@@ -255,7 +255,7 @@ Goal: know which client location currently holds which instruments and detect mi
 
 Reporting approach (model-level):
 - Use serial-level stock reports (serial numbers in which warehouse).
-- Anything still in the client location warehouse or `Return Pickup In-Transit - WH` is not yet back.
+- Anything still in the client location warehouse or `Return Pickup In-Transit - Inmed` is not yet back.
 - Missing serials are those dispatched but not returned and explicitly flagged as missing/damaged in the case workflow.
 
 Per-delivery-person “has what” while in transit is supported by:
@@ -279,7 +279,7 @@ Doc 12 alignment note:
 ---
 
 ## Checklist (Doc 11 complete when)
-- Warehouses structure exists (`Main - WH`, `Delivery In-Transit - WH`, `Clients - WH`, per-location WH, `Return Pickup In-Transit - WH`, `Returns - WH`)
+- Warehouses structure exists (`Main - Inmed`, `Delivery In-Transit - Inmed`, `Clients - Inmed`, per-location WH, `Return Pickup In-Transit - Inmed`, `Returns - Inmed`)
 - Client Customers exist (at least 1 test client)
 - `Collection Set` DocType exists with child table
 - Item masters are configured with correct tracking:

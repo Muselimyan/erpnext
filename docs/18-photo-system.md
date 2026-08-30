@@ -63,7 +63,7 @@ Order Entry is a data-entry task (selecting products, quantities, customer). No 
 ### 4.2 Pack / Prepare Items
 **Photos: REQUIRED for completion**
 
-Purpose: Photographic evidence that items were packed and ready for pickup at `Main - WH`.
+Purpose: Photographic evidence that items were packed and ready for pickup at `Main - Inmed`.
 
 Rules:
 - Users may attach up to 5 photos.

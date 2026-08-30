@@ -209,7 +209,7 @@ Steps:
 4) Save.
 
 Follow-up (required for surgery/consignment stock tracking):
-- Create the doctor-hospital-branch **Client Location Group warehouse** under `Clients - WH` as defined in Doc 05.
+- Create the doctor-hospital-branch **Client Location Group warehouse** under `Clients - Inmed` as defined in Doc 05.
 
 ### 6.3 Create the client location warehouse (doctor + hospital + branch)
 Purpose:
@@ -217,21 +217,21 @@ Purpose:
 - Standard sales must not move stock into these warehouses.
 
 Naming pattern (from Doc 05):
-- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital Name> / <Branch Name> - WH`
+- `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital Name> / <Branch Name> - Inmed`
 
 Sample warehouse name:
-- `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
+- `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - Inmed`
 
 Steps:
 1) Open `Warehouse`.
 2) Click `New`.
-3) Create the group warehouse `Clients - WH` (do this once):
-   - Warehouse Name: `Clients - WH`
+3) Create the group warehouse `Clients - Inmed` (do this once):
+   - Warehouse Name: `Clients - Inmed`
    - Is Group: ON
    - Save
 4) Create the leaf warehouse for the location group:
-   - Warehouse Name: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - WH`
-   - Parent Warehouse: `Clients - WH`
+   - Warehouse Name: `D001 — Dr. A. Petrosyan @ H001 — Erebuni MC / Main - Inmed`
+   - Parent Warehouse: `Clients - Inmed`
    - Is Group: OFF
 5) Save.
 

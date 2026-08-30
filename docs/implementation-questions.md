@@ -181,7 +181,7 @@ Recommendation:
 - Question: For every hospital record, do we confirm there is a matching hospital stock location (warehouse) created?
 - Data needed:
   - confirm we use the same canonical scope rule as in Doc 05 / Doc 05A — “Hospital warehouse creation scope”
-  - confirmation approach: for each hospital in the master list, verify a matching hospital warehouse exists under `Hospitals - WH`
+  - confirmation approach: for each hospital in the master list, verify a matching hospital warehouse exists under `Hospitals - Inmed`
   - who is responsible for creating it and verifying naming consistency
 
 ---
@@ -191,12 +191,12 @@ Recommendation:
 1) Warehouse tree (exact records)
 - Question: Confirm the exact warehouse tree we will create at go-live (and which are group vs leaf).
 - Data needed (record list):
-  - `Main - WH` (leaf)
-  - `Delivery In-Transit - WH` (leaf)
-  - `Hospitals - WH` (group)
-  - `Return Pickup In-Transit - WH` (leaf)
-  - `Returns - WH` (leaf)
-  - One hospital warehouse per hospital under `Hospitals - WH` (leaf)
+  - `Main - Inmed` (leaf)
+  - `Delivery In-Transit - Inmed` (leaf)
+  - `Hospitals - Inmed` (group)
+  - `Return Pickup In-Transit - Inmed` (leaf)
+  - `Returns - Inmed` (leaf)
+  - One hospital warehouse per hospital under `Hospitals - Inmed` (leaf)
 
 2) Company suffix behavior for warehouse names
 - Question: Will we accept ERPNext’s automatic company suffix on warehouse names (recommended), and what is the company abbreviation?
@@ -216,26 +216,26 @@ Recommendation:
 4) Warehouse ownership/responsibility map (operational control)
 - Question: Who is the responsible owner team for stock accuracy in each warehouse?
 - Data needed (confirm or adjust):
-  - `Main - WH`: Inventory team
-  - `Delivery In-Transit - WH`: Delivery coordination (with Inventory correctness on packing)
+  - `Main - Inmed`: Inventory team
+  - `Delivery In-Transit - Inmed`: Delivery coordination (with Inventory correctness on packing)
   - Hospital warehouses: shared Ops responsibility (Delivery + Returns)
-  - `Return Pickup In-Transit - WH`: Delivery team
-  - `Returns - WH`: Returns/Inventory team
+  - `Return Pickup In-Transit - Inmed`: Delivery team
+  - `Returns - Inmed`: Returns/Inventory team
 
 5) “Stuck in transit” definition
 - Question: What does “too long” mean for stock sitting in in-transit warehouses?
 - Data needed:
-  - time threshold for `Delivery In-Transit - WH`
-  - time threshold for `Return Pickup In-Transit - WH`
+  - time threshold for `Delivery In-Transit - Inmed`
+  - time threshold for `Return Pickup In-Transit - Inmed`
   - who is responsible for investigating and how escalation happens
 
 Recommendation:
-- `Delivery In-Transit - WH`: threshold = 24 hours (or “end of business day” if dispatch is same-day).
-- `Return Pickup In-Transit - WH`: threshold = 24 hours.
+- `Delivery In-Transit - Inmed`: threshold = 24 hours (or “end of business day” if dispatch is same-day).
+- `Return Pickup In-Transit - Inmed`: threshold = 24 hours.
 - Escalation owner: Delivery Coordinator first; if unresolved next day → Ops lead / Directors.
 
 6) Returns processing control (“only Returns Team moves stock out of Returns”)
-- Question: Do we enforce that only the Returns Team can move stock out of `Returns - WH`?
+- Question: Do we enforce that only the Returns Team can move stock out of `Returns - Inmed`?
 - Current answer: Recommended.
 - Data needed:
   - confirm yes/no
@@ -268,7 +268,7 @@ Recommendation:
   - who verifies that posting time matches pickup time
 
 10) Stock movement guardrails (group warehouses)
-- Question: How do we prevent stock transactions on group warehouses (like `Hospitals - WH`)?
+- Question: How do we prevent stock transactions on group warehouses (like `Hospitals - Inmed`)?
 - Data needed:
   - confirm “no transacting on group warehouses” is enforced by training only, or by permissions/validations
 
@@ -279,11 +279,11 @@ Recommendation:
 - Question: How will opening stock be loaded at go-live, and for which warehouses?
 - Data needed:
   - method (e.g., opening stock entry / stock reconciliation approach)
-  - which warehouse(s) will have opening stock (normally `Main - WH`)
+  - which warehouse(s) will have opening stock (normally `Main - Inmed`)
   - whether any hospital warehouses start non-empty (usually should be empty at go-live)
 
 Recommendation:
-- Load opening stock only into `Main - WH`.
+- Load opening stock only into `Main - Inmed`.
 - Keep all hospital warehouses and in-transit warehouses empty at go-live.
 
 12) Routine checks (operational discipline)
@@ -507,7 +507,7 @@ Recommendation:
 - Question: Who is allowed to create/submit purchase receipts (receiving)?
 - Data needed:
   - roles/users allowed
-  - whether receiving always goes to `Main - WH` at go-live (current: yes)
+  - whether receiving always goes to `Main - Inmed` at go-live (current: yes)
 
 11) Partial delivery behavior
 - Question: When deliveries are partial, do we keep POs open by default until closed/cancelled?
@@ -558,7 +558,7 @@ Recommendation:
   - whether we need a temporary holding location/process (even if “no quarantine” is the default)
 
 Recommendation:
-- Do not mix questionable items into `Main - WH`.
+- Do not mix questionable items into `Main - Inmed`.
 - If this happens more than rarely, create a simple quarantine/hold warehouse; otherwise treat as an exception with Director approval + mandatory note + photos.
 
 17) Returns to supplier (rare exception)
@@ -642,7 +642,7 @@ Recommendation:
 
 8) Warehouse/stock scope used in reorder math
 - Question: Which stock locations count as sellable on-hand, and which are informational-only?
-- Current answer: Sellable on-hand primarily in `Main - WH`; hospital/returns/in-transit are informational only.
+- Current answer: Sellable on-hand primarily in `Main - Inmed`; hospital/returns/in-transit are informational only.
 - Data needed:
   - confirm this rule as strict
   - list of any exceptions (items that can be quickly pulled back from hospital stock)
@@ -706,7 +706,7 @@ Recommendation:
   - how it is made explicit and traceable operationally
 
 Recommendation:
-- Allowed only with Delivery/Returns coordinator approval and explicit Stock Entry movement back to `Main - WH`.
+- Allowed only with Delivery/Returns coordinator approval and explicit Stock Entry movement back to `Main - Inmed`.
 - Do not “virtually allocate” hospital stock to new orders without physically moving it.
 
 16) Reorder list output format
@@ -799,7 +799,7 @@ Recommendation:
   - do we require any attachments (if proof policy is enabled)
 
 9) Stock staging timing rule
-- Question: What is the strict rule for when stock must be staged into `Delivery In-Transit - WH`?
+- Question: What is the strict rule for when stock must be staged into `Delivery In-Transit - Inmed`?
 - Current answer: Must be staged before the driver leaves.
 - Data needed:
   - do we allow staging earlier (day before) and how do we prevent “stuck staging”?
@@ -856,11 +856,11 @@ Recommendation:
 - Data needed:
   - if cancelled after packing but before staging: do we require any special task updates (cancel packing vs reopen stock picking), or is cancelling the order + tasks enough?
   - if cancelled after staging/in transit: do we require a `Return to warehouse` task and a drop-off photo?
-  - whether aborted-delivery packages must always go through `Returns - WH` before returning to `Main - WH`
+  - whether aborted-delivery packages must always go through `Returns - Inmed` before returning to `Main - Inmed`
 
 Recommendation:
 - Use a stage-dependent redirect matrix as defined in Doc 09.
-- For cancellations after dispatch staging: require a driver return-to-warehouse step with photo evidence, then returns verification before items re-enter `Main - WH`.
+- For cancellations after dispatch staging: require a driver return-to-warehouse step with photo evidence, then returns verification before items re-enter `Main - Inmed`.
 
 13) Backdating exceptions (sales)
 - Question: For standard sales documents, do we apply the same backdating policy as Doc 05 / Doc 05A — “Backdating policy (who can backdate and how far)”, or do we need sales-specific exceptions?
@@ -875,7 +875,7 @@ Recommendation:
 - Data needed:
   - do we allow returns only before invoicing, or also after invoicing?
   - if after invoicing: credit note/adjustment policy and approval owner
-  - where returned stock goes first (e.g., `Returns - WH` for verification)
+  - where returned stock goes first (e.g., `Returns - Inmed` for verification)
 
 15) Mandatory fields on Sales Order / Sales Invoice
 - Question: What fields must be mandatory for standard sales documents at go-live?
@@ -1158,26 +1158,26 @@ Recommendation:
 - By hospital + surgery case (higher traceability; helps investigations).
 
 11) Returns path after verification
-- Question: After items return, do they always go through `Returns - WH` before returning to sellable stock, or can some go directly back to `Main - WH`?
+- Question: After items return, do they always go through `Returns - Inmed` before returning to sellable stock, or can some go directly back to `Main - Inmed`?
 - Current answer: Model supports either; operations must decide.
 - Data needed:
   - confirm the standard path
   - list any exceptions (e.g., clean sealed items direct to main)
 
 Recommendation:
-- Standardize: all returns go through `Returns - WH` for verification, then move to `Main - WH`.
+- Standardize: all returns go through `Returns - Inmed` for verification, then move to `Main - Inmed`.
 - Avoid exceptions at go-live to keep accountability simple.
 
 12) Hospital warehouse naming scheme consistency (Doc 11A vs Doc 02/05)
 - Question: What is the canonical hospital warehouse naming scheme we will use everywhere?
 - Data needed:
   - confirm whether the canonical pattern is:
-    - `<Hospital Code> — <Hospital Name> - WH` (Doc 02/05), or
-    - `HOSP - <Hospital Short Name> - WH` (Doc 11A)
+    - `<Hospital Code> — <Hospital Name> - Inmed` (Doc 02/05), or
+    - `HOSP - <Hospital Short Name> - Inmed` (Doc 11A)
   - if you keep both concepts: define exactly where each is used (recommended: pick one)
 
 Recommendation:
-- Use `<Hospital Code> — <Hospital Name> - WH` everywhere for consistency with the broader warehouse policy.
+- Use `<Hospital Code> — <Hospital Name> - Inmed` everywhere for consistency with the broader warehouse policy.
 
 13) Hospital short name dataset (only if used)
 - Question: If we use “Hospital Short Name” anywhere, what is the list per hospital?
@@ -1486,7 +1486,7 @@ Recommendation:
 - Question: What exact thresholds define “too long” and “stuck” for operational warehouses and cases?
 - Data needed:
   - use the same in-transit thresholds defined in Doc 05 / Doc 05A — “Stuck in transit definition”
-  - `Returns - WH` backlog threshold (days or qty/value)
+  - `Returns - Inmed` backlog threshold (days or qty/value)
   - Surgery Case status aging thresholds (per status bucket)
 
 5) Drill-down requirements (investigation)
@@ -1524,18 +1524,18 @@ Recommendation:
   - whether to include batch/serial breakdown (for tools/implants)
 
 9) Items currently in delivery transit (outgoing)
-- Question: What is the default display for `Delivery In-Transit - WH` (risk scan)?
+- Question: What is the default display for `Delivery In-Transit - Inmed` (risk scan)?
 - Data needed:
   - group by item vs group by document (Stock Entry)
   - whether to show age (time since posting) and the exact aging buckets
 
 10) Items currently in return pickup transit (incoming)
-- Question: What is the default display for `Return Pickup In-Transit - WH` and what must it link to?
+- Question: What is the default display for `Return Pickup In-Transit - Inmed` and what must it link to?
 - Data needed:
   - required drill-down: pickup task, dispatch group, surgery case(s)
   - age display and thresholds
 
-11) Returns backlog (items waiting in `Returns - WH`)
+11) Returns backlog (items waiting in `Returns - Inmed`)
 - Question: How do we measure backlog: by qty, by number of packages/cases, or by value?
 - Data needed:
   - chosen backlog metric(s)
@@ -1544,7 +1544,7 @@ Recommendation:
 
 Recommendation:
 - Track backlog by qty + number of cases.
-- Escalate if items remain in `Returns - WH` > 2 business days.
+- Escalate if items remain in `Returns - Inmed` > 2 business days.
 
 12) Items currently with each delivery person (derived view)
 - Question: What is the authoritative “assignment link” used to derive in-transit stock by delivery person?
@@ -1603,7 +1603,7 @@ Recommendation:
 - Data needed:
   - reuse the reorder list columns from Doc 08 — “Reorder list output format” (add supplier grouping on top)
   - grouping by supplier must match Doc 06 / Doc 06A — “One supplier per item — mapping dataset” (confirm no exceptions)
-  - sellable-on-hand warehouse scope must match Doc 08 — “Warehouse/stock scope used in reorder math” (expected: `Main - WH` only)
+  - sellable-on-hand warehouse scope must match Doc 08 — “Warehouse/stock scope used in reorder math” (expected: `Main - Inmed` only)
 
 19) Cross-check report: in-transit stuck check
 - Question: What is the required output list for “stuck in transit” investigation?
