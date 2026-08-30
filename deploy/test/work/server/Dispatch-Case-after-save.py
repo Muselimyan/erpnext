@@ -24,11 +24,12 @@ if doc.status == "Awaiting Approval" and not doc.discount_approval_task:
         t.flags.ignore_permissions = True
         t.insert()
         frappe.db.set_value("Dispatch Case", doc.name, "discount_approval_task", t.name)
-        # FIXED: Update _assign via db (assign_to module not available in RestrictedPython)
-        frappe.db.set_value("Task", t.name, "_assign", json.dumps(["directors.team@example.com"]))
+        # _assign and custom_assigned_to are set by Task-before-save-policy during insert
+        # (reads default_team_user from Task Access Policy "Discount Approval")
+        assignee = t.custom_assigned_to or ""
         todo = frappe.new_doc("ToDo")
         todo.status = "Open"
-        todo.allocated_to = "directors.team@example.com"
+        todo.allocated_to = assignee
         todo.reference_type = "Task"
         todo.reference_name = t.name
         todo.description = t.subject

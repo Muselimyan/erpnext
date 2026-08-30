@@ -27,7 +27,7 @@ However, this audit identified **5 original findings** (3 fixed, 2 reclassified 
 | GAP-01 | ~~No stock availability check at Pack completion~~ | ~~Medium~~ **ACCEPTED** | — |
 | GAP-02 | ~~Missing role restrictions for Return Call and Debt Closure Approval~~ | ~~Low~~ **FIXED** | — |
 | GAP-03 | Outstanding calculation ignores total_paid_amount | Medium | 0.88 |
-| GAP-04 | Discount approval task uses hardcoded team email | Low | 0.90 |
+| GAP-04 | ~~Discount approval task uses hardcoded team email~~ | ~~Low~~ **FIXED** | — |
 | GAP-05 | ~~Two different template-loading mechanisms active~~ | ~~Low~~ **RESOLVED** | — |
 | GAP-06 | ~~ignore_validate bypasses all stock safety on auto-created SEs~~ | ~~Medium~~ **ACCEPTED** | — |
 | GAP-07 | Dispatch Case submitted without Order Entry task gets no Pack task | Low | 0.85 |
@@ -376,19 +376,10 @@ outstanding = inv_total - (case.prepaid_amount or 0)
 
 **Impact:** For cases where partial payments arrive between invoice creation and invoice task completion, the outstanding amount sent to Debt Collection may be higher than the actual outstanding.
 
-### GAP-04: Discount Approval Task Uses Hardcoded Team Email
-**Severity: LOW | Confidence: 0.90**
+### GAP-04: ~~Discount Approval Task Uses Hardcoded Team Email~~ FIXED
+**Status: FIXED (2026-08-30)**
 
-**Evidence:** `Dispatch-Case-after-save.py` lines 28, 31
-
-```python
-frappe.db.set_value("Task", t.name, "_assign", json.dumps(["directors.team@example.com"]))
-todo.allocated_to = "directors.team@example.com"
-```
-
-**Problem:** The email `directors.team@example.com` is hardcoded. If this team user's email changes, the script silently assigns to a nonexistent user.
-
-**Comparison:** The Sales Order discount approval script (`Sales Order-before-save-discount-approval.py`) dynamically looks up Director users by role — a more robust approach.
+> **Resolution:** Removed hardcoded `directors.team@example.com` from `Dispatch-Case-after-save.py`. The `_assign` and `custom_assigned_to` are now set by `Task-before-save-policy.py` during `t.insert()` (reads `default_team_user` from the "Discount Approval" Task Access Policy record). The ToDo creation now reads `t.custom_assigned_to` instead of a hardcoded email. Consistent with the team-mapping unification refactor.
 
 ### GAP-05: ~~Two Different Template-Loading Mechanisms~~ RESOLVED
 **Status: RESOLVED (2026-08-28)**
