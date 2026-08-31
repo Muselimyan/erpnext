@@ -90,20 +90,24 @@ function tab_do_complete(frm, btn) {
     }, 30000);
 
     // Single save: set status + save in one call. No intermediate refresh.
+    // Use callback style — frm.save() promises do NOT reliably reject on
+    // server validation errors (frappe.throw). The on_error callback does fire.
     frm.doc.status = "Completed";
     if (!frm.doc.completed_on) frm.doc.completed_on = frappe.datetime.get_today();
     frm.dirty();
-    frm.save().then(function() {
-        clearTimeout(timeoutId);
-        // frm.save() already updated doc and fired refresh — form shows completed state.
-    }).catch(function(err) {
-        clearTimeout(timeoutId);
-        frm.doc.status = originalStatus;
-        frm.doc.completed_on = originalCompletedOn || "";
-        // btn is still alive — no intermediate refresh destroyed it
-        if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
-        frappe.show_alert({message: __("Failed: ") + (err.message || err), indicator: "red"}, 10);
-    });
+    frm.save(
+        function() {
+            clearTimeout(timeoutId);
+            // frm.save() already updated doc and fired refresh — form shows completed state.
+        },
+        null,
+        function() {
+            clearTimeout(timeoutId);
+            frm.doc.status = originalStatus;
+            frm.doc.completed_on = originalCompletedOn || "";
+            if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
+        }
+    );
 }
 
 // ── dashboard comments (absorbed from Task-Dispatch Packing Usability) ──
