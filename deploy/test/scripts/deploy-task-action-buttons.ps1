@@ -194,12 +194,39 @@ if ($Mode -eq "Check") {
 }
 
 # ============================================================================
+# Step 5: UPDATE Global-Mobile Back Button List (replace floating circle with sub-header)
+# ============================================================================
+Write-Host "`n[5] Global-Mobile Back Button List (UPDATE)" -ForegroundColor Magenta
+$gmbListFile = Join-Path $WorkDir "Global-Mobile Back Button List.js"
+$gmbListScript = Read-WorkScript $gmbListFile
+$existingGMBList = Get-ErpDoc "Client Script" "Global-Mobile Back Button List"
+
+if ($Mode -eq "Check") {
+    if ($existingGMBList) {
+        $hasOldCircle = ([string]$existingGMBList.script).Contains("mobile-back-btn")
+        $hasSubheader = ([string]$existingGMBList.script).Contains("mobile-global-subheader")
+        Write-Host "  Has old floating circle: $hasOldCircle" -ForegroundColor $(if ($hasOldCircle) { "Yellow" } else { "Green" })
+        Write-Host "  Has global sub-header: $hasSubheader" -ForegroundColor $(if ($hasSubheader) { "Green" } else { "Yellow" })
+    } else {
+        Write-Host "  NOT FOUND (unexpected)" -ForegroundColor Red
+    }
+} else {
+    if (-not $existingGMBList) { throw "Global-Mobile Back Button List not found on server" }
+    Put-ErpDoc "Client Script" "Global-Mobile Back Button List" @{
+        script = $gmbListScript
+        enabled = 1
+    } | Out-Null
+    Write-Host "  UPDATED: Global-Mobile Back Button List" -ForegroundColor Green
+}
+
+# ============================================================================
 # Step 6: DISABLE absorbed scripts
 # ============================================================================
 $disableScripts = @(
     "Task-Product Lines Display",
     "Task-Create Dispatch Case Items",
-    "Task-Dispatch Packing Usability"
+    "Task-Dispatch Packing Usability",
+    "Global-Mobile Back Button"
 )
 
 foreach ($scriptName in $disableScripts) {

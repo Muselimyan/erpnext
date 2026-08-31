@@ -1,7 +1,10 @@
 ﻿// Name: Global-Mobile Back Button
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
+// DISABLED: floating #mobile-back-btn replaced by global sub-header in
+// Global-Mobile Back Button List.js. This script's only purpose was hiding
+// the circle on Task forms; no longer needed.
 
 frappe.ui.form.on('Task', {
     refresh: function(frm) {

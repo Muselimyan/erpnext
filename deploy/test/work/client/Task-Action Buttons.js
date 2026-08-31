@@ -81,35 +81,27 @@ function tab_do_complete(frm, btn) {
     if (btn && btn.data && btn.data("busy")) return;
     var originalStatus = frm.doc.status;
     var originalCompletedOn = frm.doc.completed_on;
-    if (btn) btn.data("busy", true).prop("disabled", true).text(frm.is_dirty() ? "Saving..." : "Completing...");
+    if (btn) btn.data("busy", true).prop("disabled", true).text("Completing...");
     var timeoutId = setTimeout(function() {
+        frm.doc.status = originalStatus;
+        frm.doc.completed_on = originalCompletedOn || "";
         if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
         frappe.show_alert({message: __("Complete Task timed out. Please try again."), indicator: "red"}, 10);
     }, 30000);
-    function resetBtn() {
+
+    // Single save: set status + save in one call. No intermediate refresh.
+    frm.doc.status = "Completed";
+    if (!frm.doc.completed_on) frm.doc.completed_on = frappe.datetime.get_today();
+    frm.dirty();
+    frm.save().then(function() {
         clearTimeout(timeoutId);
-        if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
-    }
-    var p = frm.is_dirty() ? frm.save() : Promise.resolve();
-    p.then(function() {
-        if (frm.doc.status === "Completed") {
-            clearTimeout(timeoutId);
-            if (btn) btn.text("Completed");
-            return frm.reload_doc();
-        }
-        if (btn) btn.text("Completing...");
-        frm.doc.status = "Completed";
-        if (!frm.doc.completed_on) frm.doc.completed_on = frappe.datetime.get_today();
-        frm.dirty();
-        return frm.save();
-    }).then(function() {
-        clearTimeout(timeoutId);
-        if (btn) btn.text("Completed");
-        return frm.reload_doc();
+        // frm.save() already updated doc and fired refresh — form shows completed state.
     }).catch(function(err) {
+        clearTimeout(timeoutId);
         frm.doc.status = originalStatus;
-        if (frm.doc.completed_on !== originalCompletedOn) frm.doc.completed_on = originalCompletedOn || "";
-        resetBtn();
+        frm.doc.completed_on = originalCompletedOn || "";
+        // btn is still alive — no intermediate refresh destroyed it
+        if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
         frappe.show_alert({message: __("Failed: ") + (err.message || err), indicator: "red"}, 10);
     });
 }
