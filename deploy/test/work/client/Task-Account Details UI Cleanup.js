@@ -56,7 +56,7 @@ function task_account_details_ui_cleanup(frm) {
     if (frm.fields_dict.subject && frm.fields_dict.subject.df) {
         frm.fields_dict.subject.df.reqd = 0;
     }
-    task_account_details_add_new_accept_button(frm);
+    // Accept button now handled by Task-Action Buttons.js for all task kinds
     setTimeout(function() {
         var wrapper = $(frm.wrapper);
         wrapper.find('[data-fieldname="custom_product_work_section"]').closest('.form-section').hide();
@@ -149,28 +149,7 @@ function task_account_details_prepare_subject(frm) {
     }
 }
 
-function task_account_details_add_new_accept_button(frm) {
-    if (!frm || !frm.is_new || !frm.is_new()) return;
-    var addBtnKind = String(frm.doc.task_kind || '').trim().toLowerCase();
-    if (addBtnKind !== "account details: entry" && addBtnKind !== "account details: processing") return;
-    if (frm.page && frm.page.clear_inner_toolbar) {
-        frm.page.clear_inner_toolbar();
-    }
-    frm.add_custom_button(__("Accept / Start Task"), function() {
-        task_account_details_prepare_subject(frm);
-        frm.save().then(function() {
-            frappe.call({
-                method: "dispatch_task_accept",
-                args: { task_name: frm.doc.name },
-                freeze: true,
-                freeze_message: __("Accepting task..."),
-                callback: function() {
-                    frm.reload_doc();
-                }
-            });
-        });
-    }).addClass("btn-primary");
-}
+// Accept button removed — now handled by Task-Action Buttons.js for all task kinds
 
 function task_account_details_render_photos_box(frm, photosControl) {
     if (!photosControl || !photosControl.length) {

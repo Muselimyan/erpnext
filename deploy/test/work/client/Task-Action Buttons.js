@@ -34,8 +34,13 @@ function tab_is_admin() {
     return roles.indexOf("System Manager") !== -1 || roles.indexOf("Administrator") !== -1 || frappe.session.user === "Administrator";
 }
 
+function tab_is_accepted(frm) {
+    return !!frm.doc.custom_accepted_by;
+}
+
 function tab_can_act(frm) {
-    return tab_is_admin() || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
+    if (!tab_is_accepted(frm)) return false;
+    return frm.doc.custom_accepted_by === frappe.session.user || tab_is_admin();
 }
 
 function tab_needs_dc(frm) {
@@ -293,10 +298,6 @@ function tab_render_desktop_buttons(frm) {
 // ── main event handler ─────────────────────────────────────────
 frappe.ui.form.on("Task", {
     refresh(frm) {
-        // Skip Account Details tasks (they have their own UI)
-        var kind = frm.doc.task_kind || "";
-        if (kind === "Account Details: Entry" || kind === "Account Details: Processing") return;
-
         tab_dashboard_comments(frm);
         tab_render_subheader(frm);
         tab_render_bottom_actions(frm);
