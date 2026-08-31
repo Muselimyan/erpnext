@@ -82,32 +82,30 @@ function tab_do_complete(frm, btn) {
     var originalStatus = frm.doc.status;
     var originalCompletedOn = frm.doc.completed_on;
     if (btn) btn.data("busy", true).prop("disabled", true).text("Completing...");
-    var timeoutId = setTimeout(function() {
-        frm.doc.status = originalStatus;
-        frm.doc.completed_on = originalCompletedOn || "";
-        if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
-        frappe.show_alert({message: __("Complete Task timed out. Please try again."), indicator: "red"}, 10);
-    }, 30000);
 
-    // Single save: set status + save in one call. No intermediate refresh.
-    // Use callback style — frm.save() promises do NOT reliably reject on
-    // server validation errors (frappe.throw). The on_error callback does fire.
+    // Set completion fields on the local doc before sending
     frm.doc.status = "Completed";
     if (!frm.doc.completed_on) frm.doc.completed_on = frappe.datetime.get_today();
-    frm.dirty();
-    frm.save(
-        function() {
-            clearTimeout(timeoutId);
-            // frm.save() already updated doc and fired refresh — form shows completed state.
+    frm.doc.__unsaved = 1;
+
+    // Call savedocs directly via frappe.call — bypasses frm.save() which has
+    // unreliable promise rejection and argument-signature issues.
+    // frappe.call error callback fires reliably for all server errors.
+    frappe.call({
+        method: "frappe.desk.form.save.savedocs",
+        args: { doc: frm.doc, action: "Save" },
+        freeze: true,
+        freeze_message: __("Completing..."),
+        callback: function() {
+            if (btn) btn.data("busy", false);
+            frm.reload_doc();
         },
-        null,
-        function() {
-            clearTimeout(timeoutId);
+        error: function() {
             frm.doc.status = originalStatus;
             frm.doc.completed_on = originalCompletedOn || "";
             if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
         }
-    );
+    });
 }
 
 // ── dashboard comments (absorbed from Task-Dispatch Packing Usability) ──
