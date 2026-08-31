@@ -2,6 +2,11 @@
 // DocType: Task
 // Enabled: 1
 // ---
+// After redesign: button creation (Accept, Save, Complete, mobile compact actions,
+// "Accepted" gray bar, mobile Back circle, mobile Refresh) moved to Task-Action Buttons.js.
+// This script retains: Account Details cleanup, assignment UI, field visibility,
+// sidebar hiding, mobile CSS, menu cleanup, page title overflow fix,
+// and mobile custom-actions hiding CSS.
 
 
 function account_details_entry_ui_cleanup(frm) {
@@ -51,6 +56,7 @@ function account_details_entry_ui_cleanup(frm) {
 
     $(frm.wrapper).find("#account-details-add-photos-btn").remove();
 }
+
 frappe.ui.form.on("Task", {
     custom_assigned_to(frm) {
     },
@@ -59,42 +65,9 @@ frappe.ui.form.on("Task", {
             frm.set_value("completed_on", frappe.datetime.get_today());
         }
     },
-    after_save(frm) {
-        $(frm.wrapper).find("#task-save-btn").hide();
-    },
-    onchange(frm) {
-        if (frm.is_dirty()) {
-            $(frm.wrapper).find("#task-save-btn").show();
-        }
-    },
     refresh(frm) {
+        // Mobile: inject CSS to hide custom-actions (still needed for Product Work Area dropdown etc.)
         task_mobile_hide_desktop_custom_actions();
-        task_mobile_update_action_state(frm);
-        setTimeout(function() { task_mobile_hide_header_custom_buttons(frm); task_mobile_render_compact_actions(frm); }, 300);
-        setTimeout(function() { task_mobile_hide_header_custom_buttons(frm); task_mobile_render_compact_actions(frm); }, 900);
-        // Mobile back button (once, persists via setInterval across all pages)
-        if (!window._mobileBackInterval) {
-            (function() {
-                function ensureBackBtn() {
-                    var btn = document.getElementById('mobile-back-btn');
-                    if (window.innerWidth > 768) { if (btn) btn.style.display = 'none'; return; }
-                    var url = window.location.href.toLowerCase();
-                    var isHome = url.endsWith('/app') || url.endsWith('/app/') || url.includes('/app/home') || url.includes('/app/modules') || url.includes('/app/desk');
-                    if (isHome) { if (btn) btn.style.display = 'none'; return; }
-                    if (!btn) {
-                        btn = document.createElement('div');
-                        btn.id = 'mobile-back-btn';
-                        btn.textContent = '\u2190';
-                        btn.style.cssText = 'position:fixed;bottom:20px;left:20px;width:56px;height:56px;border-radius:50%;background:#1976d2;color:#fff;font-size:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,0.3);z-index:99999;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent;';
-                        btn.addEventListener('click', function() { history.back(); });
-                        document.body.appendChild(btn);
-                    }
-                    btn.style.display = 'flex';
-                }
-                window._mobileBackInterval = setInterval(ensureBackBtn, 1000);
-                ensureBackBtn();
-            })();
-        }
         // Global: fix page title overflow
         (function() {
             var phc = $(frm.page.wrapper).find('.page-head-content');
@@ -147,15 +120,6 @@ frappe.ui.form.on("Task", {
                 dd.css({"max-height":"70vh","overflow-y":"auto"});
                 dd.find("a:visible, button:visible").css({"padding":"12px 18px","font-size":"15px","line-height":"1.5","white-space":"normal","word-wrap":"break-word","border-bottom":"1px solid #eee","margin":"0"});
             });
-        }
-        // Mobile: add Refresh button to form top bar
-        if (window.innerWidth <= 768) {
-            var formPage = $(frm.page.wrapper);
-            if (!formPage.find("#mobile-form-refresh").length) {
-                var rBtn = $("<button id=\"mobile-form-refresh\" class=\"btn btn-default btn-sm\" style=\"margin-right:3px;font-size:14px;width:28px;height:28px;padding:0;display:inline-flex;align-items:center;justify-content:center;\">&#x21bb;</button>");
-                rBtn.on("click", function() { frm.reload_doc(); });
-                formPage.find(".page-actions").prepend(rBtn);
-            }
         }
         
         // Unified assignment UI
@@ -210,138 +174,6 @@ frappe.ui.form.on("Task", {
         if (frm.is_new() && frm.doc.task_kind === "Order accepting") {
             frm.set_value("task_kind", "Order entry");
         }
-        var isOrderEntry = (frm.doc.task_kind === "Order entry");
-        const operationalKinds = [
-            "Order entry", "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Return Call",
-            "Pickup Returns", "Return drop-off at warehouse", "Returns processing / verification",
-            "Returns restocking", "Invoice preparation / create invoice", "Debt Collection", "Debt Closure Approval", "Account Details: Entry", "Account Details: Processing",
-            "Discount Approval", "Purchase Approval", "Write-off Approval"
-        ];
-        // Save + Complete buttons near status field
-        var statusField = frm.fields_dict.status;
-        if (statusField && statusField.$wrapper) {
-            statusField.$wrapper.find("#task-save-btn").remove();
-            statusField.$wrapper.find("#complete-task-btn").remove();
-            if (!frm.is_new() && frm.doc.status !== "Completed" && frm.doc.status !== "Cancelled") {
-                var saveBtn = $('<button id="task-save-btn" class="btn" style="background-color:#1976d2;color:#fff;font-weight:bold;font-size:13px;padding:7px 20px;border:none;border-radius:5px;cursor:pointer;margin-top:8px;display:block;">Save</button>');
-                saveBtn.on("click", function() {
-                    saveBtn.prop("disabled", true).text("Saving...");
-                    frm.save().then(function() {
-                        saveBtn.prop("disabled", false).text("Save");
-                    }).catch(function() {
-                        saveBtn.prop("disabled", false).text("Save");
-                    });
-                });
-                statusField.$wrapper.append(saveBtn);
-                // Show/hide save button based on dirty state
-                if (frm.is_dirty()) { saveBtn.show(); } else { saveBtn.hide(); }
-                var btn = $('<button id="complete-task-btn" class="btn" style="background-color:#e74c3c;color:#fff;font-weight:bold;font-size:13px;padding:7px 20px;border:none;border-radius:5px;cursor:pointer;margin-top:8px;display:block;">Complete Task</button>');
-                btn.on("click", function() {
-                    if (btn.data("busy")) return;
-                    console.log('[TaskAccept] complete clicked', {task: frm.doc.name, status: frm.doc.status, hasUnsaved: frm.is_dirty()});
-                    var originalStatus = frm.doc.status;
-                    var originalCompletedOn = frm.doc.completed_on;
-                    var hasUnsavedWork = frm.is_dirty();
-                    btn.data("busy", true).prop("disabled", true).text(hasUnsavedWork ? "Saving..." : "Completing...");
-                    var timeoutId = setTimeout(function() {
-                        btn.data("busy", false).prop("disabled", false).css("background-color", "#e74c3c").text("Timeout");
-                        frappe.show_alert({message: "Complete Task timed out after 30 seconds. Please try again.", indicator: "red"}, 10);
-                    }, 30000);
-                    function resetButton() {
-                        clearTimeout(timeoutId);
-                        btn.data("busy", false).prop("disabled", false).css("background-color", "#e74c3c").text("Complete Task");
-                    }
-                    var saveBeforeComplete = hasUnsavedWork ? frm.save() : Promise.resolve();
-                    saveBeforeComplete
-                        .then(function() {
-                            if (frm.doc.status === "Completed") {
-                                clearTimeout(timeoutId);
-                                btn.css("background-color", "#27ae60").text("Completed ?");
-                                return frm.reload_doc();
-                            }
-                            btn.text("Completing...");
-                            frm.doc.status = "Completed";
-                            if (!frm.doc.completed_on) {
-                                frm.doc.completed_on = frappe.datetime.get_today();
-                            }
-                            frm.dirty();
-                            return frm.save();
-                        })
-                        .then(function() {
-                            clearTimeout(timeoutId);
-                            console.log('[TaskAccept] completed', {task: frm.doc.name});
-                            btn.css("background-color", "#27ae60").text("Completed \u2713");
-                            return frm.reload_doc();
-                        })
-                        .catch(function(err) {
-                            console.error('[TaskAccept] complete failed', {task: frm.doc.name, error: err.message || err});
-                            frm.doc.status = originalStatus;
-                            if (frm.doc.completed_on !== originalCompletedOn) {
-                                frm.doc.completed_on = originalCompletedOn || "";
-                            }
-                            resetButton();
-                            frappe.show_alert({message: "Failed: " + (err.message || err), indicator: "red"}, 10);
-                        });
-                });
-                statusField.$wrapper.append(btn);
-            } else if (frm.doc.status === "Completed") {
-                statusField.$wrapper.append('<div id="complete-task-btn" style="background-color:#27ae60;color:#fff;font-weight:bold;font-size:13px;padding:7px 20px;border-radius:5px;margin-top:8px;display:inline-block;text-align:center;">Completed \u2713</div>');
-            }
-        }
-
-        // Mobile: always clean up and re-render accept button
-        $(frm.wrapper).find("#mobile-accept-btn").remove();
-        if (window.innerWidth <= 768 && frm.doc.custom_accepted_by === frappe.session.user) {
-            $(frm.wrapper).find(".form-layout").prepend('<div id="mobile-accept-btn" style="width:100%;padding:14px;font-size:17px;font-weight:bold;background:#999;color:#fff;border-radius:10px;margin:10px 0 20px 0;text-align:center;">Accepted</div>');
-        }
-        if (((!frm.is_new()) || frm.doc.task_kind === "Account Details: Entry") && operationalKinds.includes(frm.doc.task_kind) && ["Open", "Working"].includes(frm.doc.status) && frm.doc.custom_accepted_by !== frappe.session.user) {
-            // Mobile: big inline Accept button at top of form
-            if (window.innerWidth <= 768) {
-                var mAccept = $("<button id=\"mobile-accept-btn\" style=\"width:100%;padding:16px;font-size:18px;font-weight:bold;background:#1976d2;color:#fff;border:none;border-radius:10px;margin:10px 0 20px 0;cursor:pointer;box-shadow:0 3px 8px rgba(0,0,0,0.2);\">Accept / Start Task</button>");
-                mAccept.on("click", function() {
-                    console.log('[TaskAccept] accept clicked', {task: frm.doc.name, kind: frm.doc.task_kind, user: frappe.session.user, is_new: frm.is_new(), is_dirty: frm.is_dirty()});
-                    var doAcceptM = function() {
-                        console.log('[TaskAccept] calling dispatch_task_accept', {task: frm.doc.name});
-                        frappe.call({
-                            method: "dispatch_task_accept",
-                            args: { task_name: ((frm.doc && frm.doc.name && frm.doc.name.indexOf("new-") !== 0) ? frm.doc.name : "") },
-                            freeze: true,
-                            freeze_message: __("Accepting task..."),
-                            callback: function() { console.log('[TaskAccept] accepted', {task: frm.doc.name}); frm.reload_doc(); }
-                        });
-                    };
-                    if (frm.is_new() || frm.dirty()) {
-                        frm.save().then(function() { if (frm.doc.name && frm.doc.name.indexOf("new-") !== 0) { doAcceptM(); } else { frappe.show_alert({message: __("Task saved. Please click Accept / Start Task again."), indicator: "orange"}, 8); frm.reload_doc(); } });
-                    } else {
-                        doAcceptM();
-                    }
-                });
-                $(frm.wrapper).find(".form-layout").prepend(mAccept);
-            }
-            frm.add_custom_button(__("Accept / Start Task"), function() {
-                console.log('[TaskAccept] accept clicked (desktop)', {task: frm.doc.name, kind: frm.doc.task_kind, user: frappe.session.user});
-                var doAccept = function() {
-                    console.log('[TaskAccept] calling dispatch_task_accept', {task: frm.doc.name});
-                    frappe.call({
-                        method: "dispatch_task_accept",
-                        args: { task_name: ((frm.doc && frm.doc.name && frm.doc.name.indexOf("new-") !== 0) ? frm.doc.name : "") },
-                        freeze: true,
-                        freeze_message: __("Accepting task..."),
-                        callback: function() {
-                            console.log('[TaskAccept] accepted', {task: frm.doc.name});
-                            frm.reload_doc();
-                        }
-                    });
-                };
-                if (frm.is_new() || frm.dirty()) {
-                    frm.save().then(function() {
-                        if (frm.doc.name && frm.doc.name.indexOf("new-") !== 0) { doAccept(); } else { frappe.show_alert({message: __("Task saved. Please click Accept / Start Task again."), indicator: "orange"}, 8); frm.reload_doc(); }
-                    });
-                } else {
-                    doAccept();
-                }
-            });
-        }
     }
 });
 
@@ -354,59 +186,21 @@ function account_details_entry_keep_next_assign_empty(frm) {
         frm.set_value("custom_next_task_assign_to", "");
     }
 }
+
+// Mobile CSS: hide custom-actions and actions-btn-group in header on Task forms.
+// This prevents Product Work Area dropdown buttons and other custom buttons from
+// appearing in the cramped mobile header. The sub-header bar in Task-Action Buttons
+// provides mobile-friendly access to these controls instead.
 function task_mobile_hide_desktop_custom_actions() {
     if (document.getElementById("task-mobile-hide-desktop-custom-actions")) return;
     var style = document.createElement("style");
     style.id = "task-mobile-hide-desktop-custom-actions";
-    style.textContent = "@media (max-width: 768px) { body[data-route^='Form/Task'] .page-head .page-head-content { display: flex !important; align-items: center !important; flex-wrap: nowrap !important; min-width: 0 !important; width: 100% !important; } body[data-route^='Form/Task'] .page-head .title-area { flex: 1 1 auto !important; min-width: 0 !important; max-width: 100% !important; overflow: hidden !important; } body[data-route^='Form/Task'] .page-head .title-text, body[data-route^='Form/Task'] .page-head .title-text a, body[data-route^='Form/Task'] .page-head .title-text span, body[data-route^='Form/Task'] .page-head h3, body[data-route^='Form/Task'] .page-head .ellipsis { white-space: nowrap !important; word-break: normal !important; overflow-wrap: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; line-height: 1.25 !important; max-width: 100% !important; } body[data-route^='Form/Task'] .page-head .page-actions, body[data-route^='Form/Task'] .page-head .standard-actions { flex: 0 0 auto !important; min-width: 0 !important; margin-left: 6px !important; overflow: visible !important; } body[data-route^='Form/Task'] .page-head .custom-actions, body[data-route^='Form/Task'] .page-head .actions-btn-group { display: none !important; } #task-mobile-compact-actions { display: flex !important; gap: 8px !important; overflow-x: auto !important; padding: 8px 8px 2px 8px !important; margin: -6px 0 8px 0 !important; scrollbar-width: none !important; } #task-mobile-compact-actions::-webkit-scrollbar { display: none !important; } #task-mobile-compact-actions .task-mobile-action-square { flex: 0 0 auto !important; width: 42px !important; height: 38px !important; min-width: 42px !important; padding: 0 !important; border-radius: 10px !important; border: 1px solid #d1d8dd !important; background: #fff !important; color: #1f272e !important; font-weight: 700 !important; font-size: 13px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 1px 3px rgba(0,0,0,0.12) !important; } }";
+    style.textContent = "@media (max-width: 768px) { " +
+        "body[data-route^='Form/Task'] .page-head .page-head-content { display: flex !important; align-items: center !important; flex-wrap: nowrap !important; min-width: 0 !important; width: 100% !important; } " +
+        "body[data-route^='Form/Task'] .page-head .title-area { flex: 1 1 auto !important; min-width: 0 !important; max-width: 100% !important; overflow: hidden !important; } " +
+        "body[data-route^='Form/Task'] .page-head .title-text, body[data-route^='Form/Task'] .page-head .title-text a, body[data-route^='Form/Task'] .page-head .title-text span, body[data-route^='Form/Task'] .page-head h3, body[data-route^='Form/Task'] .page-head .ellipsis { white-space: nowrap !important; word-break: normal !important; overflow-wrap: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; line-height: 1.25 !important; max-width: 100% !important; } " +
+        "body[data-route^='Form/Task'] .page-head .page-actions, body[data-route^='Form/Task'] .page-head .standard-actions { flex: 0 0 auto !important; min-width: 0 !important; margin-left: 6px !important; overflow: visible !important; } " +
+        "body[data-route^='Form/Task'] .page-head .custom-actions, body[data-route^='Form/Task'] .page-head .actions-btn-group { display: none !important; } " +
+        "}";
     document.head.appendChild(style);
-}
-
-function task_mobile_update_action_state(frm) {
-    if (!frm || !frm.doc) return;
-    document.body.classList.toggle("task-mobile-accepted-by-me", frm.doc.custom_accepted_by === frappe.session.user);
-}
-
-function task_mobile_action_symbol(label) {
-    label = String(label || "").trim();
-    if (!label) return "?";
-    if (label.indexOf("Products") >= 0 || label.indexOf("Dispatch") >= 0) return "PD";
-    if (label.indexOf("Complete") >= 0) return "OK";
-    if (label.indexOf("Add") >= 0 || label.indexOf("New") >= 0) return "+";
-    if (label.indexOf("Action") >= 0) return "AC";
-    return label.split(/\s+/).map(function(part) { return part.charAt(0); }).join("").slice(0, 2).toUpperCase();
-}
-
-function task_mobile_render_compact_actions(frm) {
-    if (!frm || !frm.doc || window.innerWidth > 768) return;
-    $(frm.wrapper).find("#task-mobile-compact-actions").remove();
-    if (frm.doc.custom_accepted_by !== frappe.session.user) return;
-    var sourceButtons = [];
-    $(frm.page.wrapper).find(".page-head .custom-actions .btn:visible, .page-head .actions-btn-group .btn:visible").each(function() {
-        var original = $(this);
-        var label = $.trim(original.text()).replace(/\s+/g, " ");
-        if (!label || label === "Accept / Start Task") return;
-        sourceButtons.push({ label: label, original: original });
-    });
-    if (!sourceButtons.length) return;
-    var bar = $('<div id="task-mobile-compact-actions" aria-label="Task actions"></div>');
-    sourceButtons.forEach(function(item) {
-        var btn = $('<button type="button" class="task-mobile-action-square"></button>');
-        btn.text(task_mobile_action_symbol(item.label));
-        btn.attr("title", item.label);
-        btn.attr("aria-label", item.label);
-        btn.on("click", function() { item.original.trigger("click"); });
-        bar.append(btn);
-    });
-    var accepted = $(frm.wrapper).find("#mobile-accept-btn").first();
-    if (accepted.length) accepted.after(bar);
-    else $(frm.wrapper).find(".form-layout").prepend(bar);
-}
-function task_mobile_hide_header_custom_buttons(frm) {
-    if (!frm || window.innerWidth > 768) return;
-    $(frm.page.wrapper).find(".page-head .custom-actions .btn, .page-head .actions-btn-group .btn").each(function() {
-        var btn = $(this);
-        var text = $.trim(btn.text()).replace(/\s+/g, " ");
-        if (text && text !== "Save") btn.hide();
-    });
 }

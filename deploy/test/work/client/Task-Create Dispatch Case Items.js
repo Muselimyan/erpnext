@@ -1,6 +1,7 @@
 ﻿// Name: Task-Create Dispatch Case Items
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
+// DISABLED: Absorbed into Task-Action Buttons.js (button redesign).
 // ---
 
 function _task_create_dispatch(frm) {

@@ -1,6 +1,7 @@
 ﻿// Name: Task-Dispatch Packing Usability
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
+// DISABLED: Absorbed into Task-Action Buttons.js (button redesign).
 // ---
 
 frappe.ui.form.on("Task", {

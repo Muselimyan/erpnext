@@ -18,7 +18,11 @@ frappe.ui.form.on('Task', {
             var route = path || hash;
             var is_main_desk = route === '/app' || route === '/app/desk' || route === '/app/home' || route === '/app/modules' || route === '/desk' || route === '/desk/home' || route === '/desk/modules' || route === '';
 
-            if (!is_mobile || is_main_desk) {
+            // On Task forms, the sub-header bar (Task-Action Buttons.js) provides Back.
+            // Hide the floating circle there to avoid duplicate navigation.
+            var is_task_form = (document.body.getAttribute('data-route') || '').indexOf('Form/Task') === 0;
+
+            if (!is_mobile || is_main_desk || is_task_form) {
                 if (btn) btn.style.display = 'none';
                 return;
             }
