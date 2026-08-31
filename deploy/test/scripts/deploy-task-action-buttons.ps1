@@ -146,7 +146,55 @@ if ($Mode -eq "Check") {
 }
 
 # ============================================================================
-# Step 4: DISABLE absorbed scripts
+# Step 4a: UPDATE Task-Other UI Cleanup (strip inline Complete + Accept buttons)
+# ============================================================================
+Write-Host "`n[4a] Task-Other UI Cleanup (UPDATE)" -ForegroundColor Magenta
+$touFile = Join-Path $WorkDir "Task-Other UI Cleanup.js"
+$touScript = Read-WorkScript $touFile
+$existingTOU = Get-ErpDoc "Client Script" "Task-Other UI Cleanup"
+
+if ($Mode -eq "Check") {
+    if ($existingTOU) {
+        $hasOldBtn = ([string]$existingTOU.script).Contains("complete-task-btn")
+        Write-Host "  Has old inline Complete button: $hasOldBtn" -ForegroundColor $(if ($hasOldBtn) { "Yellow" } else { "Green" })
+    } else {
+        Write-Host "  NOT FOUND (unexpected)" -ForegroundColor Red
+    }
+} else {
+    if (-not $existingTOU) { throw "Task-Other UI Cleanup not found on server" }
+    Put-ErpDoc "Client Script" "Task-Other UI Cleanup" @{
+        script = $touScript
+        enabled = 1
+    } | Out-Null
+    Write-Host "  UPDATED: Task-Other UI Cleanup" -ForegroundColor Green
+}
+
+# ============================================================================
+# Step 4b: UPDATE Task-Account Details UI Cleanup (remove #complete-task-btn refs)
+# ============================================================================
+Write-Host "`n[4b] Task-Account Details UI Cleanup (UPDATE)" -ForegroundColor Magenta
+$tadFile = Join-Path $WorkDir "Task-Account Details UI Cleanup.js"
+$tadScript = Read-WorkScript $tadFile
+$existingTAD = Get-ErpDoc "Client Script" "Task-Account Details UI Cleanup"
+
+if ($Mode -eq "Check") {
+    if ($existingTAD) {
+        $hasOldRef = ([string]$existingTAD.script).Contains("complete-task-btn")
+        Write-Host "  Has old #complete-task-btn refs: $hasOldRef" -ForegroundColor $(if ($hasOldRef) { "Yellow" } else { "Green" })
+    } else {
+        Write-Host "  NOT FOUND (unexpected)" -ForegroundColor Red
+    }
+} else {
+    if (-not $existingTAD) { throw "Task-Account Details UI Cleanup not found on server" }
+    Put-ErpDoc "Client Script" "Task-Account Details UI Cleanup" @{
+        script = $tadScript
+        enabled = 1
+    } | Out-Null
+    Write-Host "  UPDATED: Task-Account Details UI Cleanup" -ForegroundColor Green
+}
+
+# ============================================================================
+# Step 6: DISABLE absorbed scripts
 # ============================================================================
 $disableScripts = @(
     "Task-Product Lines Display",
@@ -155,8 +203,8 @@ $disableScripts = @(
 )
 
 foreach ($scriptName in $disableScripts) {
-    $idx = [array]::IndexOf($disableScripts, $scriptName) + 4
-    Write-Host "`n[4.$idx] $scriptName (DISABLE)" -ForegroundColor Magenta
+    $idx = [array]::IndexOf($disableScripts, $scriptName) + 1
+    Write-Host "`n[6.$idx] $scriptName (DISABLE)" -ForegroundColor Magenta
     $existing = Get-ErpDoc "Client Script" $scriptName
     if (-not $existing) {
         Write-Host "  NOT FOUND - skipping" -ForegroundColor DarkYellow
@@ -180,9 +228,9 @@ foreach ($scriptName in $disableScripts) {
 }
 
 # ============================================================================
-# Step 5: Clear cache
+# Step 7: Clear cache
 # ============================================================================
-Write-Host "`n[5] Clear cache" -ForegroundColor Magenta
+Write-Host "`n[7] Clear cache" -ForegroundColor Magenta
 if ($Mode -eq "Deploy") {
     Write-Host "  Run manually: docker exec frappe-test-backend-1 bench --site test.erpnext.am clear-cache" -ForegroundColor Yellow
     Write-Host "  Then run: powershell -ExecutionPolicy Bypass -File deploy\test\export.ps1" -ForegroundColor Yellow

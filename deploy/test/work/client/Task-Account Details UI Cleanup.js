@@ -102,9 +102,7 @@ function task_account_details_ui_cleanup(frm) {
         var statusSection = statusControl.closest('.form-section');
         var leftColumn = statusSection.find('.form-column').first();
         if (leftColumn.length && statusControl.length) {
-            var completeBtn = statusControl.find('#complete-task-btn').detach();
             statusControl.attr('data-account-details-status-left', 'accountDetailsStatusLeft').appendTo(leftColumn);
-            if (completeBtn.length && !statusControl.find('#complete-task-btn').length) statusControl.append(completeBtn);
             if (priorityControl.length) priorityControl.appendTo(leftColumn);
             leftColumn.css({'float':'none','width':'360px','max-width':'100%','margin-left':'0','display':'block'});
             statusSection.find('.form-column').each(function(index) {
@@ -119,7 +117,6 @@ function task_account_details_ui_cleanup(frm) {
             });
             statusControl.show();
             priorityControl.show();
-            statusControl.find('#complete-task-btn').show();
         }
         var photosControl = wrapper.find('[data-fieldname="custom_account_photos"]').closest('.frappe-control');
         if (photosControl.length) {

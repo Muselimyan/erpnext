@@ -68,26 +68,13 @@ frappe.ui.form.on("Task", {
     refresh(frm) {
         // Mobile: inject CSS to hide custom-actions (still needed for Product Work Area dropdown etc.)
         task_mobile_hide_desktop_custom_actions();
-        // Global: fix page title overflow
-        (function() {
-            var phc = $(frm.page.wrapper).find('.page-head-content');
-            var ta = $(frm.page.wrapper).find('.title-area');
-            var tt = $(frm.page.wrapper).find('.title-text');
-            var pa = $(frm.page.wrapper).find('.page-actions');
-            if (phc.length) phc.css({'flex-wrap': 'wrap', 'gap': '6px 0'});
-            if (ta.length) ta.css({'flex': '1 1 100%', 'min-width': '0', 'overflow': 'hidden'});
-            if (tt.length) tt.css({'overflow': 'hidden', 'text-overflow': 'ellipsis', 'white-space': 'nowrap', 'display': 'block'});
-            if (pa.length) pa.css({'flex': '0 0 auto', 'gap': '6px', 'flex-wrap': 'wrap', 'justify-content': 'flex-end'});
-        })();
-        // Mobile: inject global CSS + menu cleanup (once, on any page)
+        // Mobile: inject global CSS for menu cleanup (once, on any page)
         if (window.innerWidth <= 768 && !document.getElementById("mobile-global-css")) {
             var css = document.createElement("style");
             css.id = "mobile-global-css";
             css.textContent = [
                 "@media(max-width:768px){",
                 ".menu-btn-group .dropdown-menu{min-width:92vw!important;white-space:normal!important}",
-                ".page-actions .btn-sm{padding:4px 8px!important;font-size:12px!important}",
-                ".page-actions{gap:2px!important;flex-wrap:nowrap!important}",
                 "}"
             ].join("");
             document.head.appendChild(css);
@@ -191,15 +178,14 @@ function account_details_entry_keep_next_assign_empty(frm) {
 // This prevents Product Work Area dropdown buttons and other custom buttons from
 // appearing in the cramped mobile header. The sub-header bar in Task-Action Buttons
 // provides mobile-friendly access to these controls instead.
+// All other header layout rules (title truncation, page-actions sizing) removed —
+// Frappe's default responsive layout handles them correctly now that we have
+// fewer buttons in the header.
 function task_mobile_hide_desktop_custom_actions() {
     if (document.getElementById("task-mobile-hide-desktop-custom-actions")) return;
     var style = document.createElement("style");
     style.id = "task-mobile-hide-desktop-custom-actions";
     style.textContent = "@media (max-width: 768px) { " +
-        "body[data-route^='Form/Task'] .page-head .page-head-content { display: flex !important; align-items: center !important; flex-wrap: nowrap !important; min-width: 0 !important; width: 100% !important; } " +
-        "body[data-route^='Form/Task'] .page-head .title-area { flex: 1 1 auto !important; min-width: 0 !important; max-width: 100% !important; overflow: hidden !important; } " +
-        "body[data-route^='Form/Task'] .page-head .title-text, body[data-route^='Form/Task'] .page-head .title-text a, body[data-route^='Form/Task'] .page-head .title-text span, body[data-route^='Form/Task'] .page-head h3, body[data-route^='Form/Task'] .page-head .ellipsis { white-space: nowrap !important; word-break: normal !important; overflow-wrap: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; line-height: 1.25 !important; max-width: 100% !important; } " +
-        "body[data-route^='Form/Task'] .page-head .page-actions, body[data-route^='Form/Task'] .page-head .standard-actions { flex: 0 0 auto !important; min-width: 0 !important; margin-left: 6px !important; overflow: visible !important; } " +
         "body[data-route^='Form/Task'] .page-head .custom-actions, body[data-route^='Form/Task'] .page-head .actions-btn-group { display: none !important; } " +
         "}";
     document.head.appendChild(style);
