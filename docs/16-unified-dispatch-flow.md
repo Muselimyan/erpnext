@@ -58,7 +58,7 @@ Every state change in a Dispatch Case is triggered by a task completion or state
 | `client_location_warehouse` | Link → Warehouse | Client-side warehouse for returnable items |
 | `return_expected` | Checkbox | Whether items are expected to come back |
 | `surgery_date` | Date | For surgery cases; optional for standard sales |
-| `surgery_set_type` | Link → Collection Set | Optional template; populates Case Items when selected |
+| `custom_select_surgical_kit_template` | Link → Surgical Kit Template | Optional template; populates Case Items when selected (see Section 5) |
 | `status` | Select | Current state (see Section 10) |
 | `order_entry_task` | Link → Task | The originating Order entry task |
 | `discount_approval_task` | Link → Task | Director approval task (if discount present) |
@@ -105,17 +105,46 @@ Each row represents one item in the dispatch. Columns:
 
 ---
 
-## 5. Item Templates
+## 5. Item Templates (Surgical Kit Template)
 
-The Dispatch Case has a **"Load from Template"** button that populates the Case Items table from a Collection Set. The template defines default items and quantities. Templates are used for surgery sets and for any frequently-ordered product bundles.
+The Dispatch Case form has a **`custom_select_surgical_kit_template`** Link field. When a template is selected, the client script `Dispatch Case-Template Auto Fill.js` fetches the template and populates the Case Items table with its default items and quantities.
 
-After loading, the Order Creation person can:
+Templates are used for surgery sets and for any frequently-ordered product bundles. Templates are not mandatory — the items table can be filled manually.
+
+### 5.1 Surgical Kit Template DocType
+
+| Field | Type | Description |
+|---|---|---|
+| `template_name` | Data | Name/title of the template |
+| `describtion` | Small Text | Free-text description (note: field has a typo in the name) |
+| `template_items` | Table → Surgical Kit Template Item | Default items and quantities |
+
+**Child table: Surgical Kit Template Item**
+
+| Field | Type | Description |
+|---|---|---|
+| `item_code` | Link → Item | The item to include |
+| `item_name` | Data | Auto-filled from Item |
+| `qty` | Float | Default quantity for this item in the template |
+
+### 5.2 How template loading works
+
+1. User selects a Surgical Kit Template from the Link field on the Dispatch Case form
+2. `Dispatch Case-Template Auto Fill.js` calls `frappe.client.get` to fetch the full template document
+3. The script **clears all existing rows** in `case_items` and replaces them with the template's items
+4. Each template item becomes a row with `item_code`, `item_name`, and `dispatched_qty` (from the template's `qty`)
+
+After loading, the user can:
 - Adjust quantities
 - Add items not in the template
 - Remove items
 - Set prices and discounts
 
-Templates are not mandatory — the items table can be filled manually.
+**Important**: Selecting a template replaces all existing items without a confirmation dialog. If items were added manually before selecting a template, they are lost.
+
+### 5.3 History
+
+The original design (Doc 11) used a DocType called `Collection Set` with richer metadata: item group classification (Tools, Screws, Nails, Plates), return behavior (Expected Return vs May Be Used), criticality flags, and automated readiness validation that checked projected stock in `Main - Inmed`. The `Collection Set` DocType and its readiness validators were removed during the production audit cleanup (2026-08-31). `Surgical Kit Template` is a simpler replacement that covers the core use case: defining a default item list for a dispatch.
 
 ---
 

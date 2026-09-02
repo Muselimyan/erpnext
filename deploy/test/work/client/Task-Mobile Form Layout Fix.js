@@ -1,7 +1,11 @@
 ﻿// Name: Task-Mobile Form Layout Fix
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
+// DISABLED — Header unification (Option B). Pack-specific header surgery
+// (title hiding, summary card, button squeezing) removed in favor of
+// standard Frappe header for all tasks. Generic mobile CSS (tabs, grids,
+// padding, scroll-to-top) relocated to Task-Action Buttons.js.
 
 frappe.ui.form.on('Task', {
     refresh: function(frm) {

@@ -1,6 +1,9 @@
 ﻿// Name: Task-Packing Checkboxes
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
+// MERGED into Task-Product Work Area.js on 2026-08-31
+// All functions and event handlers moved to the merged script.
+// This script should remain disabled.
 // ---
 
 function task_product_work_area_refresh(frm, show_alert) {

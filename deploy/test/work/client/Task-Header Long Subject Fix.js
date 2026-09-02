@@ -1,7 +1,12 @@
 ﻿// Name: Task-Header Long Subject Fix
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
+// DISABLED — Header unification (Option B). This script forced subject
+// visible with !important CSS, overriding Task-Accept Start's deliberate
+// hiding of subject for Order Entry. Each task kind now manages subject
+// visibility correctly on its own. Subject input sizing (38px, 15px)
+// relocated to Task-Action Buttons.js.
 
 frappe.ui.form.on('Task', {
     refresh: function(frm) {

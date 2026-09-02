@@ -1,7 +1,12 @@
 ﻿// Name: Task-Delivery UI Fix
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
+// DISABLED — Header unification (Option B). Delivery-specific header CSS
+// (button wrapping) is redundant: custom-actions are hidden on mobile by
+// Task-Accept Start, and the sub-header bar handles navigation.
+// Field visibility (custom_next_task_assign_to) already covered by
+// Task-Accept Start line 117.
 
 frappe.ui.form.on("Task", {
     refresh(frm) {

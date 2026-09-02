@@ -36,7 +36,7 @@ Do **not** start Doc 16A until these are done:
   - Client-location leaf warehouses under `Clients - Inmed`
 - **Doc 06A** — Item tracking configured (serial / batch / expiry, FEFO warning)
 - **Doc 10A** — Task system exists (`task_kind` field, `Task Access Policy`, single-owner enforcement)
-- **Doc 11A** — `Collection Set` templates exist (used as item templates for Dispatch Case)
+- **Doc 11A** — `Surgical Kit Template` exists (used as item templates for Dispatch Case; replaces the original `Collection Set` which was removed)
 
 You need access to:
 - `System Manager` role
@@ -345,7 +345,7 @@ Add a **Section Break** with label `Record Payment`, then:
 | `client_location_warehouse` | Client Location Warehouse | Link → `Warehouse` | Req |
 | `return_expected` | Return Expected | Check | Default 0 |
 | `surgery_date` | Surgery / Delivery Date | Date | Optional |
-| `surgery_set_type` | Item Template | Link → `Collection Set` | Optional |
+| `custom_select_surgical_kit_template` | Item Template | Link → `Surgical Kit Template` | Optional |
 | `status` | Status | Select | See options below — Read Only (set by scripts) |
 | `notes` | Notes | Small Text | Optional |
 
@@ -428,24 +428,26 @@ Closed
 3) Save.
 4) Create a **Client Script** on `Dispatch Case` (Form):
 
+The deployed client script is `Dispatch Case-Template Auto Fill.js`. It triggers on the `custom_select_surgical_kit_template` field change (not a button):
+
 ```javascript
 frappe.ui.form.on('Dispatch Case', {
-    load_from_template_btn: function(frm) {
-        if (!frm.doc.surgery_set_type) {
-            frappe.msgprint('Please select an Item Template first.');
-            return;
-        }
+    custom_select_surgical_kit_template: function(frm) {
+        if (!frm.doc.custom_select_surgical_kit_template) return;
         frappe.call({
             method: 'frappe.client.get',
-            args: { doctype: 'Collection Set', name: frm.doc.surgery_set_type },
+            args: {
+                doctype: 'Surgical Kit Template',
+                name: frm.doc.custom_select_surgical_kit_template
+            },
             callback: function(r) {
                 if (!r.message) return;
                 frm.clear_table('case_items');
-                (r.message.items || []).forEach(function(row) {
+                (r.message.template_items || []).forEach(function(row) {
                     let new_row = frm.add_child('case_items');
-                    new_row.item_code = row.item;
+                    new_row.item_code = row.item_code;
+                    new_row.item_name = row.item_name;
                     new_row.dispatched_qty = row.qty || 1;
-                    new_row.unit_price = row.rate || 0;
                 });
                 frm.refresh_field('case_items');
             }
@@ -454,7 +456,7 @@ frappe.ui.form.on('Dispatch Case', {
 });
 ```
 
-Note: Adjust `r.message.items`, `row.item`, `row.qty`, and `row.rate` field names to match the actual `Collection Set` child table field names from Doc 11A.
+Note: `frm.clear_table('case_items')` means selecting a template **replaces all existing items** without a confirmation dialog. The child table field names are `template_items` (parent), `item_code`, `item_name`, `qty` (child).
 
 ---
 
@@ -1446,7 +1448,7 @@ Work through this checklist in order after completing all setup steps.
 
 2. **Account names in payment scripts** — The `_get_account_for_method()` helper uses `Cash - Inmed` and `Bank - Inmed`. Verify these match your actual ERPNext account names.
 
-3. **Collection Set child table field names** — The `Load from Template` client script uses `items`, `item`, `qty`, `rate`. Confirm these match the actual field names in `Collection Set` from Doc 11A.
+3. **Surgical Kit Template child table field names** — The `Dispatch Case-Template Auto Fill` client script uses `template_items`, `item_code`, `item_name`, `qty`. These match the deployed `Surgical Kit Template` DocType. (The original `Collection Set` has been removed.)
 
 4. **Stock Entry valuation** — The SE helper does not set `valuation_rate`. ERPNext will use the item's configured rate (FIFO/FEFO moving average). This is correct; do not set manual rates.
 

@@ -5,8 +5,106 @@
 // Unified button script for Task forms.
 // Owns: Accept, Create DC, Open DC, Complete (desktop header + mobile bottom floating).
 // Mobile sub-header bar: Back, Refresh, Open DC, Products.
+// Also owns: generic mobile CSS (tabs, grids, padding, subject sizing) and scroll-to-top.
 // Replaces buttons previously in Task-Accept Start, Task-Create Dispatch Case Items,
 // Task-Dispatch Packing Usability.
+// Generic mobile CSS relocated from Task-Mobile Form Layout Fix (header unification).
+
+// ── cleanup orphaned CSS/classes from disabled scripts ────────
+function tab_cleanup_disabled_scripts() {
+    // Remove CSS elements injected by now-disabled scripts.
+    // These persist in the DOM across navigation even after the script is disabled.
+    var orphans = [
+        "task-mobile-form-layout-fix-style",   // Task-Mobile Form Layout Fix
+        "task-delivery-ui-fix-css",            // Task-Delivery UI Fix
+        "task-subject-field-visibility-fix",   // Task-Header Long Subject Fix
+        "task-header-long-subject-fix"         // old dead CSS from Header Long Subject Fix
+    ];
+    orphans.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+            el.remove();
+            console.log("[TaskButtons] Removed orphaned style #" + id);
+        }
+    });
+    // Remove orphaned body classes
+    var bodyClasses = ["task-mobile-pack-clean", "task-delivery-ui-active"];
+    bodyClasses.forEach(function(cls) {
+        if (document.body.classList.contains(cls)) {
+            document.body.classList.remove(cls);
+            console.log("[TaskButtons] Removed orphaned body class: " + cls);
+        }
+    });
+    // Remove orphaned DOM elements (summary card, old mobile back buttons on Task forms)
+    $(".task-mobile-pack-summary").remove();
+}
+
+// ── generic mobile CSS (injected once) ────────────────────────
+function tab_inject_mobile_css() {
+    if (window.innerWidth > 768) return;
+    if (document.getElementById("task-mobile-layout-css")) return;
+    var style = document.createElement("style");
+    style.id = "task-mobile-layout-css";
+    style.textContent = "@media (max-width: 768px) {" +
+        // Horizontal tab scrolling — prevents tab bar wrapping on narrow screens
+        "body[data-route^='Form/Task'] .form-tabs-list," +
+        "body[data-route^='Form/Task'] .form-tabs {" +
+            "overflow-x: auto !important;" +
+            "overflow-y: hidden !important;" +
+            "flex-wrap: nowrap !important;" +
+            "white-space: nowrap !important;" +
+        "}" +
+        // Bottom padding so floating action buttons don't cover form content
+        "body[data-route^='Form/Task'] .form-page {" +
+            "padding-bottom: 92px !important;" +
+        "}" +
+        // Subject input sizing for touch (does not affect visibility)
+        "body[data-route^='Form/Task'] [data-fieldname='subject'] input," +
+        "body[data-route^='Form/Task'] [data-fieldname='subject'] textarea {" +
+            "min-height: 38px !important;" +
+            "font-size: 15px !important;" +
+        "}" +
+        // Grid horizontal scrolling
+        "body[data-route^='Form/Task'] .grid-body," +
+        "body[data-route^='Form/Task'] .form-grid {" +
+            "overflow-x: auto !important;" +
+            "-webkit-overflow-scrolling: touch !important;" +
+        "}" +
+        // Minimum row width prevents column squishing
+        "body[data-route^='Form/Task'] .grid-row," +
+        "body[data-route^='Form/Task'] .grid-heading-row {" +
+            "min-width: 330px !important;" +
+        "}" +
+        // Readable grid cells on mobile
+        "body[data-route^='Form/Task'] .grid-static-col {" +
+            "min-height: 54px !important;" +
+            "padding: 8px 7px !important;" +
+            "white-space: normal !important;" +
+            "overflow-wrap: anywhere !important;" +
+            "line-height: 1.25 !important;" +
+        "}" +
+        // Bigger checkboxes for touch targets
+        "body[data-route^='Form/Task'] .grid-static-col input[type='checkbox']," +
+        "body[data-route^='Form/Task'] .grid-static-col .checkbox input {" +
+            "width: 22px !important;" +
+            "height: 22px !important;" +
+            "min-width: 22px !important;" +
+            "min-height: 22px !important;" +
+        "}" +
+    "}";
+    document.head.appendChild(style);
+}
+
+// ── scroll to top on new task (relocated from Task-Mobile Form Layout Fix) ──
+function tab_mobile_scroll_to_top(frm) {
+    if (!frm || !frm.doc || window.innerWidth > 768) return;
+    if (frm._task_mobile_last_scroll_doc === frm.doc.name) return;
+    frm._task_mobile_last_scroll_doc = frm.doc.name;
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    $(".main-section, .layout-main-section, .layout-main-section-wrapper, .form-page").scrollTop(0);
+}
 
 // ── constants ──────────────────────────────────────────────────
 var TAB_DISPATCH_KINDS = [
@@ -289,12 +387,62 @@ function tab_render_desktop_buttons(frm) {
     }
 }
 
+// ── debug logging ─────────────────────────────────────────────
+function tab_debug_header(frm) {
+    var isMobile = window.innerWidth <= 768;
+    var pageHead = $(frm.page.wrapper).find(".page-head");
+    var titleArea = pageHead.find(".title-area");
+    var titleText = pageHead.find(".title-text");
+    var customActions = pageHead.find(".custom-actions");
+    var pageActions = pageHead.find(".page-actions");
+
+    console.log("[TaskButtons] ─── Header Debug ───");
+    console.log("[TaskButtons] Task:", frm.doc.name, "| Kind:", frm.doc.task_kind, "| Status:", frm.doc.status);
+    console.log("[TaskButtons] Mobile:", isMobile, "| Accepted:", !!frm.doc.custom_accepted_by, "| DC:", frm.doc.dispatch_case || "none");
+    console.log("[TaskButtons] .title-area visible:", titleArea.is(":visible"), "| display:", titleArea.css("display"));
+    console.log("[TaskButtons] .title-text content:", (titleText.text() || "").substring(0, 60));
+    console.log("[TaskButtons] .custom-actions visible:", customActions.is(":visible"), "| display:", customActions.css("display"));
+    console.log("[TaskButtons] .page-actions display:", pageActions.css("display"), "| flex-wrap:", pageActions.css("flex-wrap"));
+
+    // Check for orphaned styles that should have been cleaned up
+    var orphanIds = ["task-delivery-ui-fix-css", "task-mobile-form-layout-fix-style", "task-subject-field-visibility-fix"];
+    var foundOrphans = orphanIds.filter(function(id) { return !!document.getElementById(id); });
+    if (foundOrphans.length) {
+        console.warn("[TaskButtons] ORPHANED STYLES STILL PRESENT:", foundOrphans.join(", "));
+    } else {
+        console.log("[TaskButtons] No orphaned styles (clean)");
+    }
+
+    // Check body classes
+    var bodyClasses = ["task-mobile-pack-clean", "task-delivery-ui-active"];
+    var activeClasses = bodyClasses.filter(function(cls) { return document.body.classList.contains(cls); });
+    if (activeClasses.length) {
+        console.warn("[TaskButtons] ORPHANED BODY CLASSES:", activeClasses.join(", "));
+    }
+
+    // Log all <style> elements with IDs for audit
+    var styles = document.querySelectorAll("style[id]");
+    var styleIds = [];
+    styles.forEach(function(s) { styleIds.push(s.id); });
+    console.log("[TaskButtons] Active <style> IDs:", styleIds.join(", ") || "none");
+
+    // Log page-head computed dimensions
+    if (pageHead.length) {
+        console.log("[TaskButtons] .page-head height:", pageHead[0].offsetHeight + "px", "| overflow:", pageHead.css("overflow"));
+    }
+    console.log("[TaskButtons] ─── End Debug ───");
+}
+
 // ── main event handler ─────────────────────────────────────────
 frappe.ui.form.on("Task", {
     refresh(frm) {
+        tab_cleanup_disabled_scripts();
+        tab_inject_mobile_css();
+        tab_mobile_scroll_to_top(frm);
         tab_dashboard_comments(frm);
         tab_render_subheader(frm);
         tab_render_bottom_actions(frm);
         tab_render_desktop_buttons(frm);
+        tab_debug_header(frm);
     }
 });

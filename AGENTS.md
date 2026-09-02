@@ -1,5 +1,17 @@
 # Project Rules
 
+## Mandatory: No Changes Without Approval
+
+**NEVER implement or edit any code until the user explicitly approves.** When the user shares a crash log, error, or bug report:
+
+1. Investigate the issue thoroughly.
+2. Propose a solution with clear explanation.
+3. **STOP and wait for the user's explicit approval before making any changes.**
+
+This applies to ALL changes — client scripts, server scripts, deploy scripts, configuration. No exceptions. Investigate and propose first, implement only after approval.
+
+---
+
 ## Frappe Server Scripts — RestrictedPython Constraints
 
 Frappe Server Scripts run under RestrictedPython (`safe_exec`). The following constraints MUST be followed. Violations cause runtime `NameError`, `SyntaxError`, or `ImportError` with no compile-time warning.
