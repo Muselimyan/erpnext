@@ -21,6 +21,8 @@
 | `new-customer-onboarding.md` | 🟡 Customer master data loaded and debt thresholds set; new customer + warehouse creation still needs role smoke test |
 | `new-supplier-setup.md` | 🟡 Supplier setup manual written; supplier creation/access still needs role smoke test |
 | `supplier-prepayment-allocation.md` | 🟡 Manual written; supplier prepayment allocation still needs smoke test |
+| `customer-advance-payment.md` | 🟡 Manual written; customer advance Payment Received flow still needs smoke test |
+| `tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply controls still need smoke test |
 | `stock-adjustment-writeoff.md` | 🟡 Manual written; write-off/stock correction governance still needs smoke test |
 | `cancellation-and-corrections.md` | 🟡 Manual written; correction/cancellation path still needs controlled smoke test |
 | `surgery-set-type-setup.md` | 🟡 Manual written; setup path still needs smoke test if used |
@@ -60,6 +62,8 @@ Use these only when the matching situation happens:
 
 - `discount-approval-walkthrough.md` — only when testing discounted Dispatch Cases.
 - `supplier-prepayment-allocation.md` — only when testing advance supplier payments.
+- `customer-advance-payment.md` — only when testing customer advances before invoice/payment collection.
+- `tender-agreement-management.md` — only when testing hospital tender setup, tender-priced invoice submission, duplicate active tender controls, or over-supply controls.
 - `stock-adjustment-writeoff.md` — only when testing stock count corrections, expired goods, or damaged goods.
 - `cancellation-and-corrections.md` — only when testing mistakes and corrections.
 - `daily-reporting-checks.md` — use after test transactions exist, to confirm reports, `Management - KPI Dashboard`, and `Dispatch - Task Queues`.
@@ -186,7 +190,25 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 10 — Stock adjustment and write-off
+### 10 — Customer advance payment
+**File:** `customer-advance-payment.md`
+**Status:** ✅ Written
+**Who:** `Ops - Finance`
+**Frequency:** When a customer pays before a Sales Invoice exists
+**What it covers:** Creating/completing a `Payment Received` task for customer advances, linking the advance to a Dispatch Case when applicable, confirming the Dispatch Case `advance_payments` audit trail, accumulated `prepaid_amount`, latest `prepaid_payment_entry`, and Debt Collection `available_advance_credit` behavior.
+
+---
+
+### 11 — Tender agreement management
+**File:** `tender-agreement-management.md`
+**Status:** ✅ Written
+**Who:** `Ops - Accounting`, `Ops - Directors`
+**Frequency:** When creating/updating hospital tenders or testing tender-priced invoices
+**What it covers:** Creating Tender Agreements, enforcing one active tender per hospital/item, handling duplicate active tender errors, handling over-supply stop messages, and confirming tender fulfillment quantities update transactionally when Sales Invoices are submitted.
+
+---
+
+### 12 — Stock adjustment and write-off
 **File:** `stock-adjustment-writeoff.md`
 **Status:** ✅ Written
 **Who:** `Ops - Inventory`, `Ops - Directors` (for approval of write-offs)
@@ -195,7 +217,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 11 — Cancellation and correction procedures
+### 13 — Cancellation and correction procedures
 **File:** `cancellation-and-corrections.md`
 **Status:** ✅ Written
 **Who:** All operational roles
@@ -204,7 +226,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 12 — Daily reporting checks (stock, outstanding, tasks)
+### 14 — Daily reporting checks (stock, outstanding, tasks)
 **File:** `daily-reporting-checks.md`
 **Status:** ✅ Written
 **Who:** Directors, `Ops - Accounting`, `Ops - Finance`, `Ops - Purchasing`
@@ -213,7 +235,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 13 — Delivery driver guide
+### 15 — Delivery driver guide
 **File:** `delivery-driver-guide.md`
 **Status:** ✅ Written
 **Who:** `Delivery Driver`
@@ -222,7 +244,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 14 — Collection Set setup and maintenance
+### 16 — Collection Set setup and maintenance
 **File:** `collection-set-setup.md`
 **Status:** ✅ Written
 **Who:** `Ops - Inventory`, `Ops - Order Creating`
@@ -231,7 +253,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 15 — New supplier setup
+### 17 — New supplier setup
 **File:** `new-supplier-setup.md`
 **Status:** ✅ Written
 **Who:** `Ops - Purchasing`, `Ops - Accounting`

@@ -19,10 +19,20 @@ else:
         method = doc.payment_method_dc or "Cash"
         ref = doc.payment_reference_dc or ""
         remaining = amount
-        for row in sorted(doc.open_invoices, key=lambda r: r.sales_invoice):
+        invoice_dates = {}
+        for row in doc.open_invoices:
+            row.allocated_now = 0
+            if (row.outstanding_amount or 0) > 0 and not row.sales_invoice:
+                frappe.throw(f"Debt Collection row {row.idx} has outstanding amount but no Sales Invoice. Fix the Open Invoices table before recording payment.")
+            if row.sales_invoice:
+                invoice_dates[row.sales_invoice] = frappe.db.get_value("Sales Invoice", row.sales_invoice, "posting_date") or frappe.db.get_value("Sales Invoice", row.sales_invoice, "creation") or ""
+        allocations = []
+        for row in sorted(doc.open_invoices, key=lambda r: (str(invoice_dates.get(r.sales_invoice) or ""), r.sales_invoice or "")):
             to_apply = min(remaining, row.outstanding_amount or 0)
-            row.allocated_now = to_apply
-            remaining -= to_apply
+            if to_apply > 0:
+                row.allocated_now = to_apply
+                allocations.append({"sales_invoice": row.sales_invoice, "allocated_amount": to_apply})
+                remaining -= to_apply
             if remaining <= 0:
                 break
         for row in doc.open_invoices:
@@ -51,12 +61,12 @@ else:
             "company": "InMED",
             "paid_to": "Cash - Inmed",
         })
-        for row in doc.open_invoices:
-            if (row.allocated_now or 0) > 0:
+        for allocation in allocations:
+            if allocation.get("sales_invoice") and (allocation.get("allocated_amount") or 0) > 0:
                 pe.append("references", {
                     "reference_doctype": "Sales Invoice",
-                    "reference_name": row.sales_invoice,
-                    "allocated_amount": row.allocated_now,
+                    "reference_name": allocation.get("sales_invoice"),
+                    "allocated_amount": allocation.get("allocated_amount"),
                 })
         pe.flags.ignore_permissions = True
         pe.insert()

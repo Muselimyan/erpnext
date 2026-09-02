@@ -29,7 +29,19 @@ else:
     pe.flags.ignore_permissions = True
     pe.insert()
     if doc.dispatch_case:
-        frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"prepaid_amount": doc.new_payment_amount, "prepaid_payment_entry": pe.name})
+        case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+        case.append("advance_payments", {
+            "payment_date": frappe.utils.now_datetime(),
+            "amount": doc.new_payment_amount,
+            "method": doc.payment_method_dc or "Cash",
+            "reference": doc.payment_reference_dc or "",
+            "payment_entry": pe.name,
+            "source_task": doc.name,
+        })
+        case.prepaid_amount = sum((row.amount or 0) for row in case.advance_payments)
+        case.prepaid_payment_entry = pe.name
+        case.flags.ignore_permissions = True
+        case.save()
     existing_dc = frappe.db.get_value("Task", {"customer": doc.customer, "task_kind": "Debt Collection", "status": ["not in", ["Completed", "Cancelled"]]}, "name")
     if existing_dc:
         current_credit = frappe.db.get_value("Task", existing_dc, "available_advance_credit") or 0

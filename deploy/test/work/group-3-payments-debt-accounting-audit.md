@@ -30,19 +30,19 @@ Group 3 covers 8 server scripts (7 enabled, 1 disabled), 1 client script, 2 cust
 
 | # | Finding | Severity | Confidence |
 |---|---------|----------|------------|
-| B-01 | Payment Entry created without invoice references — accounting ledger never reconciles against specific invoices | **CRITICAL** | High (code-proven) |
-| B-02 | `Distribute Payment` script is DISABLED — the documented physical-payment control step does not exist in production | **HIGH** | High (schema-proven) |
-| B-03 | Advance payment `prepaid_amount` overwrites instead of accumulating on Dispatch Case | **HIGH** | High (code-proven) |
-| B-04 | Tender Agreement `supplied_quantity` deducted from ALL matching tenders for same customer — double-counting | **HIGH** | High (code-proven) |
+| B-01 | Payment Entry created without invoice references — **LOCALLY CORRECTED** in extracted script: allocations are preserved and written as Sales Invoice references on the Payment Entry | **CRITICAL — fixed locally, pending deployment/testing** | High (code-proven) |
+| B-02 | `Distribute Payment` script is DISABLED — **INTENTIONALLY OUT OF ACTIVE FLOW**; do not enable unless business flow is changed later | **Not active / deferred** | High (schema-proven, user decision) |
+| B-03 | Advance payment `prepaid_amount` overwrites instead of accumulating on Dispatch Case — **LOCALLY CORRECTED** with Dispatch Case advance-payment child-table audit trail and recalculated prepaid total | **HIGH — fixed locally, pending deployment/testing** | High (code-proven) |
+| B-04 | Tender Agreement `supplied_quantity` deducted from ALL matching tenders for same customer — **LOCALLY CORRECTED**: one active tender per hospital/item is enforced and over-supply stops invoice submit with review message | **HIGH — fixed locally, pending deployment/testing** | High (code-proven) |
 | B-05 | Tender quantities are never reversed on invoice cancellation | **HIGH** | High (code-proven, no cancellation handler exists) |
 | B-06 | Tender `Closed` status is overridden by auto-status logic on save | **MEDIUM** | High (code-proven) |
 | B-07 | Debt Closure profit calculation only considers one invoice, not all invoices on the task | **MEDIUM** | High (code-proven) |
 | B-08 | Two independent debt task creation paths (scheduler vs dispatch flow) with different assignees and different data | **MEDIUM** | High (code-proven) |
 | B-09 | Hardcoded user emails in debt closure approval — maintenance risk | **LOW** | High (code-proven) |
 | B-10 | Financial field visibility is client-side only — no server-side enforcement | **MEDIUM** | High (code-proven) |
-| B-11 | FIFO payment allocation sorts by invoice name, not invoice date | **LOW** | High (code-proven) |
+| B-11 | FIFO payment allocation sorted by invoice name, not invoice date — **LOCALLY CORRECTED** to sort by Sales Invoice posting date with invoice name tie-breaker | **LOW — fixed locally, pending deployment/testing** | High (code-proven) |
 | B-12 | `paid_to` account hardcoded as "Cash - Inmed" regardless of payment method | **MEDIUM** | High (code-proven) |
-| B-13 | `frappe.db.commit()` inside loop in tender update script breaks transaction boundary | **MEDIUM** | High (code-proven) |
+| B-13 | `frappe.db.commit()` inside loop in tender update script breaks transaction boundary — **LOCALLY CORRECTED** by removing manual commits and leaving tender updates inside Sales Invoice submit transaction | **MEDIUM — fixed locally, pending deployment/testing** | High (code-proven) |
 
 ### Documentation Gaps
 
@@ -50,10 +50,19 @@ Group 3 covers 8 server scripts (7 enabled, 1 disabled), 1 client script, 2 cust
 |---|-----|------------|
 | D-01 | Debt Closure Approval task kind not documented in any numbered doc | High |
 | D-02 | Scheduled debt collection (GL-based) not documented — only dispatch-flow debt task is described | High |
-| D-03 | Tender Agreement system has no numbered document (only deployment summary) | High |
-| D-04 | Manual says Distribute Payment tasks are created — they are not (script disabled) | High |
+| D-03 | Tender Agreement system had no operational manual — **LOCALLY CORRECTED** with linked `docs/manual/tender-agreement-management.md` | High |
+| D-04 | Manual/docs still mention Distribute Payment as active, but B-02 is intentionally disabled/out of active flow | High |
 | D-05 | Manual says Payment Entries are auto-submitted — advance payment script does NOT submit | Medium |
 | D-06 | Cancellation manual says "Debt Collection task outstanding balance will increase back" — no script implements this | High |
+
+### Local Correction Progress
+
+| Date | Items | Local change | Deployment status |
+|---|---|---|---|
+| 2026-08-28 | B-01, B-11 | `Task-before-save-payment-recording.py` now requires every payable Open Invoices row to have a linked Sales Invoice, allocates payments by Sales Invoice posting date, preserves allocation amounts before clearing `allocated_now`, and writes those allocations as Sales Invoice references on the generated Payment Entry. Doc 16 and the debt collection manual were updated to describe this exact behavior. | Local only — not deployed; requires later test/prod deployment and accounting verification |
+| 2026-09-02 | B-02 | Marked `Distribute Payment` as intentionally disabled/out of active flow. No code change; do not enable unless the business flow is explicitly changed later. | Decision recorded only |
+| 2026-09-02 | B-03 | `Task-after-save-advance-payment.py` now appends each linked-case advance to a Dispatch Case `advance_payments` child table, recalculates `prepaid_amount` from all child rows, and keeps `prepaid_payment_entry` as latest-entry quick reference. Added TEST deployment script to create the child table/custom field and update the server script later. Doc 16 and the customer advance payment manual updated to describe the audit trail and accumulated total. | Local only — not deployed; requires later test/prod deployment and accounting verification |
+| 2026-09-02 | B-04, B-13 | `Sales-Invoice-after-submit-tender-update.py` now updates at most one active tender row per hospital/item, stops submit when duplicate active tender rows exist, stops submit on over-supply for Accounting/Director review, and removes manual `frappe.db.commit()`. Added TEST deployment script and tender management manual. | Local only — not deployed; requires later test/prod deployment and tender smoke testing; over-supply policy should be reviewed with colleague |
 
 ---
 
@@ -110,9 +119,9 @@ Group 3 covers 8 server scripts (7 enabled, 1 disabled), 1 client script, 2 cust
 | # | Schema Name | Script Type | DocType | Event | Enabled | Lines | Purpose |
 |---|-------------|-------------|---------|-------|---------|-------|---------|
 | S1 | Scheduled-debt-collection | Scheduler Event | — | — | **Yes** | 123 | GL-based debt threshold check; creates/updates Debt Collection tasks for directors |
-| S2 | Task-before-save-payment-recording | DocType Event | Task | Before Save | **Yes** | 70 | Records payment on Debt Collection task; creates Payment Entry; FIFO allocation |
+| S2 | Task-before-save-payment-recording | DocType Event | Task | Before Save | **Yes** | 80 | Records payment on Debt Collection task; requires linked invoices for payable rows; creates Payment Entry with Sales Invoice references; FIFO allocation by invoice posting date |
 | S3 | Task-after-save-debt-closure | DocType Event | Task | After Save | **Yes** | 101 | Creates Debt Closure Approval task; calculates case profit on closure approval |
-| S4 | Task-after-save-advance-payment | DocType Event | Task | After Save | **Yes** | 36 | Creates advance Payment Entry on Payment Received task completion |
+| S4 | Task-after-save-advance-payment | DocType Event | Task | After Save | **Yes** | 48 | Creates advance Payment Entry on Payment Received task completion; records linked-case advances in child-table audit trail and recalculates prepaid total |
 | S5 | Payment Entry-after-submit-distribute-payment | DocType Event | Payment Entry | After Submit | **No** | 83 | Would create Distribute Payment tasks (DISABLED) |
 | S6 | Sales-Invoice-after-submit-tender-update | DocType Event | Sales Invoice | After Submit | **Yes** | 25 | Updates Tender Agreement supplied/remaining quantities |
 | S7 | Tender-Agreement-before-save | DocType Event | Tender Agreement | Before Save | **Yes** | 22 | Recalculates remaining qty; auto-sets status by date range |
@@ -207,7 +216,7 @@ Uses `ignore_permissions=True` for task creation and ToDo management. Appropriat
 ### S2 — Task-before-save-payment-recording.py
 
 **Schema name:** `Task-before-save-payment-recording`
-**Type:** DocType Event — Before Save | **Enabled:** Yes | **Lines:** 70
+**Type:** DocType Event — Before Save | **Enabled:** Yes | **Lines:** 80
 
 #### Behavior Summary
 
@@ -215,61 +224,43 @@ Uses `ignore_permissions=True` for task creation and ToDo management. Appropriat
 2. Only acts when `new_payment_amount > 0`.
 3. **Idempotency guard:** Compares current `new_payment_amount` with previous save value. Only fires on change.
 4. Takes payment amount, method (default "Cash"), reference.
-5. **FIFO allocation:** Sorts `open_invoices` by `sales_invoice` (alphabetical by name). Allocates payment to rows in order until amount is exhausted.
-6. Updates each row: increments `paid_amount`, decrements `outstanding_amount`, **zeroes `allocated_now`**.
-7. Recalculates `total_outstanding`.
-8. Appends to `payment_history` child table.
-9. Creates a Payment Entry (type: Receive, party: Customer).
-10. **Attempts** to add invoice references to the PE — but this always fails (see B-01 below).
-11. Submits the PE immediately.
-12. Links PE name to the payment_history row.
-13. Resets input fields.
-14. If `total_outstanding <= 0`, auto-sets `doc.status = "Completed"`.
+5. Validates that every payable `open_invoices` row has a linked Sales Invoice before allocation can proceed.
+6. **FIFO allocation:** Sorts `open_invoices` by the linked Sales Invoice posting date, with invoice name as a tie-breaker. Allocates payment to rows in order until amount is exhausted.
+7. Stores the exact Sales Invoice allocation amounts before clearing the temporary `allocated_now` field.
+8. Updates each row: increments `paid_amount`, decrements `outstanding_amount`, **zeroes `allocated_now`**.
+9. Recalculates `total_outstanding`.
+10. Appends to `payment_history` child table.
+11. Creates a Payment Entry (type: Receive, party: Customer).
+12. Adds Sales Invoice reference rows to the PE using the preserved allocation amounts.
+13. Submits the PE immediately.
+14. Links PE name to the payment_history row.
+15. Resets input fields.
+16. If `total_outstanding <= 0`, auto-sets `doc.status = "Completed"`.
 
-#### **BUG B-01: Payment Entry created WITHOUT invoice references** (CRITICAL)
+#### **BUG B-01: Payment Entry created WITHOUT invoice references** (CRITICAL — LOCALLY CORRECTED)
 
-The script has a logical ordering error:
+**Original issue:** the script had a logical ordering error: it zeroed `allocated_now` after applying the payment to the Debt Collection task rows, then later tried to use `allocated_now` to build Payment Entry invoice references. Because `allocated_now` was already 0, the Payment Entry was created without Sales Invoice reference rows and ERPNext treated the receipt as unallocated customer credit.
 
-**Lines 28–33** — Zero out `allocated_now` after applying to paid/outstanding:
-```python
-for row in doc.open_invoices:
-    apply = row.allocated_now or 0
-    if apply > 0:
-        row.paid_amount = (row.paid_amount or 0) + apply
-        row.outstanding_amount = (row.outstanding_amount or 0) - apply
-        row.allocated_now = 0          # <-- ZEROED HERE
-```
+**Impact before local correction:**
+- ERPNext's GL entries showed the payment as unallocated — Sales Invoices could remain "Unpaid" in the accounting ledger even though the Debt Collection task showed them as paid.
+- Accounts Receivable reports could show invoices as outstanding after payment.
+- The task's internal tracking (`open_invoices`) could diverge from ERPNext's accounting allocation.
+- Financial reports depending on invoice allocation could become unreliable.
 
-**Lines 54–60** — Try to use `allocated_now` to build PE references:
-```python
-for row in doc.open_invoices:
-    if (row.allocated_now or 0) > 0:   # <-- ALWAYS FALSE
-        pe.append("references", {...})
-```
+**Local correction applied:** `Task-before-save-payment-recording.py` now blocks payment recording if any payable Open Invoices row has no linked Sales Invoice, stores the exact Sales Invoice allocation amounts in an `allocations` list before clearing `allocated_now`, then uses that preserved list to append Payment Entry `references` rows. The same local correction also addresses B-11 by sorting FIFO allocation by Sales Invoice posting date with invoice name as a tie-breaker.
 
-Because `allocated_now` was already set to 0 in the first loop, the second loop **never adds any invoice references** to the Payment Entry. Every PE is created as an **unallocated customer advance** regardless of intent.
-
-**Impact:**
-- ERPNext's GL entries show the payment as unallocated — Sales Invoices remain "Unpaid" in the accounting ledger even though the Debt Collection task shows them as paid.
-- Accounts Receivable report shows invoices as outstanding even after payment.
-- The task's internal tracking (open_invoices table) diverges from ERPNext's accounting reality.
-- Financial reports become unreliable.
-- If Standard Buying prices are populated and real transactions begin, this creates a growing accounting discrepancy.
-
-**Confidence:** High — directly proven by code logic. The bug is unambiguous.
-
-**Fix:** Either (a) save the allocation amounts before zeroing, or (b) build the PE references in the first loop before zeroing allocated_now.
+**Status:** Fixed in local extracted script and current documentation. Pending deployment and live/test accounting verification.
 
 #### Other Findings
 
 | ID | Finding | Classification | Confidence |
 |----|---------|---------------|------------|
-| S2-F01 | **B-01** (above) — PE has no invoice references | **CRITICAL BUG** | High |
-| S2-F02 | **FIFO sorts by `sales_invoice` name (alphabetical), not by invoice date.** Requirements §6.6.2 says "oldest invoices first." ERPNext invoice naming is typically chronological (e.g., `ACC-SINV-2026-00001`), so alphabetical sort on name *likely* matches chronological order. But this is not guaranteed if naming patterns change. | Minor risk — likely functionally correct | Medium |
+| S2-F01 | **B-01** (above) — PE previously had no invoice references; locally corrected to require linked Sales Invoices for payable rows, preserve allocations, and append Sales Invoice references to the Payment Entry. | **FIXED LOCALLY — pending deployment/testing** | High |
+| S2-F02 | **B-11** — FIFO previously sorted by `sales_invoice` name. Locally corrected to sort by linked Sales Invoice posting date, with invoice name as a tie-breaker. | **FIXED LOCALLY — pending deployment/testing** | High |
 | S2-F03 | **PE auto-submitted** (line 63: `pe.submit()`). Doc 16 §8 says "The Accounting team submits these auto-created Payment Entries." The script bypasses this review step. | Doc/prod difference — possibly intentional | High |
 | S2-F04 | **`paid_to` hardcoded as `"Cash - Inmed"`** regardless of payment method. If payment method is "Bank Transfer" or "Card", the paid_to should be the relevant bank/card account. This causes all customer receipts to post to the Cash account in the GL. | **BUG B-12** | High |
 | S2-F05 | **Company hardcoded as `"InMED"`.** Correct for this single-company deployment, but not portable. | Accepted deviation | High |
-| S2-F06 | **No Distribute Payment task created after payment.** The disabled script S5 would have created one. The manual describes this step. Without it, there is no tracking of physical payment handling. | **Gap — see B-02** | High |
+| S2-F06 | **No Distribute Payment task created after payment.** This matches the current decision: S5 remains disabled and Distribute Payment is out of active flow. | **B-02 — intentionally disabled/deferred** | High |
 | S2-F07 | **Auto-completion when outstanding reaches 0.** Matches Doc 16 §6.10 ("Task auto-completes"). Correct. | Matches documentation | High |
 
 ---
@@ -319,7 +310,7 @@ When a **Debt Closure Approval** task transitions to `Completed`:
 ### S4 — Task-after-save-advance-payment.py
 
 **Schema name:** `Task-after-save-advance-payment`
-**Type:** DocType Event — After Save | **Enabled:** Yes | **Lines:** 36
+**Type:** DocType Event — After Save | **Enabled:** Yes | **Lines:** 48
 
 #### Behavior Summary
 
@@ -327,7 +318,7 @@ When a **Debt Closure Approval** task transitions to `Completed`:
 2. Only acts when `new_payment_amount > 0`.
 3. Creates Payment Entry (Receive, Customer, no invoice references — correct for an advance).
 4. **Inserts but does NOT submit** the PE.
-5. If `dispatch_case` is linked, **overwrites** `prepaid_amount` and `prepaid_payment_entry` on the Dispatch Case.
+5. If `dispatch_case` is linked, appends the advance to the Dispatch Case `advance_payments` child table, recalculates `prepaid_amount` from all advance rows, and stores the latest PE in `prepaid_payment_entry` for quick reference.
 6. If an existing non-completed Debt Collection task exists for this customer, adds the payment amount to `available_advance_credit`.
 
 #### Findings
@@ -335,9 +326,9 @@ When a **Debt Closure Approval** task transitions to `Completed`:
 | ID | Finding | Classification | Confidence |
 |----|---------|---------------|------------|
 | S4-F01 | **PE not submitted** — only `pe.insert()`, no `pe.submit()`. Compare with S2 which auto-submits. Doc 16 §8 says Accounting submits auto-created PEs. This appears to be intentionally leaving the PE as draft for Accounting review. But it's inconsistent with S2. | Inconsistency — possibly intentional | High |
-| S4-F02 | **`prepaid_amount` OVERWRITES instead of accumulating** (line 32: `{"prepaid_amount": doc.new_payment_amount, ...}`). If a customer makes two partial advance payments for the same Dispatch Case, the second one replaces the first. Requirements §6.6.2 explicitly allow partial upfront payments. | **BUG B-03** | High |
-| S4-F03 | **`prepaid_payment_entry` also overwrites.** Same issue — only the last PE link is kept. Previous PE link is lost. | Related to B-03 | High |
-| S4-F04 | **`available_advance_credit` correctly accumulates** (line 35-36: `current_credit + doc.new_payment_amount`). Good. But this field is on the Debt Collection task. If no Debt Collection task exists yet, the credit is not tracked centrally — it's only on the draft PE and the DC's prepaid_amount. | Partial implementation | High |
+| S4-F02 | **LOCALLY CORRECTED:** `prepaid_amount` is recalculated from all Dispatch Case `advance_payments` child rows, so multiple partial advances accumulate correctly. | **B-03 fixed locally, pending deployment/testing** | High |
+| S4-F03 | **LOCALLY CORRECTED:** every linked-case advance now has its own child-row audit trail with amount, method, reference, Payment Entry, and source task. `prepaid_payment_entry` remains latest-entry quick reference only. | **B-03 fixed locally, pending deployment/testing** | High |
+| S4-F04 | **`available_advance_credit` correctly accumulates** (line 47-48: `current_credit + doc.new_payment_amount`). Good. But this field is on the Debt Collection task. If no Debt Collection task exists yet, the credit is tracked on the dispatch case only when a case is linked; unlinked advances remain only on the draft PE. | Partial implementation | High |
 | S4-F05 | **`paid_to` hardcoded as `"Cash - Inmed"`.** Same issue as S2-F04. | **BUG B-12** | High |
 | S4-F06 | **No guard against multiple completions.** The `is_completing` check prevents re-firing on subsequent saves of an already-Completed task. Correct. | Correct | High |
 
@@ -359,34 +350,37 @@ When a **Debt Closure Approval** task transitions to `Completed`:
 
 | ID | Finding | Classification | Confidence |
 |----|---------|---------------|------------|
-| S5-F01 | **DISABLED in production.** No Distribute Payment tasks are created. This contradicts multiple documentation sources. | **BUG B-02** | High |
-| S5-F02 | **Even if enabled, assigns to Directors.** Doc 16 §6.11 says "Default assignee: Finance Team." The script would assign to the wrong role. | Bug (latent — only relevant if script is re-enabled) | High |
-| S5-F03 | **Doc references describing this feature as active:** (1) Doc 16 §6.11 entire section. (2) Manual `debt-collection-and-payment.md` Steps 3 and 6. (3) Manual `daily-reporting-checks.md` Directors Check 4. (4) Quick reference flowchart in manual. All describe Distribute Payment as an active part of the flow. | **DOC GAP D-04** | High |
-| S5-F04 | **Requirements §6.6.2** states: "the internal Distribute Payment control step is created per payment receipt." This requirement is currently NOT met. | Requirements violation | High |
+| S5-F01 | **DISABLED in production.** No Distribute Payment tasks are created. This is now accepted as intentional: Distribute Payment is out of the active flow. | **B-02 — intentionally disabled/deferred** | High |
+| S5-F02 | **If ever re-enabled, assigns to Directors.** Doc 16 §6.11 says "Default assignee: Finance Team." This remains only a latent issue if the feature is reintroduced. | Deferred / latent | High |
+| S5-F03 | **Doc references describing this feature as active:** (1) Doc 16 §6.11 entire section. (2) Manual `debt-collection-and-payment.md` Steps 3 and 6. (3) Manual `daily-reporting-checks.md` Directors Check 4. (4) Quick reference flowchart in manual. All describe Distribute Payment as an active part of the flow. | **DOC GAP D-04 — stale docs** | High |
+| S5-F04 | **Requirements §6.6.2** states: "the internal Distribute Payment control step is created per payment receipt." Current business decision is not to include this step in the active flow. | Deferred requirement / not active | High |
 
 ---
 
 ### S6 — Sales-Invoice-after-submit-tender-update.py
 
 **Schema name:** `Sales-Invoice-after-submit-tender-update`
-**Type:** DocType Event — After Submit | **Enabled:** Yes | **Lines:** 25
+**Type:** DocType Event — After Submit | **Enabled:** Yes | **Lines:** 54
 
 #### Behavior Summary
 
 1. Only acts when `doc.docstatus == 1` (submitted).
-2. Gets active Tender Agreements where `hospital == doc.customer`.
-3. For each invoice item, iterates all matching tenders.
-4. If `tender_item.item_code == item_code`: increments `supplied_quantity`, recalculates `remaining_quantity`.
-5. Saves the tender and **calls `frappe.db.commit()` inside the loop**.
+2. Gets active Tender Agreements where `hospital == doc.customer`, ordered by `valid_to`, `valid_from`, then name.
+3. For each invoice item, finds active tender rows with the same `item_code`.
+4. If zero matches: no tender update for that item.
+5. If one match: checks remaining quantity, increments `supplied_quantity`, recalculates `remaining_quantity`, and saves the tender.
+6. If more than one match: stops invoice submit because only one active tender per hospital/item is allowed.
+7. If invoice quantity exceeds remaining tender quantity: stops invoice submit with an Accounting/Director review message.
+8. Does not call `frappe.db.commit()`; tender updates stay inside the Sales Invoice submit transaction.
 
 #### Findings
 
 | ID | Finding | Classification | Confidence |
 |----|---------|---------------|------------|
-| S6-F01 | **Multiple-tender double-counting.** If a customer has 2+ active tenders containing the same item, the script deducts the full invoice qty from EACH tender. Example: Customer has Tender A (item X, won=100) and Tender B (item X, won=50). Invoice has item X qty=10. After submission: Tender A supplied=10, Tender B supplied=10. Both tenders think they supplied 10 units, but only 10 were actually sold. | **BUG B-04** | High |
-| S6-F02 | **No cancellation handler.** If a Sales Invoice is cancelled, `supplied_quantity` is never decremented. Tender tracking becomes permanently inflated. The only fix would be manual editing of the Tender Agreement. | **BUG B-05** | High |
-| S6-F03 | **No over-supply warning.** Deployment summary says "System warns if quantity exceeds remaining tender quantity." The script does not implement any warning. `remaining_quantity` silently goes negative. | Doc/prod difference | High |
-| S6-F04 | **`frappe.db.commit()` inside loop** (line 25). This commits the transaction for each tender independently, breaking atomicity. If the script errors mid-way (e.g., on the 2nd tender of 3), the 1st tender is already committed but the 3rd is not. Also, this commits within the Sales Invoice's own transaction, which can cause data integrity issues if the invoice submission later fails for another reason. | **BUG B-13** | High |
+| S6-F01 | **LOCALLY CORRECTED:** Multiple-tender double-counting is prevented. If a hospital/item appears in more than one active tender, Sales Invoice submit stops with a clear duplicate-tender message. | **B-04 fixed locally, pending deployment/testing** | High |
+| S6-F02 | **No cancellation handler.** If a Sales Invoice is cancelled, `supplied_quantity` is never decremented. Tender tracking becomes permanently inflated. The only fix would be manual editing of the Tender Agreement until B-05 is fixed. | **BUG B-05** | High |
+| S6-F03 | **LOCALLY CORRECTED:** over-supply now stops Sales Invoice submit with a review message when invoice quantity exceeds remaining tender quantity. User decision: this should act as a blocking warning so Accounting/Directors can decide what to change. | **Control added; review with colleague** | High |
+| S6-F04 | **LOCALLY CORRECTED:** manual `frappe.db.commit()` was removed. Tender updates now stay inside the Sales Invoice submit transaction. | **B-13 fixed locally, pending deployment/testing** | High |
 | S6-F05 | **Customer matching assumes invoice customer IS the hospital.** Tender Agreement has `hospital` field linking to Customer. For doctor-clients who operate at a hospital, the invoice's `customer` is the doctor, not the hospital. The tender would not match. Whether this is a bug depends on business intent — if tenders are only for hospital-type customers, it's correct. | Needs business clarification | Medium |
 | S6-F06 | **`tender_price` field exists on Tender Agreement Item but is never used by this script.** The script only updates quantities. Tender pricing is not enforced at invoice submission — the invoice can have any rate. | Feature gap — per deployment summary, "Accountant can choose between tender price or standard price" | Medium |
 
@@ -537,7 +531,7 @@ On Dispatch Case form refresh, checks if user has any of: `Ops - Accounting`, `O
 │                                                                 │
 │  S4 fires (After Save, on completion):                         │
 │    → Creates PE (draft, NOT submitted)                         │
-│    → Sets DC prepaid_amount (OVERWRITES — BUG B-03)            │
+│    → Appends advance row and recalculates prepaid_amount       │
 │    → Adds to Debt Collection available_advance_credit           │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -564,9 +558,9 @@ On Dispatch Case form refresh, checks if user has any of: `Ops - Accounting`, `O
 │  Tender Agreement saved (S7)       │       │  Sales Invoice submitted (S6)│
 │  → Recalculate remaining_qty      │       │  → Find active tenders       │
 │  → Auto-set status by date        │       │  → Deduct supplied_qty       │
-│  → BUG: "Closed" overridden (B-06)│       │  → BUG: double-count (B-04) │
+│  → BUG: "Closed" overridden (B-06)│       │  → B-04 fixed locally       │
 └────────────────────────────────────┘       │  → BUG: no reversal (B-05)  │
-                                             │  → BUG: commit in loop(B-13)│
+                                             │  → B-13 fixed locally      │
                                              └──────────────────────────────┘
 ```
 
@@ -593,26 +587,26 @@ All three After Save scripts check `task_kind` first, so they don't interfere wh
 | 3 | Debt Collection task per customer | One active task per customer (Doc 16 §6.10) | Both scheduler and dispatch flow enforce one-per-customer | **Yes** | Match | High |
 | 4 | Debt Collection assignment | Finance Team (Doc 16 §6.10) | Scheduler → Directors; Dispatch flow → Finance Team | **Partial** | Two entry points, two assignees — B-08 | High |
 | 5 | Open invoices table on Debt task | Shows all outstanding invoices (Doc 16 §6.10) | Dispatch flow populates it; scheduler does NOT | **Partial** | Scheduler path leaves task without invoice detail | High |
-| 6 | FIFO payment allocation | Oldest invoices first (req §6.6.2, manual Step 2) | By invoice name alphabetically (likely chronological) | **Approximate** | B-11 — works if naming is chronological | Medium |
+| 6 | FIFO payment allocation | Oldest invoices first (req §6.6.2, manual Step 2) | **Locally corrected:** automatic FIFO now sorts by Sales Invoice posting date with invoice name as tie-breaker | **Yes — pending deployment/testing** | B-11 fixed locally | High |
 | 7 | FIFO override (manual allocation) | Finance can override (Doc 16 §6.10) | Not implemented — only automatic FIFO | **No** | Feature gap | High |
-| 8 | Payment Entry auto-created | Auto-created with specified allocation (Doc 16 §6.10, §8) | PE created but WITHOUT invoice references (B-01) | **No** | CRITICAL BUG | High |
+| 8 | Payment Entry auto-created | Auto-created with specified allocation (Doc 16 §6.10, §8) | **Locally corrected:** PE now receives Sales Invoice reference rows with preserved allocated amounts | **Yes — pending deployment/testing** | B-01 fixed locally | High |
 | 9 | PE submitted by Accounting | Accounting team submits (Doc 16 §8) | Debt Collection PE: auto-submitted. Advance PE: draft | **No** | Inconsistency | High |
-| 10 | Distribute Payment task | Created per payment (req §6.6.2, Doc 16 §6.11, manual Steps 3/6) | Script DISABLED — no tasks created | **No** | B-02 — requirements violation | High |
-| 11 | Distribute Payment assigned to Finance | Doc 16 §6.11 | Script assigns to Directors (but script is disabled anyway) | **No** | Latent bug in disabled code | High |
+| 10 | Distribute Payment task | Created per payment (req §6.6.2, Doc 16 §6.11, manual Steps 3/6) | Script DISABLED — intentionally out of active flow | **N/A — deferred** | B-02 — intentional decision recorded | High |
+| 11 | Distribute Payment assigned to Finance | Doc 16 §6.11 | Script assigns to Directors (but script is disabled and out of active flow) | **N/A — deferred** | Latent only if re-enabled later | High |
 | 12 | Advance payment (no invoice) | Customer advance PE, no invoice link (Doc 16 §6.12) | Correct — PE has no references | **Yes** | Match | High |
-| 13 | Advance updates DC prepaid_amount | Amount noted on case (Doc 16 §6.12) | Set on DC, but OVERWRITES instead of accumulating (B-03) | **Partial** | Bug for multiple partial advances | High |
+| 13 | Advance updates DC prepaid_amount | Amount noted on case (Doc 16 §6.12) | **Locally corrected:** linked-case advances append to `advance_payments`; `prepaid_amount` is recalculated from all rows | **Yes — pending deployment/testing** | B-03 fixed locally | High |
 | 14 | Advance updates Debt Collection credit | Reflected on Debt Collection task (Doc 16 §6.12) | Adds to `available_advance_credit` | **Yes** | Match | High |
 | 15 | Outstanding = 0 → case Closed | Doc 16 §6.9, §6.10, manual Step 5 | Implemented in X1 (line 274-275) | **Yes** | Match | High |
 | 16 | Debt Closure Approval | Not documented | Task created on Debt Collection completion (S3) | **N/A** | D-01 — undocumented feature | High |
 | 17 | Profit calculation | Not in any numbered doc | Calculated on Debt Closure Approval completion (S3) | **N/A** | Undocumented feature | High |
 | 18 | Tender qty auto-update | SI submission updates tender supplied/remaining (deployment summary) | Implemented in S6 | **Yes** | Match | High |
-| 19 | Tender over-supply warning | "System warns if quantity exceeds remaining" (deployment summary) | Not implemented — no warning | **No** | Doc/prod gap | High |
+| 19 | Tender over-supply warning | "System warns if quantity exceeds remaining" (deployment summary) | **Locally corrected:** submit stops with review message if invoice qty exceeds remaining tender qty | **Yes — pending deployment/testing** | Control added; review with colleague | High |
 | 20 | Tender cancellation reversal | Not explicitly documented | Not implemented — quantities permanently consumed | **N/A** | Missing feature (B-05) | High |
 | 21 | Tender status auto-set | Auto-updates by dates (deployment summary) | Implemented in S7, but "Closed" is overridden (B-06) | **Partial** | Bug | High |
 | 22 | Financial field visibility | Non-financial roles cannot see prices (Doc 16 §12) | Client-side hiding only (B-10) | **Partial** | No server enforcement | High |
 | 23 | PE cancellation re-opens task | "Outstanding balance will increase back" (cancellation manual) | No script handles PE cancellation events | **No** | D-06 — documented behavior doesn't exist | High |
 | 24 | Scheduled debt check | Not documented in any numbered doc | Runs via scheduler, uses GL entries | **N/A** | D-02 — undocumented mechanism | High |
-| 25 | Tender system documentation | "No numbered doc exists" (docs-overview) | Only deployment summary describes it | **N/A** | D-03 — acknowledged gap | High |
+| 25 | Tender system documentation | Operational tender manual should exist and be linked | **Locally corrected:** `docs/manual/tender-agreement-management.md` created and linked from manuals index/docs overview | **Yes — pending smoke test** | D-03 locally covered | High |
 | 26 | Lost/damaged billing | Doc 16 §9A — bill at same rate | Not implemented — only `used_qty` invoiced | **No** | Known gap — tracked in doc | High |
 | 27 | Unallocated advance recording | Req §6.6.2 — record as customer advance | Advance PE created without invoice refs — correct | **Yes** | Match | High |
 | 28 | No time limit for advances | Req §6.6.2 | No expiry logic implemented — correct | **Yes** | Match | High |
@@ -625,15 +619,15 @@ All three After Save scripts check `task_kind` first, so they don't interfere wh
 
 | ID | Title | Script | Impact | Confidence | Evidence |
 |----|-------|--------|--------|------------|----------|
-| **B-01** | Payment Entry created without invoice references | S2 lines 28-33 vs 54-60 | GL ledger never reconciles payments against specific invoices. Accounts Receivable shows invoices as unpaid even after payment. Growing accounting discrepancy. | **High** | Code logic: `allocated_now` is zeroed at line 33, then checked at line 55 — always false. |
+| **B-01** | Payment Entry created without invoice references | S2 payment allocation / PE reference creation | **Fixed locally:** payable rows must have linked Sales Invoices, allocations are preserved before `allocated_now` is cleared, and Sales Invoice references are appended to the Payment Entry. Pending deployment/testing. | **High** | Local script now validates invoice links, builds an `allocations` list, and uses it for PE `references`. |
 
 ### High
 
 | ID | Title | Script | Impact | Confidence | Evidence |
 |----|-------|--------|--------|------------|----------|
-| **B-02** | Distribute Payment script DISABLED | S5 | Requirements §6.6.2 is violated. Physical payment handling step doesn't exist. Documentation describes it as active. | **High** | Schema: `disabled: 1` |
-| **B-03** | Advance prepaid_amount overwrites | S4 line 32 | Second partial advance payment erases record of first. Prepaid amount on DC is wrong. Outstanding calculation at invoice time will be wrong. | **High** | Code: `set_value` with dict replaces value |
-| **B-04** | Tender double-counts across multiple active tenders | S6 lines 17-24 | If customer has 2+ active tenders with same item, qty deducted from each. Overstates supply, understates remaining. | **High** | Code: nested loop iterates ALL tenders |
+| **B-02** | Distribute Payment intentionally disabled/out of active flow | S5 | No code fix needed now. Do not enable unless business flow is explicitly changed later. Remaining issue is stale documentation that may still describe it as active. | **Deferred / not active** | Schema: `disabled: 1`; user decision recorded |
+| **B-03** | Advance prepaid_amount overwrites — locally corrected | S4 lines 31-44 | Linked-case advances now append to `advance_payments`, `prepaid_amount` is recalculated from all rows, and `prepaid_payment_entry` remains latest-entry quick reference. | **Fixed locally, pending deployment/testing** | Code: child-row append plus sum recalculation |
+| **B-04** | Tender double-counts across multiple active tenders — locally corrected | S6 lines 18-54 | Duplicate active tender rows for the same hospital/item now stop Sales Invoice submit; exactly one match updates once; over-supply stops with review message. | **Fixed locally, pending deployment/testing** | Code: duplicate/over-supply guards and single-match update |
 | **B-05** | No tender reversal on invoice cancellation | S6 | Cancelled invoices leave tender quantities permanently inflated. No `After Cancel` or `On Cancel` handler exists. | **High** | No cancellation handler in schema |
 
 ### Medium
@@ -645,14 +639,14 @@ All three After Save scripts check `task_kind` first, so they don't interfere wh
 | **B-08** | Dual debt task creation paths with different assignees/data | S1 + X1 | Scheduler creates for Directors without invoice detail. Dispatch flow creates for Finance with invoice detail. If both create, or one creates and the other updates, inconsistent assignment and data. | **High** | Code comparison of both scripts |
 | **B-10** | Financial visibility client-side only | C1 | Non-financial users can access price/payment data via API, reports, dev tools. No data leak risk from code — but no enforcement either. | **High** | Code: no server-side permission script |
 | **B-12** | `paid_to` hardcoded as "Cash - Inmed" | S2 line 52, S4 line 27 | All customer receipts post to Cash account regardless of payment method. Bank Transfer and Card payments mislabeled in GL. | **High** | Code: hardcoded string |
-| **B-13** | `frappe.db.commit()` inside loop in tender update | S6 line 25 | Breaks transaction atomicity. Partial commits if error mid-loop. May cause issues if SI submission itself fails after partial tender updates. | **High** | Code: commit inside for loop |
+| **B-13** | `frappe.db.commit()` inside loop in tender update — locally corrected | S6 | Manual commit removed; tender saves stay inside the Sales Invoice submit transaction. | **Fixed locally, pending deployment/testing** | Code: no `frappe.db.commit()` in S6 |
 
 ### Low
 
 | ID | Title | Script | Impact | Confidence | Evidence |
 |----|-------|--------|--------|------------|----------|
 | **B-09** | Hardcoded user emails in debt closure | S3 lines 14-18 | Maintenance risk — team changes require code changes. Works for now. | **High** | Code: 4 emails hardcoded |
-| **B-11** | FIFO sorts by invoice name not date | S2 line 22 | Likely works correctly if invoice naming is chronological (standard ERPNext behavior). Could fail if naming convention changes. | **Medium** | Code: `sorted(..., key=lambda r: r.sales_invoice)` |
+| **B-11** | FIFO sorts by invoice name not date | S2 payment allocation sort | **Fixed locally:** automatic FIFO now sorts by linked Sales Invoice posting date, then invoice name as a tie-breaker. Pending deployment/testing. | **High** | Local script now fetches Sales Invoice `posting_date` / `creation` and sorts by date. |
 
 ---
 
@@ -767,8 +761,8 @@ These findings cannot be fully resolved by static analysis alone:
 | Q-04 | Are any Tender Agreements in "Closed" status currently? Does saving them revert status? | Need to check live data. | Medium |
 | Q-05 | Do the duplicate reports (e.g., two debt threshold reports) show the same data? | Need to run both reports and compare. | Medium |
 | Q-06 | Are Sales Order prepaid fields (`is_prepaid`, etc.) used anywhere in the UI or other scripts? | Need to search all scripts comprehensively and check UI forms. | Low |
-| Q-07 | Does `frappe.db.commit()` inside S6 actually cause issues when invoice submission has other After Submit hooks? | Need to test with real invoice submission. | Medium |
-| Q-08 | How many customers currently have multiple active tenders? (B-04 impact) | Need to query production data. | Medium |
+| Q-07 | Does the locally corrected S6 tender update remain fully transactional during Sales Invoice submit? | Need smoke test after deployment. | Medium |
+| Q-08 | How many customers currently have multiple active tenders for the same item? | Need to query data before/after deployment because duplicates will now stop invoice submit. | Medium |
 | Q-09 | What happens to the Debt Collection task when a PE is cancelled? (D-06) | Need to test cancellation flow. | High |
 | Q-10 | Is the `available_advance_credit` field displayed on the Debt Collection task form? Does Finance use it? | Need to check UI. | Medium |
 
@@ -780,19 +774,19 @@ These findings cannot be fully resolved by static analysis alone:
 
 | # | Action | Bug/Gap | Effort |
 |---|--------|---------|--------|
-| R-01 | **Fix PE invoice reference bug.** In S2, save allocation amounts before zeroing `allocated_now`, then use saved amounts to build PE references. | B-01 | Small code fix |
-| R-02 | **Decide on Distribute Payment.** Either re-enable S5 (fixing the assignment to Finance Team) or remove all documentation references. If removed, update: Doc 16 §6.11, manual §Steps 3/6, daily checks §Check 4, requirements §6.6.2. | B-02, D-04 | Decision + doc update |
-| R-03 | **Fix prepaid_amount accumulation.** Change S4 line 32 from overwrite to increment: `prepaid_amount = (current_prepaid or 0) + doc.new_payment_amount`. Also handle `prepaid_payment_entry` as a comma-separated list or separate child table. | B-03 | Small code fix |
+| R-01 | **Completed locally:** PE invoice references now use preserved allocation amounts before `allocated_now` is cleared. | B-01 | Done locally; deploy/test later |
+| R-02 | **Decision recorded:** Distribute Payment remains disabled and out of active flow. Do not enable S5. Later cleanup can remove/update stale doc references if desired. | B-02, D-04 | Decision done; optional doc cleanup later |
+| R-03 | **Completed locally:** Dispatch Case linked advances now use `advance_payments` child-table audit trail; `prepaid_amount` is recalculated from all rows and `prepaid_payment_entry` is latest-entry quick reference. | B-03 | Done locally; deploy/test later |
 
 ### High — Fix Soon After Go-Live
 
 | # | Action | Bug/Gap | Effort |
 |---|--------|---------|--------|
-| R-04 | **Fix tender double-counting.** In S6, break after the first matching tender for each item, or require items to be unique across active tenders for the same customer. | B-04 | Small code fix |
+| R-04 | **Completed locally:** S6 requires at most one active tender row per hospital/item and stops invoice submit on duplicates. | B-04 | Done locally; deploy/test later |
 | R-05 | **Add tender cancellation handler.** Create a new server script on Sales Invoice → After Cancel that reverses the supplied_quantity changes made by S6. | B-05 | New script (~30 lines) |
 | R-06 | **Fix tender "Closed" status preservation.** In S7, add `"Closed"` to the skip condition: `if doc.status in ("Draft", "Closed"): pass`. | B-06 | 1-line fix |
 | R-07 | **Fix `paid_to` account mapping.** In S2 and S4, map payment method to the correct account: Cash → Cash - Inmed, Bank Transfer → Bank account, Card → Card account. | B-12 | Small code fix |
-| R-08 | **Remove `frappe.db.commit()` from S6 loop.** The tender saves already persist changes; the explicit commit is unnecessary and harmful. | B-13 | 1-line removal |
+| R-08 | **Completed locally:** removed manual `frappe.db.commit()` from S6. Tender updates now rely on the Sales Invoice submit transaction. | B-13 | Done locally; deploy/test later |
 | R-09 | **Document Debt Closure Approval.** Add to Doc 16 §11 task kinds reference and create an operational description in §6 task chain. | D-01 | Doc update |
 | R-10 | **Document scheduled debt collection.** Add to requirements or Doc 16 explaining the dual mechanism: scheduler (threshold alerts for directors) vs dispatch flow (invoice tracking for finance). | D-02 | Doc update |
 
@@ -804,10 +798,10 @@ These findings cannot be fully resolved by static analysis alone:
 | R-12 | **Clarify dual debt task paths.** Decide whether the scheduler and dispatch flow should create the same task kind or separate kinds (e.g., "Debt Alert" vs "Debt Collection"). Document the decision. | B-08 | Design decision |
 | R-13 | **Add server-side financial field protection.** Create a server script that strips financial fields from API responses for non-financial roles, or use ERPNext's field-level permissions. | B-10 | Medium effort |
 | R-14 | **Replace hardcoded user emails.** In S3, use role-based lookup (similar to S1's director lookup) instead of hardcoded emails. | B-09 | Small code fix |
-| R-15 | **Create Tender Agreement numbered documentation.** | D-03 | Doc creation |
-| R-16 | **Add tender over-supply warning.** Per deployment summary promise. | S6-F03 | Small code addition |
+| R-15 | **Completed locally:** created `docs/manual/tender-agreement-management.md` and linked it from manuals index/docs overview. | D-03 | Done locally |
+| R-16 | **Completed locally:** S6 now stops Sales Invoice submit with an over-supply review message when invoice quantity exceeds remaining tender quantity. | S6-F03 | Done locally; review policy with colleague |
 | R-17 | **Clean up duplicate reports.** Consolidate or differentiate the 3 pairs of apparently-duplicate reports. | §8.1 | Investigation + possible removal |
-| R-18 | **Fix FIFO sort to use invoice date** instead of invoice name. | B-11 | 1-line fix |
+| R-18 | **Completed locally:** FIFO sort now uses Sales Invoice posting date, with invoice name as tie-breaker. | B-11 | Done locally; deploy/test later |
 | R-19 | **Add PE cancellation handler** or update cancellation manual to reflect actual behavior. | D-06 | New script or doc fix |
 | R-20 | **Investigate Sales Order prepaid fields.** Determine if they are dead fields from pre-Dispatch Case design. If dead, consider removing to avoid confusion. | §8.2 | Investigation |
 
@@ -825,19 +819,19 @@ These findings cannot be fully resolved by static analysis alone:
 
 | Finding | Primary Evidence Location |
 |---------|--------------------------|
-| B-01 | `deploy/test/work/server/Task-before-save-payment-recording.py` lines 28-33 vs 54-60 |
+| B-01 | `deploy/test/work/server/Task-before-save-payment-recording.py` lines 22-44 and 64-70 — local fix validates linked invoices, preserves allocations, and appends PE references |
 | B-02 | `deploy/test/schema/server-scripts.json` — `disabled: 1` for `Payment Entry-after-submit-distribute-payment` |
-| B-03 | `deploy/test/work/server/Task-after-save-advance-payment.py` line 32 |
-| B-04 | `deploy/test/work/server/Sales-Invoice-after-submit-tender-update.py` lines 17-24 |
+| B-03 | `deploy/test/work/server/Task-after-save-advance-payment.py` lines 31-44; `deploy/test/deploy/group-3-payments-debt-accounting/deploy-b03-advance-payment-audit-trail.ps1` creates `Dispatch Case Advance Payment` and `Dispatch Case-advance_payments` |
+| B-04 | `deploy/test/work/server/Sales-Invoice-after-submit-tender-update.py` lines 18-54; `deploy/test/deploy/group-3-payments-debt-accounting/deploy-b04-b13-tender-update-controls.ps1`; `docs/manual/tender-agreement-management.md` |
 | B-05 | `deploy/test/schema/server-scripts.json` — no After Cancel handler for Sales Invoice |
 | B-06 | `deploy/test/work/server/Tender-Agreement-before-save.py` lines 14-22 |
 | B-07 | `deploy/test/work/server/Task-after-save-debt-closure.py` lines 85-99 |
 | B-08 | `deploy/test/work/server/Scheduled-debt-collection.py` lines 108-118 vs `Task-after-save-dispatch-flow.py` lines 143-173 |
 | B-09 | `deploy/test/work/server/Task-after-save-debt-closure.py` lines 14-18 |
 | B-10 | `deploy/test/work/client/Dispatch Case-Price Visibility.js` — no matching server script |
-| B-11 | `deploy/test/work/server/Task-before-save-payment-recording.py` line 22 |
+| B-11 | `deploy/test/work/server/Task-before-save-payment-recording.py` lines 22-29 — local fix sorts FIFO by Sales Invoice posting date |
 | B-12 | `deploy/test/work/server/Task-before-save-payment-recording.py` line 52; `Task-after-save-advance-payment.py` line 27 |
-| B-13 | `deploy/test/work/server/Sales-Invoice-after-submit-tender-update.py` line 25 |
+| B-13 | `deploy/test/work/server/Sales-Invoice-after-submit-tender-update.py` — manual `frappe.db.commit()` removed; `deploy/test/deploy/group-3-payments-debt-accounting/deploy-b04-b13-tender-update-controls.ps1` |
 | D-01 | `docs/16-unified-dispatch-flow.md` §11 — "Debt Closure Approval" not listed |
 | D-02 | `docs/16-unified-dispatch-flow.md` — no mention of scheduler-based debt checking |
 | D-03 | `docs/docs-overview.md` — "no numbered doc exists for Tender Agreements" |

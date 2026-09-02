@@ -57,12 +57,15 @@
 
 **✅ Expected after Save:**
 - A **Payment Entry** (type: Receive) is auto-created in ERPNext
-- The payment is allocated **FIFO** — oldest invoices are paid off first
+- The payment is allocated **FIFO** by Sales Invoice posting date — oldest invoices are paid off first
+- Every payable Open Invoices row must have a linked Sales Invoice; if one is missing, the save is blocked until the task is corrected
+- The Payment Entry includes reference rows for the Sales Invoice(s) it paid, with the exact allocated amount per invoice
 - The **Outstanding Amount** on the task decreases by the paid amount
 - A **Distribute Payment task** is auto-created for the Finance team (see Step 3)
 
 **❌ Should NOT happen:**
 - Error saving the task with amount > 0 → check that `Payment Method` and `Payment Reference` are filled
+- Error saying an Open Invoices row has no Sales Invoice → do not record payment yet; ask Accounting/System Manager to correct the Debt Collection task so each payable row links to a Sales Invoice
 
 ---
 
@@ -85,7 +88,8 @@ After each payment is recorded, a **Distribute Payment task** is automatically c
 ## Step 4 — Partial payment scenario
 
 If the client pays less than the full outstanding amount:
-- The payment is applied to the oldest invoice(s) first (FIFO)
+- The payment is applied to the oldest invoice(s) first (FIFO by Sales Invoice posting date)
+- The generated Payment Entry references the invoice(s) covered by the partial payment
 - The Debt Collection task remains **Open** with a reduced outstanding amount
 - The invoices that are not yet fully covered remain open
 - The next time the client pays, repeat Steps 1–3

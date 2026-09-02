@@ -52,6 +52,7 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `18-photo-system.md` | Photo system requirements - authoritative reference; deployed logging on test; corrections to other docs applied |
 | `ERPNext Barcode/FIXES_DOCUMENTATION.md` | 🟡 Barcode logic prepared; live Purchase Receipt deployment/smoke test still required |
 | `ERPNext Barcode/IMPLEMENTATION_READY.md` | 🟡 Barcode implementation-ready; live deployment/smoke test still required |
+| `manual/tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply controls still need smoke test |
 
 ### Superseded / historical reference only
 | File | Working status |

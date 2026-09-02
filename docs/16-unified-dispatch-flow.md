@@ -85,8 +85,9 @@ Each row represents one item in the dispatch. Columns:
 
 | Field | Description |
 |---|---|
-| `prepaid_amount` | Amount already paid upfront before dispatch |
-| `prepaid_payment_entry` | Link to the advance Payment Entry |
+| `prepaid_amount` | Total amount already paid upfront before dispatch; recalculated from advance payment history |
+| `prepaid_payment_entry` | Latest advance Payment Entry link, kept for quick reference/backward compatibility |
+| `advance_payments` | Child table audit trail of all advance Payment Entries linked to this Dispatch Case |
 | `total_invoice_amount` | Auto-filled from submitted Sales Invoice |
 | `total_paid_amount` | Tracked from linked Payment Entries |
 | `outstanding_amount` | `total_invoice_amount - total_paid_amount` |
@@ -145,6 +146,22 @@ After loading, the user can:
 ### 5.3 History
 
 The original design (Doc 11) used a DocType called `Collection Set` with richer metadata: item group classification (Tools, Screws, Nails, Plates), return behavior (Expected Return vs May Be Used), criticality flags, and automated readiness validation that checked projected stock in `Main - Inmed`. The `Collection Set` DocType and its readiness validators were removed during the production audit cleanup (2026-08-31). `Surgical Kit Template` is a simpler replacement that covers the core use case: defining a default item list for a dispatch.
+
+### 5.1 Manual item selection UI
+
+On the Dispatch Case form, users can also add items without a template:
+- **Add Items by Category**: choose an Item Group, browse up to 500 items in that category, select one or more rows, and add them to Case Items.
+- **Search & Add Item**: search by Item Code or Item Name, select one or more rows, and add them to Case Items.
+
+Both actions add selected items with `dispatched_qty = 1` and `unit_price = standard_rate`; users must review and adjust quantity, batch, price, and discount before submitting.
+
+### 5.2 Task product work APIs
+
+The Task product work area uses local API server scripts to support item entry from Task context:
+- `task_lookup_product_barcode`: resolves a scanned simple Item barcode to an Item Code. GS1 LOT/expiry parsing is handled by the packing-scan workflow, not this lookup API.
+- `task_add_dispatch_product`: appends a product row to the linked Dispatch Case from the Task form and initializes packing scan fields (`custom_scanned_qty`, `custom_remaining_qty`, `custom_packing_status`).
+
+Access to these APIs must remain aligned with Task visibility and Dispatch Case edit policy because the add-product API saves the linked Dispatch Case using elevated permissions.
 
 ---
 
@@ -438,9 +455,10 @@ Finance fills in:
 - Payment method (Cash / Bank Transfer / Card)
 - Payment reference number (bank transaction ID, receipt number, etc.)
 
-**Allocation (FIFO with override):**
-- Default: system auto-allocates to oldest invoices first. Finance sees the proposed allocation and can confirm in one click.
-- Override: Finance can expand the allocation table and manually specify how much to apply to each invoice. Any unallocated remainder can be marked as advance credit for future cases.
+**Allocation (FIFO):**
+- Default: system auto-allocates to oldest Sales Invoices first, using each invoice's posting date and invoice name as a tie-breaker.
+- Every payable row in the Open Invoices table must have a linked Sales Invoice before payment can be recorded; otherwise the save is blocked so task balances cannot diverge from accounting allocation.
+- The auto-created Payment Entry includes Sales Invoice reference rows with the exact allocated amount for each invoice, so ERPNext's accounting ledger and the Debt Collection task stay aligned.
 
 **Completing the task:**
 The Debt Collection task is marked Completed only when total outstanding = 0 for all cases it covers. It can be updated multiple times as partial payments arrive.
@@ -492,7 +510,9 @@ The Debt Collection task is marked Completed only when total outstanding = 0 for
 - Server script auto-creates a **Customer Advance Payment Entry** in ERPNext (not linked to any invoice)
 - Customer's available advance credit is updated
 - If a Debt Collection task exists for this customer, it reflects the credit and reduces the required collection amount
-- If a specific Dispatch Case is linked and it has a `prepaid_amount` set, the advance is noted on the case
+- If a specific Dispatch Case is linked, the advance is appended to the case's `advance_payments` audit table
+- The case's `prepaid_amount` is recalculated from all `advance_payments` rows, so multiple partial advances accumulate correctly
+- The case's `prepaid_payment_entry` stores the latest advance Payment Entry for quick reference
 
 ---
 
