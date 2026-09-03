@@ -63,7 +63,7 @@ Non-goals:
 
 ### 3.5 Directors
 - Approve discounts (when needed)
-- Handle escalations: debt threshold exceeded → Debt Collection task
+- Handle escalations: debt threshold exceeded → Debt Alert task
 
 ---
 
@@ -249,17 +249,15 @@ Practical interpretation (why allocation discipline matters):
 Outcome:
 - Receivable is reduced/cleared
 
-### 6.7 Step 6 — Distribute Payment (Directors)
-When: after payment is received and confirmed according to your internal control policy.
+### 6.7 Step 6 — Distribute Payment disabled/deferred
+Distribute Payment is currently disabled/out of the active flow pending final keep/delete decision.
 
-Operational intent:
-- Payment receipt and payment distribution are separate internal steps.
-
-Operational rule:
-- A Director-owned `Distribute Payment` task must be created/maintained for each payment event that requires distribution.
+Current operational rule:
+- Payment recording happens through Finance `Debt Collection` tasks.
+- No separate `Distribute Payment` task is created after customer receipts while the script remains disabled.
 
 Outcome:
-- Directors confirm distribution is done and record a short note.
+- Directors do not receive Distribute Payment tasks in the current flow.
 
 ---
 
@@ -410,7 +408,7 @@ Accounting:
 - aging by client
 
 Directors:
-- clients above debt threshold (Debt Collection tasks)
+- clients above debt threshold (Debt Alert tasks)
 - discounts pending approval
 
 Optional analytics (when filled):
@@ -424,5 +422,5 @@ Optional analytics (when filled):
 - In-transit visibility is reliable (what left `Main - Inmed` is visible in `Delivery In-Transit - Inmed` until delivered).
 - Tracked items (batch/serial) are issued with correct identifiers recorded.
 - Discounts follow a director approval checkpoint.
-- Debt threshold exceedance creates/maintains a director Debt Collection task.
+- Debt threshold exceedance creates/maintains a Director Debt Alert task.
 - Orders/invoices can be filtered by Hospital / Doctor Name when provided.

@@ -139,8 +139,10 @@ else:
         if not doc.approval_outcome:
             frappe.throw("Set Approval Outcome (Approved or Rejected) before completing.")
 
-    # Debt Closure Approval: only Norayr, Sevak, or Levon can complete
+    # Debt Closure Approval: only users allowed by policy can complete
     if is_completing and doc.task_kind == "Debt Closure Approval":
-        APPROVED_USERS = ["ghahramanyann@gmail.com", "karapetyansev@gmail.com", "vahe.muselimyan@gmail.com", "levonaghinyan77@gmail.com"]
-        if frappe.session.user not in APPROVED_USERS and frappe.session.user != "Administrator":
-            frappe.throw("Only Norayr, Sevak, or Levon can approve and complete this task.")
+        approval_policy = frappe.get_doc("Task Access Policy", "Debt Closure Approval")
+        allowed_roles = [r.role for r in (approval_policy.allowed_roles or []) if r.role]
+        user_roles = frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role")
+        if frappe.session.user != "Administrator" and not set(allowed_roles).intersection(set(user_roles or [])):
+            frappe.throw("Only users allowed by the Debt Closure Approval Task Access Policy can approve and complete this task.")

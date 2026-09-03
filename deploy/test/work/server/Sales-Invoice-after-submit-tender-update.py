@@ -16,6 +16,7 @@ if doc.docstatus == 1:
 
     if active_tenders:
         tender_docs = [frappe.get_doc("Tender Agreement", tender.name) for tender in active_tenders]
+        fulfillment_rows = []
 
         for inv_item in doc.items:
             item_code = inv_item.item_code
@@ -52,3 +53,18 @@ if doc.docstatus == 1:
                 tender_item.remaining_quantity = (tender_item.won_quantity or 0) - tender_item.supplied_quantity
                 tender.flags.ignore_permissions = True
                 tender.save()
+                fulfillment_rows.append({
+                    "tender_agreement": tender.name,
+                    "item_code": item_code,
+                    "quantity": qty,
+                    "sales_invoice_item": inv_item.name,
+                    "applied_at": frappe.utils.now_datetime(),
+                })
+
+        if fulfillment_rows:
+            inv = frappe.get_doc("Sales Invoice", doc.name)
+            inv.set("tender_fulfillments", [])
+            for row in fulfillment_rows:
+                inv.append("tender_fulfillments", row)
+            inv.flags.ignore_permissions = True
+            inv.save()

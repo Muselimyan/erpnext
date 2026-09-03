@@ -11,8 +11,8 @@ This guide implements:
   - standard sales must not use client location warehouses (`Clients - Inmed`)
 - Discount approvals (director hard gate before delivery)
 - Prepaid orders (payment confirmation gate before dispatch)
-- Debt threshold escalation (Debt Collection task for directors)
-- “Distribute Payment” tasks for director oversight after receiving money
+- Debt threshold escalation (Debt Alert task for directors)
+- Distribute Payment is disabled/deferred pending final keep/delete decision
 
 ---
 
@@ -790,9 +790,9 @@ if not doc.completed_at:
 
 ---
 
-## 9) Debt threshold escalation (Debt Collection tasks)
+## 9) Debt threshold escalation (Debt Alert tasks)
 Doc 09 rule:
-- When a client exceeds its debt threshold, a director-owned Debt Collection task must exist and reflect current debt.
+- When a client exceeds its debt threshold, a director-owned Debt Alert task must exist and reflect current GL-based net receivable debt.
 - Exceedance does not automatically block delivery.
 
 Implementation decision:
@@ -813,270 +813,32 @@ Implementation decision:
 
 4) Save.
 
-### 9.2 Scheduled Server Script: create/update Debt Collection tasks
-1) Open `Server Script`.
-2) Click `New`.
-3) Set:
-   - Script Type: `Scheduled`
-   - Frequency: `Hourly`
-4) Paste:
+### 9.2 Scheduled Server Script: create/update Debt Alert tasks
 
-```python
-import json
+Current Group 3 behavior is implemented in `deploy/test/work/server/Scheduled-debt-collection.py` and documented in Doc 16 §6.10B plus `docs/manual/debt-alert.md`.
 
-import frappe
+The scheduler must:
 
-DIRECTOR_ROLE = "Ops - Directors"
+- calculate each customer's GL-based net receivable;
+- compare it with `Customer.debt_threshold_amd`;
+- create or update one open Director `Debt Alert` task when debt is above threshold;
+- assign the alert using the `Debt Alert` Task Access Policy default team user;
+- never create or modify Finance `Debt Collection` tasks.
 
-def assign_single_owner(task_name, user):
-    frappe.db.set_value("Task", task_name, "_assign", json.dumps([user]), update_modified=False)
-
-    other_todos = frappe.get_all(
-        "ToDo",
-        filters={
-            "reference_type": "Task",
-            "reference_name": task_name,
-            "allocated_to": ["!=", user],
-            "status": "Open",
-        },
-        pluck="name",
-    )
-
-    for td in (other_todos or []):
-        frappe.db.set_value("ToDo", td, "status", "Cancelled")
-
-    if not frappe.db.exists(
-        "ToDo",
-        {
-            "reference_type": "Task",
-            "reference_name": task_name,
-            "allocated_to": user,
-            "status": "Open",
-        },
-    ):
-        todo = frappe.new_doc("ToDo")
-        todo.status = "Open"
-        todo.allocated_to = user
-        todo.reference_type = "Task"
-        todo.reference_name = task_name
-        todo.description = frappe.db.get_value("Task", task_name, "subject") or task_name
-        todo.assigned_by = frappe.session.user
-        todo.insert(ignore_permissions=True)
-
-def get_director_users():
-    users = frappe.get_all(
-        "Has Role",
-        filters={"role": DIRECTOR_ROLE},
-        pluck="parent",
-    )
-    # Remove duplicates
-    return sorted(list(set(users or [])))
-
-def get_net_receivable_amd(customer, company):
-    # Net receivable = sum(debit - credit) for party ledger.
-    # This includes invoices, payments, and advances in GL terms.
-    rows = frappe.db.sql(
-        """
-        select coalesce(sum(debit - credit), 0)
-        from `tabGL Entry`
-        where is_cancelled = 0
-          and company = %s
-          and party_type = 'Customer'
-          and party = %s
-        """,
-        (company, customer),
-    )
-    return float(rows[0][0] or 0)
-
-company = frappe.db.get_single_value("Global Defaults", "default_company")
-if not company:
-    companies = frappe.get_all("Company", pluck="name")
-    company = companies[0] if companies else None
-
-if not company:
-    return
-
-director_users = get_director_users()
-
-if not director_users:
-    return
-
-director_users = [
-    u
-    for u in director_users
-    if u not in ("Administrator", "Guest") and int(frappe.db.get_value("User", u, "enabled") or 0) == 1
-]
-
-if not director_users:
-    return
-
-assigned_director = director_users[0]
-
-customers = frappe.get_all(
-    "Customer",
-    filters={"disabled": 0},
-    fields=["name", "customer_name", "debt_threshold_amd"],
-)
-
-for c in customers:
-    threshold = float(c.debt_threshold_amd or 0)
-    if threshold <= 0:
-        continue
-
-    debt = get_net_receivable_amd(c.name, company)
-
-    if debt <= threshold:
-        continue
-
-    existing = frappe.get_all(
-        "Task",
-        filters={
-            "task_kind": "Debt Collection",
-            "customer": c.name,
-            "status": ["!=", "Completed"],
-        },
-        pluck="name",
-    )
-
-    if existing:
-        task = frappe.get_doc("Task", existing[0])
-    else:
-        task = frappe.new_doc("Task")
-        task.subject = f"Debt Collection — {c.customer_name}"
-        task.status = "Open"
-        task.task_kind = "Debt Collection"
-        task.task_access_policy = "Debt Collection"
-        task.customer = c.name
-        task.insert(ignore_permissions=True)
-
-        # Assign to exactly one director (Doc 10: one accountable owner)
-        assign_single_owner(task.name, assigned_director)
-
-    task.current_debt_amd = debt
-    task.debt_threshold_amd = threshold
-    task.description = f"Client debt exceeded threshold. Current debt: {debt}. Threshold: {threshold}."
-    task.save(ignore_permissions=True)
-```
-
-5) Save.
+Finance `Debt Collection` tasks are created only by the invoice/dispatch payment workflow because they contain Open Invoices rows and payment-recording fields.
 
 ---
 
-## 10) Distribute Payment tasks (director oversight)
-Doc 09 rule:
-- A Director-owned `Distribute Payment` task must be created/maintained for each payment event that requires distribution.
+## 10) Distribute Payment disabled/deferred
 
-Implementation decision:
-- Create the task automatically when a Customer `Payment Entry` is submitted.
+The old Doc 09 Distribute Payment implementation is not part of the active flow.
 
-### 10.1 Server Script: on Payment Entry submit, create Distribute Payment task
-1) Open `Server Script`.
-2) Click `New`.
-3) Set:
-   - Script Type: `DocType Event`
-   - Reference DocType: `Payment Entry`
-   - DocType Event: `After Submit`
-4) Paste:
+Current Group 3 behavior:
 
-```python
-import json
-
-import frappe
-
-DIRECTOR_ROLE = "Ops - Directors"
-
-def assign_single_owner(task_name, user):
-    frappe.db.set_value("Task", task_name, "_assign", json.dumps([user]), update_modified=False)
-
-    other_todos = frappe.get_all(
-        "ToDo",
-        filters={
-            "reference_type": "Task",
-            "reference_name": task_name,
-            "allocated_to": ["!=", user],
-            "status": "Open",
-        },
-        pluck="name",
-    )
-
-    for td in (other_todos or []):
-        frappe.db.set_value("ToDo", td, "status", "Cancelled")
-
-    if not frappe.db.exists(
-        "ToDo",
-        {
-            "reference_type": "Task",
-            "reference_name": task_name,
-            "allocated_to": user,
-            "status": "Open",
-        },
-    ):
-        todo = frappe.new_doc("ToDo")
-        todo.status = "Open"
-        todo.allocated_to = user
-        todo.reference_type = "Task"
-        todo.reference_name = task_name
-        todo.description = frappe.db.get_value("Task", task_name, "subject") or task_name
-        todo.assigned_by = frappe.session.user
-        todo.insert(ignore_permissions=True)
-
-# Only for customer receipts
-if doc.party_type != "Customer":
-    return
-
-if doc.payment_type != "Receive":
-    return
-
-director_users = frappe.get_all(
-    "Has Role",
-    filters={"role": DIRECTOR_ROLE},
-    pluck="parent",
-)
-
-director_users = sorted(list(set(director_users or [])))
-
-if not director_users:
-    return
-
-director_users = [
-    u
-    for u in director_users
-    if u not in ("Administrator", "Guest") and int(frappe.db.get_value("User", u, "enabled") or 0) == 1
-]
-
-if not director_users:
-    return
-
-assigned_director = director_users[0]
-
-existing = frappe.get_all(
-    "Task",
-    filters={
-        "task_kind": "Distribute Payment",
-        "payment_entry": doc.name,
-        "status": ["!=", "Completed"],
-    },
-    pluck="name",
-)
-
-if existing:
-    return
-
-task = frappe.new_doc("Task")
-task.subject = f"Distribute Payment — PE {doc.name}"
-task.status = "Open"
-task.task_kind = "Distribute Payment"
-task.task_access_policy = "Distribute Payment"
-task.payment_entry = doc.name
-
-task.customer = doc.party
-
-task.insert(ignore_permissions=True)
-
-assign_single_owner(task.name, assigned_director)
-```
-
-5) Save.
+- `Payment Entry-after-submit-distribute-payment` remains disabled;
+- no Distribute Payment task is created after customer receipts;
+- Finance records payments from `Debt Collection` tasks;
+- keep/delete/re-enable decision is deferred until final colleague review.
 
 ---
 
@@ -1201,8 +963,8 @@ Operational steps:
 - Set a low `debt_threshold_amd` for one customer.
 - Submit an unpaid Sales Invoice to exceed the threshold.
 - Wait for the scheduled script (or trigger it manually by running it once).
-- Confirm one open Debt Collection task exists for that customer and shows current debt.
+- Confirm one open Director Debt Alert task exists for that customer and shows current debt.
 
-### 13.5 Distribute Payment tasks
+### 13.5 Distribute Payment disabled/deferred
 - Submit a Customer Payment Entry (Receive).
-- Confirm a Distribute Payment task is created and assigned to exactly one director user (the task is still visible to all directors via Task Access Policy).
+- Confirm no new Distribute Payment task is created while the disabled/deferred script remains out of the active flow.

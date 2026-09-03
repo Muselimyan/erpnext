@@ -51,6 +51,7 @@ Where to implement:
   - Warehouse
   - Warehouse Reorder Level
   - Warehouse Reorder Qty
+  - Safety Stock Buffer % (`buffer_percentage`) — optional local field, currently informational only unless a future reorder calculation script is added
 
 Operational mapping:
 - If using Min/Max:

@@ -196,11 +196,11 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 
 **Custom Fields — Task** (7 added):
 - `sales_order` — Link → Sales Order; used by Delivery and Discount Approval tasks.
-- `customer` — Link → Customer; used by Debt Collection, Distribute Payment, and Discount Approval tasks.
+- `customer` — Link → Customer; used by Debt Collection, Debt Alert, Payment Received, Debt Closure Approval, Distribute Payment if re-enabled, and Discount Approval tasks.
 - ~~`warehouse_pickup_photo`~~ — **REMOVED** (Doc 18: photos now use File records; gate uses `task_has_image()`)
 - ~~`warehouse_dropoff_photo`~~ — **REMOVED** (Doc 18: photos now use File records; gate uses `task_has_image()`)
-- `payment_entry` — Link → Payment Entry; used by Distribute Payment tasks.
-- `current_debt_amd` — Currency; populated by debt scheduler on Debt Collection tasks.
+- `payment_entry` — Link → Payment Entry; used by payment/debt tasks and Distribute Payment if re-enabled.
+- `current_debt_amd` — Currency; populated by debt scheduler on Debt Alert tasks.
 - `debt_threshold_amd` — Currency; snapshot of the threshold at time of debt escalation.
 
 **Custom Field — Stock Entry** (1 added):
@@ -213,21 +213,21 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - `Stock Entry-before-save-no-client-wh` — Stock Entry / Before Save: blocks any Stock Entry linked to a Sales Order from staging into any warehouse under `Clients - Inmed`.
 - `Delivery Note-before-submit-delivery-gate` — Delivery Note / Before Submit: enforces all rows issue from `Delivery In-Transit - Inmed`; re-checks discount and prepaid gates for each linked Sales Order.
 - ~~`Task-before-save-return-dropoff-photo`~~ — **DISABLED** (replaced by `task_has_image()` in dispatch gates; see Doc 18).
-- `Scheduled-debt-collection` — Scheduler Event / Hourly: scans all Customers with a `debt_threshold_amd > 0`; for any whose GL net-receivable exceeds the threshold, creates or updates a Debt Collection task assigned to the first active director.
-- `Payment Entry-after-submit-distribute-payment` — Payment Entry / After Submit: for Receive payments from Customers, creates a Distribute Payment task assigned to the first active director (idempotent — skips if an open task already exists for the same PE).
+- `Scheduled-debt-collection` — Scheduler Event / Hourly: scans all Customers with a `debt_threshold_amd > 0`; for any whose GL net-receivable exceeds the threshold, creates or updates a Debt Alert task assigned from the Debt Alert Task Access Policy.
+- `Payment Entry-after-submit-distribute-payment` — Payment Entry / After Submit: **disabled/deferred**. If re-enabled, would create a Distribute Payment task for Receive payments from Customers. Keep disabled until final keep/delete decision.
 
 ### Pending / To-Do
 - **[ ]** Configure Role Permissions (manual — Role Permission Manager) for: `Sales Order` (Ops - Order Accepting: RWC+Submit+Cancel; Ops - Accounting: R; Ops - Directors: R+Cancel), `Stock Entry` / `Delivery Note` (Ops - Inventory, Ops - Delivery: RWCS; Delivery Driver: no access), `Sales Invoice` / `Payment Entry` (Ops - Accounting: RWCS).
 - **[ ]** Assign real staff to roles: `Ops - Order Accepting`, `Ops - Inventory`, `Ops - Delivery`, `Ops - Accounting`, `Ops - Directors`, `Delivery Driver`.
 - **[ ]** Create `Standard Selling` Price List (Selling = ON, Currency = AMD) and populate base Item Prices.
 - **[ ]** Create saved view `Price Overrides — by Client` in Item Price list (filter: Price List = Standard Selling, Customer not blank; columns: Customer, Item Code, Item Name, Rate).
-- **[ ]** Confirm these Task Access Policy records exist (required by server scripts): `Discount Approval`, `Debt Collection`, `Distribute Payment`, `Delivery`, `Return drop-off at warehouse`.
-- **[ ]** Confirm these Task Kind values exist on the `Task-task_kind` field options: `Discount Approval`, `Debt Collection`, `Distribute Payment`, `Delivery`, `Return drop-off at warehouse`, `Returns processing / verification`.
+- **[ ]** Confirm these Task Access Policy records exist (required by active server scripts): `Discount Approval`, `Debt Collection`, `Debt Alert`, `Debt Closure Approval`, `Payment Received`, `Delivery`, `Return drop-off at warehouse`. `Distribute Payment` is only required if that deferred flow is re-enabled.
+- **[ ]** Confirm these Task Kind values exist on the `Task-task_kind` field options: `Discount Approval`, `Debt Collection`, `Debt Alert`, `Debt Closure Approval`, `Payment Received`, `Distribute Payment` if kept, `Delivery`, `Return drop-off at warehouse`, `Returns processing / verification`.
 - **[ ]** Smoke-test discount approval flow: create SO with line discount → Pending task created → director completes Approved → `discount_approval_status` = Approved → dispatch staging unblocked.
 - **[ ]** Smoke-test dispatch gate: attempt Stock Entry submit (Main → Transit) without Sales Order link → blocked; without Pickup Photo → blocked.
 - **[ ]** Smoke-test Delivery Note gate: attempt DN submit with wrong source warehouse → blocked.
 - **[ ]** Smoke-test prepaid gate: flag SO as prepaid, attempt dispatch without submitted PE → blocked.
-- **[ ]** Smoke-test debt scheduler: set a low `debt_threshold_amd` on a Customer with outstanding invoices → run hourly job manually or wait → Debt Collection task appears.
+- **[ ]** Smoke-test debt scheduler: set a low `debt_threshold_amd` on a Customer with outstanding invoices → run hourly job manually or wait → Director Debt Alert task appears.
 
 ### Notes / Known Issues
 - Deployment script: `deploy/doc09a-deploy.ps1` — idempotent, `-Mode Check` / `-Mode Deploy`.
@@ -257,7 +257,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 
 **`Task Access Policy` records** (14 total; 13 pre-existing, 1 new):
 - New record added: `Return to warehouse (aborted delivery / cancelled order)`.
-- All 14 records now present: Order entry, Pack / prepare items, Dispatch picking / hand-off, Delivery, Return to warehouse (aborted delivery / cancelled order), Pickup Returns, Return drop-off at warehouse, Returns processing / verification, Invoice preparation / create invoice, Debt Collection, Distribute Payment, Discount Approval, Purchase Approval, Write-off Approval.
+- All 14 records then present: Order entry, Pack / prepare items, Dispatch picking / hand-off, Delivery, Return to warehouse (aborted delivery / cancelled order), Pickup Returns, Return drop-off at warehouse, Returns processing / verification, Invoice preparation / create invoice, Debt Collection, Distribute Payment, Discount Approval, Purchase Approval, Write-off Approval. Current Group 3 local work adds/uses Debt Alert, Debt Closure Approval, and Payment Received policies; Distribute Payment remains disabled/deferred pending final keep/delete decision.
 
 **Server Script — `Task-before-save-policy` (updated):** Replaced the partial governance script with the comprehensive Doc 10A version. Now enforces:
 1. Auto-fill `task_access_policy` from `task_kind` (existing behaviour, kept).
@@ -451,7 +451,7 @@ Named saved list views cannot be shared across users via the REST API in Frappe 
 - `VIEW — Surgery Cases — Returns Received (Awaiting Usage)` — filter: `workflow_state = Returns Received`
 - `VIEW — Surgery Cases — Usage Derived (Awaiting Invoice)` — filter: `workflow_state = Usage Derived`
 - `VIEW — Tasks — Debt Collection (Open)` — filter: `task_kind = Debt Collection`, status not Completed/Cancelled
-- `VIEW — Tasks — Distribute Payment (Open)` — filter: `task_kind = Distribute Payment`
+- `VIEW — Tasks — Distribute Payment (Open)` — filter: `task_kind = Distribute Payment`; retained only if the deferred Distribute Payment flow is re-enabled
 - `VIEW — Tasks — Return to warehouse (Open)` — filter: `task_kind = Return to warehouse (aborted delivery / cancelled order)`
 - `VIEW — Tasks — Discount Approval (Open)` — filter: `task_kind = Discount Approval`
 - `VIEW — Tasks — Purchase Approval (Open)` — filter: `task_kind = Purchase Approval`
@@ -483,7 +483,7 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 ### Go / No-Go minimum criteria (from Doc 14 §3)
 - Can run one complete **standard sale** end-to-end (order → dispatch → delivery → invoice) with correct stock movements.
 - Can run one complete **surgery case** end-to-end (dispatch → deliver → return pickup → returns verification → usage derived → invoice) with correct batch/serial behaviour.
-- Directors can see open approvals, clients above debt threshold, and received payments pending distribution.
+- Directors can see open approvals and Director Debt Alert tasks for clients above debt threshold.
 - Purchasing can see a reorder list grouped by supplier.
 
 ### Pre-go-live technical checklist (system side)
@@ -508,7 +508,7 @@ Doc 14 is a pre-go-live team meeting checklist. It has no ERPNext artefacts to d
 - **Scenario A** — Standard sale: order → dispatch → delivery → partial payment → unallocated advance → debt reporting
 - **Scenario B** — Discount approval gate: order with discount → director approval → delivery unblocked
 - **Scenario B1** — Cancellation redirect: cancel in-transit order → return-to-warehouse task → stock via Returns → Main
-- **Scenario C** — Debt threshold escalation: exceed threshold → Debt Collection task auto-created
+- **Scenario C** — Debt threshold escalation: exceed threshold → Director Debt Alert task created/updated
 - **Scenario D** — Procurement: draft PO → director approval → goods receipt → supplier invoice
 - **Scenario E** — Reorder list: low-stock items appear, grouped by supplier
 - ~~**Scenario F** — Surgery case end-to-end~~ — **REMOVED**: Surgery Case deleted 2026-08-28, superseded by Dispatch Case (Scenario A covers this flow)

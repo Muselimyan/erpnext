@@ -128,8 +128,8 @@ Operational check:
 - Purchase orders require director approval before being sent/submitted (Doc 07).
 
 ### 7.3 Debt threshold escalation
-- Debt threshold exceedance triggers a Debt Collection task assigned to Finance Team (`Ops - Finance`) (Doc 16 §6.10).
-- Policy confirmed: exceedance does not automatically block delivery; Finance team tracks and records payments via task.
+- Debt threshold exceedance triggers/updates a Director Debt Alert task (`Ops - Directors`) (Doc 16 §6.10B).
+- Policy confirmed: exceedance does not automatically block delivery; Finance team records payments only through separate Debt Collection tasks created by the invoice/dispatch payment workflow.
 
 ---
 
@@ -184,7 +184,7 @@ For expiry-tracked items: confirm earliest-expiry batch is selected at Pack step
 Payment check:
 - Record a **partial** payment — confirm outstanding decreases but case stays open.
 - Record a second payment to clear outstanding — confirm case → `Closed`.
-- Confirm `Distribute Payment` task auto-created after each payment record.
+- Confirm no `Distribute Payment` task is created while the disabled/deferred script remains out of active flow.
 
 ### 9.2 Scenario B — Discount approval gate
 Pass criteria:

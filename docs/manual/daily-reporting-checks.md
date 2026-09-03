@@ -55,14 +55,14 @@ Watch for cases sitting in the same status for longer than expected:
 
 ---
 
-### Check 4 — Pending Distribute Payment tasks
-*Time: 1–2 minutes*
+### Check 4 — Distribute Payment disabled/deferred status
+*Time: 1 minute*
 
-Search for `Task` and open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
+Distribute Payment tasks are currently disabled/out of active flow pending final keep/delete decision with the colleague.
 
-These tasks represent received client payments that still need physical handling (cash deposited, transfer confirmed). Each one should be completed promptly by the Finance team.
+Expected current state: no new Distribute Payment tasks should be created after payment recording.
 
-**Action if backlog is growing:** Prompt the Finance team to clear these.
+**Action if new tasks appear:** Treat it as a configuration issue: confirm the `Payment Entry-after-submit-distribute-payment` Server Script was not re-enabled accidentally.
 
 ---
 
@@ -230,12 +230,14 @@ For each task:
 
 ---
 
-### Check 2 — Distribute Payment tasks
-*Time: 2 minutes*
+### Check 2 — Distribute Payment disabled/deferred status
+*Time: 1 minute*
 
-Search for `Task` and open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
+Distribute Payment tasks are currently disabled/out of active flow pending final keep/delete decision with the colleague.
 
-Each task here is a payment that was recorded in the system but the physical action (depositing cash, confirming transfer) has not been confirmed as done. Complete these promptly.
+Expected current state: Finance records payments from Debt Collection tasks; no separate Distribute Payment task is created.
+
+If new Distribute Payment tasks appear, confirm the `Payment Entry-after-submit-distribute-payment` Server Script was not re-enabled accidentally.
 
 ---
 
@@ -250,11 +252,11 @@ Search for `Accounts Receivable` and open the **Accounts Receivable** report and
 
 | Role | Daily checks |
 |---|---|
-| **Directors** | Pending approvals (Discount / Purchase / Write-off) → clients over debt threshold → stuck Dispatch Cases → Distribute Payment backlog |
+| **Directors** | Pending approvals (Discount / Purchase / Write-off) → clients over debt threshold → stuck Dispatch Cases → confirm Distribute Payment remains disabled/deferred |
 | **Ops - Inventory** | Delivery in-transit → Return pickup in-transit → Returns backlog → Pack task queue |
 | **Ops - Purchasing** | Reorder list (low stock by supplier) → Open POs not yet received |
 | **Ops - Accounting** | Invoice Pending cases → Accounts Receivable aging |
-| **Ops - Finance** | Open Debt Collection tasks → Distribute Payment tasks |
+| **Ops - Finance** | Open Debt Collection tasks → confirm Distribute Payment remains disabled/deferred |
 
 ---
 

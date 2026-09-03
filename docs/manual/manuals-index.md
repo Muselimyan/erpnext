@@ -22,7 +22,9 @@
 | `new-supplier-setup.md` | 🟡 Supplier setup manual written; supplier creation/access still needs role smoke test |
 | `supplier-prepayment-allocation.md` | 🟡 Manual written; supplier prepayment allocation still needs smoke test |
 | `customer-advance-payment.md` | 🟡 Manual written; customer advance Payment Received flow still needs smoke test |
-| `tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply controls still need smoke test |
+| `debt-closure-approval.md` | 🟡 Manual written; multi-invoice profit calculation still needs smoke test |
+| `debt-alert.md` | 🟡 Manual written; scheduled Director debt-threshold alert flow still needs smoke test |
+| `tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply/cancellation reversal controls still need smoke test |
 | `stock-adjustment-writeoff.md` | 🟡 Manual written; write-off/stock correction governance still needs smoke test |
 | `cancellation-and-corrections.md` | 🟡 Manual written; correction/cancellation path still needs controlled smoke test |
 | `surgery-set-type-setup.md` | 🟡 Manual written; setup path still needs smoke test if used |
@@ -63,6 +65,8 @@ Use these only when the matching situation happens:
 - `discount-approval-walkthrough.md` — only when testing discounted Dispatch Cases.
 - `supplier-prepayment-allocation.md` — only when testing advance supplier payments.
 - `customer-advance-payment.md` — only when testing customer advances before invoice/payment collection.
+- `debt-closure-approval.md` — only when testing Director review after a Debt Collection task is fully paid, especially multi-invoice profit calculation.
+- `debt-alert.md` — only when testing scheduled Director debt-threshold alerts from GL/accounting balances.
 - `tender-agreement-management.md` — only when testing hospital tender setup, tender-priced invoice submission, duplicate active tender controls, or over-supply controls.
 - `stock-adjustment-writeoff.md` — only when testing stock count corrections, expired goods, or damaged goods.
 - `cancellation-and-corrections.md` — only when testing mistakes and corrections.
@@ -186,7 +190,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 **Status:** ✅ Written
 **Who:** `Ops - Finance`
 **Frequency:** Daily (finance team processes payments received from clients)
-**What it covers:** A focused walkthrough for the Finance team on how to handle the Debt Collection task: recording incoming payments, the FIFO allocation across open invoices, the Distribute Payment task, and what happens when a client fully settles. Extracted from the dispatch walkthroughs for staff who only work the finance side and do not need the full case context.
+**What it covers:** A focused walkthrough for the Finance team on how to handle the Debt Collection task: recording incoming payments, the FIFO allocation across open invoices, the currently disabled/deferred Distribute Payment step, and what happens when a client fully settles. Extracted from the dispatch walkthroughs for staff who only work the finance side and do not need the full case context.
 
 ---
 
@@ -199,16 +203,34 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 11 — Tender agreement management
+### 11 — Debt closure approval
+**File:** `debt-closure-approval.md`
+**Status:** ✅ Written
+**Who:** `Ops - Directors`
+**Frequency:** When a Debt Collection task is fully paid and closure requires Director review
+**What it covers:** Reviewing paid invoices/payment history, completing the Debt Closure Approval task, calculating total profit across all linked Sales Invoices, writing per-Dispatch Case profit, and understanding Standard Buying price warnings.
+
+---
+
+### 12 — Debt alert
+**File:** `debt-alert.md`
+**Status:** ✅ Written
+**Who:** `Ops - Directors`
+**Frequency:** When scheduled debt-threshold alerts are tested or reviewed
+**What it covers:** How the scheduled GL-based debt check creates Director-only Debt Alert tasks, why Debt Alert is separate from Finance Debt Collection, and what Directors should do when a customer exceeds the debt threshold.
+
+---
+
+### 13 — Tender agreement management
 **File:** `tender-agreement-management.md`
 **Status:** ✅ Written
 **Who:** `Ops - Accounting`, `Ops - Directors`
 **Frequency:** When creating/updating hospital tenders or testing tender-priced invoices
-**What it covers:** Creating Tender Agreements, enforcing one active tender per hospital/item, handling duplicate active tender errors, handling over-supply stop messages, and confirming tender fulfillment quantities update transactionally when Sales Invoices are submitted.
+**What it covers:** Creating Tender Agreements, preserving manually Closed tenders, enforcing one active tender per hospital/item, handling duplicate active tender errors, handling over-supply stop messages, confirming tender fulfillment quantities update transactionally when Sales Invoices are submitted, and confirming cancellation reversal from the Sales Invoice tender fulfillment audit trail.
 
 ---
 
-### 12 — Stock adjustment and write-off
+### 14 — Stock adjustment and write-off
 **File:** `stock-adjustment-writeoff.md`
 **Status:** ✅ Written
 **Who:** `Ops - Inventory`, `Ops - Directors` (for approval of write-offs)
@@ -217,7 +239,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 13 — Cancellation and correction procedures
+### 15 — Cancellation and correction procedures
 **File:** `cancellation-and-corrections.md`
 **Status:** ✅ Written
 **Who:** All operational roles
@@ -226,7 +248,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 14 — Daily reporting checks (stock, outstanding, tasks)
+### 16 — Daily reporting checks (stock, outstanding, tasks)
 **File:** `daily-reporting-checks.md`
 **Status:** ✅ Written
 **Who:** Directors, `Ops - Accounting`, `Ops - Finance`, `Ops - Purchasing`
@@ -235,7 +257,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 15 — Delivery driver guide
+### 17 — Delivery driver guide
 **File:** `delivery-driver-guide.md`
 **Status:** ✅ Written
 **Who:** `Delivery Driver`
@@ -244,7 +266,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 16 — Collection Set setup and maintenance
+### 18 — Collection Set setup and maintenance
 **File:** `collection-set-setup.md`
 **Status:** ✅ Written
 **Who:** `Ops - Inventory`, `Ops - Order Creating`
@@ -253,7 +275,7 @@ This prevents testing from becoming confusing. If a permission/setup blocker app
 
 ---
 
-### 17 — New supplier setup
+### 19 — New supplier setup
 **File:** `new-supplier-setup.md`
 **Status:** ✅ Written
 **Who:** `Ops - Purchasing`, `Ops - Accounting`

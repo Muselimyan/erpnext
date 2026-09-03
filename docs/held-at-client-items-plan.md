@@ -18,8 +18,8 @@ This plan adds a fourth outcome, **Held**, without introducing a new persistent 
 | Task-scoped display table | One small child DocType (`Held Stock Followup Line`), same pattern as `Debt Collection Invoice` / `Debt Collection Payment` — exists only to render the follow-up task's table, not to persist state |
 | Resolution — Used | Stock is deducted **immediately** (Consumption SE) when resolved as Used. Invoice is **deferred** and folded into the customer's next Dispatch Case invoice, with lines clearly labeled as carried over. |
 | Resolution — Returned | Immediate standard return Stock Entry chain (`client_location_warehouse → Return Pickup In-Transit → Returns WH`). No invoice implication. |
-| Resolution — Lost/Damaged | Immediate write-off from stock **and** billed as a fee at `unit_price`/`discount_pct` — same policy as immediate Lost/Damaged (see "Lost/Damaged billing policy" below). Fee follows the same deferred-invoice mechanic as Used. |
-| Lost/Damaged billing policy | Both immediate Lost/Damaged (recorded at Returns Inspection) and held-then-discovered Lost/Damaged bill a fee at the row's normal `unit_price`/`discount_pct` — one consistent policy, no special-casing by timing. Previously this was an undecided gap (see `docs/implementation-questions.md` #17 and `docs/12-surgery-set-operational-workflow.md` §7.3); now resolved. |
+| Resolution — Lost/Damaged | Deferred/manual-review behavior. Lost/damaged stock resolution and any client billing are not automatic in the current implemented flow. Accounting/Directors decide whether to invoice, write off, replace, or escalate. |
+| Lost/Damaged billing policy | Immediate Lost/Damaged and held-then-discovered Lost/Damaged are both deferred/manual-review items in the current implemented flow. Automatic lost/damaged billing is not implemented and should be designed separately if needed later. |
 | Escape hatch | Manual "Invoice Now" action on the follow-up task, so Accounting can force a standalone invoice for a customer who doesn't place a new order for a long time, instead of the pending-invoice balance sitting forever. |
 | Aging follow-up automation | New scheduled script, same pattern as `Scheduled-debt-collection`, creates/updates one open `Held Stock Follow-up` task per customer. |
 | Aging threshold configuration | **Per-customer** field on `Customer` (mirrors `debt_threshold_amd`), not a single global constant and not per-item. |
@@ -36,7 +36,7 @@ This plan adds a fourth outcome, **Held**, without introducing a new persistent 
 | `held_used_qty` | Float, default 0 | Running total of held qty later resolved as Used (supports partial resolution) |
 | `held_returned_qty` | Float, default 0 | Running total of held qty later resolved as Returned |
 | `held_lost_qty` | Float, default 0 | Running total of held qty later resolved as Lost/Damaged |
-| `held_invoiced_qty` | Float, default 0 | How much of `held_used_qty + held_lost_qty` has actually been folded into an invoice so far (both are billable at `unit_price`/`discount_pct` under the same deferred mechanic) |
+| `held_invoiced_qty` | Float, default 0 | How much of `held_used_qty` has actually been folded into an invoice so far; held lost/damaged billing remains manual-review/deferred unless a later implementation changes this policy |
 | `held_resolution_log` | Small Text / Long Text | Append-only audit trail: date, qty, resolution type, reference document, per event |
 
 Formula changes:
@@ -69,14 +69,14 @@ Stock Balance on `client_location_warehouse` remains the physical cross-check fo
 - Customer name
 - Table of outstanding held lines (via `Held Stock Followup Line` child rows, recomputed each run): Dispatch Case, Item, Qty Outstanding, Batch/Serial, Held Since, Age (days)
 - Resolution controls per line: mark qty as Used / Returned / Lost-Damaged (supports partial qty)
-- "Invoice Now" button (escape hatch) — forces a standalone Sales Invoice for any `(held_used_qty + held_lost_qty) - held_invoiced_qty` balance instead of waiting for the next case
+- "Invoice Now" button (escape hatch) — forces a standalone Sales Invoice for any `held_used_qty - held_invoiced_qty` balance instead of waiting for the next case; lost/damaged billing remains manual-review/deferred
 
 **One active task per customer**, updated with the latest outstanding balance — same rule as the existing `Debt Collection` task (Doc 16, Task 6.10).
 
 **On each resolution recorded:**
 - Used → Consumption SE posted immediately from `client_location_warehouse`; `held_used_qty` incremented; invoice deferred to next case (see below)
 - Returned → standard return SE chain posted immediately; `held_returned_qty` incremented
-- Lost/Damaged → write-off posted immediately from `client_location_warehouse`; `held_lost_qty` incremented; **fee** invoice deferred to next case (same mechanic as Used) or via "Invoice Now"
+- Lost/Damaged → no automatic billing in the current implemented policy; Accounting/Directors manually decide whether to invoice, write off, replace, or escalate before any stock/accounting correction is posted
 - Task auto-completes when all its lines reach `held_used_qty + held_returned_qty + held_lost_qty == held_qty`
 
 ## Deferred invoicing mechanic

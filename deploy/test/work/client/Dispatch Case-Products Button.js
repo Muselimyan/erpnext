@@ -3,6 +3,10 @@
 // Enabled: 1
 // ---
 
+function dc_products_escape(value) {
+    return frappe.utils.escape_html(String(value === undefined || value === null ? "" : value));
+}
+
 frappe.ui.form.on("Dispatch Case", {
     refresh: function(frm) {
         // Add "Products" button to select items by category
@@ -140,10 +144,10 @@ frappe.ui.form.on("Dispatch Case", {
                                             items.forEach(function(item) {
                                                 let price = item.standard_rate ? frappe.format(item.standard_rate, {fieldtype: "Currency"}) : "-";
                                                 html += "<tr>";
-                                                html += "<td><input type='checkbox' class='item-checkbox' style='width:22px;height:22px;min-width:22px;min-height:22px;aspect-ratio:1/1;cursor:pointer' " + (selected_search_items[item.name] ? "checked " : "") + "data-item='" + item.name + "' data-item-name='" + (item.item_name || item.name) + "' data-price='" + (item.standard_rate || 0) + "'></td>";
-                                                html += "<td>" + (item.item_name || item.name) + "</td>";
-                                                html += "<td><small>" + item.name + "</small></td>";
-                                                html += "<td><small>" + (item.item_group || "") + "</small></td>";
+                                                html += "<td><input type='checkbox' class='item-checkbox' style='width:22px;height:22px;min-width:22px;min-height:22px;aspect-ratio:1/1;cursor:pointer' " + (selected_search_items[item.name] ? "checked " : "") + "data-item='" + dc_products_escape(item.name) + "' data-item-name='" + dc_products_escape(item.item_name || item.name) + "' data-price='" + dc_products_escape(item.standard_rate || 0) + "'></td>";
+                                                html += "<td>" + dc_products_escape(item.item_name || item.name) + "</td>";
+                                                html += "<td><small>" + dc_products_escape(item.name) + "</small></td>";
+                                                html += "<td><small>" + dc_products_escape(item.item_group || "") + "</small></td>";
                                                 html += "<td>" + price + "</td>";
                                                 html += "</tr>";
                                             });
@@ -221,9 +225,9 @@ function dc_products_render_items(dialog, items, query) {
         filtered.forEach(function(item) {
             let price = item.standard_rate ? frappe.format(item.standard_rate, {fieldtype: "Currency"}) : "-";
             html += "<tr>";
-            html += "<td><input type='checkbox' class='item-checkbox' style='width:22px;height:22px;min-width:22px;min-height:22px;aspect-ratio:1/1;cursor:pointer' data-item='" + item.name + "' data-item-name='" + (item.item_name || item.name) + "' data-price='" + (item.standard_rate || 0) + "'></td>";
-            html += "<td>" + (item.item_name || item.name) + "</td>";
-            html += "<td><small>" + item.name + "</small></td>";
+            html += "<td><input type='checkbox' class='item-checkbox' style='width:22px;height:22px;min-width:22px;min-height:22px;aspect-ratio:1/1;cursor:pointer' data-item='" + dc_products_escape(item.name) + "' data-item-name='" + dc_products_escape(item.item_name || item.name) + "' data-price='" + dc_products_escape(item.standard_rate || 0) + "'></td>";
+            html += "<td>" + dc_products_escape(item.item_name || item.name) + "</td>";
+            html += "<td><small>" + dc_products_escape(item.name) + "</small></td>";
             html += "<td>" + price + "</td>";
             html += "</tr>";
         });

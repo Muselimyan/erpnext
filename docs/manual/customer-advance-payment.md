@@ -32,6 +32,14 @@ Do not use this for normal invoice payment after the Sales Invoice exists. For i
    - **New Payment Amount:** amount received
    - **Payment Method:** Cash, Bank Transfer, or Card
    - **Payment Reference:** receipt/reference number
+
+The advance Payment Entry posts to the received-money account based on payment method:
+
+| Payment Method | Payment Entry `paid_to` account |
+|---|---|
+| Cash | Cash - Inmed |
+| Bank Transfer | Bank - Inmed |
+| Card | Bank - Inmed |
    - **Dispatch Case:** fill this only if the advance belongs to a specific case
 3. Confirm the amount and reference are correct.
 

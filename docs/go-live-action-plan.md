@@ -131,7 +131,7 @@ Run these in the staging environment or on the first real test case. Sign off ea
 | **Delivery gate (no photo)** | Set Delivery Status to `Delivered` on Delivery task without a delivery photo attached → hard block |
 | **Delivery gate (no handover note)** | Set Delivery Status to `Delivered` without `Driver Handover Note` filled → hard block |
 | **Return drop-off gate** | Set Pickup Status to `Returned to Warehouse` on Return Pickup task without drop-off photo → hard block |
-| **Debt threshold escalation** | Set a low `debt_threshold_amd` on a Customer with outstanding invoices → trigger hourly scheduler manually → Debt Collection task appears assigned to Finance team |
+| **Debt threshold escalation** | Set a low `debt_threshold_amd` on a Customer with outstanding invoices → trigger hourly scheduler manually → Director Debt Alert task appears |
 | **PO approval gate** | Create draft PO → attempt submit → blocked (status = Pending) → Purchase Approval task → Director approves → PO submits |
 | **PO re-approval** | Edit a line on an Approved draft PO → `director_approval_status` resets to Pending |
 | **Purchase Receipt gate** | Submit Purchase Receipt with row targeting non-`Main - Inmed` warehouse → hard block |

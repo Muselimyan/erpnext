@@ -550,15 +550,16 @@ Receivables / debt control:
 - The client’s unpaid balance increases.
 - Directors should be alerted if the threshold is exceeded.
 
-### Step 11A — Distribute Payment (Directors)
-When: after payment is received and confirmed according to your internal control policy.
+### Step 11A — Distribute Payment disabled/deferred
+Distribute Payment is currently disabled/out of the active flow pending final keep/delete decision.
 
-Operational rule:
-- A Director-owned `Distribute Payment` task must be created/maintained for each payment event that requires distribution.
+Current operational rule:
+- Payment recording happens through Finance `Debt Collection` tasks.
+- No separate `Distribute Payment` task is created after customer receipts while the script remains disabled.
 
 Note:
-- This step is financial-control only. It does not change stock.
-- It is not a gate for operational case closure; it may happen long after the case is `Closed`.
+- This deferred financial-control step does not change stock.
+- It is not a gate for operational case closure.
 
 
 ### Step 12 — Close the case (Order/Returns/Accounting)
@@ -615,7 +616,7 @@ Two acceptable approaches (choose one policy and apply consistently):
 
 ### 7.3 Lost / damaged items
 - Record on the case as Lost/Damaged.
-- **Policy (decided):** lost/damaged items are invoiced to the client as a fee, at the item's normal unit price/discount — the same rate as a used item. This applies uniformly across item categories, with no per-case director escalation required. Stock is written off from the client location warehouse immediately regardless of when the invoice is created. (See `docs/implementation-questions.md` #17.)
+- **Current implemented behavior:** lost/damaged items are not auto-invoiced by the current Dispatch Case invoice script. They remain pending manual review/resolution so Accounting/Directors can decide whether to invoice the client, write off internally, replace, or escalate. Automatic lost/damaged billing is a deferred future implementation.
 
 ### 7.4 Case cancelled before delivery
 - If stock is already in `Delivery In-Transit - Inmed`, transfer back to `Main - Inmed`.

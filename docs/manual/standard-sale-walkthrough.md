@@ -221,7 +221,7 @@
 
 **✅ Expected after Save:**
 - A **Payment Entry** (Receive type) is auto-created in ERPNext, allocated FIFO across open invoices
-- A **Distribute Payment task** is auto-created for the Finance Team (to handle physical payment)
+- No **Distribute Payment task** is created while that script remains disabled/deferred pending final decision
 - Outstanding balance on the task decreases
 
 **On full payment (outstanding = 0):**
@@ -263,5 +263,6 @@ Order entry task (manual)
         └─► Pack task (Inventory)
               └─► Delivery task (Driver) — Todo → Picked Up → Delivered
                     └─► Invoice Preparation task (Accounting)
-                          └─► Debt Collection task (Finance)  ─► Distribute Payment task
+                          └─► Debt Collection task (Finance)
+                                └─► Distribute Payment disabled/deferred
 ```

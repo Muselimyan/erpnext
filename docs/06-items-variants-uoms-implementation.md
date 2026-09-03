@@ -258,6 +258,16 @@ If you want barcode-first operations:
 1) On the Item, add the barcode value(s) so scanning can identify the item/variant.
 2) If multiple barcodes exist (unit pack vs outer carton), store all relevant ones.
 
+### 7.1.4 Legacy 1C code reference (optional)
+If the Item has a legacy code from the previous 1C/accounting system, store it in:
+- Label: `1C Code`
+- Fieldname: `custom_1c_code`
+- Fieldtype: `Data`
+
+Usage rule:
+- Use this field only as a searchable migration/reference value.
+- Do not use it as the ERPNext Item Code and do not change historical Item Codes to match 1C after transactions exist.
+
 ### 7.2 Create variants from templates
 Steps:
 1) Open the Item Template.

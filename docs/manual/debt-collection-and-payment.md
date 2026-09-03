@@ -1,6 +1,6 @@
 ﻿# Debt Collection and Client Payment Walkthrough
 
-**Purpose:** Standalone guide for the Finance team on how to record payments received from clients, track outstanding balances, and handle the Distribute Payment task. This flow is triggered automatically after a Sales Invoice is submitted for any Dispatch Case with a non-zero outstanding balance.
+**Purpose:** Standalone guide for the Finance team on how to record payments received from clients and track outstanding balances. This flow is triggered automatically after a Sales Invoice is submitted for any Dispatch Case with a non-zero outstanding balance. The Distribute Payment task is currently disabled/deferred pending final decision.
 
 **Estimated time:** 5–10 minutes per payment recording
 
@@ -17,13 +17,14 @@
 | Step | Task | Role |
 |---|---|---|
 | 1–5 | Record payment on Debt Collection task | `Ops - Finance` |
-| 6 | Handle Distribute Payment task | `Ops - Finance` |
+| Deferred | Distribute Payment task review/keep/delete decision | Finance/Directors with colleague |
 
 ---
 
 ## How the Debt Collection task works
 
 - A **Debt Collection task** is auto-created for a customer when a submitted Sales Invoice has an outstanding balance > 0.
+- This is different from a Director **Debt Alert** task. Debt Alert is only for threshold/risk visibility and does not contain the payment-recording workflow.
 - There is **one task per customer** — not one per Dispatch Case. All outstanding invoices for that customer are tracked in a single task.
 - When subsequent invoices are submitted for the same customer, they are added to the same Debt Collection task.
 - The task shows the complete picture: every open invoice, when it was issued, and the outstanding amount on each.
@@ -53,6 +54,14 @@
    - **New Payment Amount:** the amount the client just paid (in AMD)
    - **Payment Method:** `Cash`, `Bank Transfer`, or `Card`
    - **Payment Reference:** the transaction reference number, receipt number, or bank transfer confirmation ID
+
+The Payment Entry posts to the received-money account based on payment method:
+
+| Payment Method | Payment Entry `paid_to` account |
+|---|---|
+| Cash | Cash - Inmed |
+| Bank Transfer | Bank - Inmed |
+| Card | Bank - Inmed |
 2. Click **Save**.
 
 **✅ Expected after Save:**
@@ -61,7 +70,7 @@
 - Every payable Open Invoices row must have a linked Sales Invoice; if one is missing, the save is blocked until the task is corrected
 - The Payment Entry includes reference rows for the Sales Invoice(s) it paid, with the exact allocated amount per invoice
 - The **Outstanding Amount** on the task decreases by the paid amount
-- A **Distribute Payment task** is auto-created for the Finance team (see Step 3)
+- No **Distribute Payment task** is created in the current active flow because that script is disabled/deferred pending final decision
 
 **❌ Should NOT happen:**
 - Error saving the task with amount > 0 → check that `Payment Method` and `Payment Reference` are filled
@@ -69,19 +78,16 @@
 
 ---
 
-## Step 3 — Handle the Distribute Payment task
+## Step 3 — Distribute Payment is disabled/deferred
 
-After each payment is recorded, a **Distribute Payment task** is automatically created. This task represents the physical handling of the money (depositing cash, confirming a bank transfer has cleared, etc.).
+The **Distribute Payment** script is currently disabled and out of the active flow. After a payment is recorded, the system does not create a Distribute Payment task.
 
-**Login as:** `Ops - Finance`
+Pending final decision with the colleague:
 
-1. Search for `Task` and open the **Task** list, filter: **Task Kind = Distribute Payment**, **Status = Open**.
-2. Find the task related to this payment.
-3. Perform the physical action:
-   - **Cash:** count and deposit the cash amount
-   - **Bank Transfer:** confirm the transfer has cleared in the bank account
-   - **Card:** confirm the card terminal receipt matches
-4. Click the red **Complete Task** button near the Status field.
+1. Keep it disabled and later delete the script/task references; or
+2. Re-enable it after confirming the exact physical payment handling workflow.
+
+Until that decision is made, Finance should continue recording payments only through the Debt Collection task.
 
 ---
 
@@ -92,7 +98,7 @@ If the client pays less than the full outstanding amount:
 - The generated Payment Entry references the invoice(s) covered by the partial payment
 - The Debt Collection task remains **Open** with a reduced outstanding amount
 - The invoices that are not yet fully covered remain open
-- The next time the client pays, repeat Steps 1–3
+- The next time the client pays, repeat Steps 1–2
 
 **Example:**
 - Client owes AMD 800,000 across two invoices: Invoice A (AMD 500,000) and Invoice B (AMD 300,000)
@@ -149,7 +155,7 @@ Sales Invoice submitted (outstanding > 0)
   └─► Debt Collection task auto-created for customer (Ops - Finance)
         └─► Finance receives payment → fills amount + method + reference → Save
               └─► Payment Entry (Receive) auto-created — FIFO across open invoices
-              └─► Distribute Payment task auto-created → Finance handles physical payment → Complete Task
+              └─► Distribute Payment task is not created while disabled/deferred
               └─► [Repeat for each partial payment]
               └─► When outstanding = 0:
                     └─► Debt Collection task auto-completes

@@ -22,28 +22,53 @@ function Invoke-ErpRequest { param([string]$Method, [string]$Path, $Body=$null)
     return Invoke-RestMethod -Uri $Uri -Headers $Headers -Method $Method -Body ([System.Text.Encoding]::UTF8.GetBytes($Json)) -TimeoutSec 120
 }
 
-$ServerScriptName = "Sales-Invoice-after-submit-tender-update"
-$ServerScriptPath = Join-Path $TestRoot "work\server\Sales-Invoice-after-submit-tender-update.py"
-$LocalScript = Get-Content $ServerScriptPath -Raw
-$Current = (Invoke-ErpRequest Get "/api/resource/$(Enc 'Server Script')/$(Enc $ServerScriptName)?fields=$(Enc '["name","disabled","script"]')").data
+$AfterScriptName = "Sales-Invoice-after-submit-tender-update"
+$AfterScriptPath = Join-Path $TestRoot "work\server\Sales-Invoice-after-submit-tender-update.py"
+$AfterLocalScript = Get-Content $AfterScriptPath -Raw
+$AfterCurrent = (Invoke-ErpRequest Get "/api/resource/$(Enc 'Server Script')/$(Enc $AfterScriptName)?fields=$(Enc '["name","disabled","script"]')").data
+
+$BeforeScriptName = "Sales-Invoice-before-submit-tender-validation"
+$BeforeScriptPath = Join-Path $TestRoot "work\server\Sales-Invoice-before-submit-tender-validation.py"
+$BeforeLocalScriptWithHeader = Get-Content $BeforeScriptPath -Raw
+$BeforeLocalScript = [regex]::Replace($BeforeLocalScriptWithHeader, '(?s)^# Name:.*?# ---\r?\n\r?\n?', '')
+$BeforeExisting = $null
+try {
+    $BeforeExisting = (Invoke-ErpRequest Get "/api/resource/$(Enc 'Server Script')/$(Enc $BeforeScriptName)?fields=$(Enc '["name","disabled","script"]')").data
+} catch {
+    $BeforeExisting = $null
+}
 
 if ($Mode -eq "Check") {
     [pscustomobject]@{
         target = $BaseUrl
-        server_script = $Current.name
-        disabled = $Current.disabled
-        live_has_manual_commit = ([string]$Current.script -match "frappe\.db\.commit")
-        local_blocks_duplicate_active_tenders = ([string]$LocalScript -match "Multiple active Tender Agreements")
-        local_blocks_oversupply = ([string]$LocalScript -match "has only .* remaining")
-        local_has_manual_commit = ([string]$LocalScript -match "frappe\.db\.commit")
+        after_server_script = $AfterCurrent.name
+        after_disabled = $AfterCurrent.disabled
+        live_has_manual_commit = ([string]$AfterCurrent.script -match "frappe\.db\.commit")
+        local_blocks_duplicate_active_tenders = ([string]$AfterLocalScript -match "Multiple active Tender Agreements")
+        local_blocks_oversupply = ([string]$AfterLocalScript -match "has only .* remaining")
+        local_has_manual_commit = ([string]$AfterLocalScript -match "frappe\.db\.commit")
+        before_server_script_exists = ($null -ne $BeforeExisting)
+        before_local_validates_tender_price = ([string]$BeforeLocalScript -match "Invoice rate must equal tender price")
     } | ConvertTo-Json
     exit 0
 }
 
-$Updated = (Invoke-ErpRequest Put "/api/resource/$(Enc 'Server Script')/$(Enc $ServerScriptName)" @{ script = $LocalScript }).data
+$AfterUpdated = (Invoke-ErpRequest Put "/api/resource/$(Enc 'Server Script')/$(Enc $AfterScriptName)" @{ script = $AfterLocalScript }).data
+if ($BeforeExisting) {
+    $BeforeUpdated = (Invoke-ErpRequest Put "/api/resource/$(Enc 'Server Script')/$(Enc $BeforeScriptName)" @{ script = $BeforeLocalScript; disabled = 0 }).data
+} else {
+    $BeforeUpdated = (Invoke-ErpRequest Post "/api/resource/$(Enc 'Server Script')" @{
+        name = $BeforeScriptName
+        script_type = "DocType Event"
+        reference_doctype = "Sales Invoice"
+        doctype_event = "Before Submit"
+        disabled = 0
+        script = $BeforeLocalScript
+    }).data
+}
 [pscustomobject]@{
     target = $BaseUrl
-    updated = $Updated.name
-    modified = $Updated.modified
+    after_updated = $AfterUpdated.name
+    before_updated = $BeforeUpdated.name
     status = "updated"
 } | ConvertTo-Json

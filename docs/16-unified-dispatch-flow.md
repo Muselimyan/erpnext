@@ -78,7 +78,7 @@ Each row represents one item in the dispatch. Columns:
 | `unit_price` | Price per unit |
 | `discount_pct` | Discount percentage (triggers approval if > 0) |
 | `returned_qty` | Filled by Returns team at inspection |
-| `lost_damaged_qty` | Filled by Returns team at inspection. Billed as a fee at `unit_price`/`discount_pct` (same rate as a used item) — see §9A "Lost/Damaged Billing Policy". |
+| `lost_damaged_qty` | Filled by Returns team at inspection. Not auto-invoiced in the current flow; remains pending manual review/resolution — see §9A "Lost/Damaged Billing Policy". |
 | `used_qty` | Auto-computed: `dispatched_qty - returned_qty - lost_damaged_qty` |
 
 ### 4.3 Payment Fields
@@ -433,7 +433,9 @@ Access to these APIs must remain aligned with Task visibility and Dispatch Case 
 
 **Kind:** `Debt Collection`
 **Default assignee:** Finance Team
-**Created by:** Invoice submission when outstanding amount > 0
+**Created by:** Dispatch/invoice flow when outstanding amount > 0
+
+This is the Finance payment workflow task. It is separate from Director `Debt Alert` tasks created by the scheduled GL-based threshold check.
 
 **One active task per customer at any time.** If a Debt Collection task already exists for this customer, the new case's outstanding amount is added to the existing task's running balance rather than creating a new task.
 
@@ -455,6 +457,14 @@ Finance fills in:
 - Payment method (Cash / Bank Transfer / Card)
 - Payment reference number (bank transaction ID, receipt number, etc.)
 
+Payment Entry received-money account mapping:
+
+| Payment Method | `paid_to` account |
+|---|---|
+| Cash | Cash - Inmed |
+| Bank Transfer | Bank - Inmed |
+| Card | Bank - Inmed |
+
 **Allocation (FIFO):**
 - Default: system auto-allocates to oldest Sales Invoices first, using each invoice's posting date and invoice name as a tie-breaker.
 - Every payable row in the Open Invoices table must have a linked Sales Invoice before payment can be recorded; otherwise the save is blocked so task balances cannot diverge from accounting allocation.
@@ -464,21 +474,60 @@ Finance fills in:
 The Debt Collection task is marked Completed only when total outstanding = 0 for all cases it covers. It can be updated multiple times as partial payments arrive.
 
 **On each payment recorded:**
-- Server script auto-creates a draft **Payment Entry** in ERPNext with the specified allocation
-- **Task 6.11** (Distribute Payment) created for Finance Team for physical payment handling
-- Accounting team submits the auto-created Payment Entry (they never contact Finance about this)
+- Server script auto-creates a **Payment Entry** in ERPNext with the specified allocation
+- **Distribute Payment is currently disabled/deferred** and no physical-handling task is created unless the business flow is re-enabled later
+- Any decision to re-enable or delete Distribute Payment should be made after final review with the colleague
 
 **On full payment (outstanding = 0):**
 - Case(s) state → `Closed`
 - Task auto-completes
+- Debt Closure Approval task is created for Directors to review payment evidence and calculate profit
 
 ---
 
-### Task 6.11 — Distribute Payment
+### Task 6.10A — Debt Closure Approval
+
+**Kind:** `Debt Closure Approval`
+**Default assignee:** `Debt Closure Approval` Task Access Policy default team user
+**Created by:** completion of Task 6.10 (Debt Collection)
+**Completion allowed by:** roles listed in the `Debt Closure Approval` Task Access Policy, or Administrator
+
+**Contains:**
+- Customer
+- Open Invoices copied from the Debt Collection task
+- Payment History copied from the Debt Collection task
+- Total amount paid
+
+**On Completion:**
+- System calculates profit across all unique Sales Invoices in the Open Invoices table
+- Total profit is written to the approval task's `custom_case_profit`
+- Each linked Dispatch Case receives its own invoice profit in the Dispatch Case `profit` field
+- If Standard Buying prices are missing, the task shows a warning because profit may be overstated
+
+For the operational walkthrough, see `docs/manual/debt-closure-approval.md`.
+
+---
+
+### Task 6.10B — Debt Alert
+
+**Kind:** `Debt Alert`
+**Default assignee:** Directors Team
+**Created by:** scheduled debt-threshold check, not by the dispatch flow
+
+This is a Director risk/visibility task. It is created when a customer's GL-based net receivable is above the Customer `debt_threshold_amd`.
+
+It does not replace the Finance `Debt Collection` task and should not be used to record payments. Finance payment recording belongs to `Debt Collection`, because that task contains the Open Invoices table and creates Payment Entries with invoice references.
+
+For the operational walkthrough, see `docs/manual/debt-alert.md`.
+
+---
+
+### Task 6.11 — Distribute Payment — disabled/deferred
 
 **Kind:** `Distribute Payment`
-**Default assignee:** Finance Team
-**Created by:** each time a payment is recorded on the Debt Collection task
+**Default assignee:** Finance Team if re-enabled
+**Current status:** disabled/out of active flow pending final decision
+**Would be created by:** each time a payment is recorded on the Debt Collection task, if the disabled script is re-enabled
 
 **Contains:**
 - Amount received
@@ -486,11 +535,11 @@ The Debt Collection task is marked Completed only when total outstanding = 0 for
 - What to do: take cash to bank / confirm bank transfer to correct account / etc.
 - Link to the auto-created Payment Entry (for reference)
 
-**Actions:**
+**If re-enabled later:**
 - Finance performs the physical payment action (bank deposit, account transfer, etc.)
-- Marks task Completed when done
+- Finance marks task Completed when done
 
-*This task does not affect the Dispatch Case state.*
+*This task does not currently affect the Dispatch Case state because the script that creates it is disabled.*
 
 ---
 
@@ -508,6 +557,7 @@ The Debt Collection task is marked Completed only when total outstanding = 0 for
 
 **On Completion:**
 - Server script auto-creates a **Customer Advance Payment Entry** in ERPNext (not linked to any invoice)
+- The Payment Entry uses the same payment-method-to-`paid_to` account mapping as Debt Collection payments
 - Customer's available advance credit is updated
 - If a Debt Collection task exists for this customer, it reflects the credit and reduces the required collection amount
 - If a specific Dispatch Case is linked, the advance is appended to the case's `advance_payments` audit table
@@ -537,12 +587,12 @@ All SEs are auto-created and auto-submitted by server scripts. No team member ev
 
 Finance never interacts with ERPNext Payment Entry forms. All Payment Entries are created automatically:
 
-| Trigger | Payment Entry type | Created by |
-|---|---|---|
-| Payment recorded on Debt Collection task | Receive — allocated to invoices per FIFO/manual | Server script on task save |
-| Payment Received task Completed (advance) | Receive — Customer Advance (no invoice link) | Server script on task completion |
+| Trigger | Payment Entry type | Created by | Submit behavior |
+|---|---|---|---|
+| Payment recorded on Debt Collection task | Receive — allocated to invoices by FIFO | Server script on task save | Auto-submitted by the script |
+| Payment Received task Completed (advance) | Receive — Customer Advance (no invoice link) | Server script on task completion | Left as draft for Accounting review/submission |
 
-The Accounting team submits these auto-created Payment Entries as part of their normal accounting work. They do not contact Finance to do so.
+Finance never opens Payment Entry forms. Accounting reviews/submits draft advance Payment Entries as part of normal accounting work.
 
 ---
 
@@ -599,8 +649,10 @@ Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-su
 | `Returns processing / verification` | Inspecting and recording returned quantities | `Ops - Returns` |
 | `Returns restocking` | Moving returned items from Returns WH to Main | `Ops - Returns` |
 | `Invoice preparation / create invoice` | Reviewing and submitting auto-created invoice | `Ops - Accounting` |
-| `Debt Collection` | Tracking and recording customer payments | `Ops - Finance` |
-| `Distribute Payment` | Physical payment handling (bank deposit, transfers) | `Ops - Finance` |
+| `Debt Collection` | Tracking and recording customer payments against open invoices | `Ops - Finance` |
+| `Debt Alert` | Director threshold/risk alert from scheduled GL-based debt check | `Ops - Directors` |
+| `Debt Closure Approval` | Director review after full customer payment; calculates multi-invoice profit | `Ops - Directors` |
+| `Distribute Payment` | Disabled/deferred physical payment handling step; keep only until final keep/delete decision | `Ops - Finance` if re-enabled |
 | `Payment Received` | Logging advance/upfront payments before invoice | `Ops - Finance` |
 
 New kinds to add (not yet in current `task_kind` field options):
@@ -618,7 +670,7 @@ Task inbox only. Creates Order entry tasks when calls/messages arrive. Never ope
 Task inbox. Opens Order entry tasks, creates and submits Dispatch Cases (the only time this role interacts with a Dispatch Case form). Links submitted cases back to tasks.
 
 ### `Ops - Directors`
-Task inbox. Opens Discount Approval tasks, reviews discounts, marks approved or rejected.
+Task inbox. Opens Discount Approval tasks, reviews discounts, marks approved or rejected. Reviews Debt Alert tasks when customers exceed debt thresholds. Opens Debt Closure Approval tasks after customer debts are fully paid, reviews payment evidence, and completes approval to calculate total/multi-invoice profit.
 
 ### `Ops - Inventory`
 Task inbox (filtered by `Pack / prepare items`). Prepares products according to the linked Dispatch Case. Batch/serial fields are temporarily not required while tracking is disabled. Marks task done. Never opens a Stock Entry.
@@ -630,10 +682,10 @@ Task inbox (filtered by `Delivery` and `Pickup Returns`). Uses multi-state butto
 Task inbox. For `Return Call` tasks: assigns driver and schedules pickup. For Inspection tasks: opens Dispatch Case to fill returned quantities (the only interaction with the Dispatch Case form for this role). For Restock tasks: marks done when physical restocking complete.
 
 ### `Ops - Accounting`
-Task inbox. Opens linked draft Sales Invoice, verifies, submits. Also submits auto-created Payment Entries (separate from Finance's task flow). Never opens a Dispatch Case.
+Task inbox. Opens linked draft Sales Invoice, verifies, submits. Also reviews/submits draft advance Payment Entries created from Payment Received tasks. Never opens a Dispatch Case.
 
 ### `Ops - Finance`
-Task inbox. Records incoming payments on Debt Collection tasks. Creates Payment Received tasks for advances. Handles physical payment distribution via Distribute Payment tasks. Never opens an ERPNext Payment Entry form.
+Task inbox. Records incoming payments on Debt Collection tasks. Creates Payment Received tasks for advances. Distribute Payment tasks are currently disabled/deferred pending final decision. Never opens an ERPNext Payment Entry form.
 
 ---
 

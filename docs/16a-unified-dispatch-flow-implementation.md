@@ -284,7 +284,7 @@ Add a **Section Break** with label `Record Payment`, then:
 | `invoice_amount` | Invoice Amount | Currency | Read Only |
 | `paid_amount` | Paid Amount | Currency | Read Only |
 | `outstanding_amount` | Outstanding | Currency | Read Only |
-| `allocated_now` | Allocate Now | Currency | Editable — Finance fills for FIFO override |
+| `allocated_now` | Allocate Now | Currency | System-calculated temporary allocation amount for automatic FIFO; Finance does not manually override allocation in the current flow |
 
 4) Save.
 
@@ -315,7 +315,7 @@ Add a **Section Break** with label `Record Payment`, then:
    - Fieldname: `open_invoices`
    - Fieldtype: `Table`
    - Options: `Debt Collection Invoice`
-   - Read Only: No (Finance edits `allocated_now` column)
+   - Read Only: Yes in the current flow (system uses `allocated_now` only as a temporary automatic FIFO calculation field)
 4) Add a **Section Break**: label `Debt Collection — Payment History`.
 5) Add field:
    - Label: `Payment History`
@@ -503,7 +503,7 @@ Open `User Permission`. For each real user, grant `Task Access Policy` records m
 | `Delivery Driver` | Delivery, Pickup Returns |
 | `Ops - Returns` | Pickup Returns, Returns processing / verification, Returns restocking |
 | `Ops - Accounting` | Invoice preparation / create invoice |
-| `Ops - Finance` | Debt Collection, Distribute Payment, Payment Received |
+| `Ops - Finance` | Debt Collection, Payment Received; Distribute Payment only if the deferred flow is re-enabled |
 | `Ops - Directors` | All policies |
 
 Also grant `Ops - Order Creating` the `Order entry` policy so they can see the Order entry tasks they're picking up.
@@ -1004,14 +1004,8 @@ def _create_sales_invoice(case):
                 "qty": r.used_qty,
                 "rate": rate,
             })
-        # Lost/Damaged commercial policy (docs/implementation-questions.md #17, resolved):
-        # billed as a fee at the same rate as a used item, not written off for free.
-        if (r.lost_damaged_qty or 0) > 0:
-            items.append({
-                "item_code": r.item_code,
-                "qty": r.lost_damaged_qty,
-                "rate": rate,
-            })
+        # Lost/damaged quantities are not auto-invoiced in the current flow.
+        # They remain pending manual Accounting/Director review/resolution.
     si = frappe.get_doc({
         "doctype": "Sales Invoice",
         "customer": case.customer,
@@ -1083,146 +1077,20 @@ _run()
 
 **Trigger:** DocType Event → `Task` → `Before Save`
 
-Add this logic to the same Before Save script (Script 9.2), or as a separate script.
+Current Group 3 behavior is implemented in `deploy/test/work/server/Task-before-save-payment-recording.py`.
 
-```python
-import frappe
+The current local script:
 
-def _run():
-    before = doc.get_doc_before_save()
-    before_payment = (before.new_payment_amount if before else None) or 0
+- supports automatic FIFO allocation only;
+- sorts FIFO by linked Sales Invoice posting date, then invoice name;
+- requires every payable Open Invoices row to have a linked Sales Invoice;
+- preserves allocation amounts before clearing `allocated_now`;
+- creates Payment Entry Sales Invoice reference rows;
+- maps `paid_to` by payment method;
+- auto-submits the invoice-allocated Payment Entry;
+- does not create a Distribute Payment task while that flow remains disabled/deferred.
 
-    # Only act when a new payment amount is entered (field changed from blank/zero)
-    if doc.task_kind != "Debt Collection":
-        return
-    if not (doc.new_payment_amount or 0) > 0:
-        return
-    if (doc.new_payment_amount or 0) == before_payment:
-        return  # No change
-
-    amount = doc.new_payment_amount
-    method = doc.payment_method or "Cash"
-    ref = doc.payment_reference or ""
-
-    # FIFO allocation: fill allocated_now from oldest to newest using remaining balance
-    remaining = amount
-    for row in sorted(doc.open_invoices, key=lambda r: r.sales_invoice):
-        to_apply = min(remaining, row.outstanding_amount or 0)
-        row.allocated_now = to_apply
-        remaining -= to_apply
-        if remaining <= 0:
-            break
-
-    # Apply allocations: reduce outstanding on each invoice row
-    for row in doc.open_invoices:
-        apply = row.allocated_now or 0
-        if apply > 0:
-            row.paid_amount = (row.paid_amount or 0) + apply
-            row.outstanding_amount = (row.outstanding_amount or 0) - apply
-            row.allocated_now = 0
-
-    doc.total_outstanding = sum((r.outstanding_amount or 0) for r in doc.open_invoices)
-
-    # Log to payment history
-    doc.append("payment_history", {
-        "payment_date": frappe.utils.now_datetime(),
-        "amount": amount,
-        "method": method,
-        "reference": ref,
-    })
-
-    # Schedule Payment Entry creation in after_save (store data in a temp flag)
-    doc._pending_payment = {
-        "amount": amount,
-        "method": method,
-        "reference": ref,
-        "allocations": [
-            {"sales_invoice": r.sales_invoice, "amount": r.paid_amount}
-            for r in doc.open_invoices if (r.allocated_now or 0) == 0
-            # Note: rows that had allocated_now > 0 have now been zeroed above
-            # Recompute: use the payment_history last entry cross-referencing open_invoices
-        ],
-    }
-
-    # Clear the input fields for next payment
-    doc.new_payment_amount = 0
-    doc.payment_method = ""
-    doc.payment_reference = ""
-
-    # Auto-complete if fully paid
-    if doc.total_outstanding <= 0:
-        doc.status = "Completed"
-
-_run()
-```
-
-### Script 9.5 — Task: After Save — create Payment Entry from Debt Collection task
-
-**Trigger:** DocType Event → `Task` → `After Save`
-
-Add this to the existing After Save script (Script 9.3).
-
-```python
-import frappe
-
-def _run():
-    # Payment Entry creation for Debt Collection task
-    if doc.task_kind != "Debt Collection":
-        return
-
-    pending = getattr(doc, "_pending_payment", None)
-    if not pending or not pending.get("amount"):
-        return
-
-    # Create Payment Entry as draft (Accounting will submit)
-    pe = frappe.get_doc({
-        "doctype": "Payment Entry",
-        "payment_type": "Receive",
-        "party_type": "Customer",
-        "party": doc.customer,
-        "paid_amount": pending["amount"],
-        "received_amount": pending["amount"],
-        "mode_of_payment": pending["method"],
-        "reference_no": pending["reference"],
-        "reference_date": frappe.utils.today(),
-        "company": frappe.defaults.get_defaults().get("company"),
-        "paid_to": _get_account_for_method(pending["method"]),
-    })
-    pe.insert(ignore_permissions=True)
-
-    # Update last payment_history row with payment_entry link
-    if doc.payment_history:
-        last = doc.payment_history[-1]
-        frappe.db.set_value("Debt Collection Payment", last.name, "payment_entry", pe.name)
-
-    # Create Distribute Payment task
-    t = frappe.get_doc({
-        "doctype": "Task",
-        "subject": f"Distribute Payment: {doc.customer} — {pending['amount']} AMD",
-        "task_kind": "Distribute Payment",
-        "task_access_policy": "Distribute Payment",
-        "customer": doc.customer,
-        "description": (
-            f"Amount: {pending['amount']} AMD\n"
-            f"Method: {pending['method']}\n"
-            f"Reference: {pending['reference']}\n"
-            f"Action: {'Take cash to bank' if pending['method'] == 'Cash' else 'Verify transfer to correct account'}."
-        ),
-        "_assign": frappe.json.dumps(["team-finance@internal"]),
-    })
-    t.insert(ignore_permissions=True)
-
-def _get_account_for_method(method):
-    # Map payment method to ERPNext account name. Adjust to your chart of accounts.
-    mapping = {
-        "Cash": "Cash - Inmed",
-        "Bank Transfer": "Bank - Inmed",
-        "Card": "Bank - Inmed",
-    }
-    return mapping.get(method, "Cash - Inmed")
-
-_run()
-```
+Manual FIFO override is not supported in the current Group 3 flow.
 
 ### Script 9.6 — Task: After Save — create advance Payment Entry from Payment Received task
 
@@ -1355,7 +1223,7 @@ Add these shortcuts to the relevant workspace for each role's task inbox. Use th
 | VIEW: Invoice Tasks | Task | `task_kind = Invoice preparation / create invoice, status not in Completed,Cancelled` | Accounting |
 | VIEW: Debt Collection Tasks | Task | `task_kind = Debt Collection, status not in Completed,Cancelled` | Finance |
 | VIEW: Payment Received Tasks | Task | `task_kind = Payment Received, status not in Completed,Cancelled` | Finance |
-| VIEW: Distribute Payment Tasks | Task | `task_kind = Distribute Payment, status not in Completed,Cancelled` | Finance |
+| VIEW: Distribute Payment Tasks | Task | `task_kind = Distribute Payment, status not in Completed,Cancelled`; retained only if deferred flow is re-enabled | Finance |
 | VIEW: Discount Approval Tasks | Task | `task_kind = Discount Approval, status not in Completed,Cancelled` | Directors |
 | VIEW: All Dispatch Cases | Dispatch Case | *(no filter)* | Directors, Coordinators |
 
@@ -1421,7 +1289,7 @@ Work through this checklist in order after completing all setup steps.
 - [ ] Log in as `Ops - Finance`; open the Debt Collection task
 - [ ] Confirm the open invoices table shows the correct case and outstanding amount
 - [ ] Enter a payment amount and payment method; save
-- [ ] Expected: FIFO allocation applied; Payment Entry (draft) auto-created; `Distribute Payment` task created; `new_payment_amount` cleared
+- [ ] Expected: FIFO allocation applied; Payment Entry auto-created; no `Distribute Payment` task created while disabled/deferred; `new_payment_amount` cleared
 - [ ] Record a second partial payment; save
 - [ ] Expected: payment history grows; outstanding decreases
 - [ ] Record final payment covering remaining balance; save

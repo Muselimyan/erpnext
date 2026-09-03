@@ -7,11 +7,11 @@
 
 for row in doc.items:
     row.remaining_quantity = (row.won_quantity or 0) - (row.supplied_quantity or 0)
-from frappe.utils import nowdate, getdate
-today = getdate(nowdate())
-valid_from = getdate(doc.valid_from) if doc.valid_from else None
-valid_to = getdate(doc.valid_to) if doc.valid_to else None
-if doc.status == "Draft":
+
+today = frappe.utils.getdate(frappe.utils.nowdate())
+valid_from = frappe.utils.getdate(doc.valid_from) if doc.valid_from else None
+valid_to = frappe.utils.getdate(doc.valid_to) if doc.valid_to else None
+if doc.status == "Closed":
     pass
 elif valid_from and valid_to:
     if today < valid_from:

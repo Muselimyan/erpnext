@@ -5,7 +5,7 @@
 # Disabled: 0
 # ---
 
-DIRECTOR_ROLE = "Ops - Directors"
+DEBT_ALERT_KIND = "Debt Alert"
 
 def assign_single_owner(task_name, user):
     frappe.db.set_value("Task", task_name, "_assign", json.dumps([user]), update_modified=False)
@@ -61,30 +61,18 @@ if not company:
     companies = frappe.get_all("Company", pluck="name")
     company = companies[0] if companies else None
 
+debt_alert_assignee = ""
 if company:
-    director_users = frappe.get_all(
-        "Has Role",
-        filters={"role": DIRECTOR_ROLE},
-        pluck="parent",
+    policy = frappe.get_doc("Task Access Policy", DEBT_ALERT_KIND)
+    debt_alert_assignee = policy.default_team_user or ""
+
+    customers = frappe.get_all(
+        "Customer",
+        filters={"disabled": 0},
+        fields=["name", "customer_name", "debt_threshold_amd"],
     )
-    director_users = sorted(list(set(director_users or [])))
 
-    director_users = [
-        u
-        for u in director_users
-        if u not in ("Administrator", "Guest") and int(frappe.db.get_value("User", u, "enabled") or 0) == 1
-    ]
-
-    if director_users:
-        assigned_director = director_users[0]
-
-        customers = frappe.get_all(
-            "Customer",
-            filters={"disabled": 0},
-            fields=["name", "customer_name", "debt_threshold_amd"],
-        )
-
-if company and director_users:
+if company and debt_alert_assignee:
     for c in customers:
         threshold = float(c.debt_threshold_amd or 0)
         if threshold <= 0:
@@ -98,7 +86,7 @@ if company and director_users:
         existing = frappe.get_all(
             "Task",
             filters={
-                "task_kind": "Debt Collection",
+                "task_kind": DEBT_ALERT_KIND,
                 "customer": c.name,
                 "status": ["!=", "Completed"],
             },
@@ -109,13 +97,13 @@ if company and director_users:
             task = frappe.get_doc("Task", existing[0])
         else:
             task = frappe.new_doc("Task")
-            task.subject = f"Debt Collection â€” {c.customer_name}"
+            task.subject = f"Debt Alert - {c.customer_name}"
             task.status = "Open"
-            task.task_kind = "Debt Collection"
-            task.task_access_policy = "Debt Collection"
+            task.task_kind = DEBT_ALERT_KIND
+            task.task_access_policy = DEBT_ALERT_KIND
             task.customer = c.name
             task.insert(ignore_permissions=True)
-            assign_single_owner(task.name, assigned_director)
+            assign_single_owner(task.name, debt_alert_assignee)
 
         task.current_debt_amd = debt
         task.debt_threshold_amd = threshold

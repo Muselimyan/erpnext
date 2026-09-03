@@ -102,7 +102,7 @@ To know “what items are currently at which client location group” at any tim
 - **Decision**: the system must track outstanding debt per client (accounts receivable).
 - **Decision**: each client may have a different debt threshold.
 - **Decision**: directors must be alerted when a client exceeds its threshold.
-- **Decision**: the alert must be automated by creating (or updating) a director **Debt Collection** task for that client.
+- **Decision**: the alert must be automated by creating (or updating) a director **Debt Alert** task for that client. Finance **Debt Collection** tasks remain separate and are created by the invoice/dispatch payment workflow.
 
 ### 6.6.2 Partial payments (“semi-paid” invoices) and batched receipts
 - **Decision**: the system must support **partial payments** against Sales Invoices (invoices can be **Partly Paid** until fully settled).
@@ -114,7 +114,7 @@ To know “what items are currently at which client location group” at any tim
 - **Decision**: default payment allocation is **oldest invoices first**.
 - **Decision**: there is **no time limit** for leaving money as an unallocated advance (it may represent long-lived client credit).
 - **Decision**: allocation/adjustment of payment allocations is allowed for **Accounting and Directors**.
-- **Decision**: the internal `Distribute Payment` control step is created per **payment receipt**.
+- **Deferred decision**: the internal `Distribute Payment` control step was originally specified per **payment receipt**, but the current implementation keeps this script disabled/out of active flow pending final keep/delete decision with the colleague.
 
 Additional requirement (upfront payments / prepaid delivery):
 - Some clients pay **before delivery**.
@@ -279,7 +279,7 @@ Receivables payment behavior requirement (new):
   - what is invoiced
   - what is unpaid
 - Directors can see which clients have exceeded their debt threshold.
-- When a client exceeds its threshold, a director Debt Collection task exists and reflects the current debt.
+- When a client exceeds its threshold, a director Debt Alert task exists and reflects the current GL-based net receivable debt.
 
 ### 7.5 Surgery set (box) flow: partial consumption + return
 High-level requirements:

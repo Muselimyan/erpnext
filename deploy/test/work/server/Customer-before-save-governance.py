@@ -1,6 +1,6 @@
 ﻿# Name: Customer-before-save-governance
 # Type: DocType Event
-# DocType: 
+# DocType: Customer
 # Event: Before Save
 # Disabled: 0
 # ---

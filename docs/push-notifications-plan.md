@@ -6,7 +6,7 @@
 
 **Mobile app confirmed:** [ERPNext Workflow](https://play.google.com/store/apps/details?id=com.midocean.erpnextworkflow) by Midocean Technologies (`com.midocean.erpnextworkflow`)
 
-**Status:** Plan — pending review before execution.
+**Status:** Superseded / not implemented. The current active implementation is direct Telegram Bot API task notifications; see `18-telegram-and-notifications.md`.
 
 **Verified server state (Jul 3 2026):**
 - Frappe `16.15.0` / ERPNext `16.14.0` (v16)

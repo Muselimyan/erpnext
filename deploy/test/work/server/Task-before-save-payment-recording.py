@@ -17,6 +17,9 @@ else:
     else:
         amount = doc.new_payment_amount
         method = doc.payment_method_dc or "Cash"
+        paid_to_account = "Cash - Inmed"
+        if method in ("Bank Transfer", "Card"):
+            paid_to_account = "Bank - Inmed"
         ref = doc.payment_reference_dc or ""
         remaining = amount
         invoice_dates = {}
@@ -59,7 +62,7 @@ else:
             "reference_no": ref,
             "reference_date": frappe.utils.nowdate(),
             "company": "InMED",
-            "paid_to": "Cash - Inmed",
+            "paid_to": paid_to_account,
         })
         for allocation in allocations:
             if allocation.get("sales_invoice") and (allocation.get("allocated_amount") or 0) > 0:

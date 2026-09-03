@@ -44,7 +44,7 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `13-reporting-pack-implementation.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
 | `15-reporting-requirements-review.md` | 🟡 Software deployed; report value quality depends on Standard Buying prices and real/test transactions |
 | `15a-reporting-requirements-implementation.md` | 🟡 26/26 reports/functions/workspaces deployed or existing; remaining work is smoke testing and master-data-dependent value validation |
-| `16-unified-dispatch-flow.md` | 🟡 Dispatch Case flow deployed; `unit_price` optional; end-to-end no-return and return-expected smoke tests still required |
+| `16-unified-dispatch-flow.md` | 🟡 Dispatch Case flow deployed; `unit_price` optional; B-10 financial field server-side protection is deferred for discussion with field-permission direction recorded in Group 3 audit |
 | `16a-unified-dispatch-flow-implementation.md` | 🟡 Dispatch Case implementation deployed; `unit_price` optional; end-to-end no-return and return-expected smoke tests still required |
 | `16b-unified-dispatch-flow-gap-analysis.md` | 🟡 No core implementation gap remains; `Dispatch - Task Queues` workspace deployed; business workflow still needs smoke test |
 | `17-purchase-cost-and-valuation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
@@ -52,7 +52,9 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `18-photo-system.md` | Photo system requirements - authoritative reference; deployed logging on test; corrections to other docs applied |
 | `ERPNext Barcode/FIXES_DOCUMENTATION.md` | 🟡 Barcode logic prepared; live Purchase Receipt deployment/smoke test still required |
 | `ERPNext Barcode/IMPLEMENTATION_READY.md` | 🟡 Barcode implementation-ready; live deployment/smoke test still required |
-| `manual/tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply controls still need smoke test |
+| `manual/debt-closure-approval.md` | 🟡 Manual written; multi-invoice profit calculation still needs smoke test |
+| `manual/debt-alert.md` | 🟡 Manual written; scheduled Director debt-threshold alert flow still needs smoke test |
+| `manual/tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply/cancellation reversal controls still need smoke test |
 
 ### Superseded / historical reference only
 | File | Working status |
@@ -205,7 +207,7 @@ These statuses describe whether the matching ERPNext area is already in working 
   - Sales order capture rules
   - Delivery process
   - Invoicing and receivables basics
-  - Client debt thresholds + automated director Debt Collection task rule
+  - Client debt thresholds + automated director Debt Alert task rule
   - Optional hospital/doctor context capture on Sales Order and Sales Invoice
   - Discount entry + approval points (order team applies; director approves)
 
@@ -311,7 +313,7 @@ These statuses describe whether the matching ERPNext area is already in working 
   - 14 case states from Draft → Closed
   - Stock entries auto-submitted at each transition
   - Roles: `Ops - Order Creating`, `Ops - Order Accepting`, `Ops - Inventory`, `Delivery Driver`, `Ops - Returns`, `Ops - Accounting`, `Ops - Finance`
-  - Debt Collection and Distribute Payment tasks integrated
+  - Debt Collection integrated; Distribute Payment is disabled/deferred pending final keep/delete decision
 
 ### 16A — Unified Dispatch Flow (Implementation)
 **File**: `16a-unified-dispatch-flow-implementation.md`

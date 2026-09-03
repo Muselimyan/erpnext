@@ -299,7 +299,7 @@
 
 **✅ Expected after Save:**
 - **Payment Entry** auto-created (Receive type), allocated FIFO across oldest invoices first
-- **Distribute Payment task** auto-created for Finance Team (to handle physical payment actions)
+- No **Distribute Payment task** is created while that script remains disabled/deferred pending final decision
 - Outstanding balance on the task decreases
 
 **On full payment (outstanding = 0):**
@@ -347,7 +347,7 @@ Order entry task (manual)
                                       -> Restock task (Returns) — parallel
                                       -> Invoice Preparation task (Accounting)
                                             -> Debt Collection task (Finance)
-                                                  -> Distribute Payment task (Finance)
+                                                  -> Distribute Payment disabled/deferred
 ```
 
 ---

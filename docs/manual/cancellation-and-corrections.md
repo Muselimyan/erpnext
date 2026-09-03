@@ -129,10 +129,11 @@ Dispatch Case
 3. Re-create the Payment Entry with correct details
 
 **Client payment recorded in error:**
-1. Cancel the Payment Entry (Finance + Director visibility)
-2. The Debt Collection task outstanding balance will increase back to its previous state
-3. If the case was auto-closed by this payment, it will re-open
-4. Re-record the correct payment
+1. Cancel the Payment Entry (Accounting + Director visibility)
+2. Manually review the related Debt Collection task and Dispatch Case
+3. Current behavior: cancelling the Payment Entry does not automatically increase the Debt Collection task outstanding balance and does not automatically re-open an auto-closed case
+4. If correction is needed, Accounting/System Manager must manually adjust or recreate the operational task/case state before the correct payment is recorded
+5. Re-record the correct payment after the task/case state is confirmed
 
 ---
 

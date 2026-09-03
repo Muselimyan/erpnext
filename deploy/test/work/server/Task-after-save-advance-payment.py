@@ -13,6 +13,11 @@ if not (is_completing and doc.task_kind == "Payment Received"):
 elif not (doc.new_payment_amount or 0) > 0:
     pass
 else:
+    method = doc.payment_method_dc or "Cash"
+    paid_to_account = "Cash - Inmed"
+    if method in ("Bank Transfer", "Card"):
+        paid_to_account = "Bank - Inmed"
+
     pe = frappe.get_doc({
         "doctype": "Payment Entry",
         "payment_type": "Receive",
@@ -20,11 +25,11 @@ else:
         "party": doc.customer,
         "paid_amount": doc.new_payment_amount,
         "received_amount": doc.new_payment_amount,
-        "mode_of_payment": doc.payment_method_dc or "Cash",
+        "mode_of_payment": method,
         "reference_no": doc.payment_reference_dc or "",
         "reference_date": today(),
         "company": "InMED",
-        "paid_to": "Cash - Inmed",
+        "paid_to": paid_to_account,
     })
     pe.flags.ignore_permissions = True
     pe.insert()
@@ -33,7 +38,7 @@ else:
         case.append("advance_payments", {
             "payment_date": frappe.utils.now_datetime(),
             "amount": doc.new_payment_amount,
-            "method": doc.payment_method_dc or "Cash",
+            "method": method,
             "reference": doc.payment_reference_dc or "",
             "payment_entry": pe.name,
             "source_task": doc.name,

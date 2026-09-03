@@ -5,6 +5,7 @@
 **Requirement:** Notify delivery drivers on their phone when a new Task is assigned to them.
 **Server:** Self-hosted ERPNext v16.14.0, Docker, `erpnext.am`
 **Date:** Jul 2026
+**Status:** Historical evaluation. The current active implementation is direct Telegram Bot API task notifications; see `18-telegram-and-notifications.md`.
 
 ---
 

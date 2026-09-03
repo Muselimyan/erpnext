@@ -106,6 +106,28 @@ Operational rule:
 - New customers are created as provisional.
 - Accounting/Directors review and uncheck `Is Provisional` after validation (duplicate check, code/name correctness).
 
+### 3.5 Add optional default context fields on `Customer`
+Goal:
+- Store the usual hospital and doctor context once on the Customer so Sales Orders can auto-fill it for repeat orders.
+
+Steps:
+1) In `Customize Form` → `Customer`, add custom fields:
+   - Label: `Hospital`
+     - Fieldname: `hospital`
+     - Fieldtype: `Link`
+     - Options: `Customer`
+     - Required: OFF
+   - Label: `Doctor Name`
+     - Fieldname: `doctor_name`
+     - Fieldtype: `Data`
+     - Required: OFF
+2) Save.
+
+Usage rule:
+- For doctor-clients, `Hospital` can store the usual hospital Customer used for Sales Order auto-fill.
+- For hospital-clients, `Doctor Name` can store a usual doctor-name value when helpful, but remains optional.
+- The Sales Order customer auto-fill script reads these Customer fields and copies them to the Sales Order context fields; users can still override the Sales Order fields when a specific order differs.
+
 ---
 
 ## 4) Add hospital + branch + doctor context fields to sales documents

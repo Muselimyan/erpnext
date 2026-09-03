@@ -245,7 +245,11 @@ What it answers:
 - “Is the client actually in debt, or do they have credit sitting unallocated?”
 
 Primary truth:
-- Customer advance / unallocated payments (Payment Entries not fully allocated to invoices)
+- Official report: `RPT — Receivables — Unallocated Advances`
+- Customer advance / unallocated payments from submitted Payment Entries not fully allocated to Sales Invoices
+
+Legacy/deferred report note:
+- `RPT - Unallocated Customer Advances` overlaps with this view and should be treated as legacy/deferred pending colleague review; do not delete it until reviewed.
 
 Interpretation:
 - This is client credit that reduces net debt.
@@ -265,8 +269,12 @@ What it answers:
 - “Which prepaid orders are at risk of being forgotten/stuck?”
 
 Primary truth (derived):
+- Official current-flow report should be Dispatch Case based: `RPT - Prepaid Orders Awaiting Delivery`
 - Dispatch Cases not yet `Closed`
 - Payment Entries recorded as client advances
+
+Legacy/deferred report note:
+- Any Sales Order-based prepaid-awaiting-delivery report/field usage belongs to the legacy/deferred Sales Order prepayment design. Keep it for colleague review, but do not treat it as current Group 3 truth.
 
 Interpretation:
 - This is an operational queue, not a receivables queue.
@@ -290,7 +298,11 @@ What it answers:
 - “Which clients exceeded their allowed outstanding debt?”
 
 Primary truth:
-- Customer outstanding debt compared to the client’s threshold value (Doc 04 / requirements)
+- Official report: `RPT — Risk — Debt Threshold Exceeded`
+- GL Entry net receivable compared to the client’s threshold value (Doc 04 / requirements), matching the scheduled Debt Alert logic
+
+Legacy/deferred report note:
+- `RPT - Clients Exceeding Debt Threshold` overlaps with this view but uses older invoice-minus-advance logic. Treat it as legacy/deferred pending colleague review; do not delete it until reviewed.
 
 Interpretation:
 - Exceedance triggers director review.
@@ -322,19 +334,19 @@ Red flags:
 
 ---
 
-## 4.9A Distribute Payment tasks (received payments pending distribution)
+## 4.9A Distribute Payment disabled/deferred status
 What it answers:
-- “Which received payments still require director payment distribution?”
+- “Has the deferred Distribute Payment flow accidentally been re-enabled?”
 
 Primary truth:
-- Task list filtered to `Distribute Payment` task kind (Doc 10)
+- `Payment Entry-after-submit-distribute-payment` Server Script should remain disabled unless the business flow is explicitly re-enabled.
 
 Interpretation:
-- This queue is internal financial control after receipt.
+- The active Group 3 payment flow does not create Distribute Payment tasks after customer receipts.
 
 Red flags:
-- Received payments with no distribution task
-- Distribution tasks stuck open for long periods
+- New Distribute Payment tasks appear after customer receipts
+- The disabled/deferred script is re-enabled before the final keep/delete/re-enable decision
 
 ---
 
