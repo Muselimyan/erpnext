@@ -53,6 +53,20 @@ task.custom_assigned_to = frappe.session.user
 task.flags.ignore_permissions = True
 task.save()
 
+# Auto-create Draft DC for Order Entry tasks
+dc_name = ""
+if task.task_kind == "Order entry" and not task.dispatch_case:
+    case = frappe.new_doc("Dispatch Case")
+    case.status = "Draft"
+    case.order_entry_task = task.name
+    if task.customer:
+        case.customer = task.customer
+    case.flags.ignore_permissions = True
+    case.insert()
+    dc_name = case.name
+    frappe.db.set_value("Task", task.name, "dispatch_case", dc_name)
+    print(f"[Accept] Auto-created DC {dc_name} for Order Entry task {task.name}")
+
 # Create new ToDo for current user
 todo = frappe.new_doc("ToDo")
 todo.status = "Open"
@@ -66,4 +80,4 @@ todo.insert()
 
 print(f"[Accept] {frappe.utils.now()} task={task_name} ACCEPTED: user={frappe.session.user} cancelled_todos={len(open_todos or [])}")
 
-frappe.response["message"] = {"ok": True, "task": task.name, "assigned_to": frappe.session.user, "status": task.status}
+frappe.response["message"] = {"ok": True, "task": task.name, "assigned_to": frappe.session.user, "status": task.status, "dispatch_case": dc_name}

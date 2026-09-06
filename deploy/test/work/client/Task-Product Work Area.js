@@ -237,7 +237,7 @@ function task_product_work_area_scan(frm) {
 
 function task_product_work_area_is_product_task(frm) {
     const kinds = [
-        "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Pickup Returns",
+        "Order entry", "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Pickup Returns",
         "Return drop-off at warehouse", "Returns processing / verification", "Returns restocking",
         "Invoice preparation / create invoice", "Discount Approval"
     ];
@@ -281,10 +281,13 @@ function task_product_work_area_refresh(frm, show_alert) {
                 frm.set_value("custom_task_product_warning", "No product rows yet in Dispatch Case / Packing Items.");
                 return;
             }
+            const is_order_entry_task = (frm.doc.task_kind === "Order entry");
             const is_returns_task = (frm.doc.task_kind === "Returns processing / verification");
             const is_restocking_task = (frm.doc.task_kind === "Returns restocking");
             const is_invoice_task = (frm.doc.task_kind === "Invoice preparation / create invoice");
-            if (is_returns_task) {
+            if (is_order_entry_task) {
+                task_product_work_area_render_order_entry(frm, doc, rows, show_alert);
+            } else if (is_returns_task) {
                 task_product_work_area_render_returns(frm, doc, rows, show_alert);
             } else if (is_restocking_task) {
                 const returned_rows = rows.filter(function(row) { return flt(row.returned_qty || 0) > 0; });
@@ -465,6 +468,34 @@ function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
     frm.set_value("custom_task_product_warning", doc.custom_packing_last_warning || doc.custom_packing_problem_summary || "");
+    if (show_alert) {
+        frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
+    }
+}
+
+function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
+    let html = `<div class="small text-muted" style="margin-bottom:8px">Dispatch Case: <b>${frappe.utils.escape_html(doc.name)}</b> · Customer: <b>${frappe.utils.escape_html(doc.customer || "")}</b></div>`;
+    html += `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
+        <th>Item</th><th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Discount %</th><th>Batch/LOT</th>
+    </tr></thead><tbody>`;
+    rows.forEach(function(row) {
+        const qty = flt(row.dispatched_qty || 0);
+        const price = flt(row.unit_price || 0);
+        const discount = flt(row.discount_pct || 0);
+        html += `<tr>
+            <td>${frappe.utils.escape_html(row.item_name || row.item_code || "")}</td>
+            <td class="text-right">${qty}</td>
+            <td class="text-right">${price ? frappe.format(price, {fieldtype: "Currency"}) : "-"}</td>
+            <td class="text-right">${discount ? discount + "%" : "-"}</td>
+            <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
+        </tr>`;
+    });
+    html += `</tbody></table></div>`;
+    html += `<div class="small text-muted" style="margin-top:8px"><i>Add or remove items using the controls below. Changes are saved to the Dispatch Case automatically.</i></div>`;
+    if (frm.fields_dict.custom_task_product_summary) {
+        frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
+    }
+    frm.set_value("custom_task_product_warning", "");
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
     }

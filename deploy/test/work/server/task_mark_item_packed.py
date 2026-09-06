@@ -33,6 +33,7 @@ else:
     row.custom_packing_status = "Pending"
 
 case.flags.ignore_permissions = True
+case.flags.ignore_validate_update_after_submit = True
 case.save()
 
 frappe.response["message"] = {

@@ -46,6 +46,7 @@ else:
         case.prepaid_amount = sum((row.amount or 0) for row in case.advance_payments)
         case.prepaid_payment_entry = pe.name
         case.flags.ignore_permissions = True
+        case.flags.ignore_validate_update_after_submit = True
         case.save()
     existing_dc = frappe.db.get_value("Task", {"customer": doc.customer, "task_kind": "Debt Collection", "status": ["not in", ["Completed", "Cancelled"]]}, "name")
     if existing_dc:
