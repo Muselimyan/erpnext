@@ -125,7 +125,8 @@ $allTaskFields = @(
     "custom_task_product_warning",
     "custom_task_add_item_code", "custom_task_add_qty",
     "custom_task_add_batch_no", "custom_task_add_unit_price",
-    "custom_barcode_section", "custom_product_lines",
+    # custom_barcode_section deleted (fields moved into product_work_section)
+    # custom_product_lines deleted (Phase 9)
     "dispatch_case_status",
     "other_items", "other_budget", "other_supplier",
     "custom_case_profit", "custom_total_amount_paid",

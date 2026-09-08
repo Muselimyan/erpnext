@@ -118,12 +118,6 @@ var TAB_OPERATIONAL_KINDS = [
     "Returns restocking", "Invoice preparation / create invoice", "Debt Collection", "Debt Closure Approval",
     "Discount Approval", "Purchase Approval", "Write-off Approval"
 ];
-var TAB_PRODUCT_KINDS = [
-    "Order entry", "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Pickup Returns",
-    "Return drop-off at warehouse", "Returns processing / verification", "Returns restocking",
-    "Invoice preparation / create invoice", "Discount Approval"
-];
-
 // ── helpers ────────────────────────────────────────────────────
 function tab_is_mobile() { return window.innerWidth <= 768; }
 
@@ -143,10 +137,6 @@ function tab_can_act(frm) {
 
 function tab_needs_dc(frm) {
     return frm.doc.task_kind === "Order entry" || TAB_DISPATCH_KINDS.indexOf(frm.doc.task_kind) !== -1;
-}
-
-function tab_is_product_task(frm) {
-    return !!frm.doc.dispatch_case || TAB_PRODUCT_KINDS.indexOf(frm.doc.task_kind) !== -1;
 }
 
 function tab_do_accept(frm) {
@@ -235,7 +225,7 @@ function tab_do_complete(frm, btn) {
 // ── dashboard comments (absorbed from Task-Dispatch Packing Usability) ──
 function tab_dashboard_comments(frm) {
     frm.dashboard.clear_comment();
-    if (frm.doc.dispatch_case) {
+    if (frm.doc.dispatch_case && frm.doc.task_kind !== "Order entry") {
         frm.dashboard.add_comment(
             __("This task uses item rows from <b>Dispatch Case / Packing Items</b>. Open it to view quantities, batch/LOT, expiry, scanned and missing items."),
             "blue", true
@@ -269,25 +259,6 @@ function tab_render_subheader(frm) {
 
     // Right: contextual buttons
     var right = $('<div style="display:flex;gap:6px;align-items:center;"></div>');
-
-    // Product controls (dropdown)
-    if (!frm.is_new() && tab_is_product_task(frm) && tab_can_act(frm)) {
-        var prodDrop = $('<div class="dropdown" style="display:inline-block;"></div>');
-        var prodToggle = $('<button class="btn btn-default btn-sm dropdown-toggle" data-toggle="dropdown" style="font-size:12px;padding:4px 8px;">Products</button>');
-        var prodMenu = $('<div class="dropdown-menu dropdown-menu-right" style="min-width:180px;"></div>');
-        var items = [
-            { label: __("Add Selected Product"), fn: function() { if (typeof task_product_work_area_add_product === "function") task_product_work_area_add_product(frm); } },
-            { label: __("Refresh Products"), fn: function() { if (typeof task_product_work_area_refresh === "function") task_product_work_area_refresh(frm, true); } },
-            { label: __("Scan Product Barcode"), fn: function() { if (typeof task_product_work_area_scan === "function") task_product_work_area_scan(frm); } }
-        ];
-        items.forEach(function(item) {
-            var a = $('<a class="dropdown-item" href="#" style="padding:8px 14px;font-size:13px;"></a>').text(item.label);
-            a.on("click", function(e) { e.preventDefault(); item.fn(); });
-            prodMenu.append(a);
-        });
-        prodDrop.append(prodToggle).append(prodMenu);
-        right.append(prodDrop);
-    }
 
     // Open Dispatch Case
     if (frm.doc.dispatch_case) {

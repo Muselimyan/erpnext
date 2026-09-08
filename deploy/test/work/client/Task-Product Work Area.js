@@ -11,6 +11,9 @@
 // Section A: Scanning & Adding Utilities (from Product Work Area)
 // ═══════════════════════════════════════════════════════════════
 
+// Temporary item code from REF barcode scan (was custom_task_add_item_code field)
+var pwa_pending_item_code = "";
+
 function task_product_work_area_error_beep() {
     if (!(window.AudioContext || window.webkitAudioContext)) return;
     let audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -113,7 +116,6 @@ function task_product_work_area_open_lot_dialog(frm, item_code) {
             return;
         }
         dialog.set_value("lot_preview", __("LOT: {0}, Expiry: {1}", [parsed.lot_number, parsed.expiry_date]));
-        frm.set_value("custom_task_add_batch_no", parsed.lot_number);
         frm.set_value("custom_task_scan_result", __("LOT/expiry captured: {0}, expiry {1}", [parsed.lot_number, parsed.expiry_date]));
         dialog.hide();
         task_product_work_area_call_packing_scan(frm, lot_barcode, item_code);
@@ -121,46 +123,6 @@ function task_product_work_area_open_lot_dialog(frm, item_code) {
     dialog.show();
     dialog.set_value("lot_barcode", "");
     task_product_work_area_focus_dialog_scan(dialog);
-}
-
-function task_product_work_area_add_product(frm) {
-    if (frm.is_new()) {
-        frappe.msgprint(__("Save the Task before adding/scanning products."));
-        task_product_work_area_error_beep();
-        task_product_work_area_focus_scan(frm);
-        return;
-    }
-    if (!frm.doc.dispatch_case) {
-        frappe.msgprint(__("Create or link Dispatch Case / Packing Items first."));
-        return;
-    }
-    if (!frm.doc.custom_task_add_item_code) {
-        frappe.msgprint(__("Choose Product first."));
-        return;
-    }
-    frappe.call({
-        method: "task_add_dispatch_product",
-        args: {
-            task_name: frm.doc.name,
-            item_code: frm.doc.custom_task_add_item_code,
-            qty: frm.doc.custom_task_add_qty || 1,
-            batch_no: frm.doc.custom_task_add_batch_no || "",
-            unit_price: frm.doc.custom_task_add_unit_price || 0
-        },
-        freeze: true,
-        freeze_message: __("Adding product..."),
-        callback: function(r) {
-            const msg = r.message || {};
-            if (msg.ok) {
-                frappe.show_alert({ message: __("Product added"), indicator: "green" });
-                frm.set_value("custom_task_add_item_code", "");
-                frm.set_value("custom_task_add_qty", 1);
-                frm.set_value("custom_task_add_batch_no", "");
-                frm.set_value("custom_task_add_unit_price", 0);
-                task_product_work_area_refresh(frm, false);
-            }
-        }
-    });
 }
 
 function task_product_work_area_scan(frm) {
@@ -182,7 +144,7 @@ function task_product_work_area_scan(frm) {
             task_product_work_area_focus_scan(frm);
             return;
         }
-        if (!frm.doc.custom_task_add_item_code) {
+        if (!pwa_pending_item_code) {
             frm.set_value("custom_task_scan_result", __("Scan the REF/product barcode first, then scan the LOT/expiry barcode."));
             frappe.show_alert({ message: __("Scan REF/product barcode first."), indicator: "red" }, 5);
             task_product_work_area_error_beep();
@@ -190,10 +152,9 @@ function task_product_work_area_scan(frm) {
             task_product_work_area_focus_scan(frm);
             return;
         }
-        frm.set_value("custom_task_add_batch_no", parsed.lot_number);
         frm.set_value("custom_task_scan_result", __("LOT/expiry captured: {0}, expiry {1}", [parsed.lot_number, parsed.expiry_date]));
         frm.set_value("custom_task_scan_barcode", "");
-        task_product_work_area_call_packing_scan(frm, barcode, frm.doc.custom_task_add_item_code);
+        task_product_work_area_call_packing_scan(frm, barcode, pwa_pending_item_code);
         return;
     }
 
@@ -203,7 +164,7 @@ function task_product_work_area_scan(frm) {
         callback: function(r) {
             const item_code = r.message && r.message.item_code;
             if (item_code) {
-                frm.set_value("custom_task_add_item_code", item_code);
+                pwa_pending_item_code = item_code;
                 frappe.db.get_value("Item", item_code, ["has_batch_no", "has_expiry_date"], function(v) {
                     frm.set_value("custom_task_scan_barcode", "");
                     if (v && (v.has_batch_no || v.has_expiry_date)) {
@@ -235,15 +196,6 @@ function task_product_work_area_scan(frm) {
 // Section B: Shared Core Functions
 // ═══════════════════════════════════════════════════════════════
 
-function task_product_work_area_is_product_task(frm) {
-    const kinds = [
-        "Order entry", "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Pickup Returns",
-        "Return drop-off at warehouse", "Returns processing / verification", "Returns restocking",
-        "Invoice preparation / create invoice", "Discount Approval"
-    ];
-    return !!frm.doc.dispatch_case || kinds.includes(frm.doc.task_kind);
-}
-
 function task_product_work_area_empty(frm, message, indicator) {
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(
@@ -253,7 +205,7 @@ function task_product_work_area_empty(frm, message, indicator) {
 }
 
 function task_product_work_area_refresh(frm, show_alert) {
-    const is_product_task = task_product_work_area_is_product_task(frm);
+    const is_product_task = tfv_is_product_task(frm);
     if (!is_product_task) {
         if (frm.fields_dict.custom_task_product_summary) {
             frm.fields_dict.custom_task_product_summary.$wrapper.empty();
@@ -261,8 +213,12 @@ function task_product_work_area_refresh(frm, show_alert) {
         return;
     }
     if (!frm.doc.dispatch_case) {
-        task_product_work_area_empty(frm, "No Dispatch Case / Packing Items linked yet. Use Create Dispatch Case / Items, then add product rows.", "warning");
-        frm.set_value("custom_task_product_warning", "No Dispatch Case / Packing Items linked yet.");
+        if (frm.doc.task_kind === "Order entry") {
+            task_product_work_area_empty(frm, "Accept this task to auto-create a Dispatch Case, then add products.", "info");
+        } else {
+            task_product_work_area_empty(frm, "No Dispatch Case linked yet.", "warning");
+        }
+        frm.set_value("custom_task_product_warning", "");
         return;
     }
     frappe.call({
@@ -276,12 +232,13 @@ function task_product_work_area_refresh(frm, show_alert) {
                 return;
             }
             const rows = doc.case_items || [];
-            if (!rows.length) {
-                task_product_work_area_empty(frm, "No product rows yet. Add products in the linked Dispatch Case / Packing Items.", "warning");
-                frm.set_value("custom_task_product_warning", "No product rows yet in Dispatch Case / Packing Items.");
+            const is_order_entry_task = (frm.doc.task_kind === "Order entry");
+            // Order Entry always renders editor (even with 0 rows — shows add row)
+            if (!rows.length && !is_order_entry_task) {
+                task_product_work_area_empty(frm, "No product rows in Dispatch Case.", "warning");
+                frm.set_value("custom_task_product_warning", "");
                 return;
             }
-            const is_order_entry_task = (frm.doc.task_kind === "Order entry");
             const is_returns_task = (frm.doc.task_kind === "Returns processing / verification");
             const is_restocking_task = (frm.doc.task_kind === "Returns restocking");
             const is_invoice_task = (frm.doc.task_kind === "Invoice preparation / create invoice");
@@ -474,27 +431,196 @@ function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_
 }
 
 function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
-    let html = `<div class="small text-muted" style="margin-bottom:8px">Dispatch Case: <b>${frappe.utils.escape_html(doc.name)}</b> · Customer: <b>${frappe.utils.escape_html(doc.customer || "")}</b></div>`;
-    html += `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
-        <th>Item</th><th class="text-right">Qty</th><th class="text-right">Unit Price</th><th class="text-right">Discount %</th><th>Batch/LOT</th>
-    </tr></thead><tbody>`;
-    rows.forEach(function(row) {
-        const qty = flt(row.dispatched_qty || 0);
-        const price = flt(row.unit_price || 0);
-        const discount = flt(row.discount_pct || 0);
-        html += `<tr>
-            <td>${frappe.utils.escape_html(row.item_name || row.item_code || "")}</td>
-            <td class="text-right">${qty}</td>
-            <td class="text-right">${price ? frappe.format(price, {fieldtype: "Currency"}) : "-"}</td>
-            <td class="text-right">${discount ? discount + "%" : "-"}</td>
-            <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
-        </tr>`;
-    });
-    html += `</tbody></table></div>`;
-    html += `<div class="small text-muted" style="margin-top:8px"><i>Add or remove items using the controls below. Changes are saved to the Dispatch Case automatically.</i></div>`;
-    if (frm.fields_dict.custom_task_product_summary) {
-        frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
+    var esc = frappe.utils.escape_html;
+    var dc_name = doc.name;
+    var is_editable = !frm.is_new()
+        && frm.doc.task_kind === "Order entry"
+        && frm.doc.dispatch_case
+        && frm.doc.status !== "Completed"
+        && frm.doc.custom_accepted_by === frappe.session.user;
+
+    var html = '<div class="small text-muted" style="margin-bottom:8px">'
+        + 'Dispatch Case: <b>' + esc(dc_name) + '</b>'
+        + ' &middot; Customer: <b>' + esc(doc.customer || "") + '</b></div>';
+
+    if (!rows.length && is_editable) {
+        html += '<div class="text-muted small" style="margin-bottom:8px">'
+            + '<i>No products yet. Use the row below to add items.</i></div>';
     }
+
+    html += '<div style="overflow-x:auto"><table class="table table-bordered table-condensed oe-editor-table">'
+        + '<thead><tr>'
+        + '<th>Item</th>'
+        + '<th style="width:80px">Qty</th>'
+        + '<th style="width:100px">Unit Price</th>'
+        + '<th style="width:90px">Discount %</th>'
+        + '<th style="width:110px">Batch/LOT</th>'
+        + (is_editable ? '<th style="width:45px"></th>' : '')
+        + '</tr></thead><tbody>';
+
+    rows.forEach(function(row) {
+        var qty = flt(row.dispatched_qty || 0);
+        var price = flt(row.unit_price || 0);
+        var discount = flt(row.discount_pct || 0);
+        var batch = row.batch_no || "";
+        var rn = esc(row.name);
+        if (is_editable) {
+            html += '<tr data-row-name="' + rn + '">'
+                + '<td>' + esc(row.item_name || row.item_code || "") + '</td>'
+                + '<td><input type="number" class="form-control input-xs oe-edit" data-field="dispatched_qty" '
+                +     'value="' + qty + '" min="0.001" step="0.001" style="text-align:right"></td>'
+                + '<td><input type="number" class="form-control input-xs oe-edit" data-field="unit_price" '
+                +     'value="' + price + '" min="0" step="0.01" style="text-align:right"></td>'
+                + '<td><input type="number" class="form-control input-xs oe-edit" data-field="discount_pct" '
+                +     'value="' + discount + '" min="0" max="100" step="0.1" style="text-align:right"></td>'
+                + '<td><input type="text" class="form-control input-xs oe-edit" data-field="batch_no" '
+                +     'value="' + esc(batch) + '"></td>'
+                + '<td class="text-center"><button type="button" class="btn btn-xs btn-danger oe-remove-btn" '
+                +     'data-row-name="' + rn + '" data-item="' + esc(row.item_name || row.item_code || "") + '"'
+                +     ' title="Remove">&times;</button></td>'
+                + '</tr>';
+        } else {
+            html += '<tr>'
+                + '<td>' + esc(row.item_name || row.item_code || "") + '</td>'
+                + '<td class="text-right">' + qty + '</td>'
+                + '<td class="text-right">' + (price ? frappe.format(price, {fieldtype: "Currency"}) : "-") + '</td>'
+                + '<td class="text-right">' + (discount ? discount + "%" : "-") + '</td>'
+                + '<td>' + esc(batch) + '</td>'
+                + '</tr>';
+        }
+    });
+
+    if (is_editable) {
+        html += '<tr class="oe-add-row" style="background:#f9f9f9">'
+            + '<td><div class="oe-add-item-cell"></div></td>'
+            + '<td><input type="number" class="form-control input-xs oe-add-qty" value="1" min="0.001" step="0.001" style="text-align:right"></td>'
+            + '<td><input type="number" class="form-control input-xs oe-add-price" value="0" min="0" step="0.01" style="text-align:right"></td>'
+            + '<td><input type="number" class="form-control input-xs oe-add-discount" value="0" min="0" max="100" step="0.1" style="text-align:right"></td>'
+            + '<td><input type="text" class="form-control input-xs oe-add-batch" placeholder="LOT" style="font-size:12px"></td>'
+            + '<td class="text-center"><button type="button" class="btn btn-xs btn-primary oe-add-btn" title="Add product">+</button></td>'
+            + '</tr>';
+    }
+
+    html += '</tbody></table></div>';
+    if (is_editable) {
+        html += '<div class="small text-muted"><i>Edit quantities and prices directly &mdash; changes auto-save. Click + to add a new item.</i></div>';
+    }
+
+    if (!frm.fields_dict.custom_task_product_summary) return;
+    var wrapper = frm.fields_dict.custom_task_product_summary.$wrapper;
+    wrapper.html(html);
+
+    if (!is_editable) {
+        frm.set_value("custom_task_product_warning", "");
+        if (show_alert) frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
+        return;
+    }
+
+    // ── Attach Frappe Link control for item picker in add row ──
+    var item_cell = wrapper.find(".oe-add-item-cell");
+    var item_control = frappe.ui.form.make_control({
+        df: {
+            fieldtype: "Link",
+            options: "Item",
+            fieldname: "oe_inline_item",
+            placeholder: "Search item..."
+        },
+        parent: item_cell,
+        render_input: true,
+        only_input: true
+    });
+    item_control.refresh();
+    // Auto-fill price from standard_rate when item selected
+    item_control.$input.on("change", function() {
+        var item_code = item_control.get_value();
+        if (item_code) {
+            frappe.db.get_value("Item", item_code, ["standard_rate"], function(v) {
+                if (v && v.standard_rate) {
+                    wrapper.find(".oe-add-price").val(flt(v.standard_rate));
+                }
+            });
+        }
+    });
+
+    // ── Debounced auto-save for existing row edits (800ms) ──
+    var save_timer = null;
+    wrapper.find(".oe-edit").on("input", function() {
+        var input = $(this);
+        var tr = input.closest("tr");
+        var row_name = tr.attr("data-row-name");
+        clearTimeout(save_timer);
+        save_timer = setTimeout(function() {
+            frappe.call({
+                method: "task_update_dispatch_product",
+                args: {
+                    case_name: dc_name,
+                    row_name: row_name,
+                    dispatched_qty: tr.find('[data-field="dispatched_qty"]').val(),
+                    unit_price: tr.find('[data-field="unit_price"]').val(),
+                    discount_pct: tr.find('[data-field="discount_pct"]').val(),
+                    batch_no: tr.find('[data-field="batch_no"]').val()
+                },
+                callback: function(r) {
+                    if (r.message && r.message.ok) {
+                        frappe.show_alert({ message: __("Saved"), indicator: "green" });
+                    }
+                }
+            });
+        }, 800);
+    });
+
+    // ── Remove buttons ──
+    wrapper.find(".oe-remove-btn").on("click", function() {
+        var btn = $(this);
+        var row_name = btn.attr("data-row-name");
+        var item = btn.attr("data-item");
+        frappe.confirm(
+            __("Remove {0}?", [item]),
+            function() {
+                frappe.call({
+                    method: "task_remove_dispatch_product",
+                    args: { case_name: dc_name, row_name: row_name },
+                    freeze: true,
+                    freeze_message: __("Removing..."),
+                    callback: function(r) {
+                        if (r.message && r.message.ok) {
+                            frappe.show_alert({ message: __("Removed"), indicator: "green" });
+                            task_product_work_area_refresh(frm, false);
+                        }
+                    }
+                });
+            }
+        );
+    });
+
+    // ── Add button ──
+    wrapper.find(".oe-add-btn").on("click", function() {
+        var item_code = item_control.get_value();
+        if (!item_code) {
+            frappe.msgprint(__("Choose an item first."));
+            return;
+        }
+        frappe.call({
+            method: "task_add_dispatch_product",
+            args: {
+                task_name: frm.doc.name,
+                item_code: item_code,
+                qty: wrapper.find(".oe-add-qty").val() || 1,
+                batch_no: wrapper.find(".oe-add-batch").val() || "",
+                unit_price: wrapper.find(".oe-add-price").val() || 0,
+                discount_pct: wrapper.find(".oe-add-discount").val() || 0
+            },
+            freeze: true,
+            freeze_message: __("Adding product..."),
+            callback: function(r) {
+                if (r.message && r.message.ok) {
+                    frappe.show_alert({ message: __("Product added"), indicator: "green" });
+                    task_product_work_area_refresh(frm, false);
+                }
+            }
+        });
+    });
+
     frm.set_value("custom_task_product_warning", "");
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
@@ -631,20 +757,6 @@ window.task_product_work_area_toggle_packed = function(checkbox, case_name, idx)
 frappe.ui.form.on("Task", {
     refresh(frm) {
         task_product_work_area_refresh(frm);
-        // TFV Phase 7: removed autofocus on refresh (disruptive on form load).
-        // Focus is triggered by user actions: scan button, error recovery, etc.
-        const is_product_task = task_product_work_area_is_product_task(frm);
-        if (!frm.is_new() && is_product_task) {
-            frm.add_custom_button(__("Add Selected Product"), function() {
-                task_product_work_area_add_product(frm);
-            }, __("Products / Dispatch Work"));
-            frm.add_custom_button(__("Refresh Products"), function() {
-                task_product_work_area_refresh(frm, true);
-            }, __("Products / Dispatch Work"));
-            frm.add_custom_button(__("Scan Product Barcode"), function() {
-                task_product_work_area_scan(frm);
-            }, __("Products / Dispatch Work"));
-        }
     },
     dispatch_case(frm) {
         task_product_work_area_refresh(frm, true);
@@ -657,13 +769,48 @@ frappe.ui.form.on("Task", {
             task_product_work_area_scan(frm);
         }
     },
-    custom_task_add_item_code(frm) {
-        if (frm.doc.custom_task_add_item_code) {
-            frappe.db.get_value("Item", frm.doc.custom_task_add_item_code, ["item_name", "standard_rate"], function(v) {
-                if (v && frm.doc.custom_task_add_unit_price === 0) {
-                    frm.set_value("custom_task_add_unit_price", v.standard_rate || 0);
+    order_template(frm) {
+        if (!frm.doc.order_template) return;
+        if (frm.doc.task_kind !== "Order entry") return;
+        if (!frm.doc.dispatch_case) {
+            frappe.msgprint(__("Create or link a Dispatch Case first."));
+            frm.set_value("order_template", "");
+            return;
+        }
+        var apply_fn = function() {
+            frappe.call({
+                method: "task_apply_template",
+                args: {
+                    task_name: frm.doc.name,
+                    dispatch_case: frm.doc.dispatch_case,
+                    template_name: frm.doc.order_template
+                },
+                freeze: true,
+                freeze_message: __("Applying template..."),
+                callback: function(r) {
+                    var msg = r.message || {};
+                    if (msg.ok) {
+                        frappe.show_alert({ message: __("Template applied: {0} items", [msg.count || 0]), indicator: "green" });
+                        task_product_work_area_refresh(frm, false);
+                    }
                 }
             });
-        }
+        };
+        // Check if DC already has items — confirm before replacing
+        frappe.call({
+            method: "frappe.client.get_count",
+            args: { doctype: "Dispatch Case Item", filters: { parent: frm.doc.dispatch_case } },
+            callback: function(r) {
+                var count = cint(r.message);
+                if (count > 0) {
+                    frappe.confirm(
+                        __("This will replace the existing {0} item(s) in the Dispatch Case. Continue?", [count]),
+                        apply_fn
+                    );
+                } else {
+                    apply_fn();
+                }
+            }
+        });
     }
 });

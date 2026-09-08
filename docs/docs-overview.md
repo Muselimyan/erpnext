@@ -55,6 +55,8 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `manual/debt-closure-approval.md` | ✅ Manual current for TEST: policy assignment/completion, multi-invoice profit, and per-Dispatch Case profit smoke-tested and passed on TEST |
 | `manual/debt-alert.md` | ✅ Manual current for TEST: scheduled Director debt-threshold alert flow smoke-tested and passed on TEST |
 | `manual/tender-agreement-management.md` | ✅ Manual current for TEST: duplicate/over-supply/tender-price/cancellation reversal/status controls smoke-tested and passed on TEST |
+| `20-custom-buttons-and-actions.md` | 🟡 Updated 2026-09: Products dropdown removed (Phase A); script inventory updated |
+| `21-product-section-architecture.md` | ✅ NEW 2026-09: Product section architecture — per-task-kind rendering, inline Order Entry editor, scan flows, server APIs, design decisions. Phases A/B/C deployed to test. |
 
 ### Superseded / historical reference only
 | File | Working status |
