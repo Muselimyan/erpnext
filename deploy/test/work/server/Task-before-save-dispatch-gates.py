@@ -140,13 +140,12 @@ else:
             frappe.throw("At least one photo is required before marking Returned to Warehouse.")
         doc.status = "Completed"
 
-    # Pack completion: all items must be checked as packed
+    # Pack completion: all items must be fully scanned
     if doc.status == "Completed" and doc.task_kind == "Pack / prepare items":
         case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
         not_packed = []
         for row in (case.case_items or []):
-            status = row.custom_packing_status or 'Pending'
-            if status not in ('Complete', 'Over Scanned'):
+            if float(row.custom_scanned_qty or 0) < float(row.dispatched_qty or 0):
                 not_packed.append(row.item_code or row.item_name or 'Unknown')
         if not_packed:
             frappe.throw('All items must be packed before completing this task. Not packed: ' + ', '.join(not_packed))

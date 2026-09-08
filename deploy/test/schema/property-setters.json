@@ -1,5 +1,5 @@
 ﻿{
-    "count":  204,
+    "count":  202,
     "records":  [
                     {
                         "name":  "Supplier-naming_series-reqd",
@@ -2946,38 +2946,6 @@
                         "doctype_or_field":  "DocField",
                         "doc_type":  "Dispatch Case Item",
                         "field_name":  "custom_scanned_qty",
-                        "property":  "allow_on_submit",
-                        "value":  "1",
-                        "doctype":  "Property Setter"
-                    },
-                    {
-                        "name":  "Dispatch Case Item-custom_remaining_qty-allow_on_submit",
-                        "owner":  "ai-agent@internal.com",
-                        "creation":  "2026-06-23 11:39:36.070562",
-                        "modified":  "2026-06-23 11:39:36.070562",
-                        "modified_by":  "ai-agent@internal.com",
-                        "docstatus":  0,
-                        "idx":  0,
-                        "is_system_generated":  0,
-                        "doctype_or_field":  "DocField",
-                        "doc_type":  "Dispatch Case Item",
-                        "field_name":  "custom_remaining_qty",
-                        "property":  "allow_on_submit",
-                        "value":  "1",
-                        "doctype":  "Property Setter"
-                    },
-                    {
-                        "name":  "Dispatch Case Item-custom_packing_status-allow_on_submit",
-                        "owner":  "ai-agent@internal.com",
-                        "creation":  "2026-06-23 11:39:36.510979",
-                        "modified":  "2026-06-23 11:39:36.510979",
-                        "modified_by":  "ai-agent@internal.com",
-                        "docstatus":  0,
-                        "idx":  0,
-                        "is_system_generated":  0,
-                        "doctype_or_field":  "DocField",
-                        "doc_type":  "Dispatch Case Item",
-                        "field_name":  "custom_packing_status",
                         "property":  "allow_on_submit",
                         "value":  "1",
                         "doctype":  "Property Setter"

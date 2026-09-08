@@ -1,7 +1,7 @@
 # 21 — Product Section Architecture
 
 **Date:** 2026-09
-**Status:** Current (deployed to test, Phases A/B/C complete)
+**Status:** Current (deployed to test, Phases A/B/C + packing field cleanup complete)
 **Related:** `docs/16-unified-dispatch-flow.md` (Dispatch Case data model), `docs/20-custom-buttons-and-actions.md` (action buttons), `deploy/test/work/product-section-per-task-kind-plan.md` (original phased plan)
 
 ---
@@ -67,12 +67,18 @@ Products live in Dispatch Case → `case_items` (child table). The Task form nev
 | `unit_price` | Order Entry (inline edit) | Yes (Order Entry only) |
 | `discount_pct` | Order Entry (inline edit) | Yes (Order Entry only) |
 | `batch_no` | Order Entry (inline edit) or Pack scan | Yes (Order Entry inline, Pack via scan) |
-| `custom_scanned_qty` | Pack scan API | No (server-set) |
-| `custom_remaining_qty` | Server (dispatched - scanned) | No (server-set) |
-| `custom_packing_status` | Pack checkbox toggle | No (Pack only) |
+| `custom_scanned_qty` | Pack scan/checkbox API | No (server-set) |
+| `custom_last_scanned_barcode` | Pack scan API | No (server-set, audit trail) |
+| `custom_last_scan_at` | Pack scan API | No (server-set, audit trail) |
+| `custom_last_scanned_by` | Pack scan API | No (server-set, audit trail) |
+| `custom_fefo_warning` | Pack scan API | No (server-set, batch expiry check) |
 | `returned_qty` | Returns processing | No (Returns only) |
 | `lost_damaged_qty` | Returns processing | No (Returns only) |
 | `used_qty` | Server (dispatched - returned - lost) | No (server-set) |
+
+> **Removed fields (packing cleanup, 2026-09):** `custom_packing_status`, `custom_remaining_qty`, `custom_scan_note`, `custom_problem_reason`, `custom_problem_alert_sent` — all were either derived from `dispatched_qty` + `custom_scanned_qty` or never written by any code. Packing status is now computed client-side from quantities. Remaining qty is computed as `max(dispatched - scanned, 0)`.
+>
+> **Removed DC-level fields:** `custom_packing_scan_barcode/qty/result`, `custom_packing_last_warning`, `custom_packing_problem_status/summary`, `custom_problem_alert_sent` — DC scan was redundant with Task scan; problem alert system fired during normal packing and was replaced by the completion gate.
 
 ---
 
@@ -84,7 +90,9 @@ Products live in Dispatch Case → `case_items` (child table). The Task form nev
 | `task_update_dispatch_product` | Update qty/price/discount/batch on existing row | Order Entry inline editor (debounced auto-save) |
 | `task_remove_dispatch_product` | Remove a row from DC | Order Entry inline editor (x Remove button) |
 | `task_lookup_product_barcode` | Look up Item from barcode | Pack/Returns scan flow |
-| `task_packing_scan` | Record scanned qty for Pack | Pack scan flow |
+| `dispatch_case_packing_scan` | Record scanned qty, check FEFO | Pack scan flow (Task-level only; DC-level scan UI removed) |
+| `task_mark_item_packed` | Toggle single row packed/unpacked | Pack checkbox toggle |
+| `task_mark_items_packed_batch` | Toggle all rows packed/unpacked | Pack/Returns batch toggle |
 
 All API scripts live in `deploy/test/work/server/` and follow RestrictedPython constraints (see `AGENTS.md`).
 
@@ -167,10 +175,15 @@ The temporary item code from REF barcode scanning is stored in a **JavaScript mo
 ### 5.4 Packing Table
 
 The Pack renderer shows each DC item row with:
-- Item name, dispatched qty, scanned qty, remaining qty
-- Packed checkbox (toggles `custom_packing_status`)
+- Item name, dispatched qty, scanned qty, remaining qty (computed as `max(dispatched - scanned, 0)`)
+- Packed checkbox (toggles `custom_scanned_qty` between 0 and dispatched_qty)
 - Batch/LOT, expiry, FEFO warnings
-- Color coding: green (fully scanned), yellow (partial), red (not started)
+- Color coding: green (fully scanned), orange (partial), gray (not started)
+- Status is computed client-side: `Complete` (scanned >= dispatched), `Partial` (scanned > 0), `Pending` (scanned == 0)
+
+### 5.5 Completion Gate
+
+The Pack task cannot be completed unless all DC item rows have `custom_scanned_qty >= dispatched_qty`. This is enforced by `Task-before-save-dispatch-gates.py` (Before Save on Task). No stored status field is checked — the gate compares quantities directly.
 
 ---
 

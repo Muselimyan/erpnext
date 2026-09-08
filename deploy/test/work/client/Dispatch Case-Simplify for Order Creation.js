@@ -56,18 +56,8 @@ frappe.ui.form.on("Dispatch Case", {
                 frm.refresh_field("photo_section");
             }
             
-            // Hide packing scan fields (these are custom fields)
-            const packing_fields = [
-                "custom_packing_scan_barcode", "custom_packing_scan_qty", 
-                "custom_packing_scan_result", "custom_packing_last_warning",
-                "custom_packing_problem_status", "custom_packing_problem_summary",
-                "custom_problem_alert_sent"
-            ];
-            packing_fields.forEach(function(fieldname) {
-                if (frm.fields_dict[fieldname]) {
-                    frm.set_df_property(fieldname, "hidden", 1);
-                }
-            });
+            // Packing scan and problem fields have been removed from schema.
+            // No DC-level packing fields to hide anymore.
             
             // Hide packing-related columns in case_items table
             if (frm.fields_dict.case_items && frm.fields_dict.case_items.grid) {
@@ -75,10 +65,10 @@ frappe.ui.form.on("Dispatch Case", {
                 
                 if (grid.docfields) {
                     const hide_columns = [
-                        "custom_packing_status", "custom_scanned_qty", "custom_remaining_qty",
+                        "custom_scanned_qty",
                         "custom_last_scanned_barcode", "custom_last_scan_at", "custom_last_scanned_by",
-                        "custom_fefo_warning", "custom_scan_note", "custom_problem_reason",
-                        "custom_problem_alert_sent", "returned_qty", "lost_damaged_qty", "used_qty"
+                        "custom_fefo_warning",
+                        "returned_qty", "lost_damaged_qty", "used_qty"
                     ];
                     
                     grid.docfields.forEach(function(df) {

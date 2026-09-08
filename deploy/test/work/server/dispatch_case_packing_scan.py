@@ -118,30 +118,18 @@ if expiry_date:
         warning = "FEFO check could not be completed: " + str(e)
 
 row.custom_scanned_qty = scanned
-row.custom_remaining_qty = remaining if remaining > 0 else 0
 row.custom_last_scanned_barcode = barcode
 row.custom_last_scan_at = now_datetime()
 row.custom_last_scanned_by = frappe.session.user
 row.custom_fefo_warning = warning
-if scanned < required:
-    row.custom_packing_status = "Partial"
-elif scanned == required:
-    row.custom_packing_status = "Complete"
-else:
-    row.custom_packing_status = "Over Scanned"
 
 all_complete = True
 for r in (case.case_items or []):
     req = float(r.dispatched_qty or 0)
     scn = float(r.get("custom_scanned_qty") or 0)
-    r.custom_remaining_qty = max(req - scn, 0)
     if scn < req:
         all_complete = False
 
-case.custom_packing_scan_barcode = ""
-case.custom_packing_scan_qty = 1
-case.custom_packing_scan_result = f"Scanned {qty} x {item_code}. Row scanned {scanned}/{required}."
-case.custom_packing_last_warning = warning
 case.flags.ignore_permissions = True
 case.flags.ignore_validate_update_after_submit = True
 case.save()

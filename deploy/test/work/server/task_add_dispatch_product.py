@@ -28,9 +28,6 @@ def run_script():
     row.batch_no = batch_no or None
     row.unit_price = unit_price
     row.discount_pct = discount_pct
-    row.custom_scanned_qty = 0
-    row.custom_remaining_qty = qty
-    row.custom_packing_status = "Not Started"
     case.flags.ignore_permissions = True
     case.save()
     frappe.response["message"] = {"ok": True, "dispatch_case": case.name, "item_code": item_code}

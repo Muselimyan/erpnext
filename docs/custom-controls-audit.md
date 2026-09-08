@@ -1,10 +1,10 @@
 # Custom Controls Audit — Test Environment
 
 **Date:** 2026-08-31 (updated 2026-09)
-**Source of truth:** `deploy/test/schema/` (exported 2026-08-31; counts updated 2026-09 after product section redesign)
+**Source of truth:** `deploy/test/schema/` (exported 2026-09-09; counts updated after product section redesign + packing field cleanup)
 **Scope:** All custom UI controls (buttons, layout changes, field visibility, navigation, CSS injections, inline controls) created by client scripts, custom fields, and property setters. Test environment only.
 **Exclusions:** Photo Gallery (`Task-Photo-System`, `Dispatch Case-Photo-Galleries`) — excluded per user request.
-**Method:** Analysis of `deploy/test/schema/client-scripts.json` (37 records), `server-scripts.json` (50 records), `custom-fields.json` (113 records), `property-setters.json` (204 records), and work files in `deploy/test/work/client/`.
+**Method:** Analysis of `deploy/test/schema/client-scripts.json` (35 records), `server-scripts.json` (49 records), `custom-fields.json` (101 records), `property-setters.json` (202 records), and work files in `deploy/test/work/client/`.
 
 > **2026-09 update — Product section redesign (Phases A/B/C):**
 > - 4 dead Custom Fields deleted from Task: `custom_task_add_item_code`, `custom_task_add_qty`, `custom_task_add_batch_no`, `custom_task_add_unit_price` (Task custom fields: 52 → 48)
@@ -16,6 +16,15 @@
 > - Order Entry now uses inline editable table rendered in `custom_task_product_summary`
 > - Pack scan state refactored from Frappe field to JS variable (`pwa_pending_item_code`)
 > - See `docs/21-product-section-architecture.md` for full architecture.
+>
+> **2026-09 update — Packing field cleanup:**
+> - 5 Custom Fields deleted from Dispatch Case Item: `custom_packing_status`, `custom_remaining_qty`, `custom_scan_note`, `custom_problem_reason`, `custom_problem_alert_sent` (DC Item custom fields: 10 → 5)
+> - 7 Custom Fields deleted from Dispatch Case: `custom_packing_scan_barcode/qty/result`, `custom_packing_last_warning`, `custom_packing_problem_status/summary`, `custom_problem_alert_sent` (DC custom fields: 10 → 3)
+> - 2 Property Setters deleted for removed fields
+> - 1 Server Script deleted: `Dispatch Case-packing-problem-alerts` (broken alert system)
+> - 2 Client Scripts deleted: `Dispatch Case-Packing Problem Alerts`, `Dispatch Case-Packing Scan` (DC scan redundant with Task scan)
+> - Packing status now computed from quantities (`dispatched_qty` vs `custom_scanned_qty`), not stored
+> - Completion gate uses quantity comparison instead of status string check
 
 ---
 
@@ -42,13 +51,13 @@
 
 | Category | Total | Enabled | Disabled |
 |---|---|---|---|
-| Client scripts | 37 | 36 | 1 |
-| Server scripts | 50 | 47 | 3 |
+| Client scripts | 35 | 34 | 1 |
+| Server scripts | 49 | 46 | 3 |
 | Server Script API endpoints | 13 | 13 | 0 |
 | Custom fields on Task | 48 | — | — |
-| Custom fields on Dispatch Case | 10 | — | — |
-| Custom fields on Dispatch Case Item | 10 | — | — |
-| Property setters | 204 | — | — |
+| Custom fields on Dispatch Case | 3 | — | — |
+| Custom fields on Dispatch Case Item | 5 | — | — |
+| Property setters | 202 | — | — |
 
 ### Findings
 
@@ -68,17 +77,17 @@
 
 This is the definitive list from `client-scripts.json` (35 records). The `enabled` column is what is actually deployed on the test server.
 
-### 2.1 Enabled Client Scripts (34)
+### 2.1 Enabled Client Scripts (32)
 
 | # | Name | DocType | View | Owner | Last Modified |
 |---|------|---------|------|-------|---------------|
 | 1 | GS1 Barcode Parser | Purchase Receipt | Form | levonaghinyan77 | 2026-05-13 |
 | 2 | Dispatch Case-Form | Dispatch Case | Form | ai-agent | 2026-08-27 |
 | 3 | LCV-import-duty-prefill | Landed Cost Voucher | Form | ai-agent | 2026-05-11 |
-| 4 | Dispatch Case-Packing Scan | Dispatch Case | Form | ai-agent | 2026-06-15 |
+| ~~4~~ | ~~Dispatch Case-Packing Scan~~ | — | — | — | Deleted 2026-09 (DC scan redundant with Task scan) |
 | 5 | Task-Accept Start | Task | Form | ai-agent | 2026-08-29 |
 | 6 | Task-Team Queue | Task | List | ai-agent | 2026-08-29 |
-| 7 | Dispatch Case-Packing Problem Alerts | Dispatch Case | Form | ai-agent | 2026-06-08 |
+| ~~7~~ | ~~Dispatch Case-Packing Problem Alerts~~ | — | — | — | Deleted 2026-09 (broken alert system removed) |
 | 8 | Task-Dispatch Packing Usability | Task | Form | ai-agent | 2026-08-29 |
 | 9 | Task-Create Dispatch Case Items | Task | Form | ai-agent | 2026-07-06 |
 | 10 | **Task-Product Work Area** | Task | Form | ai-agent | 2026-08-31 |
@@ -122,13 +131,14 @@ This is the definitive list from `client-scripts.json` (35 records). The `enable
 | DocType | Form | List | Total |
 |---|---|---|---|
 | Task | 19 (+ 1 disabled) | 2 | 22 |
-| Dispatch Case | 9 | 0 | 9 |
+| Dispatch Case | 7 | 0 | 7 |
 | Dispatch Case Item | 1 | 0 | 1 |
 | Purchase Receipt | 1 | 0 | 1 |
 | Landed Cost Voucher | 1 | 0 | 1 |
 | Workspace | 1 | 0 | 1 |
 
 **Task has 22 client scripts** (19 enabled Form + 2 enabled List + 1 disabled Form). This is high and a root cause of remaining duplication issues.
+**Dispatch Case reduced from 9 to 7** — `Dispatch Case-Packing Scan` and `Dispatch Case-Packing Problem Alerts` deleted (2026-09 packing cleanup).
 
 ---
 

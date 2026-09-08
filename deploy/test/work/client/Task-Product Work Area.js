@@ -354,7 +354,7 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
-    frm.set_value("custom_task_product_warning", doc.custom_packing_last_warning || doc.custom_packing_problem_summary || "");
+    frm.set_value("custom_task_product_warning", "");
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
     }
@@ -397,7 +397,7 @@ function task_product_work_area_render_restocking(frm, doc, rows, show_alert) {
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
-    frm.set_value("custom_task_product_warning", doc.custom_packing_last_warning || doc.custom_packing_problem_summary || "");
+    frm.set_value("custom_task_product_warning", "");
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
     }
@@ -424,7 +424,7 @@ function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
-    frm.set_value("custom_task_product_warning", doc.custom_packing_last_warning || doc.custom_packing_problem_summary || "");
+    frm.set_value("custom_task_product_warning", "");
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
     }
@@ -635,9 +635,9 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
     rows.forEach(function(row, idx) {
         const required = flt(row.dispatched_qty || 0);
         const scanned = flt(row.custom_scanned_qty || 0);
-        const remaining = row.custom_remaining_qty !== undefined && row.custom_remaining_qty !== null ? flt(row.custom_remaining_qty) : Math.max(required - scanned, 0);
-        const warn = row.custom_fefo_warning || row.custom_problem_reason || "";
-        const status = row.custom_packing_status || (remaining <= 0 ? "Complete" : scanned > 0 ? "Partial" : "Pending");
+        const remaining = Math.max(required - scanned, 0);
+        const warn = row.custom_fefo_warning || "";
+        const status = remaining <= 0 ? "Complete" : scanned > 0 ? "Partial" : "Pending";
         const is_packed = (status === "Complete" || status === "Over Scanned");
         const checkbox_id = `pack_checkbox_${idx}`;
         html += `<tr>
@@ -657,7 +657,7 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
-    frm.set_value("custom_task_product_warning", doc.custom_packing_last_warning || doc.custom_packing_problem_summary || "");
+    frm.set_value("custom_task_product_warning", "");
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
     }

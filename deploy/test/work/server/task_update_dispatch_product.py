@@ -20,7 +20,6 @@ def run_script():
         if row.name == row_name:
             if dispatched_qty is not None:
                 row.dispatched_qty = float(dispatched_qty)
-                row.custom_remaining_qty = max(float(dispatched_qty) - float(row.custom_scanned_qty or 0), 0)
             if unit_price is not None:
                 row.unit_price = float(unit_price)
             if discount_pct is not None:

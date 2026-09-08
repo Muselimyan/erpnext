@@ -25,14 +25,7 @@ for idx, row in enumerate(case.case_items):
                         row.returned_qty = 0
                 row.used_qty = float(row.dispatched_qty or 0) - float(row.returned_qty or 0) - float(row.lost_damaged_qty or 0)
         else:
-                if idx in packed_indices:
-                        row.custom_scanned_qty = required_qty
-                        row.custom_remaining_qty = 0
-                        row.custom_packing_status = 'Complete'
-                else:
-                        row.custom_scanned_qty = 0
-                        row.custom_remaining_qty = required_qty
-                        row.custom_packing_status = 'Pending'
+                row.custom_scanned_qty = required_qty if idx in packed_indices else 0
 
 case.flags.ignore_permissions = True
 case.flags.ignore_validate_update_after_submit = True

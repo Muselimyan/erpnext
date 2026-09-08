@@ -23,14 +23,7 @@ if idx < 0 or idx >= len(case.case_items):
 row = case.case_items[idx]
 required_qty = float(row.dispatched_qty or 0)
 
-if packed:
-    row.custom_scanned_qty = required_qty
-    row.custom_remaining_qty = 0
-    row.custom_packing_status = "Complete"
-else:
-    row.custom_scanned_qty = 0
-    row.custom_remaining_qty = required_qty
-    row.custom_packing_status = "Pending"
+row.custom_scanned_qty = required_qty if packed else 0
 
 case.flags.ignore_permissions = True
 case.flags.ignore_validate_update_after_submit = True
@@ -41,5 +34,5 @@ frappe.response["message"] = {
     "item_code": row.item_code,
     "packed": packed,
     "scanned_qty": row.custom_scanned_qty,
-    "remaining_qty": row.custom_remaining_qty
+    "remaining_qty": max(float(row.dispatched_qty or 0) - float(row.custom_scanned_qty or 0), 0)
 }

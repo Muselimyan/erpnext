@@ -16,7 +16,7 @@ frappe.ui.form.on("Dispatch Case", {
             $(frm.wrapper).find('[data-fieldname="notes"]').closest('.frappe-control').hide();
             // Mobile: hide extra fields
             if (window.innerWidth <= 768) {
-                ["allow_items_edit","custom_packing_scan_barcode","custom_packing_scan_qty","custom_packing_scan_result","custom_packing_last_warning","custom_packing_problem_status","custom_packing_problem_summary","custom_problem_alert_sent"].forEach(function(fn) {
+                ["allow_items_edit"].forEach(function(fn) {
                     $(frm.wrapper).find('[data-fieldname="' + fn + '"]').closest('.frappe-control').hide();
                 });
                 $(frm.wrapper).find('[data-fieldname="tasks_section"]').closest('.form-section').hide();
