@@ -10,14 +10,15 @@
 
 ## Executive Summary
 
-The v4 plan defined 3 phases. Phase 1 is complete. Phase 2 is split between two work streams (v4 cleanup + packing field cleanup) — the script-level work is mostly done but schema changes and script deletion/disabling remain. Phase 3 is not started. A separate **Product Area Redesign** removes 2 dead Task fields (`custom_product_work_column`, `custom_task_product_warning`).
+The v4 plan defined 3 phases. Phase 1 is complete. Phase 2b (packing field cleanup) and 2c (product area redesign) are fully deployed. Phase 2 DC form cleanup has property setters done but script cleanup/disabling remains. Phase 3 is not started. A scan-field visibility bug was found and fixed (Account Details UI Cleanup was overriding TFV).
 
 | Phase | Status | Completion |
 |---|---|---|
 | Phase 1 — Order Entry Redesign | **Complete** | ~95% |
 | Phase 2 — DC Form Cleanup | **In progress** | ~55% |
-| Phase 2b — Packing Field Cleanup | **Scripts updated, deletion pending** | ~60% |
-| Phase 2c — Product Area Redesign | **Source ready, deploy pending** | ~80% |
+| Phase 2b — Packing Field Cleanup | **Deployed** | 100% |
+| Phase 2c — Product Area Redesign | **Deployed** | 100% |
+| Phase 2d — Scan visibility fix | **Deployed** | 100% |
 | Phase 3 — Cancel Flow | **Not started** | 0% |
 
 ---
@@ -113,48 +114,20 @@ The v4 plan listed 7 scripts to disable and 1 to simplify. **None have been disa
 
 ---
 
-## Phase 2b: Packing Field Cleanup — Scripts Updated, Schema Pending
+## Phase 2b: Packing Field Cleanup — Deployed
 
 **Plan:** `plan-93c3694240f4a2eb.md` (session: salty-hero, 2026-09-08)
 **Deploy script:** `deploy/test/scripts/deploy-packing-field-cleanup.ps1`
 
 This plan removes 12 derived/dead custom fields, deletes 3 scripts, and updates 9 scripts. The completion gate replaces the packing-status validation; `custom_scanned_qty` vs `dispatched_qty` is the only check needed.
 
-### Schema: Delete 12 Custom Fields — NOT DONE
+### Schema: Delete 12 Custom Fields — DONE
 
-**Dispatch Case Item (5 fields to delete):**
+All 12 custom fields deleted (5 on Dispatch Case Item, 7 on Dispatch Case). 2 property setters deleted. `custom_scanned_qty.insert_after` fixed to `dispatched_qty`. Verified absent from exported `custom-fields.json`.
 
-| Field | Reason | Currently in schema? |
-|---|---|---|
-| `custom_packing_status` | Derived from quantities | Yes — still exists |
-| `custom_remaining_qty` | Derived (`dispatched - scanned`) | Yes — still exists |
-| `custom_scan_note` | Never written by any code | Yes — still exists |
-| `custom_problem_reason` | Never written by any code | Yes — still exists |
-| `custom_problem_alert_sent` | Dead alert system | Yes — still exists |
+### Scripts: Delete 3 — DONE
 
-**Dispatch Case (7 fields to delete):**
-
-| Field | Reason | Currently in schema? |
-|---|---|---|
-| `custom_packing_scan_barcode` | DC scan removed | Yes — still exists |
-| `custom_packing_scan_qty` | DC scan removed | Yes — still exists |
-| `custom_packing_scan_result` | DC scan removed | Yes — still exists |
-| `custom_packing_last_warning` | DC scan removed | Yes — still exists |
-| `custom_packing_problem_status` | Alert system removed | Yes — still exists |
-| `custom_packing_problem_summary` | Alert system removed | Yes — still exists |
-| `custom_problem_alert_sent` | Alert system removed | Yes — still exists |
-
-**2 Property Setters to delete:** `custom_packing_status-allow_on_submit`, `custom_remaining_qty-allow_on_submit` — still exist.
-
-**Fix:** `custom_scanned_qty.insert_after` → `dispatched_qty` (currently points to `custom_packing_status` which is being deleted).
-
-### Scripts: Delete 3 — NOT DONE
-
-| Script | Type | Status |
-|---|---|---|
-| `Dispatch Case-packing-problem-alerts.py` | Server (After Save, DC) | **Still exists and enabled** — only remaining script using cleanup fields |
-| `Dispatch Case-Packing Problem Alerts.js` | Client (DC) | **Still exists and enabled** |
-| `Dispatch Case-Packing Scan.js` | Client (DC) | **Still exists and enabled** |
+All 3 scripts deleted: `Dispatch Case-packing-problem-alerts.py` (server), `Dispatch Case-Packing Problem Alerts.js` (client), `Dispatch Case-Packing Scan.js` (client).
 
 ### Scripts: Update 6 Server — DONE
 
@@ -179,23 +152,17 @@ All 6 server scripts have already been cleaned of packing-status/remaining-qty r
 
 ---
 
-## Phase 2c: Product Area Redesign — Source Ready, Deploy Pending
+## Phase 2c: Product Area Redesign — Deployed
 
 **Deploy script:** `deploy/test/scripts/deploy-product-area-redesign.ps1`
 
-Removes 2 dead Task custom fields and cleans all references from scripts:
+Deleted 2 Task custom fields (`custom_product_work_column`, `custom_task_product_warning`). Cleaned stale `field_order` Property Setter (removed 7 ghost/deleted entries). Updated 3 client scripts. Product table now full-width. DC/customer headers removed from all renderers.
 
-| Field to Delete | Reason |
-|---|---|
-| `custom_product_work_column` | Column Break — not needed with full-width product table |
-| `custom_task_product_warning` | Warning field — no longer written by any script |
+## Phase 2d: Scan Visibility Fix — Deployed
 
-**Scripts updated (source files):**
-- `Task-Product Work Area.js` — all `frm.set_value("custom_task_product_warning", ...)` calls removed, DC/customer header lines removed from all renderers
-- `Task-Field-Visibility.js` — removed `custom_task_product_warning` mapping and column break comment
-- `Task-Account Details UI Cleanup.js` — removed both fields from hide lists
+**Root cause:** `Task-Account Details UI Cleanup.js` toggled scan/product fields visible for all non-Account-Details tasks (including Order Entry), overriding TFV with repeated setTimeout at 200/800/1600/3000ms.
 
-**Schema deletion not yet deployed.**
+**Fix:** Removed all TFV-owned field toggles from Account Details script. Added AGENTS.md rule: only TFV may toggle visibility of `TFV_KIND_MAP` fields.
 
 ---
 
@@ -248,20 +215,15 @@ These changes support the dispatch flow but were done outside the v4 plan:
 
 ## Remaining Work — Ordered by Priority
 
-### A. Deploy pending changes (source ready)
+### A. Phase 2 schema gaps
 
-1. **Run `deploy-product-area-redesign.ps1`** — deletes `custom_product_work_column` + `custom_task_product_warning` fields, updates 3 client scripts
-2. **Run `deploy-packing-field-cleanup.ps1`** — deletes 12 custom fields, 2 property setters, 3 scripts; updates 6 server + 3 client scripts
+1. Add `allow_on_submit` property setter for `Dispatch Case Item-discount_pct`
+2. Set `track_changes = 1` on Dispatch Case DocType
 
-### B. Phase 2 schema gaps
+### B. Phase 2 DC client script decisions
 
-3. Add `allow_on_submit` property setter for `Dispatch Case Item-discount_pct`
-4. Set `track_changes = 1` on Dispatch Case DocType
-
-### C. Phase 2 DC client script decisions
-
-5. Simplify `Dispatch Case-Form.js` — remove `allow_items_edit`, hardcoded approvers, custom lock/unlock
-6. Decide on remaining 5 DC scripts: disable or keep?
+3. Simplify `Dispatch Case-Form.js` — remove `allow_items_edit`, hardcoded approvers, custom lock/unlock
+4. Decide on remaining 5 DC scripts: disable or keep?
    - `Dispatch Case-Lock Submitted.js` — conflicts with `allow_on_submit` model
    - `Dispatch Case-Products Button.js` — items added via Task; still useful for direct DC editing?
    - `Dispatch Case-Template Auto Fill.js` — template loading moved to Task; still useful for direct DC?
@@ -269,9 +231,9 @@ These changes support the dispatch flow but were done outside the v4 plan:
    - `Dispatch Case Item-Auto Fill Item Name.js` — auto-fetch; low cost to keep
    - `Dispatch Case-Simplify for Order Creation.js` — Order creators use Task now; still useful for cleanup?
 
-### D. Phase 3 (Cancel Flow) — not started, requires design decisions
+### C. Phase 3 (Cancel Flow) — not started, requires design decisions
 
-7. Full cancel flow implementation (see Phase 3 section above)
+5. Full cancel flow implementation (see Phase 3 section above)
 
 ---
 
