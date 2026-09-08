@@ -5,6 +5,7 @@
 #
 # 1. Delete Column Break + Warning field (full-width product table)
 # 2. Update 3 client scripts (PWA, TFV, Account Details UI Cleanup)
+# 3. Fix stale field_order Property Setter (remove ghost/deleted fields)
 #
 # Run with -Mode Check first to preview changes.
 # Run with -Mode Deploy to apply.
@@ -127,6 +128,47 @@ foreach ($s in $ClientScripts) {
         } | Out-Null
         Write-Host "  [$($s.Name)] UPDATED ($($newScript.Length) chars)" -ForegroundColor Green
     }
+}
+
+# ============================================================================
+# Step 3: Fix stale field_order Property Setter
+# ============================================================================
+Write-Host "`n[3] Fix stale field_order Property Setter" -ForegroundColor Magenta
+
+$psName = "Task-main-field_order"
+$existing = Get-ErpDoc "Property Setter" $psName
+if ($existing) {
+    $currentOrder = $existing.value | ConvertFrom-Json
+    $staleFields = @(
+        "custom_barcode_section",
+        "custom_product_work_column",
+        "custom_task_product_warning",
+        "custom_task_add_item_code",
+        "custom_task_add_qty",
+        "custom_task_add_batch_no",
+        "custom_task_add_unit_price"
+    )
+    $cleanOrder = $currentOrder | Where-Object { $staleFields -notcontains $_ }
+    $removed = $currentOrder.Count - $cleanOrder.Count
+
+    if ($Mode -eq "Check") {
+        if ($removed -gt 0) {
+            Write-Host "  WOULD REMOVE $removed stale entries: $($staleFields -join ', ')" -ForegroundColor Yellow
+            Write-Host "  Field count: $($currentOrder.Count) -> $($cleanOrder.Count)" -ForegroundColor Yellow
+        } else {
+            Write-Host "  No stale entries found ($($currentOrder.Count) fields)" -ForegroundColor DarkGray
+        }
+    } else {
+        if ($removed -gt 0) {
+            $newValue = $cleanOrder | ConvertTo-Json -Compress
+            Put-ErpDoc "Property Setter" $psName @{ value = $newValue } | Out-Null
+            Write-Host "  REMOVED $removed stale entries ($($currentOrder.Count) -> $($cleanOrder.Count) fields)" -ForegroundColor Green
+        } else {
+            Write-Host "  No stale entries found" -ForegroundColor DarkGray
+        }
+    }
+} else {
+    Write-Host "  Property Setter $psName not found" -ForegroundColor Red
 }
 
 # --- Clear cache ---

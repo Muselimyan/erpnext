@@ -114,6 +114,12 @@ The task system uses a mandatory acceptance model:
 - Client Scripts: `Task-Accept Start`, `Task-Lock Unaccepted`, `Task-Auto Reload`, `Task-Dispatch Packing Usability`, `Global-Mobile Back Button List`
 - Log tags: `[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]` (server); `[TaskAccept]`, `[TaskLock]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]` (client)
 
+### Task field visibility — single owner: `Task-Field-Visibility.js`
+
+Field visibility on the Task form is owned exclusively by `Task-Field-Visibility.js` (TFV) via `TFV_KIND_MAP`. **No other client script may call `toggle_display`, `set_df_property('hidden')`, or DOM `.hide()/.show()` on any field listed in `TFV_KIND_MAP`.**
+
+If a new field needs conditional visibility, add it to `TFV_KIND_MAP` with the appropriate rule. Do not add visibility toggles to other scripts — this causes race conditions where setTimeout chains override TFV's correct state.
+
 ### Deployment model
 
 - Scripts live in `deploy/test/work/server/` and `deploy/test/work/client/` with metadata headers.

@@ -26,28 +26,9 @@ function task_account_details_ui_cleanup(frm) {
     if (!frm || frm.doctype !== "Task") return;
     var taskKind = String(frm.doc.task_kind || '').trim().toLowerCase();
     var is_account_details = taskKind === "account details: entry" || taskKind === "account details: processing";
-    var account_only_hide = [
-        "custom_product_work_section",
-        "custom_task_product_summary",
-        "custom_task_scan_barcode",
-        "custom_task_scan_qty",
-        "custom_task_scan_result",
-        "custom_task_add_item_code",
-        "custom_task_add_qty",
-        "custom_task_add_batch_no",
-        "custom_task_add_unit_price",
-        "custom_account_details_section"
-    ];
-    account_only_hide.forEach(function(fieldname) {
-        if (frm.fields_dict[fieldname]) {
-            frm.toggle_display(fieldname, !is_account_details);
-        }
-    });
-    if (frm.fields_dict.custom_account_photos) {
-        frm.set_df_property("custom_account_photos", "label", "Photos");
-        frm.toggle_display("custom_account_photos", is_account_details);
-        window._photoLog && window._photoLog('acct', 'custom_account_photos field: visible=' + is_account_details + ' (task_kind="' + (frm.doc.task_kind || '') + '")');
-    }
+    // NOTE: Product/scan field visibility is owned exclusively by Task-Field-Visibility.js (TFV).
+    // Do NOT toggle visibility of any field in TFV_KIND_MAP here — see AGENTS.md.
+    // This script only manages Account-Details-specific cosmetics (labels, DOM layout).
     if (!is_account_details) return;
     frm.set_df_property("subject", "reqd", 0);
     frm.toggle_display("subject", true);
@@ -55,34 +36,18 @@ function task_account_details_ui_cleanup(frm) {
         frm.fields_dict.subject.df.reqd = 0;
     }
     // Accept button now handled by Task-Action Buttons.js for all task kinds
+    // NOTE: Product/scan field visibility is handled by TFV — do NOT hide
+    // those fields here. This setTimeout only handles Account-Details-specific
+    // DOM cosmetics (section renaming, button hiding, column layout).
     setTimeout(function() {
         var wrapper = $(frm.wrapper);
-        wrapper.find('[data-fieldname="custom_product_work_section"]').closest('.form-section').hide();
-        wrapper.find('[data-fieldname="custom_account_details_section"]').closest('.form-section').hide();
-        ["Warehouse Pickup Photo", "Warehouse Drop-off Photo", "Products / Dispatch Work", "Product Lines", "Barcode Scanning (Optional)"].forEach(function(label) {
-            wrapper.find('.section-head, .control-label, label').filter(function() {
-                return $.trim($(this).text()) === label;
-            }).each(function() {
-                var section = $(this).closest('.form-section');
-                var control = $(this).closest('.frappe-control');
-                if (label === 'Barcode Scanning (Optional)') {
-                    $(this).text('Status');
-                } else if (section.length && (label === 'Products / Dispatch Work' || label === 'Product Lines')) {
-                    section.hide();
-                } else if (control.length) {
-                    control.hide();
-                }
-            });
-        });
+        // Rename section headings for Account Details context
         wrapper.find('.section-head').filter(function() {
             var text = $.trim($(this).text());
             return text === 'Barcode Scanning (Optional)' || text === 'Task Status & Priority';
         }).text('Status');
-        ["custom_task_scan_barcode", "custom_task_scan_qty", "custom_task_scan_result", "custom_task_add_item_code", "custom_task_add_qty", "custom_task_add_batch_no", "custom_task_add_unit_price"].forEach(function(fieldname) {
-            wrapper.find('[data-fieldname="' + fieldname + '"]').closest('.frappe-control').hide();
-            wrapper.find('.frappe-control[data-fieldname="' + fieldname + '"]').hide();
-        });
-        ["Warehouse Pickup Photo", "Warehouse Drop-off Photo", "Scan Product Barcode", "Scan Qty", "Last Scan Result", "Choose Product", "Product Qty", "Batch / LOT", "Unit Price"].forEach(function(label) {
+        // Hide warehouse photo controls (Account Details does not use these)
+        ["Warehouse Pickup Photo", "Warehouse Drop-off Photo"].forEach(function(label) {
             wrapper.find('.control-label, label').filter(function() {
                 return $.trim($(this).text()) === label;
             }).closest('.frappe-control').hide();
@@ -108,8 +73,7 @@ function task_account_details_ui_cleanup(frm) {
             });
             leftColumn.find('.frappe-control').each(function() {
                 var fieldname = $(this).attr('data-fieldname') || $(this).find('[data-fieldname]').attr('data-fieldname') || '';
-                var labelText = $.trim($(this).find('.control-label, label').first().text());
-                if ((fieldname && fieldname !== 'status' && fieldname !== 'priority') || ["Warehouse Pickup Photo", "Warehouse Drop-off Photo", "Scan Product Barcode", "Scan Qty", "Last Scan Result", "Product Work Warning", "Choose Product", "Product Qty", "Batch / LOT", "Unit Price"].indexOf(labelText) >= 0) {
+                if (fieldname && fieldname !== 'status' && fieldname !== 'priority') {
                     $(this).hide();
                 }
             });
