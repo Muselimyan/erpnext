@@ -32,8 +32,6 @@ function task_account_details_ui_cleanup(frm) {
         "custom_task_scan_barcode",
         "custom_task_scan_qty",
         "custom_task_scan_result",
-        "custom_product_work_column",
-        "custom_task_product_warning",
         "custom_task_add_item_code",
         "custom_task_add_qty",
         "custom_task_add_batch_no",
@@ -80,11 +78,11 @@ function task_account_details_ui_cleanup(frm) {
             var text = $.trim($(this).text());
             return text === 'Barcode Scanning (Optional)' || text === 'Task Status & Priority';
         }).text('Status');
-        ["custom_task_scan_barcode", "custom_task_scan_qty", "custom_task_scan_result", "custom_task_product_warning", "custom_task_add_item_code", "custom_task_add_qty", "custom_task_add_batch_no", "custom_task_add_unit_price"].forEach(function(fieldname) {
+        ["custom_task_scan_barcode", "custom_task_scan_qty", "custom_task_scan_result", "custom_task_add_item_code", "custom_task_add_qty", "custom_task_add_batch_no", "custom_task_add_unit_price"].forEach(function(fieldname) {
             wrapper.find('[data-fieldname="' + fieldname + '"]').closest('.frappe-control').hide();
             wrapper.find('.frappe-control[data-fieldname="' + fieldname + '"]').hide();
         });
-        ["Warehouse Pickup Photo", "Warehouse Drop-off Photo", "Scan Product Barcode", "Scan Qty", "Last Scan Result", "Product Work Warning", "Choose Product", "Product Qty", "Batch / LOT", "Unit Price"].forEach(function(label) {
+        ["Warehouse Pickup Photo", "Warehouse Drop-off Photo", "Scan Product Barcode", "Scan Qty", "Last Scan Result", "Choose Product", "Product Qty", "Batch / LOT", "Unit Price"].forEach(function(label) {
             wrapper.find('.control-label, label').filter(function() {
                 return $.trim($(this).text()) === label;
             }).closest('.frappe-control').hide();

@@ -111,9 +111,6 @@ var TFV_KIND_MAP = {
     // Product Work Section (Pack, Returns proc, Order entry with DC)
     "custom_product_work_section":  "__product__",
     "custom_task_product_summary":  "__product__",
-    // NOTE: custom_product_work_column is a Column Break -- inherits from
-    // parent section, do NOT toggle individually
-    "custom_task_product_warning":  "__product__",
 
     // Scan fields -- Pack/Returns only (not Order entry)
     "custom_task_scan_barcode":     "__scan_product__",
