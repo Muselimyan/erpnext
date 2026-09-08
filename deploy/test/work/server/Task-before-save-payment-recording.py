@@ -22,15 +22,17 @@ else:
             paid_to_account = "Bank - Inmed"
         ref = doc.payment_reference_dc or ""
         remaining = amount
-        invoice_dates = {}
+        invoice_rows = []
         for row in doc.open_invoices:
             row.allocated_now = 0
             if (row.outstanding_amount or 0) > 0 and not row.sales_invoice:
                 frappe.throw(f"Debt Collection row {row.idx} has outstanding amount but no Sales Invoice. Fix the Open Invoices table before recording payment.")
             if row.sales_invoice:
-                invoice_dates[row.sales_invoice] = frappe.db.get_value("Sales Invoice", row.sales_invoice, "posting_date") or frappe.db.get_value("Sales Invoice", row.sales_invoice, "creation") or ""
+                invoice_date = frappe.db.get_value("Sales Invoice", row.sales_invoice, "posting_date") or frappe.db.get_value("Sales Invoice", row.sales_invoice, "creation") or ""
+                invoice_rows.append((str(invoice_date), row.sales_invoice or "", row))
         allocations = []
-        for row in sorted(doc.open_invoices, key=lambda r: (str(invoice_dates.get(r.sales_invoice) or ""), r.sales_invoice or "")):
+        for invoice_row in sorted(invoice_rows):
+            row = invoice_row[2]
             to_apply = min(remaining, row.outstanding_amount or 0)
             if to_apply > 0:
                 row.allocated_now = to_apply
@@ -44,8 +46,11 @@ else:
                 row.paid_amount = (row.paid_amount or 0) + apply
                 row.outstanding_amount = (row.outstanding_amount or 0) - apply
                 row.allocated_now = 0
-        doc.total_outstanding = sum((r.outstanding_amount or 0) for r in doc.open_invoices)
-        doc.append("payment_history", {
+        total_outstanding = 0
+        for row in doc.open_invoices:
+            total_outstanding += row.outstanding_amount or 0
+        doc.total_outstanding = total_outstanding
+        history_row = doc.append("payment_history", {
             "payment_date": frappe.utils.now_datetime(),
             "amount": amount,
             "method": method,
@@ -74,8 +79,7 @@ else:
         pe.flags.ignore_permissions = True
         pe.insert()
         pe.submit()
-        if doc.payment_history:
-            frappe.db.set_value("Debt Collection Payment", doc.payment_history[-1].name, "payment_entry", pe.name)
+        history_row.payment_entry = pe.name
         doc.new_payment_amount = 0
         doc.payment_method_dc = ""
         doc.payment_reference_dc = ""

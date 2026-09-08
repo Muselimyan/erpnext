@@ -14,17 +14,17 @@
 | `purchase-walkthrough.md` | 🟡 Purchasing gates and Doc 17A costing support deployed; full PO → PR → LCV → PI flow still needs smoke test |
 | `standard-sale-walkthrough.md` | 🟡 Current no-return flow documented: Accept button, Complete Task button, Order Entry auto-submit, text-match item search; end-to-end smoke test still required |
 | `surgery-case-walkthrough-v2.md` | 🟡 Current return-expected flow documented: barcode Product Work Area, Accept button, Complete Task button, Order Entry auto-submit; end-to-end smoke test still required |
-| `debt-collection-and-payment.md` | 🟡 Debt/task logic deployed; payment/debt closure still needs smoke test |
+| `debt-collection-and-payment.md` | ✅ Current for Group 3 TEST: Debt Collection payments, FIFO allocation, Cash/Bank account mapping, payment-history links, and debt-closure handoff smoke-tested and passed |
 | `discount-approval-walkthrough.md` | 🟡 Discount approval logic deployed; approval/rejection path still needs smoke test |
 | `delivery-driver-guide.md` | 🟡 Delivery task/photo/handover gates documented/deployed; driver role test still required |
 | `low-stock-reorder-routine.md` | 🟡 Reorder governance deployed; reorder thresholds still need population before routine is useful |
 | `new-customer-onboarding.md` | 🟡 Customer master data loaded and debt thresholds set; new customer + warehouse creation still needs role smoke test |
 | `new-supplier-setup.md` | 🟡 Supplier setup manual written; supplier creation/access still needs role smoke test |
 | `supplier-prepayment-allocation.md` | 🟡 Manual written; supplier prepayment allocation still needs smoke test |
-| `customer-advance-payment.md` | 🟡 Manual written; customer advance Payment Received flow still needs smoke test |
-| `debt-closure-approval.md` | 🟡 Manual written; multi-invoice profit calculation still needs smoke test |
-| `debt-alert.md` | 🟡 Manual written; scheduled Director debt-threshold alert flow still needs smoke test |
-| `tender-agreement-management.md` | 🟡 Manual written; tender duplicate/over-supply/cancellation reversal controls still need smoke test |
+| `customer-advance-payment.md` | ✅ Current for Group 3 TEST: customer advance Payment Received flow smoke-tested with Cash and Bank Transfer; advance rows accumulate correctly |
+| `debt-closure-approval.md` | ✅ Current for Group 3 TEST: policy assignment/completion, multi-invoice profit, and per-Dispatch Case profit smoke-tested and passed |
+| `debt-alert.md` | ✅ Current for Group 3 TEST: scheduled Director debt-threshold alert flow smoke-tested and passed |
+| `tender-agreement-management.md` | ✅ Current for Group 3 TEST: duplicate/over-supply/tender-price/cancellation reversal/status controls smoke-tested and passed |
 | `stock-adjustment-writeoff.md` | 🟡 Manual written; write-off/stock correction governance still needs smoke test |
 | `cancellation-and-corrections.md` | 🟡 Manual written; correction/cancellation path still needs controlled smoke test |
 | `surgery-set-type-setup.md` | 🟡 Manual written; setup path still needs smoke test if used |

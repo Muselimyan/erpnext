@@ -93,8 +93,13 @@ if company and debt_alert_assignee:
             pluck="name",
         )
 
+        description = f"Client debt exceeded threshold. Current debt: {debt}. Threshold: {threshold}."
         if existing:
-            task = frappe.get_doc("Task", existing[0])
+            task_name = existing[0]
+            frappe.db.set_value("Task", task_name, "current_debt_amd", debt)
+            frappe.db.set_value("Task", task_name, "debt_threshold_amd", threshold)
+            frappe.db.set_value("Task", task_name, "description", description)
+            assign_single_owner(task_name, debt_alert_assignee)
         else:
             task = frappe.new_doc("Task")
             task.subject = f"Debt Alert - {c.customer_name}"
@@ -102,10 +107,8 @@ if company and debt_alert_assignee:
             task.task_kind = DEBT_ALERT_KIND
             task.task_access_policy = DEBT_ALERT_KIND
             task.customer = c.name
+            task.current_debt_amd = debt
+            task.debt_threshold_amd = threshold
+            task.description = description
             task.insert(ignore_permissions=True)
             assign_single_owner(task.name, debt_alert_assignee)
-
-        task.current_debt_amd = debt
-        task.debt_threshold_amd = threshold
-        task.description = f"Client debt exceeded threshold. Current debt: {debt}. Threshold: {threshold}."
-        task.save(ignore_permissions=True)

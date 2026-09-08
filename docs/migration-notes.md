@@ -221,13 +221,13 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 - **[ ]** Assign real staff to roles: `Ops - Order Accepting`, `Ops - Inventory`, `Ops - Delivery`, `Ops - Accounting`, `Ops - Directors`, `Delivery Driver`.
 - **[ ]** Create `Standard Selling` Price List (Selling = ON, Currency = AMD) and populate base Item Prices.
 - **[ ]** Create saved view `Price Overrides — by Client` in Item Price list (filter: Price List = Standard Selling, Customer not blank; columns: Customer, Item Code, Item Name, Rate).
-- **[ ]** Confirm these Task Access Policy records exist (required by active server scripts): `Discount Approval`, `Debt Collection`, `Debt Alert`, `Debt Closure Approval`, `Payment Received`, `Delivery`, `Return drop-off at warehouse`. `Distribute Payment` is only required if that deferred flow is re-enabled.
-- **[ ]** Confirm these Task Kind values exist on the `Task-task_kind` field options: `Discount Approval`, `Debt Collection`, `Debt Alert`, `Debt Closure Approval`, `Payment Received`, `Distribute Payment` if kept, `Delivery`, `Return drop-off at warehouse`, `Returns processing / verification`.
+- **[x] Group 3 TEST** Confirmed these Task Access Policy records exist for Group 3 active server scripts: `Debt Collection`, `Debt Alert`, `Debt Closure Approval`, and `Payment Received`. `Distribute Payment` remains disabled/deferred and is only required if that flow is re-enabled. Broader non-Group-3 policies should still be checked in their own validation pass.
+- **[x] Group 3 TEST** Confirmed these Task Kind values exist/use correctly for Group 3: `Debt Collection`, `Debt Alert`, `Debt Closure Approval`, and `Payment Received`. `Distribute Payment` remains disabled/deferred if kept. Broader non-Group-3 task kinds should still be checked in their own validation pass.
 - **[ ]** Smoke-test discount approval flow: create SO with line discount → Pending task created → director completes Approved → `discount_approval_status` = Approved → dispatch staging unblocked.
 - **[ ]** Smoke-test dispatch gate: attempt Stock Entry submit (Main → Transit) without Sales Order link → blocked; without Pickup Photo → blocked.
 - **[ ]** Smoke-test Delivery Note gate: attempt DN submit with wrong source warehouse → blocked.
 - **[ ]** Smoke-test prepaid gate: flag SO as prepaid, attempt dispatch without submitted PE → blocked.
-- **[ ]** Smoke-test debt scheduler: set a low `debt_threshold_amd` on a Customer with outstanding invoices → run hourly job manually or wait → Director Debt Alert task appears.
+- **[x] Group 3 TEST** Smoke-tested debt scheduler on TEST: manual scheduler run created Director `Debt Alert` tasks with current debt/threshold values and did not create Finance `Debt Collection` tasks. Production/main not touched.
 
 ### Notes / Known Issues
 - Deployment script: `deploy/doc09a-deploy.ps1` — idempotent, `-Mode Check` / `-Mode Deploy`.
@@ -257,7 +257,7 @@ Updated after each doc implementation. Human action items are marked **[ ]**.
 
 **`Task Access Policy` records** (14 total; 13 pre-existing, 1 new):
 - New record added: `Return to warehouse (aborted delivery / cancelled order)`.
-- All 14 records then present: Order entry, Pack / prepare items, Dispatch picking / hand-off, Delivery, Return to warehouse (aborted delivery / cancelled order), Pickup Returns, Return drop-off at warehouse, Returns processing / verification, Invoice preparation / create invoice, Debt Collection, Distribute Payment, Discount Approval, Purchase Approval, Write-off Approval. Current Group 3 local work adds/uses Debt Alert, Debt Closure Approval, and Payment Received policies; Distribute Payment remains disabled/deferred pending final keep/delete decision.
+- All 14 records then present: Order entry, Pack / prepare items, Dispatch picking / hand-off, Delivery, Return to warehouse (aborted delivery / cancelled order), Pickup Returns, Return drop-off at warehouse, Returns processing / verification, Invoice preparation / create invoice, Debt Collection, Distribute Payment, Discount Approval, Purchase Approval, Write-off Approval. Current Group 3 TEST deployment adds/uses Debt Alert, Debt Closure Approval, and Payment Received policies; Distribute Payment remains disabled/deferred pending final keep/delete decision.
 
 **Server Script — `Task-before-save-policy` (updated):** Replaced the partial governance script with the comprehensive Doc 10A version. Now enforces:
 1. Auto-fill `task_access_policy` from `task_kind` (existing behaviour, kept).

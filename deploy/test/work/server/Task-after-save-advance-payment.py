@@ -27,7 +27,7 @@ else:
         "received_amount": doc.new_payment_amount,
         "mode_of_payment": method,
         "reference_no": doc.payment_reference_dc or "",
-        "reference_date": today(),
+        "reference_date": frappe.utils.today(),
         "company": "InMED",
         "paid_to": paid_to_account,
     })
@@ -43,7 +43,10 @@ else:
             "payment_entry": pe.name,
             "source_task": doc.name,
         })
-        case.prepaid_amount = sum((row.amount or 0) for row in case.advance_payments)
+        total_prepaid = 0
+        for row in case.advance_payments:
+            total_prepaid += row.amount or 0
+        case.prepaid_amount = total_prepaid
         case.prepaid_payment_entry = pe.name
         case.flags.ignore_permissions = True
         case.save()

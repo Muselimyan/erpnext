@@ -7,8 +7,10 @@ frappe.ui.form.on("Dispatch Case", {
     refresh(frm) {
         // Roles that can see prices and financial info
         const financial_roles = ["Ops - Accounting", "Ops - Finance", "Ops - Directors", "System Manager"];
+        const pricing_roles = ["Ops - Order Creating", "Ops - Accounting", "Ops - Finance", "Ops - Directors", "System Manager"];
         const user_roles = frappe.user_roles || [];
         const has_financial_access = financial_roles.some(role => user_roles.includes(role));
+        const has_pricing_access = pricing_roles.some(role => user_roles.includes(role));
         
         if (!has_financial_access) {
             // Hide Invoice and Payment section
@@ -20,14 +22,17 @@ frappe.ui.form.on("Dispatch Case", {
             // Hide all fields in payment section
             const payment_fields = [
                 "sales_invoice", "prepaid_amount", "prepaid_payment_entry",
-                "total_invoice_amount", "total_paid_amount", "outstanding_amount"
+                "total_invoice_amount", "total_paid_amount", "outstanding_amount",
+                "profit", "advance_payments"
             ];
             payment_fields.forEach(function(fieldname) {
                 if (frm.fields_dict[fieldname]) {
                     frm.set_df_property(fieldname, "hidden", 1);
                 }
             });
-            
+        }
+
+        if (!has_pricing_access) {
             // Hide price and discount columns in case_items table
             if (frm.fields_dict.case_items && frm.fields_dict.case_items.grid) {
                 const grid = frm.fields_dict.case_items.grid;
@@ -52,11 +57,11 @@ frappe.ui.form.on("Dispatch Case", {
 frappe.ui.form.on("Dispatch Case Item", {
     form_render(frm, cdt, cdn) {
         // Hide price fields in grid row detail view
-        const financial_roles = ["Ops - Accounting", "Ops - Finance", "Ops - Directors", "System Manager"];
+        const pricing_roles = ["Ops - Order Creating", "Ops - Accounting", "Ops - Finance", "Ops - Directors", "System Manager"];
         const user_roles = frappe.user_roles || [];
-        const has_financial_access = financial_roles.some(role => user_roles.includes(role));
+        const has_pricing_access = pricing_roles.some(role => user_roles.includes(role));
         
-        if (!has_financial_access) {
+        if (!has_pricing_access) {
             const row = locals[cdt][cdn];
             const grid_row = frm.fields_dict.case_items.grid.grid_rows_by_docname[row.name];
             

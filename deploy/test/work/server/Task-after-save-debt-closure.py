@@ -15,14 +15,27 @@ DEBT_CLOSURE_APPROVAL_KIND = "Debt Closure Approval"
 
 # ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ 1. Debt Collection completed ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ create Debt Closure Approval ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ
 if is_completing and doc.task_kind == "Debt Collection":
-    total_paid = sum((r.paid_amount or 0) for r in (doc.open_invoices or []))
-    inv_names = [r.sales_invoice for r in (doc.open_invoices or []) if r.sales_invoice]
-    pe_names = [r.payment_entry for r in (doc.payment_history or []) if r.payment_entry]
+    total_paid = 0
+    inv_names = []
+    pe_names = []
+    for r in (doc.open_invoices or []):
+        total_paid += r.paid_amount or 0
+        if r.sales_invoice:
+            inv_names.append(r.sales_invoice)
+    for r in (doc.payment_history or []):
+        if r.payment_entry:
+            pe_names.append(r.payment_entry)
+    invoices_text = "N/A"
+    if inv_names:
+        invoices_text = ", ".join(inv_names)
+    payment_entries_text = "N/A"
+    if pe_names:
+        payment_entries_text = ", ".join(pe_names)
     desc_lines = [
         f"Customer: {doc.customer}",
         f"Total Paid: {total_paid} AMD",
-        f"Invoices: {', '.join(inv_names) if inv_names else 'N/A'}",
-        f"Payment Entries: {', '.join(pe_names) if pe_names else 'N/A'}",
+        f"Invoices: {invoices_text}",
+        f"Payment Entries: {payment_entries_text}",
         "",
         "Payment History:",
     ]
@@ -78,17 +91,25 @@ if is_completing and doc.task_kind == "Debt Collection":
 # ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ 2. Debt Closure Approval completed ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ calculate profit ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ
 if is_completing and doc.task_kind == DEBT_CLOSURE_APPROVAL_KIND:
     approval_policy = frappe.get_doc("Task Access Policy", DEBT_CLOSURE_APPROVAL_KIND)
-    allowed_roles = [r.role for r in (approval_policy.allowed_roles or []) if r.role]
+    allowed_roles = []
+    for role_row in (approval_policy.allowed_roles or []):
+        if role_row.role:
+            allowed_roles.append(role_row.role)
     user_roles = frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role")
-    if frappe.session.user != "Administrator" and not set(allowed_roles).intersection(set(user_roles or [])):
+    user_allowed = False
+    for allowed_role in allowed_roles:
+        for user_role in (user_roles or []):
+            if allowed_role == user_role:
+                user_allowed = True
+    if frappe.session.user != "Administrator" and not user_allowed:
         frappe.throw("Only users allowed by the Debt Closure Approval Task Access Policy can complete this approval task.")
 
     invoice_rows = []
-    seen_invoices = set()
+    seen_invoices = []
     for row in (doc.open_invoices or []):
         if row.sales_invoice and row.sales_invoice not in seen_invoices:
             invoice_rows.append({"sales_invoice": row.sales_invoice, "dispatch_case": row.dispatch_case})
-            seen_invoices.add(row.sales_invoice)
+            seen_invoices.append(row.sales_invoice)
     if not invoice_rows and doc.sales_invoice:
         invoice_rows.append({"sales_invoice": doc.sales_invoice, "dispatch_case": doc.dispatch_case})
 
@@ -110,8 +131,12 @@ if is_completing and doc.task_kind == DEBT_CLOSURE_APPROVAL_KIND:
         if row.get("dispatch_case"):
             dispatch_case_profit[row.get("dispatch_case")] = (dispatch_case_profit.get(row.get("dispatch_case")) or 0) + invoice_profit
 
-    doc.custom_case_profit = total_profit
+    frappe.db.set_value("Task", doc.name, "custom_case_profit", total_profit)
     for dispatch_case, profit in dispatch_case_profit.items():
         frappe.db.set_value("Dispatch Case", dispatch_case, "profit", profit)
     if missing_prices:
-        frappe.msgprint(f"Warning: Standard Buying price missing for: {', '.join(sorted(list(set(missing_prices))))}. Profit may be incomplete.", indicator="orange")
+        unique_missing_prices = []
+        for missing_price in missing_prices:
+            if missing_price not in unique_missing_prices:
+                unique_missing_prices.append(missing_price)
+        frappe.msgprint(f"Warning: Standard Buying price missing for: {', '.join(sorted(unique_missing_prices))}. Profit may be incomplete.", indicator="orange")

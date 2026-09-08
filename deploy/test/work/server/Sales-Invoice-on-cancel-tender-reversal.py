@@ -1,7 +1,7 @@
 # Name: Sales-Invoice-on-cancel-tender-reversal
 # Type: DocType Event
 # DocType: Sales Invoice
-# Event: On Cancel
+# Event: After Cancel
 # Disabled: 0
 # ---
 
@@ -19,7 +19,10 @@ if doc.docstatus == 2:
         for tender_item in tender.items:
             if tender_item.item_code == item_code:
                 supplied = tender_item.supplied_quantity or 0
-                tender_item.supplied_quantity = max(supplied - qty, 0)
+                new_supplied = supplied - qty
+                if new_supplied < 0:
+                    new_supplied = 0
+                tender_item.supplied_quantity = new_supplied
                 tender_item.remaining_quantity = (tender_item.won_quantity or 0) - tender_item.supplied_quantity
                 matched = True
                 break

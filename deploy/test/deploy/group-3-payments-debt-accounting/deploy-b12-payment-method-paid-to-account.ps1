@@ -24,6 +24,23 @@ function Invoke-ErpRequest { param([string]$Method, [string]$Path, $Body=$null)
 function Get-ErpDoc { param([string]$DocType, [string]$Name)
     return (Invoke-ErpRequest Get "/api/resource/$(Enc $DocType)/$(Enc $Name)").data
 }
+function Ensure-BankAccount {
+    param([string]$AccountName, [string]$ParentAccount)
+    try {
+        Get-ErpDoc "Account" $AccountName | Out-Null
+        return $false
+    } catch {
+        Invoke-ErpRequest Post "/api/resource/$(Enc 'Account')" @{
+            doctype = "Account"
+            account_name = "Bank"
+            parent_account = $ParentAccount
+            company = "InMED"
+            account_type = "Bank"
+            is_group = 0
+        } | Out-Null
+        return $true
+    }
+}
 
 $DebtPaymentScriptName = "Task-before-save-payment-recording"
 $AdvancePaymentScriptName = "Task-after-save-advance-payment"
@@ -61,7 +78,12 @@ if ($Mode -eq "Check") {
 }
 
 if (-not $CashAccountExists) { throw "Missing account: Cash - Inmed" }
-if (-not $BankAccountExists) { throw "Missing account: Bank - Inmed" }
+$CreatedBankAccount = $false
+if (-not $BankAccountExists) {
+    try { Get-ErpDoc "Account" "Bank Accounts - Inmed" | Out-Null } catch { throw "Missing parent account: Bank Accounts - Inmed" }
+    $CreatedBankAccount = Ensure-BankAccount "Bank - Inmed" "Bank Accounts - Inmed"
+    $BankAccountExists = $true
+}
 
 Invoke-ErpRequest Put "/api/resource/$(Enc 'Server Script')/$(Enc $DebtPaymentScriptName)" @{ script = $DebtPaymentScript } | Out-Null
 Invoke-ErpRequest Put "/api/resource/$(Enc 'Server Script')/$(Enc $AdvancePaymentScriptName)" @{ script = $AdvancePaymentScript } | Out-Null
@@ -69,6 +91,7 @@ Invoke-ErpRequest Put "/api/resource/$(Enc 'Server Script')/$(Enc $AdvancePaymen
 [pscustomobject]@{
     target = $BaseUrl
     server_scripts = @($DebtPaymentScriptName, $AdvancePaymentScriptName)
+    created_bank_account = $CreatedBankAccount
     mapping = @{
         Cash = "Cash - Inmed"
         "Bank Transfer" = "Bank - Inmed"

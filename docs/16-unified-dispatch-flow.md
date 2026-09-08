@@ -655,9 +655,9 @@ Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-su
 | `Distribute Payment` | Disabled/deferred physical payment handling step; keep only until final keep/delete decision | `Ops - Finance` if re-enabled |
 | `Payment Received` | Logging advance/upfront payments before invoice | `Ops - Finance` |
 
-New kinds to add (not yet in current `task_kind` field options):
-- `Payment Received`
-- `Returns restocking`
+Current TEST `task_kind` coverage notes:
+- Group 3 TEST deployment added/uses `Payment Received`, `Debt Alert`, and `Debt Closure Approval`; these flows were smoke-tested on TEST.
+- `Returns restocking` remains listed as part of the broader dispatch design and should be confirmed separately if that flow is included in a later validation pass.
 
 ---
 
@@ -686,6 +686,26 @@ Task inbox. Opens linked draft Sales Invoice, verifies, submits. Also reviews/su
 
 ### `Ops - Finance`
 Task inbox. Records incoming payments on Debt Collection tasks. Creates Payment Received tasks for advances. Distribute Payment tasks are currently disabled/deferred pending final decision. Never opens an ERPNext Payment Entry form.
+
+---
+
+## 12.1 Financial Field Protection
+
+Sensitive Dispatch Case fields are protected server-side with Frappe field permission levels. Client-side hiding remains only a UI convenience.
+
+**Payment/profit fields** are restricted to `Ops - Accounting`, `Ops - Finance`, `Ops - Directors`, and `System Manager`:
+- `sales_invoice`
+- `prepaid_amount`
+- `prepaid_payment_entry`
+- `total_invoice_amount`
+- `total_paid_amount`
+- `outstanding_amount`
+- `profit`
+- `advance_payments`
+
+**Pricing fields** on Dispatch Case Items are also available to `Ops - Order Creating`, because Order Creating must enter prices and discounts while creating the case:
+- `unit_price`
+- `discount_pct`
 
 ---
 
