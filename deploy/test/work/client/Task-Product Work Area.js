@@ -798,10 +798,10 @@ frappe.ui.form.on("Task", {
         };
         // Check if DC already has items — confirm before replacing
         frappe.call({
-            method: "frappe.client.get_count",
-            args: { doctype: "Dispatch Case Item", filters: { parent: frm.doc.dispatch_case } },
+            method: "frappe.client.get",
+            args: { doctype: "Dispatch Case", name: frm.doc.dispatch_case },
             callback: function(r) {
-                var count = cint(r.message);
+                var count = (r.message && r.message.case_items) ? r.message.case_items.length : 0;
                 if (count > 0) {
                     frappe.confirm(
                         __("This will replace the existing {0} item(s) in the Dispatch Case. Continue?", [count]),
