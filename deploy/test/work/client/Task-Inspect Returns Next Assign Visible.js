@@ -1,6 +1,6 @@
 ﻿// Name: Task-Inspect Returns Next Assign Visible
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
 
 frappe.ui.form.on('Task', {

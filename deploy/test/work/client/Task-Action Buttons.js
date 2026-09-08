@@ -119,7 +119,7 @@ var TAB_OPERATIONAL_KINDS = [
     "Discount Approval", "Purchase Approval", "Write-off Approval"
 ];
 var TAB_PRODUCT_KINDS = [
-    "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Pickup Returns",
+    "Order entry", "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Pickup Returns",
     "Return drop-off at warehouse", "Returns processing / verification", "Returns restocking",
     "Invoice preparation / create invoice", "Discount Approval"
 ];
@@ -175,8 +175,7 @@ function tab_do_create_dc(frm) {
     });
 }
 
-function tab_do_complete(frm, btn) {
-    if (btn && btn.data && btn.data("busy")) return;
+function tab_do_complete_inner(frm, btn) {
     var originalStatus = frm.doc.status;
     var originalCompletedOn = frm.doc.completed_on;
     if (btn) btn.data("busy", true).prop("disabled", true).text("Completing...");
@@ -204,6 +203,33 @@ function tab_do_complete(frm, btn) {
             if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
         }
     });
+}
+
+function tab_do_complete(frm, btn) {
+    if (btn && btn.data && btn.data("busy")) return;
+    // Order entry: check for discounted items and warn before completing
+    if (frm.doc.task_kind === "Order entry" && frm.doc.dispatch_case) {
+        frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Dispatch Case", name: frm.doc.dispatch_case },
+            callback: function(r) {
+                var dc = r.message;
+                if (!dc) { tab_do_complete_inner(frm, btn); return; }
+                var items = dc.case_items || [];
+                var has_discount = items.some(function(row) { return flt(row.discount_pct || 0) > 0; });
+                if (has_discount) {
+                    frappe.confirm(
+                        __("This order has discounted items and will require Director approval before packing. Continue?"),
+                        function() { tab_do_complete_inner(frm, btn); }
+                    );
+                } else {
+                    tab_do_complete_inner(frm, btn);
+                }
+            }
+        });
+    } else {
+        tab_do_complete_inner(frm, btn);
+    }
 }
 
 // ── dashboard comments (absorbed from Task-Dispatch Packing Usability) ──
@@ -265,7 +291,7 @@ function tab_render_subheader(frm) {
 
     // Open Dispatch Case
     if (frm.doc.dispatch_case) {
-        var dcBtn = $('<button class="btn btn-default btn-sm" style="font-size:12px;padding:4px 8px;">Open DC</button>');
+        var dcBtn = $('<button class="btn btn-default btn-sm" style="font-size:12px;padding:4px 8px;">View DC</button>');
         dcBtn.on("click", function() { frappe.set_route("Form", "Dispatch Case", frm.doc.dispatch_case); });
         right.append(dcBtn);
     }
@@ -345,9 +371,9 @@ function tab_render_desktop_buttons(frm) {
     var isCompleted = frm.doc.status === "Completed";
     var isCancelled = frm.doc.status === "Cancelled";
 
-    // Open DC — always if DC exists
+    // View DC — always if DC exists (smaller secondary link)
     if (hasDC) {
-        frm.add_custom_button(__("Open Dispatch Case"), function() {
+        frm.add_custom_button(__("View DC"), function() {
             frappe.set_route("Form", "Dispatch Case", frm.doc.dispatch_case);
         });
     }

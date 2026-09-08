@@ -28,23 +28,23 @@
 ## Table of Contents
 
 0. [Centralized Task Creation API (`task_create`)](#0-centralized-task-creation-api)
-1. [Core Identity](#1-core-identity)
-2. [Assignment and Ownership](#2-assignment-and-ownership)
-3. [Customer / Entity](#3-customer--entity)
-4. [Dispatch Case](#4-dispatch-case)
-5. [Status Selects](#5-status-selects)
-6. [Approval](#6-approval)
-7. [Invoice and Sales](#7-invoice-and-sales)
-8. [Payment and Debt](#8-payment-and-debt)
-9. [Returns](#9-returns)
-10. [Other-Task Fields](#10-other-task-fields)
-11. [Driver / Handover](#11-driver--handover)
-12. [Photo Fields](#12-photo-fields)
-13. [Surgery Case](#13-surgery-case)
-14. [Product Work Section](#14-product-work-section)
-15. [Barcode Scanning](#15-barcode-scanning)
-16. [Manual Product Add](#16-manual-product-add)
-17. [Account Details](#17-account-details)
+1. [Core Identity](#1-core-identity) — subject, task_kind, completed_at
+2. [Assignment and Ownership](#2-assignment-and-ownership) — assigned_to, accepted_by, accepted_at
+3. [Customer / Entity](#3-customer--entity) — customer
+4. [Dispatch Case](#4-dispatch-case) — dispatch_case, dispatch_group_id
+5. [Status Selects](#5-status-selects) — dc_status, payment_status, etc.
+6. [Approval](#6-approval) — approval fields, purchase_order
+7. [Invoice and Sales](#7-invoice-and-sales) — sales_invoice, sales_order
+8. [Payment and Debt](#8-payment-and-debt) — payment_entry, current_debt_amd, etc.
+9. [Returns](#9-returns) — return_pickup_driver, scheduled_return_date, next_task_assign_to
+10. [Other-Task Fields](#10-other-task-fields) — ~~Other~~ removed, Other: Entry/Processing
+11. [Driver / Handover](#11-driver--handover) — ~~driver_handover_note~~ REMOVED
+12. [Photo Fields](#12-photo-fields) — photo gallery, account photos
+13. [~~Surgery Case~~](#13-surgery-case) — ALREADY DELETED
+14. [Product Work Section](#14-product-work-section--centralized) — CENTRALIZED (section, summary, ~~product_lines~~ REMOVED)
+15. [Barcode Scanning](#15-barcode-scanning--centralized) — CENTRALIZED (scan fields; Pack + Returns only)
+16. [Manual Product Add](#16-manual-product-add--centralized) — CENTRALIZED (add fields; Order entry only)
+17. [~~Account Details~~](#17-account-details--remove-entirely) — REMOVE ENTIRELY (use Other: Entry/Processing instead)
 18. [Standard Frappe Fields (modified)](#18-standard-frappe-fields-modified)
 
 ---
@@ -62,7 +62,7 @@ One API Server Script (`task_create`) that ALL programmatic task creation goes t
 | 1 | `Task-after-save-dispatch-flow.py` | Pack, Delivery, Return Call, Pickup Returns, Returns proc., Restocking, Invoice prep, Order entry (rejected discount) | Nested `make_task()` | **MODIFY** — call `task_create` API instead of inline `make_task()` |
 | 2 | `Dispatch-Case-after-save.py` | Discount Approval | Inline `frappe.get_doc({...})` | **MODIFY** — call `task_create` API |
 | 3 | `Task-after-save-debt-closure.py` | Debt Closure Approval | Inline `frappe.get_doc({...})` | **MODIFY** — call `task_create` API |
-| 4 | `Task-after-save-account-details-processing.py` | Acct Det. Processing | Inline `frappe.new_doc("Task")` | **MODIFY** — call `task_create` API |
+| 4 | `Task-after-save-account-details-processing.py` | Acct Det. Processing | Inline `frappe.new_doc("Task")` | **DELETE** — Account Details workflow removed (§17), use Other: Entry/Processing instead |
 | 5 | `Task-after-save-other-processing.py` | Other: Processing | Inline `frappe.new_doc("Task")` | **MODIFY** — call `task_create` API |
 | 6 | `Payment Entry-after-submit-distribute-payment.py` | Distribute Payment | Inline `frappe.new_doc("Task")` | **MODIFY** — call `task_create` API |
 | 7 | `Scheduled-debt-collection.py` | Debt Collection | Inline `frappe.new_doc("Task")` | **MODIFY** — call `task_create` API |
@@ -744,26 +744,97 @@ if (frm.doc.task_kind === "Delivery" && frm.doc.status !== "Completed") {
 - **Type:** Select (custom) | **Options:** Approved, Rejected
 - **Current hidden:** 0 | **Current depends_on:** `eval:!doc.task_kind || doc.task_kind=="Purchase Approval" || doc.task_kind=="Discount Approval" || doc.task_kind=="Write-off Approval"`
 - **Current client script overrides:** none
-- **Current server-side usage:** Read by gates (Discount Approval must set outcome to complete). Read by after-save flow to branch on Approved vs Rejected.
+- **Current server-side usage:** Read by gates (Discount Approval must set outcome to complete). Read by after-save flow to branch on Approved vs Rejected. Written back to PO by purchase-approval-writeback.
 - **Visible for task kinds (current):** Purchase Approval, Discount Approval, Write-off Approval
-- **Visible for task kinds (proposed):** TO DECIDE — should Debt Closure Approval also have this?
-- **Approach:** Visibility + server validation
-- **Decision:** TO DECIDE
-- **Notes:** Debt Closure Approval completes without approval_outcome — uses a user whitelist instead. Is that intentional or a gap?
+- **Visible for task kinds (proposed):** All 4 approval kinds, but ONLY after completion.
+- **Approach:** DECIDED. Field is never shown as a dropdown. It's set by Approve/Reject buttons and shown read-only after completion.
+- **Decision:** DECIDED
+
+  **New model — button-driven approval (same pattern as delivery_status/pickup_status):**
+
+  The user never interacts with the `approval_outcome` field directly. Instead:
+
+  | State | Buttons shown | What they do |
+  |---|---|---|
+  | Open/Working, not completed | Left: **Reject** / Right: **Approve** | Sets `approval_outcome`, saves → server auto-completes or completes via button |
+  | Completed | None (task is done) | `approval_outcome` shown read-only as confirmation |
+
+  **Applies to ALL 4 approval kinds:**
+  - Purchase Approval
+  - Discount Approval
+  - Write-off Approval
+  - **Debt Closure Approval** (NEW — currently has no approve/reject. Adding it.)
+
+  **Field visibility:**
+  - **Hidden** by default (schema hidden=1, remove depends_on).
+  - **Shown read-only** by centralized script only when `status === "Completed"` AND `task_kind` is one of the 4 approval kinds.
+  - `frm.toggle_display("approval_outcome", frm.doc.status === "Completed" && APPROVAL_KINDS.indexOf(frm.doc.task_kind) !== -1);`
+  - `frm.set_df_property("approval_outcome", "read_only", 1);` — always read-only, buttons are the only input.
+
+  **Button implementation sketch:**
+
+  ```javascript
+  var APPROVAL_KINDS = [
+      "Purchase Approval", "Discount Approval",
+      "Write-off Approval", "Debt Closure Approval"
+  ];
+
+  if (APPROVAL_KINDS.indexOf(frm.doc.task_kind) !== -1
+      && frm.doc.status !== "Completed") {
+      // Left button: Reject (secondary/danger style)
+      reject_btn.text("Reject").on("click", function() {
+          frm.set_value("approval_outcome", "Rejected");
+          // complete the task
+      });
+      // Right button: Approve (primary style)
+      approve_btn.text("Approve").on("click", function() {
+          frm.set_value("approval_outcome", "Approved");
+          // complete the task
+      });
+      // Do NOT show generic "Complete" button for approval kinds
+  }
+  ```
+
+  **Debt Closure Approval — what changes:**
+  - Currently: no approve/reject, just complete (gated by hardcoded user whitelist)
+  - New: Director sees Approve/Reject buttons. Outcome is recorded.
+  - The profit calculation in `Task-after-save-debt-closure.py` fires on completion regardless of outcome.
+  - Server gate for Debt Closure should be updated: require `approval_outcome` to be set (like Discount Approval gate).
+  - The hardcoded user whitelist should be replaced with role-based check from Task Access Policy.
+
+**Implementation:**
+
+| Layer | What | How |
+|---|---|---|
+| **Schema** | hidden=1 | Set hidden=1, remove depends_on |
+| **Client** | Approve/Reject buttons | In `Task-Action Buttons.js`: for all 4 approval kinds, show Reject (left) and Approve (right) instead of Complete |
+| **Client** | Show read-only after completion | `frm.toggle_display` when Completed + approval kind |
+| **Server** | Gate for all 4 kinds | Require `approval_outcome` in ("Approved", "Rejected") before completion. Currently only Discount and Purchase do this. Add for Write-off and Debt Closure. |
+
+**What changes:**
+
+| Script | Action | Detail |
+|---|---|---|
+| Schema (`custom-fields.json`) | **MODIFY** | Set hidden=1, remove depends_on, add Debt Closure Approval to logic |
+| `Task-Action Buttons.js` | **MODIFY** | Add Approve/Reject button pair for all 4 approval kinds; suppress Complete |
+| `Task-before-save-dispatch-gates.py` | **MODIFY** | Add approval_outcome validation for Write-off Approval and Debt Closure Approval (match existing Discount Approval gate) |
+| `Task-after-save-debt-closure.py` | **MODIFY** | Replace hardcoded user whitelist with role-based check from Task Access Policy |
+| `Task-purchase-approval-writeback.py` | **NO CHANGE** | Already validates approval_outcome |
+| Centralized visibility script | **ADD** | Show field read-only when Completed + approval kind |
 
 ---
 
-### 6.3 approval_note — Approval Note
+### 6.3 ~~approval_note~~ — REMOVED (use Description instead)
 
 - **Type:** Small Text (custom)
 - **Current hidden:** 0 | **Current depends_on:** same as approval_outcome
-- **Current client script overrides:** none
-- **Current server-side usage:** Free text, not validated
-- **Visible for task kinds (current):** Same 3 approval kinds
-- **Visible for task kinds (proposed):** Same as approval_outcome
-- **Approach:** Tied to approval_outcome — same visibility
-- **Decision:** TO DECIDE
-- **Notes:** Always accompanies approval_outcome.
+- **Current server-side usage:** Written to `po.director_approval_note` by purchase-approval-writeback.
+- **Decision:** REMOVE.
+  - The standard Task `description` field already exists and is suitable for approval notes/reasons.
+  - Directors should write their reasoning in `description` before clicking Approve/Reject.
+  - `Task-purchase-approval-writeback.py` must be updated to read `doc.description` instead of `doc.approval_note`.
+  - Schema: set hidden=1, remove depends_on. Eventually delete the field.
+  - Remove from `Task-Lock Unaccepted.js` editable_fields list.
 
 ---
 
@@ -974,8 +1045,23 @@ if (frm.doc.task_kind === "Delivery" && frm.doc.status !== "Completed") {
 - **Current client script overrides:**
   - `Task-Lock Unaccepted.js:41-46` — explicitly unlocked for accepted user
 - **Visible for task kinds (current):** Pickup Returns, Return drop-off at warehouse
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** —
+- **Visible for task kinds (proposed):** Return Call, Pickup Returns, Return drop-off at warehouse
+- **Approach:** DECIDED. Move to centralized visibility.
+- **Decision:** DECIDED
+  - **Hidden** by default (schema hidden=1, remove depends_on).
+  - **Shown** by centralized script for return-flow kinds:
+    - **Return Call** — user sets the driver here (dispatches to Pickup Returns)
+    - **Pickup Returns** — read-only, shows who was assigned as driver
+    - **Return drop-off at warehouse** — read-only, informational
+  - **Editable** on Return Call only. **Read-only** on Pickup Returns and Return drop-off.
+
+**Implementation:**
+
+| Layer | What | How |
+|---|---|---|
+| **Schema** | hidden=1 | Set hidden=1, remove depends_on |
+| **Client** | Show for 3 return kinds | `var RETURN_DRIVER_KINDS = ["Return Call", "Pickup Returns", "Return drop-off at warehouse"]; frm.toggle_display("return_pickup_driver", RETURN_DRIVER_KINDS.indexOf(frm.doc.task_kind) !== -1);` |
+| **Client** | Editable on Return Call only | `frm.set_df_property("return_pickup_driver", "read_only", frm.doc.task_kind !== "Return Call");` |
 
 ---
 
@@ -983,347 +1069,394 @@ if (frm.doc.task_kind === "Delivery" && frm.doc.status !== "Completed") {
 
 - **Type:** Date (custom)
 - **Current hidden:** 0 | **Current depends_on:** `eval:!doc.task_kind || doc.task_kind=="Pickup Returns" || doc.task_kind=="Return drop-off at warehouse"`
+- **Current client script overrides:** none
+- **Current server-side usage:**
+  - `after-save-flow:233-234` — Read on **Return Call** completion. Sets `exp_end_date` on the created Pickup Returns task.
 - **Visible for task kinds (current):** Pickup Returns, Return drop-off at warehouse
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Used by after-save to set exp_end_date on Return Call tasks.
+- **Visible for task kinds (proposed):** Return Call, Pickup Returns, Return drop-off at warehouse (same as 9.1)
+- **Approach:** DECIDED. Move to centralized visibility. Same return-flow kinds as 9.1.
+- **Decision:** DECIDED
+  - **Hidden** by default (schema hidden=1, remove depends_on).
+  - **Shown** by centralized script for the same 3 return-flow kinds as `return_pickup_driver`.
+  - **Editable** on Return Call only (user sets the pickup date).
+  - **Read-only** on Pickup Returns and Return drop-off (informational).
+  - **Bug fix:** Current depends_on is missing Return Call — the task kind where the user actually fills this in.
+
+**Implementation:**
+
+| Layer | What | How |
+|---|---|---|
+| **Schema** | hidden=1 | Set hidden=1, remove depends_on |
+| **Client** | Show for 3 return kinds | Same `RETURN_DRIVER_KINDS` array as 9.1 — reuse in centralized script |
+| **Client** | Editable on Return Call only | `frm.set_df_property("scheduled_return_date", "read_only", frm.doc.task_kind !== "Return Call");` |
 
 ---
 
-## 10. Other-Task Fields
+## 10. ~~Other-Task Fields~~ — REMOVED (plain "Other" kind retired)
 
-### 10.1 other_items — Other Task Items
+### 10.1 ~~other_items~~ — REMOVED
 
-- **Type:** Table → Task Other Item (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind=='Other'`
-- **Current client script overrides:**
-  - `Task-Other UI Cleanup.js:40,45` — hidden for Other: Entry, Other: Processing
-- **Visible for task kinds (current):** Other only (not Other: Entry, not Other: Processing)
-- **Visible for task kinds (proposed):** TO DECIDE — should Other: Entry also get this?
-- **Approach:** TO DECIDE
-- **Decision:** TO DECIDE
-- **Notes:** Only the legacy "Other" kind shows this. The newer "Other: Entry" / "Other: Processing" pair does not. Is "Other" still used?
+- **Decision:** REMOVE. The plain "Other" task kind is retired. `Other: Entry` / `Other: Processing` replace it.
+- **Migration:** Remove `other_items` from custom fields. Delete the `Task Other Item` child DocType. Remove "Other" from `task_kind` Select options. Remove the `Other` Task Access Policy. Any existing tasks with `task_kind == "Other"` should be migrated or cancelled before removal.
 
----
+### 10.2 ~~other_budget~~ — REMOVED
 
-### 10.2 other_budget — Budget / Amount
+- **Decision:** REMOVE. Same as 10.1.
 
-- **Type:** Currency (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind=='Other'`
-- **Current client script overrides:**
-  - `Task-Other UI Cleanup.js:40,45` — hidden for Other: Entry, Other: Processing
-- **Visible for task kinds (current):** Other only
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Same as other_items.
+### 10.3 ~~other_supplier~~ — REMOVED
 
----
+- **Decision:** REMOVE. Same as 10.1.
 
-### 10.3 other_supplier — Supplier
+**What changes:**
 
-- **Type:** Link → Supplier (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind=='Other'`
-- **Current client script overrides:**
-  - `Task-Other UI Cleanup.js:40,45` — hidden for Other: Entry, Other: Processing
-- **Visible for task kinds (current):** Other only
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Same as other_items.
+| Item | Action |
+|---|---|
+| `task_kind` Select | Remove "Other" option |
+| Task Access Policy "Other" | Delete |
+| Custom field `other_items` | Delete |
+| Custom field `other_budget` | Delete |
+| Custom field `other_supplier` | Delete |
+| Child DocType `Task Other Item` | Delete |
+| `Task-Other UI Cleanup.js` | Remove all `other_items`/`other_budget`/`other_supplier` hide logic (now dead code) |
+| `Task-Other UI Cleanup.js` | Remove `doc.task_kind=='Other'` branches (only Entry/Processing remain) |
+| `custom-fields.json` depends_on | Remove all `doc.task_kind=='Other'` expressions |
+
+**Notes:** The `Other: Entry` / `Other: Processing` pair fully replaces plain `Other`. They use description + photos instead of checklist fields. Documented in `docs/22-other-entry-processing-workflow.md`.
 
 ---
 
 ## 11. Driver / Handover
 
-### 11.1 driver_handover_note — Driver Handover Note
+### 11.1 ~~driver_handover_note~~ — REMOVED (use Description instead)
 
 - **Type:** Small Text (custom)
 - **Current hidden:** 1 | **Current depends_on:** `eval:doc.task_kind != "Order entry"`
 - **Current client script overrides:**
   - `Task-Lock Unaccepted.js:41-46` — explicitly unlocked for accepted user
 - **Current server-side usage:** None found (not read or validated by any server script)
-- **Visible for task kinds (current):** NONE — hidden=1 overrides depends_on
-- **Visible for task kinds (proposed):** TO DECIDE — is this field used at all?
-- **Approach:** TO DECIDE
-- **Decision:** TO DECIDE
-- **Notes:** BUG or dead field — hidden=1 means depends_on never fires. If it should be visible for Delivery/Pickup/etc., hidden must change to 0. If it's not used, consider removing.
+- **Visible for task kinds (current):** NONE — hidden=1 overrides depends_on (dead field)
+- **Decision:** REMOVE. Use the standard Task **Description** field instead.
+
+  The field was already dead (hidden=1 overrides depends_on, no server script reads it). Drivers should write handover details in Description.
+
+  **Task Description behavior:**
+  - **Collapsible by default** — does not take up screen space until the user expands it.
+  - **In the DC flow:** when a Dispatch Case is created from Order entry, the description is attached to the DC. Downstream tasks (Pack, Delivery, etc.) receive an expanded description with DC context. So any handover note written in the Order entry description propagates through the chain.
+  - **On Delivery/Pickup tasks:** the driver can expand Description and add handover details directly.
+
+  **Migration:** Delete the custom field. Remove from `Task-Lock Unaccepted.js` editable_fields list. No data migration needed — the field was never visible and no server script writes to it.
 
 ---
 
 ## 12. Photo Fields
 
-> These may be part of the photo system (excluded from audit scope). Listed for completeness.
+### 12.1 ~~warehouse_pickup_photo~~, ~~custom_delivery_photo~~, ~~warehouse_dropoff_photo~~ — ALREADY DELETED
 
-### 12.1 warehouse_pickup_photo — Warehouse Pickup Photo
+- **Decision:** Already removed from test schema. Cleanup stale references only.
+- **Current state:** Not defined in test `custom-fields.json`. Still listed in `field_order` (property-setters.json) and used as `insert_after` anchor for `driver_handover_note` (also being removed — see 11.1). Doc 18 confirms: "Legacy fields deleted from the Task DocType."
+- **Replaced by:** `Task-Photo-System.js` gallery system — stores photos as `File` records attached to the Task, renders custom HTML gallery. Server gates use `task_has_image()` which checks `File` records.
 
-- **Type:** (in field_order, not in custom fields list — likely photo system)
-- **Current hidden:** unknown | **Current depends_on:** unknown
-- **Visible for task kinds (current):** TO INVESTIGATE
-- **Notes:** Photo system field. Need to check if this is managed by Task-Photo-System script.
+  **Stale references to clean up:**
 
----
-
-### 12.2 custom_delivery_photo — Delivery Photo
-
-- **Type:** (in field_order, not in custom fields list — likely photo system)
-- **Current hidden:** unknown | **Current depends_on:** unknown
-- **Visible for task kinds (current):** TO INVESTIGATE
-- **Notes:** Photo system field.
+  | Item | What to fix |
+  |---|---|
+  | `field_order` in property-setters.json | Remove the 3 deleted fieldnames |
+  | `driver_handover_note.insert_after` | Points to `warehouse_dropoff_photo` — field is also being deleted (11.1), so moot |
+  | `Task-Accept Start.js:49-54` | Hides labels "Warehouse Pickup Photo" / "Warehouse Drop-off Photo" by text — dead code, remove |
 
 ---
 
-### 12.3 warehouse_dropoff_photo — Warehouse Drop-off Photo
-
-- **Type:** (in field_order, not in custom fields list — likely photo system)
-- **Current hidden:** unknown | **Current depends_on:** unknown
-- **Visible for task kinds (current):** TO INVESTIGATE
-- **Notes:** Photo system field.
-
----
-
-## 13. Surgery Case
-
-### 13.1 surgery_case — Surgery Case
-
-- **Type:** (in field_order, not in 52 custom fields — may be standard or older custom)
-- **Current hidden:** unknown | **Current depends_on:** unknown
-- **Visible for task kinds (current):** TO INVESTIGATE
-- **Notes:** Surgery set workflow field. Need to check schema.
-
----
-
-### 13.2 custom_select_surgical_kit_template — Select Surgical Kit Template
-
-- **Type:** (in field_order, not in 52 custom fields — may be older custom)
-- **Current hidden:** unknown | **Current depends_on:** unknown
-- **Visible for task kinds (current):** TO INVESTIGATE
-- **Notes:** Surgery set workflow field. Need to check schema.
-
----
-
-## 14. Product Work Section
-
-### 14.1 custom_product_work_section — Products / Dispatch Work (Section Break)
-
-- **Type:** Section Break (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40,43` — hidden for Other: Entry, Other: Processing
-- **Visible for task kinds (current):** ALL except Account Details and Other kinds. Includes irrelevant kinds like Purchase Approval, Write-off Approval, Debt Closure Approval, etc.
-- **Visible for task kinds (proposed):** TO DECIDE — dispatch kinds + Order entry only?
-- **Approach:** Visibility. Hiding this section hides all child fields.
-- **Decision:** TO DECIDE
-- **Notes:** MAJOR GAP — this section (and all its children) show on non-product task kinds. Hiding the section break hides everything inside it via frm.toggle_display.
-
----
-
-### 14.2 custom_task_product_summary — Product Summary (HTML)
-
-- **Type:** HTML (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40` — hidden for Other
-- **Visible for task kinds (current):** Same as parent section
-- **Visible for task kinds (proposed):** Same as parent section
-- **Approach:** Tied to section visibility. If section is hidden, this is hidden.
-- **Decision:** TO DECIDE
-- **Notes:** Populated by Task-Product Work Area.js
-
----
-
-### 14.3 custom_product_lines — Product Lines (Table)
-
-- **Type:** Table → Task Product Line (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind !== "Order entry"`
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40` — hidden for Other
-- **Visible for task kinds (current):** All EXCEPT Order entry (and Account Details, Other via client script)
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Approach:** Visibility
-- **Decision:** TO DECIDE
-- **Notes:** Hidden for Order entry because Order entry uses the DC items table instead. But visible on Purchase Approval, Write-off Approval, etc. where it's irrelevant.
-
----
-
-## 15. Barcode Scanning
-
-### 15.1 custom_barcode_section — Barcode Scanning (Optional) (Section Break)
-
-- **Type:** Section Break (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - `Task-Other UI Cleanup.js:38` — shown for Other (but individual fields hidden)
-  - No script hides this section break itself
-- **Visible for task kinds (current):** ALL task kinds
-- **Visible for task kinds (proposed):** TO DECIDE — same as product work section?
-- **Approach:** Visibility. Hiding this hides scan fields.
-- **Decision:** TO DECIDE
-- **Notes:** GAP — visible on all task kinds including approvals and payment tasks.
-
----
-
-### 15.2 custom_task_scan_barcode — Scan Product Barcode
-
-- **Type:** Data (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind !== "Debt Collection"`
-- **Current client script overrides:**
-  - `Task-Accept Start.js:26-27` — hidden for Account Details: Entry
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40,44` — hidden for Other
-  - `Task-Lock Unaccepted.js:41-46` — unlocked for accepted user
-- **Visible for task kinds (current):** All except Debt Collection, Account Details, Other
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Still visible on Purchase Approval, Write-off Approval, etc.
-
----
-
-### 15.3 custom_task_scan_qty — Scan Qty
-
-- **Type:** Float (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind !== "Debt Collection"`
-- **Current client script overrides:** Same as scan_barcode
-- **Visible for task kinds (current):** Same as scan_barcode
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Always accompanies scan_barcode.
-
----
-
-### 15.4 custom_task_scan_result — Last Scan Result
-
-- **Type:** Small Text (custom)
-- **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind !== "Debt Collection"`
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40,44` — hidden for Other
-- **Visible for task kinds (current):** All except Debt Collection, Account Details, Other
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Always accompanies scan_barcode.
-
----
-
-## 16. Manual Product Add
-
-### 16.1 custom_product_work_column — (Column Break)
-
-- **Type:** Column Break (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40,44` — hidden for Other
-- **Visible for task kinds (current):** All except Account Details, Other
-- **Visible for task kinds (proposed):** Same as product work section
-- **Notes:** Layout element — follows scan result, precedes manual add fields.
-
----
-
-### 16.2 custom_task_product_warning — Product Work Warning
-
-- **Type:** Small Text (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:45` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40,44` — hidden for Other
-- **Visible for task kinds (current):** All except Account Details, Other
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** —
-
----
-
-### 16.3 custom_task_add_item_code — Choose Product
-
-- **Type:** Link → Item (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - `Task-Accept Start.js:26-27` — hidden for Account Details: Entry
-  - `Task-Account Details UI Cleanup.js:45,84` — hidden for Account Details
-  - `Task-Other UI Cleanup.js:40,45` — hidden for Other
-  - `Task-Lock Unaccepted.js:41-46` — unlocked for accepted user
-- **Visible for task kinds (current):** All except Account Details, Other
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** No depends_on. Visible on approval and payment tasks where irrelevant.
-
----
-
-### 16.4 custom_task_add_qty — Product Qty
-
-- **Type:** Float (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:** Same as add_item_code
-- **Visible for task kinds (current):** Same as add_item_code
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Always accompanies add_item_code.
-
----
-
-### 16.5 custom_task_add_batch_no — Batch / LOT
-
-- **Type:** Link → Batch (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - Same as add_item_code PLUS:
-  - `Task-Accept Start.js:151` — hidden on mobile (all kinds)
-  - `Task-Lock Unaccepted.js:41-46` — unlocked for accepted user
-- **Visible for task kinds (current):** Desktop: all except Account Details, Other. Mobile: hidden on all.
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Currently hidden on ALL mobile via Accept Start. Is this intentional?
-
----
-
-### 16.6 custom_task_add_unit_price — Unit Price
-
-- **Type:** Currency (custom)
-- **Current hidden:** 0 | **Current depends_on:** none
-- **Current client script overrides:**
-  - Same as add_batch_no (hidden on mobile, hidden for Account Details, Other)
-  - `Task-Lock Unaccepted.js:41-46` — unlocked for accepted user
-- **Visible for task kinds (current):** Same as add_batch_no
-- **Visible for task kinds (proposed):** TO DECIDE
-- **Notes:** Same as add_batch_no.
-
----
-
-## 17. Account Details
-
-### 17.1 custom_account_details_section — Account Details - Documents (Section Break)
-
-- **Type:** Section Break (custom)
-- **Current hidden:** 1 | **Current depends_on:** `eval:doc.task_kind === "__never_show_account_details_documents__"`
-- **Current client script overrides:**
-  - `Task-Account Details UI Cleanup.js:63` — hidden for Account Details (DOM)
-- **Visible for task kinds (current):** NEVER (hidden=1 + fake depends_on)
-- **Visible for task kinds (proposed):** TO DECIDE — is this section used at all?
-- **Approach:** TO DECIDE
-- **Decision:** TO DECIDE
-- **Notes:** Intentionally hidden with a nonsense depends_on expression. The section exists but is never shown. Consider removing entirely.
-
----
-
-### 17.2 custom_account_photos — Photos
+### 12.2 custom_account_photos — Photos (Account Details)
 
 - **Type:** Table → Account Detail Attachment (custom)
 - **Current hidden:** 0 | **Current depends_on:** `eval:doc.task_kind === "Account details"` (WRONG — no such kind)
 - **Current client script overrides:**
   - `Task-Accept Start.js:37` — shown for Account Details: Entry
   - `Task-Account Details UI Cleanup.js:50` — shown for Account Details
-  - `Task-Account Details UI Cleanup.js:123` — hidden (DOM) then replaced by custom photo box
-- **Visible for task kinds (current):** Account Details: Entry and Processing (via client scripts). depends_on never matches.
-- **Visible for task kinds (proposed):** Account Details: Entry, Account Details: Processing
-- **Approach:** Fix depends_on or remove it and use client visibility
-- **Decision:** TO DECIDE
-- **Notes:** BUG — depends_on references "Account details" which doesn't exist. Only works because client scripts force it. The Account Details UI Cleanup then hides the native control and shows a custom photo box instead. Complex behavioral component.
+  - `Task-Account Details UI Cleanup.js:121-124` — hides native table, replaces with custom photo box
+- **Current server-side usage:** Rows + File attachments copied from Entry to Processing task by `Task-after-save-account-details-processing.py:42-80`
+- **Visible for task kinds (current):** Account Details: Entry and Processing (via client scripts only — depends_on never matches)
+- **Decision:** TO DECIDE — depends on whether photo system is in scope of this redesign
+- **Notes:**
+  - **Bug:** depends_on references `"Account details"` which doesn't exist. Only works because client scripts force it.
+  - The native table control is hidden by DOM surgery and replaced with a custom photo box. This is complex behavioral UI, not just field visibility.
+  - If centralizing: fix depends_on or remove it, move show/hide to centralized script.
 
 ---
 
-### 17.3 custom_account_details_entry_task — Account Details Entry Task
+### 12.3 Photo gallery visibility — CENTRALIZE
 
-- **Type:** Link → Task (custom)
-- **Current hidden:** 1 | **Current depends_on:** none
-- **Current client script overrides:** none
-- **Current server-side usage:** Set by after-save-account-details-processing to link processing task back to entry task. Used to prevent duplicate creation.
-- **Visible for task kinds (current):** None (hidden=1)
-- **Visible for task kinds (proposed):** None (internal field)
-- **Approach:** No change
-- **Decision:** KEEP HIDDEN — internal field
-- **Notes:** —
+The `Task-Photo-System.js` gallery currently decides internally which task kinds get a gallery:
+
+| Task kind | Gallery | Required? |
+|---|---|---|
+| Pack / prepare items | Warehouse Pickup Photos | Yes — completion gate |
+| Pickup Returns | Warehouse Drop-off Photos | Yes — "Returned to WH" gate |
+| Returns proc. / verification | Pack / Prepare Photos (read-only) | No |
+| Other: Entry / Processing | Task Photos | No |
+| All other kinds | No gallery | — |
+
+**Decision:** Gallery visibility should also be driven by the centralized visibility script, not decided internally by `Task-Photo-System.js`. The centralized script should tell the photo system which gallery to render (if any) based on `task_kind`. This keeps one source of truth for what appears on each task kind.
+
+**Proposed approach:**
+- Centralized visibility script defines a `PHOTO_GALLERY_CONFIG` map (task_kind → gallery key + label + editable flag).
+- `Task-Photo-System.js` reads from that config instead of having its own `getTaskPhotoConfig()` switch statement.
+- The centralized script can also control whether the gallery container is shown/hidden, same as any other field.
+
+---
+
+## 13. ~~Surgery Case~~ — ALREADY DELETED (legacy, replaced by Dispatch Case)
+
+### 13.1 ~~surgery_case~~ — ALREADY DELETED
+
+- **Type:** Link → Surgery Case (was custom on Task in prod, hidden=1)
+- **Current state (test):** Not defined in `custom-fields.json`. Only stale references remain in `field_order` and `reports.json` SQL queries.
+- **Current state (prod):** Exists as hidden custom field. Surgery Case DocType still exists in prod but is unused.
+- **Decision:** ALREADY GONE on test. Clean up stale references.
+
+  The Surgery Case model was superseded by the Unified Dispatch Flow (Doc 16). `Dispatch Case` with `return_expected = Yes` replaces `Surgery Case`. All tasks now link via `dispatch_case`, not `surgery_case`.
+
+  **Stale references to clean up:**
+
+  | Item | What to fix |
+  |---|---|
+  | `field_order` in property-setters.json | Remove `surgery_case` |
+  | `Stock Entry-dispatch_group_id.insert_after` | Points to `surgery_case` — repoint to another field |
+  | `reports.json` SQL queries (lines 2817, 2959) | Reference `tabSurgery Case` / `t.surgery_case` — will fail, rewrite or remove |
+  | Prod: `Task-surgery_case`, `Stock Entry-surgery_case`, `Sales Invoice-surgery_case` | Remove when prod is cleaned up |
+  | Prod: `Surgery Case` DocType | Remove when prod is cleaned up |
+
+---
+
+### 13.2 ~~custom_select_surgical_kit_template~~ — DELETE from Task, KEEP on Dispatch Case
+
+- **Type:** Link → Surgical Kit Template (was custom on Task in prod, hidden=1)
+- **Current state (test):** Not defined on Task. Exists on **Dispatch Case** (actively used by `Dispatch Case-Template Auto Fill.js`).
+- **Current state (prod):** Exists on Task as hidden custom field. Never used by any script on Task.
+- **Decision on Task:** DELETE. Clean up stale references.
+- **Decision on Dispatch Case:** KEEP. But centralize its visibility:
+  - **Visible** only when Dispatch Case is in Draft (before submission). This is when the user selects items.
+  - **Hidden** after submission — the template was already applied, showing it is misleading.
+  - Visibility should be managed by a centralized Dispatch Case visibility script (same pattern as Task centralization).
+
+  **Stale Task references to clean up:**
+
+  | Item | What to fix |
+  |---|---|
+  | `field_order` in property-setters.json | Remove `custom_select_surgical_kit_template` from Task field order |
+  | `dispatch_case.insert_after` | Points to `custom_select_surgical_kit_template` on Task — repoint to another field |
+  | Prod: `Task-custom_select_surgical_kit_template` | Remove when prod is cleaned up |
+
+---
+
+## 14. Product Work Section — CENTRALIZED
+
+> **Architecture:** All 13 product-work fields are purely client-side UI controls. No server script reads or writes any of them. All real product data lives on `Dispatch Case.case_items`. These fields are input forms that call server APIs (`task_add_dispatch_product`, `task_lookup_product_barcode`, `dispatch_case_packing_scan`) which write to the DC.
+
+### Master visibility rule
+
+One toggle on the section break controls everything inside it:
+
+```javascript
+var PRODUCT_EDIT_KINDS = [
+    "Pack / prepare items",
+    "Returns processing / verification"
+];
+// Order entry gets product UI via dispatch_case link (after DC is created)
+var is_product_task = PRODUCT_EDIT_KINDS.indexOf(frm.doc.task_kind) !== -1
+    || (frm.doc.task_kind === "Order entry" && !!frm.doc.dispatch_case);
+
+// Section toggle — shows summary + scan/add area for product kinds only
+frm.toggle_display("custom_product_work_section", is_product_task);
+
+// Scan fields: Pack + Returns only (scan to identify/verify items)
+var is_scan_task = (frm.doc.task_kind === "Pack / prepare items")
+    || (frm.doc.task_kind === "Returns processing / verification");
+frm.toggle_display("custom_task_scan_barcode", is_scan_task);
+frm.toggle_display("custom_task_scan_qty", is_scan_task);
+frm.toggle_display("custom_task_scan_result", is_scan_task);
+
+// Manual add fields: Order entry only (add items to DC)
+var is_add_task = (frm.doc.task_kind === "Order entry" && !!frm.doc.dispatch_case);
+frm.toggle_display("custom_task_add_item_code", is_add_task);
+frm.toggle_display("custom_task_add_qty", is_add_task);
+frm.toggle_display("custom_task_add_batch_no", is_add_task);
+frm.toggle_display("custom_task_add_unit_price", is_add_task);
+```
+
+This replaces ALL per-field hiding in 5 separate scripts.
+
+**Only 3 kinds see the product work section, each with different controls:**
+
+| Task kind | Summary | Scan | Manual add | What they do |
+|---|---|---|---|---|
+| **Pack / prepare items** | Yes (packing checkboxes) | Yes | **No** | Scan barcode → verify packed. Tick checkboxes. Cannot add/remove items. |
+| **Returns proc.** | Yes (return qty inputs) | Yes | **No** | Scan barcode → identify product. Fill in returned/lost qty. Cannot add/remove items. |
+| **Order entry** (with DC) | Yes (item list) | **No** | Yes | Pick product, set qty/batch/price, add to DC. |
+
+**Key constraint:** Pack and Returns workers cannot add or remove items from the DC table — they can only edit their own columns (packing status for Pack, returned_qty/lost_damaged_qty for Returns).
+
+**All other kinds** (Delivery, Pickup Returns, Return drop-off, Restocking, Invoice prep, Discount Approval, Dispatch picking) see no product section. They can view items on the DC page via "Open DC".
+
+### 14.1 custom_product_work_section — Products / Dispatch Work (Section Break)
+
+- **Type:** Section Break (custom)
+- **Current hidden:** 0 | **Current depends_on:** none
+- **Visible for task kinds (proposed):** Pack, Returns processing, Order entry (with DC only)
+- **Decision:** DECIDED
+  - **Hidden** by default (schema hidden=1).
+  - **Shown** by centralized script using `is_product_task` (see master rule above).
+  - Hiding this section hides ALL child fields (14.2, 14.3) automatically.
+
+### 14.2 custom_task_product_summary — Product Summary (HTML)
+
+- **Type:** HTML (custom, read_only=1)
+- **Decision:** DECIDED — inherits visibility from parent section. No individual toggle needed.
+- **Notes:** Populated by `Task-Product Work Area.js` from `Dispatch Case.case_items`. Read-only always.
+
+### 14.3 custom_product_lines — DEAD TABLE, REMOVE
+
+- **Type:** Table → Task Product Line (custom)
+- **Decision:** DECIDED — **REMOVE**
+  - This table is **never populated** by any active code. No scan, no add, no server script writes to it.
+  - The product summary HTML renders from `Dispatch Case.case_items`, not from this table.
+  - The only code touching it is `Task Product Line-Item Code String Guard.js` (string coercion on validate) — also dead.
+  - **Migration:** Set hidden=1 in schema. Delete the custom field once confirmed no data exists. Delete `Task Product Line-Item Code String Guard.js`.
+
+---
+
+## 15. Barcode Scanning — CENTRALIZED
+
+Scan fields live inside `custom_product_work_section` (section 14), NOT inside `custom_barcode_section`. The scan fields are the left column of the product work section layout.
+
+**Scan is for Pack + Returns only.** Order entry does NOT get scan — users add items manually via the right-column fields (section 16).
+
+> **Note on `custom_barcode_section`:** Despite its name, this section break only wraps the dead `custom_product_lines` table (14.3). It is NOT the barcode scanning section. It is deleted along with `custom_product_lines`.
+
+### 15.1 ~~custom_barcode_section~~ — DEAD SECTION, REMOVE
+
+- **Type:** Section Break (custom), label "Barcode Scanning (Optional)"
+- **Decision:** DECIDED — **REMOVE** along with `custom_product_lines` (14.3).
+  - This section only contains the dead `custom_product_lines` table.
+  - The actual scan fields (15.2–15.4) are inside `custom_product_work_section`, not here.
+  - Delete this section break from schema.
+
+### 15.2 custom_task_scan_barcode — Scan Product Barcode
+
+- **Type:** Data (custom)
+- **Current depends_on:** `eval:doc.task_kind !== "Debt Collection"` — **REMOVE**
+- **Parent section:** `custom_product_work_section` (14.1)
+- **Decision:** DECIDED
+  - **Visible** for Pack + Returns only (`is_scan_task`). Hidden for Order entry and all others.
+  - **Editable** only for accepted users.
+  - Replaces per-field toggles in `Task-Accept Start.js`, `Task-Account Details UI Cleanup.js`, `Task-Other UI Cleanup.js`, `Task-Lock Unaccepted.js`.
+  - **Remove autofocus.** Currently `Task-Product Work Area.js` calls `task_product_work_area_focus_scan()` on refresh, which auto-focuses and clears this input every time the Task form loads. This is disruptive — it steals focus from whatever the user intended to do. Autofocus should only happen when the user explicitly initiates a scan action (e.g. clicks "Scan Product Barcode" button), not on form load.
+
+### 15.3 custom_task_scan_qty — Scan Qty
+
+- **Type:** Float (custom, default=1)
+- **Decision:** DECIDED — same as 15.2. Visible for Pack + Returns only. Editable for accepted users.
+
+### 15.4 custom_task_scan_result — Last Scan Result
+
+- **Type:** Small Text (custom, read_only=1)
+- **Decision:** DECIDED — same as 15.2. Visible for Pack + Returns only. Always read-only (set by scan logic).
+
+---
+
+## 16. Manual Product Add — CENTRALIZED
+
+Manual add fields are the right column of `custom_product_work_section` (section 14). They let the user pick a product, set qty/batch/price, and add it to the Dispatch Case.
+
+**Manual add is for Order entry only.** Pack and Returns workers cannot add or remove items — they can only edit their own columns (packing status for Pack, returned_qty/lost_damaged_qty for Returns).
+
+### 16.1 custom_product_work_column — (Column Break)
+
+- **Type:** Column Break (custom)
+- **Parent section:** `custom_product_work_section` (14.1)
+- **Decision:** DECIDED — inherits visibility from parent section. Layout element, no individual toggle.
+
+### 16.2 custom_task_product_warning — Product Work Warning
+
+- **Type:** Small Text (custom, read_only=1)
+- **Parent section:** `custom_product_work_section` (14.1)
+- **Decision:** DECIDED — inherits visibility from parent section. Always read-only. Populated by `Task-Product Work Area.js` from DC's `custom_packing_last_warning` / `custom_packing_problem_summary`. Shown for all 3 product kinds (Pack, Returns, Order entry).
+
+### 16.3 custom_task_add_item_code — Choose Product
+
+- **Type:** Link → Item (custom)
+- **Decision:** DECIDED — **visible for Order entry only** (`is_add_task`). Hidden for Pack and Returns. Editable for accepted users.
+
+### 16.4 custom_task_add_qty — Product Qty
+
+- **Type:** Float (custom, default=1)
+- **Decision:** DECIDED — same as 16.3. Order entry only.
+
+### 16.5 custom_task_add_batch_no — Batch / LOT
+
+- **Type:** Link → Batch (custom)
+- **Decision:** DECIDED — same as 16.3. Order entry only. Mobile: keep visible (the old mobile-hide in `Task-Accept Start.js:151` is removed — users may need to select a batch on mobile).
+
+### 16.6 custom_task_add_unit_price — Unit Price
+
+- **Type:** Currency (custom)
+- **Decision:** DECIDED — same as 16.5. Order entry only.
+
+---
+
+### Product Work — scripts impact summary
+
+| Script | Action | Detail |
+|---|---|---|
+| `Order entry - barcode scanning section - hide.js` | **DELETE** | DOM surgery script. Entirely replaced by centralized section toggle. |
+| `Task-Account Details UI Cleanup.js` | **MODIFY** | Remove all product/scan field hiding (lines 29–47, 62, 83–86). Section toggle handles it. |
+| `Task-Other UI Cleanup.js` | **MODIFY** | Remove all product/scan field hiding (lines 38, 40, 43–45). Section toggle handles it. |
+| `Task-Accept Start.js` | **MODIFY** | Remove scan/add field hiding for Account Details (lines 15–22). Remove mobile batch/price hide (line 151). |
+| `Task-Lock Unaccepted.js` | **MODIFY** | Remove per-field scan/add read_only toggles (lines 34–45). Centralized script handles editable state. |
+| `Task Product Line-Item Code String Guard.js` | **DELETE** | Only consumer of dead `custom_product_lines` table. |
+| `Task-Packing Checkboxes.js` | **ALREADY DISABLED** | Duplicate of Product Work Area. |
+| `Task-Dispatch Packing Usability.js` | **ALREADY DISABLED** | Legacy. |
+| `Task-Create Dispatch Case Items.js` | **ALREADY DISABLED** | Legacy. |
+| `Task-Product Lines Display.js` | **ALREADY DISABLED** | Legacy. |
+| Schema (`custom-fields.json`) | **MODIFY** | Set hidden=1 on remaining 10 fields. Remove all depends_on expressions. |
+| Schema (`custom-fields.json`) | **DELETE** | Remove `custom_product_lines` field, `custom_barcode_section` section break, and `Task Product Line` child DocType. |
+
+---
+
+## 17. ~~Account Details~~ — REMOVE ENTIRELY
+
+> **Decision:** Remove the Account Details workflow from the system. The Account Details: Entry / Processing pair is architecturally identical to Other: Entry / Processing — both are two-step Entry → Processing workflows with manual creation, photo attachment, description propagation, and assignment handoff. There is no reason to maintain a parallel implementation. Users should use **Other: Entry / Other: Processing** instead, which already supports subject, description, customer, photos (via `Task-Photo-System.js`), and `custom_next_task_assign_to`.
+
+### What to delete
+
+| Item | Type | Action |
+|---|---|---|
+| `custom_account_details_section` | Section Break | **DELETE** from schema |
+| `custom_account_photos` | Table → Account Detail Attachment | **DELETE** from schema |
+| `custom_account_details_entry_task` | Link → Task | **DELETE** from schema |
+| `custom_account_details_subject` | Data | **DELETE** from schema |
+| `Account Detail Attachment` | Child DocType | **DELETE** |
+| `Task-Account Details UI Cleanup.js` | Client Script (294 lines) | **DELETE** |
+| `Task-after-save-account-details-processing.py` | Server Script | **DELETE** |
+| Task Access Policy `Account Details: Entry` | Record | **DELETE** |
+| Task Access Policy `Account Details: Processing` | Record | **DELETE** |
+| `task_kind` options | Select values | **REMOVE** `Account Details: Entry` and `Account Details: Processing` |
+
+### Why
+
+- The Account Details pair duplicates Other: Entry/Processing with more bugs and complexity.
+- Its custom photo gallery (294-line DOM surgery with 4 cascading timeouts) duplicates `Task-Photo-System.js`.
+- `custom_account_details_subject` is broken — never filled, so Processing tasks always get the generic default.
+- `custom_account_photos` child table is redundant — the gallery uses File records, not child rows, yet the server copies both.
+- The `depends_on` on `custom_account_photos` references `"Account details"` (a kind that doesn't exist) — has been broken since the kinds were renamed to `Account Details: Entry` / `Account Details: Processing`.
+- `custom_account_details_section` is permanently hidden with a fake `depends_on` (`"__never_show_account_details_documents__"`).
+
+### Migration
+
+1. Complete or cancel any existing `Account Details: Entry` / `Account Details: Processing` tasks.
+2. Delete all items listed above.
+3. Instruct users to create **Other: Entry** tasks for document/photo intake work.
+4. If the accounting team needs a distinct default assignment, add a note in the Other: Entry task description or adjust the Task Access Policy for Other: Processing.
 
 ---
 
@@ -1331,7 +1464,7 @@ if (frm.doc.task_kind === "Delivery" && frm.doc.status !== "Completed") {
 
 These are NOT custom fields but their behavior is modified.
 
-### 18.1 status — Status
+### 18.1 status — Status — ALWAYS HIDDEN (centralized)
 
 - **Type:** Select (standard)
 - **Property setter options:** Open, Working, Overdue, Completed, Cancelled
@@ -1339,20 +1472,26 @@ These are NOT custom fields but their behavior is modified.
   - `Task-Accept Start.js:33` — shown for Account Details: Entry
   - `Task-Other UI Cleanup.js:19,38` — shown for Other
   - `Task-Account Details UI Cleanup.js:118-119` — shown for Account Details
-- **Notes:** Always visible. Client scripts explicitly show it for kinds that have cleanup scripts (defensive).
+- **Decision:** DECIDED — **Always hidden.** Status is managed by the system (server scripts set it on acceptance, completion, etc.). Users should not see or edit it directly — they interact through action buttons. The defensive show-for-certain-kinds overrides are unnecessary and should be removed.
+  - Set hidden=1 via property setter.
+  - Remove all client script `toggle_display("status", ...)` calls.
+  - Centralized script enforces hidden state.
 
 ---
 
-### 18.2 priority — Priority
+### 18.2 priority — Priority — ALWAYS HIDDEN (centralized)
 
 - **Type:** Select (standard)
 - **Current client script overrides:**
   - Same scripts as status — shown explicitly for Account Details and Other
-- **Notes:** Always visible.
+- **Decision:** DECIDED — **Always hidden.** Priority is not used in InMED's operational workflow — tasks are driven by kind, ownership, and stage gates, not priority levels. The explicit show overrides are unnecessary.
+  - Set hidden=1 via property setter.
+  - Remove all client script `toggle_display("priority", ...)` calls.
+  - Centralized script enforces hidden state.
 
 ---
 
-### 18.3 Permanently hidden standard fields
+### 18.3 Permanently hidden standard fields — CENTRALIZE
 
 These are hidden via property setters and have no client script overrides:
 
@@ -1367,7 +1506,7 @@ These are hidden via property setters and have no client script overrides:
 | parent_task | Not used |
 | is_template | Not used |
 
-**Decision:** KEEP HIDDEN — no change needed.
+**Decision:** DECIDED — **Keep hidden. Centralize enforcement.** Property setters already hide these, but the centralized visibility script should also enforce hidden state as the single source of truth. This prevents any other script from accidentally revealing them.
 
 ---
 
@@ -1406,11 +1545,11 @@ These are hidden via property setters and have no client script overrides:
 | task_kind | Should it be editable after creation? |
 | custom_next_task_assign_to | 4 conflicting visibility mechanisms |
 
-### Open architectural question
+### Architectural decision: separate visibility script
 
-Should the centralized visibility script live:
-- **A.** In the existing `Task-Action Buttons.js` (it already owns buttons + mobile CSS)?
-- **B.** As a new standalone script `Task-Field-Visibility.js`?
-- **C.** As a shared function object that other scripts call?
+**DECIDED — Option B.** A new standalone client script `Task-Field-Visibility.js`.
 
-TO DECIDE.
+- Single responsibility: one script owns all field/section show/hide logic based on `task_kind`.
+- `Task-Action Buttons.js` keeps its responsibility (buttons + mobile CSS).
+- Other scripts (`Task-Product Work Area.js`, `Task-Photo-System.js`, etc.) handle their own rendering/behavior but do NOT toggle field visibility — they check whether they're visible and act accordingly.
+- The visibility script runs on `refresh` and `task_kind` change. It is the only place that calls `frm.toggle_display()` for task-kind-driven visibility.

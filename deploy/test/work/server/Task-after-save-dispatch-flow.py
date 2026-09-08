@@ -208,11 +208,14 @@ else:
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Returns Received", "return_receive_stock_entry": se.name if se else ""})
         ret_tid = make_task("Returns processing / verification", f"Inspect returns: {short_customer(case.customer)} ({case.name})", team_map.get("Returns processing / verification", ""), "Open Dispatch Case and fill returned_qty for each item.", "returns_inspection_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
 
-    # Order Entry task Completed - create Pack task
+    # Order Entry task Completed - create Pack task only if DC is submitted (no discount)
     if is_completing and doc.task_kind == "Order entry":
         case.reload()
-        items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
-        make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", team_map.get("Pack / prepare items", ""), f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+        if case.docstatus == 1:
+            items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
+            make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", team_map.get("Pack / prepare items", ""), f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+        else:
+            print(f"[Dispatch] DC {case.name} docstatus={case.docstatus}, Pack deferred (Awaiting Approval)")
 
     # Pack task Completed
     if is_completing and doc.task_kind == "Pack / prepare items":
@@ -274,10 +277,16 @@ else:
     # Discount Approval Completed
     if is_completing and doc.task_kind == "Discount Approval":
         if doc.approval_outcome == "Approved":
-            frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Confirmed", "discount_approval_status": "Approved"})
-            case.reload()
-            items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in case.case_items)
-            make_task("Pack / prepare items", f"Pack: {short_customer(case.customer)} ({case.name})", team_map.get("Pack / prepare items", ""), f"Pack for {case.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+            dc_doc = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+            dc_doc.status = "Confirmed"
+            dc_doc.discount_approval_status = "Approved"
+            dc_doc.flags.ignore_permissions = True
+            dc_doc.submit()
+            dc_doc.reload()
+            items_txt = "\n".join(f"- {r.item_code} x{r.dispatched_qty}" for r in dc_doc.case_items)
+            make_task("Pack / prepare items", f"Pack: {short_customer(dc_doc.customer)} ({dc_doc.name})", team_map.get("Pack / prepare items", ""), f"Pack for {dc_doc.customer}\n\n{items_txt}", "pack_task", doc.dispatch_case, dc_doc.customer, source_task=doc.name, parent_task=doc.name)
+            print(f"[Dispatch] Discount approved for DC {doc.dispatch_case}, submitted and Pack created")
         else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Draft", "discount_approval_status": "Rejected"})
             make_task("Order entry", f"Discount rejected - {short_customer(case.customer)}", team_map.get("Order entry", ""), "Discount rejected by Directors. Open Dispatch Case, fix prices, save again.", None, doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+            print(f"[Dispatch] Discount rejected for DC {doc.dispatch_case}, new Order Entry created")

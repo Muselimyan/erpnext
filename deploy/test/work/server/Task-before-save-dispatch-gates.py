@@ -21,8 +21,18 @@ if doc.task_kind and doc.status != "Template" and doc.status != "Cancelled":
         print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=acceptance kind={doc.task_kind} accepted_by= result=BLOCKED")
         frappe.throw("You must Accept this task before making any changes or completing it.")
 
-# Sync customer from Task to Dispatch Case
-if doc.dispatch_case and doc.customer:
+# Order Entry: full field sync (all fields, even when cleared)
+if doc.dispatch_case and doc.task_kind == "Order entry":
+    sync_fields = {
+        "return_expected": doc.order_return_expected or 0,
+        "client_location_warehouse": doc.order_client_location_warehouse or "",
+        "surgery_date": doc.order_surgery_date or None,
+    }
+    if doc.customer:
+        sync_fields["customer"] = doc.customer
+    frappe.db.set_value("Dispatch Case", doc.dispatch_case, sync_fields)
+# Other dispatch tasks: safety-net customer sync (only if DC customer is blank)
+elif doc.dispatch_case and doc.customer:
     dc_customer = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "customer")
     if not dc_customer:
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, "customer", doc.customer)
@@ -43,19 +53,41 @@ if is_completing_global:
         print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=completion kind={doc.task_kind} user={frappe.session.user} accepted_by={accepted_by} result=BLOCKED")
         frappe.throw("Only the user who accepted this task (" + accepted_by + ") can complete it.")
 
-# Order entry completion: require submitted Dispatch Case
+# Order entry completion: validate items, sync fields, handle discounts, submit DC
 before = doc.get_doc_before_save()
 before_status = before.status if before else None
 is_completing_early = (doc.status == "Completed" and before_status != "Completed")
 if is_completing_early and doc.task_kind == "Order entry":
     if not doc.dispatch_case:
-        frappe.throw("Link a Dispatch Case before completing the Order entry task.")
+        frappe.throw("No Dispatch Case linked to this task.")
+    # Guard: if DC is already submitted (manual submit or retry), skip
     dc_docstatus = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "docstatus")
-    if dc_docstatus != 1:
+    if dc_docstatus == 1:
+        print(f"[Gates] DC {doc.dispatch_case} already submitted, skipping completion gate")
+    else:
         dc_doc = frappe.get_doc("Dispatch Case", doc.dispatch_case)
-        if not dc_doc.items or len(dc_doc.items) == 0:
-            frappe.throw("Add at least one product to the Dispatch Case before completing.")
-        dc_doc.submit()
+        if not dc_doc.case_items or len(dc_doc.case_items) == 0:
+            frappe.throw("Add at least one product before completing.")
+        if doc.order_return_expected and not doc.order_client_location_warehouse:
+            frappe.throw("Client Location Warehouse is required when Return Expected is checked.")
+
+        dc_doc.customer = doc.customer
+        dc_doc.return_expected = doc.order_return_expected or 0
+        dc_doc.client_location_warehouse = doc.order_client_location_warehouse or ""
+        dc_doc.surgery_date = doc.order_surgery_date or None
+
+        has_discount = any(float(row.discount_pct or 0) > 0 for row in dc_doc.case_items)
+
+        if has_discount:
+            dc_doc.status = "Awaiting Approval"
+            dc_doc.discount_approval_status = "Pending"
+            dc_doc.flags.ignore_permissions = True
+            dc_doc.save()
+            print(f"[Gates] DC {doc.dispatch_case} has discounts, set to Awaiting Approval")
+        else:
+            dc_doc.flags.ignore_permissions = True
+            dc_doc.submit()
+            print(f"[Gates] DC {doc.dispatch_case} submitted (no discounts)")
 
 if not doc.dispatch_case:
     pass

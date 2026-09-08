@@ -37,6 +37,7 @@ row.lost_damaged_qty = lost_damaged
 row.used_qty = used
 
 case.flags.ignore_permissions = True
+case.flags.ignore_validate_update_after_submit = True
 case.save()
 
 frappe.response["message"] = {

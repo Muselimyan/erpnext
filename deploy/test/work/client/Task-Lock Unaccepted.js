@@ -2,6 +2,9 @@
 // DocType: Task
 // Enabled: 1
 // ---
+// TFV Phase 6: removed per-field editable_fields list.
+// The blanket read_only toggle on all fields is sufficient.
+// TFV controls which fields are visible; this script controls editability.
 
 frappe.ui.form.on('Task', {
     refresh: function(frm) {
@@ -30,21 +33,6 @@ function apply_task_accept_edit_lock(frm) {
                     frm.set_df_property(field.df.fieldname, 'read_only', 0);
                 }
             });
-
-            var editable_fields = [
-                'status', 'delivery_status', 'pickup_status', 'driver_handover_note',
-                'return_pickup_driver', 'scheduled_return_date', 'approval_outcome', 'approval_note',
-                'custom_task_scan_barcode', 'custom_task_scan_qty', 'custom_task_add_item_code',
-                'custom_task_add_qty', 'custom_task_add_batch_no', 'custom_task_add_unit_price',
-                'new_payment_amount', 'payment_method', 'payment_reference'
-            ];
-            editable_fields.forEach(function(fieldname) {
-                if (frm.fields_dict[fieldname]) {
-                    frm.set_df_property(fieldname, 'read_only', 0);
-                    frm.toggle_enable(fieldname, true);
-                }
-            });
-
             frm.refresh_fields();
             $(frm.wrapper).find('input, textarea, select, .ql-editor, .like-disabled-input').prop('disabled', false).css({'pointer-events': '', 'opacity': '', 'background-color': ''});
             $(frm.wrapper).find('.btn-attach, .btn-open, .grid-add-row, .grid-remove-rows').show();
