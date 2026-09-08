@@ -2,64 +2,12 @@
 // DocType: Task
 // Enabled: 1
 // ---
-// After redesign: button creation (Accept, Save, Complete, mobile compact actions,
-// "Accepted" gray bar, mobile Back circle, mobile Refresh) moved to Task-Action Buttons.js.
-// This script retains: Account Details cleanup, assignment UI, field visibility,
-// sidebar hiding, mobile CSS, menu cleanup, page title overflow fix,
-// and mobile custom-actions hiding CSS.
-
-
-function account_details_entry_ui_cleanup(frm) {
-    if (frm.doc.task_kind !== "Account Details: Entry") return;
-
-    var hideFields = [
-        "custom_task_scan_barcode",
-        "custom_task_scan_qty",
-        "custom_task_choose_product",
-        "custom_task_product_qty",
-        "custom_task_add_batch_no",
-        "custom_task_add_unit_price"
-    ];
-
-    hideFields.forEach(function(fieldname) {
-        if (frm.fields_dict[fieldname]) {
-            frm.toggle_display(fieldname, false);
-            frm.set_df_property(fieldname, "hidden", 1);
-        }
-        $(frm.wrapper).find('[data-fieldname="' + fieldname + '"]').closest('.frappe-control').hide();
-    });
-
-    ["status", "priority"].forEach(function(fieldname) {
-        if (frm.fields_dict[fieldname]) frm.toggle_display(fieldname, true);
-    });
-
-    if (frm.fields_dict.custom_account_photos) {
-        frm.toggle_display("custom_account_photos", true);
-    }
-
-    setTimeout(function() {
-        [
-            "Barcode Scanning (Optional)",
-            "Scan Product Barcode",
-            "Scan Qty",
-            "Choose Product",
-            "Product Qty",
-            "Batch / LOT",
-            "Unit Price",
-            "Warehouse Pickup Photo",
-            "Warehouse Drop-off Photo"
-        ].forEach(function(label) {
-            $(frm.wrapper).find('.section-head').filter(function() { return $(this).text().trim() === label; }).closest('.form-section').hide();
-            $(frm.wrapper).find('.control-label, label').filter(function() { return $(this).text().trim() === label; }).closest('.frappe-control').hide();
-        });
-    }, 300);
-
-    $(frm.wrapper).find("#account-details-add-photos-btn").remove();
-}
+// TFV Phase 2: all field visibility logic removed.
+// Task-Field-Visibility.js is the single source of truth for visibility.
+// This script retains: mobile CSS, sidebar hiding, subject behavior,
+// dashboard hide, Order entry kind default, mobile custom-actions CSS.
 
 frappe.ui.form.on("Task", {
-    custom_assigned_to(frm) {
-    },
     status(frm) {
         if (frm.doc.status === "Completed" && !frm.doc.completed_on) {
             frm.set_value("completed_on", frappe.datetime.get_today());
@@ -109,20 +57,6 @@ frappe.ui.form.on("Task", {
             });
         }
         
-        // Unified assignment UI
-        frm.set_df_property("custom_assigned_to", "label", "Assign To");
-        frm.set_df_property("custom_next_task_assign_to", "label", "Next Task: Assign To");
-        
-        // Show next-task assignment for dispatch workflow tasks
-        const dispatchKinds = ["Order entry", "Pack / prepare items", "Delivery", "Return Call", "Pickup Returns", "Returns processing / verification", "Returns restocking", "Invoice preparation / create invoice", "Discount Approval"];
-        if (dispatchKinds.includes(frm.doc.task_kind) || frm.doc.task_kind === "Account Details: Entry") {
-            frm.set_df_property("custom_next_task_assign_to", "hidden", 0);
-        } else {
-            frm.set_df_property("custom_next_task_assign_to", "hidden", 1);
-        }
-        account_details_entry_ui_cleanup(frm);
-        if (frm.doc.task_kind === "Account Details: Entry" && frm.fields_dict.custom_next_task_assign_to) { frm.set_df_property("custom_next_task_assign_to", "hidden", 0); frm.toggle_display("custom_next_task_assign_to", true); }
-        account_details_entry_keep_next_assign_empty(frm);
         // Hide sidebar items: Assign, Tags, Share, Like
         try {
             $(frm.wrapper).find('.like-action').hide();
@@ -130,12 +64,12 @@ frappe.ui.form.on("Task", {
             $(frm.wrapper).find('.form-tags').hide();
             $(frm.wrapper).find('.form-shared').hide();
         } catch(e) {}
-        // Hide internal fields for clean UI
-        frm.toggle_display("custom_accepted_by", false);
+        // Subject: not required (auto-generated or user-set)
         frm.set_df_property("subject", "reqd", 0);
         if (frm.fields_dict.subject && frm.fields_dict.subject.df) {
             frm.fields_dict.subject.df.reqd = 0;
         }
+        // Order entry: hide subject and auto-set (behavioral -- subject is auto-generated)
         if (frm.doc.task_kind === "Order entry") {
             frm.toggle_display("subject", false);
             if (!frm.doc.subject) {
@@ -144,19 +78,6 @@ frappe.ui.form.on("Task", {
         }
         // Hide Activity/Timesheet dashboard for all tasks
         frm.dashboard.hide();
-        // Mobile: hide clutter fields for clean mobile UI
-        if (window.innerWidth <= 768) {
-            setTimeout(function() {
-                var hideFields = ["custom_accepted_at","custom_task_add_batch_no","custom_task_add_unit_price"];
-                hideFields.forEach(function(fn) {
-                    $(frm.wrapper).find("[data-fieldname=\"" + fn + "\"]").closest(".frappe-control").hide();
-                });
-                $(frm.wrapper).find(".form-section .help-box").hide();
-                // Hide Timeline section on mobile
-                $(frm.wrapper).find(".form-footer .timeline-group, .form-footer .timeline-actions").hide();
-                $(frm.wrapper).find(".section-head:contains('Timeline')").closest(".form-section").hide();
-            }, 200);
-        }
         // Default task_kind to Order entry on full form for new tasks
         if (frm.is_new() && frm.doc.task_kind === "Order accepting") {
             frm.set_value("task_kind", "Order entry");
@@ -164,21 +85,11 @@ frappe.ui.form.on("Task", {
     }
 });
 
-function account_details_entry_keep_next_assign_empty(frm) {
-    if (!frm || !frm.doc) return;
-    if (String(frm.doc.task_kind || "").trim() !== "Account Details: Entry") return;
-    var nextAssign = String(frm.doc.custom_next_task_assign_to || "").trim();
-    var currentAssign = String(frm.doc.custom_assigned_to || "").trim();
-    if (nextAssign && (!currentAssign || nextAssign === currentAssign)) {
-        frm.set_value("custom_next_task_assign_to", "");
-    }
-}
-
 // Mobile CSS: hide custom-actions and actions-btn-group in header on Task forms.
 // This prevents Product Work Area dropdown buttons and other custom buttons from
 // appearing in the cramped mobile header. The sub-header bar in Task-Action Buttons
 // provides mobile-friendly access to these controls instead.
-// All other header layout rules (title truncation, page-actions sizing) removed —
+// All other header layout rules (title truncation, page-actions sizing) removed --
 // Frappe's default responsive layout handles them correctly now that we have
 // fewer buttons in the header.
 function task_mobile_hide_desktop_custom_actions() {

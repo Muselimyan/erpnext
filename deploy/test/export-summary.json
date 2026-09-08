@@ -1,19 +1,19 @@
 ﻿{
     "env":  "Test",
-    "exported_at":  "2026-08-31T23:43:59Z",
+    "exported_at":  "2026-09-08T16:22:37Z",
     "base_url":  "https://test.erpnext.am",
     "schema":  {
-                   "custom-fields":  117,
+                   "custom-fields":  118,
                    "notifications":  5,
-                   "client-scripts":  36,
-                   "server-scripts":  45,
+                   "client-scripts":  37,
+                   "server-scripts":  48,
                    "workflows":  0,
-                   "property-setters":  193,
+                   "property-setters":  204,
                    "role-profiles":  6,
                    "workspaces":  22,
                    "print-formats":  1,
                    "reports":  46,
-                   "custom-doctypes":  14
+                   "custom-doctypes":  16
                },
     "data":  {
                  "company":  1,
@@ -23,7 +23,7 @@
                  "item-groups":  62,
                  "items":  500,
                  "uoms":  200,
-                 "customers":  193,
+                 "customers":  194,
                  "customer-groups":  5,
                  "territories":  3,
                  "suppliers":  26,
@@ -31,7 +31,7 @@
                  "price-lists":  2,
                  "item-prices":  500,
                  "brands":  1,
-                 "task-access-policies":  25
+                 "task-access-policies":  26
              },
     "gaps_count":  1,
     "gaps":  [

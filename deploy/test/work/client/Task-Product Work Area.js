@@ -631,7 +631,8 @@ window.task_product_work_area_toggle_packed = function(checkbox, case_name, idx)
 frappe.ui.form.on("Task", {
     refresh(frm) {
         task_product_work_area_refresh(frm);
-        task_product_work_area_focus_scan(frm);
+        // TFV Phase 7: removed autofocus on refresh (disruptive on form load).
+        // Focus is triggered by user actions: scan button, error recovery, etc.
         const is_product_task = task_product_work_area_is_product_task(frm);
         if (!frm.is_new() && is_product_task) {
             frm.add_custom_button(__("Add Selected Product"), function() {

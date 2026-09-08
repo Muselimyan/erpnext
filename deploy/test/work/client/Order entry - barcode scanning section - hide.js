@@ -1,6 +1,6 @@
 ﻿// Name: Order entry - barcode scanning section - hide
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
 
 frappe.ui.form.on('Task', {

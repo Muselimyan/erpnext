@@ -26,7 +26,7 @@ if doc.dispatch_case and doc.task_kind == "Order entry":
     sync_fields = {
         "return_expected": doc.order_return_expected or 0,
         "client_location_warehouse": doc.order_client_location_warehouse or "",
-        "surgery_date": doc.order_surgery_date or "",
+        "surgery_date": doc.order_surgery_date or None,
     }
     if doc.customer:
         sync_fields["customer"] = doc.customer
@@ -74,7 +74,7 @@ if is_completing_early and doc.task_kind == "Order entry":
         dc_doc.customer = doc.customer
         dc_doc.return_expected = doc.order_return_expected or 0
         dc_doc.client_location_warehouse = doc.order_client_location_warehouse or ""
-        dc_doc.surgery_date = doc.order_surgery_date or ""
+        dc_doc.surgery_date = doc.order_surgery_date or None
 
         has_discount = any(float(row.discount_pct or 0) > 0 for row in dc_doc.case_items)
 
