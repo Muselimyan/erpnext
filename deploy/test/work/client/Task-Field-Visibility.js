@@ -26,7 +26,7 @@ var TFV_ALWAYS_HIDDEN = [
 // "__never__"             -> always hidden
 // "__completed__"         -> visible only when status === "Completed"
 // "__product__"           -> visible when tfv_is_product_task(frm)
-// "__add_product__"       -> visible when Order entry + has dispatch_case
+// "__scan_product__"      -> visible when Pack/Returns + has dispatch_case
 // "__has_value__"         -> visible when field has a truthy value
 // "__dispatch_or_value__" -> visible for dispatch-flow kind OR when has value
 // "__order_return__"      -> visible when Order entry + return_expected checked
@@ -115,17 +115,10 @@ var TFV_KIND_MAP = {
     // parent section, do NOT toggle individually
     "custom_task_product_warning":  "__product__",
 
-    // Barcode Scanning (same as product)
-    "custom_barcode_section":       "__product__",
-    "custom_task_scan_barcode":     "__product__",
-    "custom_task_scan_qty":         "__product__",
-    "custom_task_scan_result":      "__product__",
-
-    // Manual Product Add -- Order entry ONLY (not Pack, not Returns)
-    "custom_task_add_item_code":    "__add_product__",
-    "custom_task_add_qty":          "__add_product__",
-    "custom_task_add_batch_no":     "__add_product__",
-    "custom_task_add_unit_price":   "__add_product__"
+    // Scan fields -- Pack/Returns only (not Order entry)
+    "custom_task_scan_barcode":     "__scan_product__",
+    "custom_task_scan_qty":         "__scan_product__",
+    "custom_task_scan_result":      "__scan_product__"
 };
 
 // ── Photo gallery kinds (consumed by Task-Photo-System.js) ────
@@ -149,6 +142,17 @@ function tfv_is_product_task(frm) {
     return false;
 }
 
+// ── Scan-only product classification (Pack/Returns, not Order entry) ──
+var TFV_SCAN_PRODUCT_KINDS = [
+    "Pack / prepare items",
+    "Returns processing / verification"
+];
+
+function tfv_is_scan_product_task(frm) {
+    return TFV_SCAN_PRODUCT_KINDS.indexOf(frm.doc.task_kind) !== -1
+        && !!frm.doc.dispatch_case;
+}
+
 // ── Dispatch flow kinds (description collapsible for these) ───
 var TFV_DISPATCH_FLOW_KINDS = [
     "Order entry", "Pack / prepare items", "Dispatch picking / hand-off",
@@ -167,31 +171,73 @@ function tfv_apply(frm) {
     if (!frm || frm.doctype !== "Task") return;
     var kind = (frm.doc.task_kind || "").trim();
     var is_product = tfv_is_product_task(frm);
-    var is_add = (kind === "Order entry" && !!frm.doc.dispatch_case);
+    var is_scan = tfv_is_scan_product_task(frm);
     var is_completed = frm.doc.status === "Completed";
     var is_mobile = window.innerWidth <= 768;
     var is_dispatch = TFV_DISPATCH_FLOW_KINDS.indexOf(kind) !== -1;
 
+    console.log("[TFV] ═══ tfv_apply START ═══ task=" + frm.doc.name
+        + " kind=\"" + kind + "\""
+        + " status=" + frm.doc.status
+        + " dc=" + (frm.doc.dispatch_case || "(none)")
+        + " mobile=" + is_mobile);
+    console.log("[TFV] flags: is_product=" + is_product
+        + " is_scan=" + is_scan
+        + " is_completed=" + is_completed
+        + " is_dispatch=" + is_dispatch);
+
     // Always-hidden
     TFV_ALWAYS_HIDDEN.forEach(function(f) {
-        if (frm.fields_dict[f]) frm.toggle_display(f, false);
+        if (frm.fields_dict[f]) {
+            frm.toggle_display(f, false);
+            console.log("[TFV] ALWAYS_HIDDEN: " + f + " -> HIDE");
+        }
     });
 
     // Per-field visibility
     Object.keys(TFV_KIND_MAP).forEach(function(fieldname) {
-        if (!frm.fields_dict[fieldname]) return;
+        if (!frm.fields_dict[fieldname]) {
+            console.warn("[TFV] MISSING field: " + fieldname + " (not in fields_dict)");
+            return;
+        }
         var rule = TFV_KIND_MAP[fieldname];
         var visible = false;
-        if (rule === "__all__")                    visible = true;
-        else if (rule === "__never__")             visible = false;
-        else if (rule === "__completed__")         visible = is_completed;
-        else if (rule === "__product__")           visible = is_product;
-        else if (rule === "__add_product__")       visible = is_add;
-        else if (rule === "__has_value__")         visible = !!frm.doc[fieldname];
-        else if (rule === "__dispatch_or_value__") visible = is_dispatch || !!frm.doc[fieldname];
-        else if (rule === "__order_return__")      visible = (kind === "Order entry" && !!frm.doc.order_return_expected);
-        else if (Array.isArray(rule))              visible = rule.indexOf(kind) !== -1;
+        var reason = "";
+        if (rule === "__all__") {
+            visible = true;
+            reason = "__all__";
+        } else if (rule === "__never__") {
+            visible = false;
+            reason = "__never__";
+        } else if (rule === "__completed__") {
+            visible = is_completed;
+            reason = "__completed__ (is_completed=" + is_completed + ")";
+        } else if (rule === "__product__") {
+            visible = is_product;
+            reason = "__product__ (is_product=" + is_product + ")";
+        } else if (rule === "__scan_product__") {
+            visible = is_scan;
+            reason = "__scan_product__ (is_scan=" + is_scan + ")";
+        } else if (rule === "__has_value__") {
+            visible = !!frm.doc[fieldname];
+            reason = "__has_value__ (val=" + JSON.stringify(frm.doc[fieldname]) + ")";
+        } else if (rule === "__dispatch_or_value__") {
+            visible = is_dispatch || !!frm.doc[fieldname];
+            reason = "__dispatch_or_value__ (is_dispatch=" + is_dispatch + " val=" + JSON.stringify(frm.doc[fieldname]) + ")";
+        } else if (rule === "__order_return__") {
+            visible = (kind === "Order entry" && !!frm.doc.order_return_expected);
+            reason = "__order_return__ (kind=" + kind + " ret_exp=" + frm.doc.order_return_expected + ")";
+        } else if (Array.isArray(rule)) {
+            visible = rule.indexOf(kind) !== -1;
+            reason = "array (kind \"" + kind + "\" in [" + rule.join(", ") + "] = " + visible + ")";
+        } else {
+            reason = "UNKNOWN rule: " + JSON.stringify(rule);
+        }
         frm.toggle_display(fieldname, visible);
+        console.log("[TFV] " + (visible ? "SHOW" : "HIDE") + ": " + fieldname
+            + " | rule=" + reason
+            + " | df.hidden=" + frm.fields_dict[fieldname].df.hidden
+            + " | wrapper=" + (frm.fields_dict[fieldname].$wrapper ? frm.fields_dict[fieldname].$wrapper.css("display") : "no$w"));
     });
 
     // task_kind: read-only after first save
@@ -200,8 +246,6 @@ function tfv_apply(frm) {
     }
 
     // Description: collapsible for dispatch-flow tasks
-    // "description" is a Text Editor inside section break "sb_details".
-    // collapsible is a Section Break property, so target the parent section.
     var sb = frm.fields_dict.sb_details;
     if (sb) {
         var has_text = !!(frm.doc.description || "").trim();
@@ -213,19 +257,46 @@ function tfv_apply(frm) {
             sb.collapse(false);
         }
         sb.refresh();
+        console.log("[TFV] description section: collapsible=" + sb.df.collapsible + " collapsed=" + !has_text);
     }
 
-    // Activity/Timeline: hidden on mobile (DOM exception -- principle #7)
+    // Activity/Timeline: hidden on mobile
     if (is_mobile) {
         $(frm.wrapper).find(".form-footer .timeline-group, .form-footer .timeline-actions").hide();
         $(frm.wrapper).find(".section-head:contains('Activity')").closest(".form-section").hide();
+        console.log("[TFV] mobile: hid Activity/Timeline");
     }
 
-    // Photo gallery: set flag for Task-Photo-System.js (DOM exception -- principle #7)
+    // Photo gallery flag
     frm._tfv_show_gallery = TFV_PHOTO_GALLERY_KINDS.indexOf(kind) !== -1;
     if (!frm._tfv_show_gallery) {
         $(frm.wrapper).find('[id^="photo-gallery-host-"]').hide();
     }
+    console.log("[TFV] photo gallery: show=" + frm._tfv_show_gallery);
+
+    // Dynamic labels/descriptions per task kind
+    if (kind === "Order entry") {
+        frm.set_df_property("dispatch_case", "label", "Dispatch Case");
+        frm.set_df_property("dispatch_case", "description",
+            "Auto-created on task acceptance. Products you add are stored here.");
+        frm.set_df_property("custom_product_work_section", "label", "Products");
+    } else if (kind === "Pack / prepare items") {
+        frm.set_df_property("dispatch_case", "label", "Dispatch Case / Packing Items");
+        frm.set_df_property("dispatch_case", "description",
+            "Open to view batch/LOT, expiry, scanned qty, FEFO warnings, and packing problems.");
+        frm.set_df_property("custom_product_work_section", "label", "Products / Packing");
+    } else if (kind === "Returns processing / verification") {
+        frm.set_df_property("dispatch_case", "label", "Dispatch Case");
+        frm.set_df_property("dispatch_case", "description",
+            "Open to view product rows and return quantities.");
+        frm.set_df_property("custom_product_work_section", "label", "Products / Returns");
+    } else if (is_dispatch) {
+        frm.set_df_property("dispatch_case", "label", "Dispatch Case");
+        frm.set_df_property("dispatch_case", "description", "");
+        frm.set_df_property("custom_product_work_section", "label", "Products / Dispatch Work");
+    }
+
+    console.log("[TFV] ═══ tfv_apply END ═══");
 }
 
 frappe.ui.form.on("Task", {

@@ -11,6 +11,7 @@ def run_script():
     qty = float(frappe.form_dict.get("qty") or 1)
     batch_no = frappe.form_dict.get("batch_no")
     unit_price = float(frappe.form_dict.get("unit_price") or 0)
+    discount_pct = float(frappe.form_dict.get("discount_pct") or 0)
     if not task_name:
         frappe.throw("Task is required.")
     if not item_code:
@@ -26,6 +27,7 @@ def run_script():
     row.dispatched_qty = qty
     row.batch_no = batch_no or None
     row.unit_price = unit_price
+    row.discount_pct = discount_pct
     row.custom_scanned_qty = 0
     row.custom_remaining_qty = qty
     row.custom_packing_status = "Not Started"

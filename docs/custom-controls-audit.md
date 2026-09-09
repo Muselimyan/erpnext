@@ -1,10 +1,21 @@
 # Custom Controls Audit — Test Environment
 
-**Date:** 2026-08-31
-**Source of truth:** `deploy/test/schema/` (exported 2026-08-31)
+**Date:** 2026-08-31 (updated 2026-09)
+**Source of truth:** `deploy/test/schema/` (exported 2026-08-31; counts updated 2026-09 after product section redesign)
 **Scope:** All custom UI controls (buttons, layout changes, field visibility, navigation, CSS injections, inline controls) created by client scripts, custom fields, and property setters. Test environment only.
 **Exclusions:** Photo Gallery (`Task-Photo-System`, `Dispatch Case-Photo-Galleries`) — excluded per user request.
-**Method:** Analysis of `deploy/test/schema/client-scripts.json` (35 records), `server-scripts.json` (45 records), `custom-fields.json` (117 records), `property-setters.json` (193 records), and work files in `deploy/test/work/client/`.
+**Method:** Analysis of `deploy/test/schema/client-scripts.json` (37 records), `server-scripts.json` (50 records), `custom-fields.json` (113 records), `property-setters.json` (204 records), and work files in `deploy/test/work/client/`.
+
+> **2026-09 update — Product section redesign (Phases A/B/C):**
+> - 4 dead Custom Fields deleted from Task: `custom_task_add_item_code`, `custom_task_add_qty`, `custom_task_add_batch_no`, `custom_task_add_unit_price` (Task custom fields: 52 → 48)
+> - 2 new Server Script API endpoints created: `task_update_dispatch_product`, `task_remove_dispatch_product`
+> - Desktop "Products / Dispatch Work" header buttons removed from `Task-Product Work Area.js`
+> - Mobile "Products" dropdown removed from `Task-Action Buttons.js`
+> - `tab_is_product_task` / `TAB_PRODUCT_KINDS` deleted from Action Buttons (unified to TFV's `tfv_is_product_task`)
+> - `task_product_work_area_is_product_task` deleted from Product Work Area (unified to TFV)
+> - Order Entry now uses inline editable table rendered in `custom_task_product_summary`
+> - Pack scan state refactored from Frappe field to JS variable (`pwa_pending_item_code`)
+> - See `docs/21-product-section-architecture.md` for full architecture.
 
 ---
 
@@ -31,13 +42,13 @@
 
 | Category | Total | Enabled | Disabled |
 |---|---|---|---|
-| Client scripts | 35 | 34 | 1 |
-| Server scripts | 45 | 42 | 3 |
-| Server Script API endpoints | 11 | 11 | 0 |
-| Custom fields on Task | 52 | — | — |
+| Client scripts | 37 | 36 | 1 |
+| Server scripts | 50 | 47 | 3 |
+| Server Script API endpoints | 13 | 13 | 0 |
+| Custom fields on Task | 48 | — | — |
 | Custom fields on Dispatch Case | 10 | — | — |
 | Custom fields on Dispatch Case Item | 10 | — | — |
-| Property setters | 193 | — | — |
+| Property setters | 204 | — | — |
 
 ### Findings
 

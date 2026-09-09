@@ -34,7 +34,7 @@ All Task action buttons are now owned by **one script**: `Task-Action Buttons.js
 form.refresh
   └─ Task-Action Buttons.js → refresh(frm)
        ├─ tab_dashboard_comments(frm)     — info banners
-       ├─ tab_render_subheader(frm)       — mobile: Back, Refresh, Products, Open DC
+       ├─ tab_render_subheader(frm)       — mobile: Back, Refresh, View DC
        ├─ tab_render_bottom_actions(frm)  — mobile: floating Accept / Complete / Create DC
        └─ tab_render_desktop_buttons(frm) — desktop: header custom buttons
 ```
@@ -90,14 +90,9 @@ Every render starts by removing stale controls (`$("#task-subheader").remove()`,
 | **Condition** | `frm.doc.dispatch_case` exists (any status, any acceptance state). |
 | **Behavior** | Routes to `Form/Dispatch Case/{name}`. No server call. |
 
-### 2.5 Products Dropdown (mobile sub-header)
+### 2.5 Products Dropdown (REMOVED)
 
-| Property | Value |
-|---|---|
-| **Where** | Mobile sub-header only. |
-| **Condition** | Task is a product task (has DC or task kind is in product kinds list). Accepted by current user. |
-| **Items** | Add Selected Product, Refresh Products, Scan Product Barcode. |
-| **Behavior** | Each item calls a function from `Task-Product Work Area.js` if it exists. |
+> **Removed in Phase A (product section redesign, 2026-09).** The mobile Products dropdown and the desktop "Products / Dispatch Work" header button group were both deleted. Product controls now live inside the product section itself: Order Entry has an inline editor (Phase B); Pack/Returns use scan fields rendered in the product summary area. See `docs/21-product-section-architecture.md`.
 
 ---
 
@@ -111,7 +106,7 @@ The mobile layout has three custom control zones:
 ┌─────────────────────────────────┐
 │  Page Head (Frappe standard)    │
 ├─────────────────────────────────┤
-│  Sub-header: ← ↻ [Products▾] [Open DC] │  ← tab_render_subheader()
+│  Sub-header: ← ↻ [View DC]             │  ← tab_render_subheader()
 ├─────────────────────────────────┤
 │                                 │
 │  Form body                      │
@@ -121,7 +116,7 @@ The mobile layout has three custom control zones:
 └─────────────────────────────────┘
 ```
 
-- **Sub-header** (sticky below page-head): Back, Refresh, Products dropdown, Open DC. Always visible on Task forms.
+- **Sub-header** (sticky below page-head): Back, Refresh, View DC. Always visible on Task forms. (Products dropdown was removed in Phase A.)
 - **Bottom floating bar** (fixed position): Accept, Create DC, Complete. Shown based on state.
 - **Desktop header buttons**: Hidden via CSS (`task_mobile_hide_desktop_custom_actions` in `Task-Accept Start.js`).
 
@@ -159,9 +154,7 @@ Is the task accepted by current user (or admin)?
        Needs DC and no DC linked?
          └─ Show "Create Dispatch Case"
        Has DC?
-         └─ Show "Open DC" (always)
-       Is a product task?
-         └─ Show Products dropdown (mobile sub-header)
+         └─ Show "Open DC" / "View DC" (always)
        Always:
          └─ Show "Complete"
 ```
@@ -223,7 +216,7 @@ Accept and Create DC use `frappe.call` with dedicated server APIs (`dispatch_tas
 | `Task-Other UI Cleanup.js` | Enabled | No | General cleanup |
 | `Global-Mobile Back Button List.js` | Enabled | Global Back + Refresh sub-header | Also owns Task list toggle filters |
 | `Global-Mobile Back Button.js` | **Disabled** | Was: floating back circle | Replaced by global sub-header |
-| `Task-Product Work Area.js` | Enabled | Product add/scan/refresh (called by Action Buttons) | Functions invoked from Products dropdown |
+| `Task-Product Work Area.js` | Enabled | No header buttons | Product summary rendering, inline Order Entry editor, Pack/Returns scan handling. See `docs/21-product-section-architecture.md`. |
 | `Task-Create Dispatch Case Items.js` | **Disabled** | Was: Create DC, Open DC buttons | Absorbed into Action Buttons |
 | `Task-Dispatch Packing Usability.js` | **Disabled** | Was: Accept button (duplicate) | Absorbed into Action Buttons |
 | `Task-Product Lines Display.js` | **Disabled** | Was: Create DC button (duplicate) | Absorbed into Action Buttons |
