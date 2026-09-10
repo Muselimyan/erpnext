@@ -55,19 +55,8 @@ var TFV_KIND_MAP = {
     "order_surgery_date":               ["Order entry"],
     "order_template":                   ["Order entry"],
 
-    // Dispatch Case
-    "dispatch_case":    ["Order entry", "Pack / prepare items",
-                         "Dispatch picking / hand-off", "Delivery",
-                         "Return Call",
-                         "Return to warehouse (aborted delivery / cancelled order)",
-                         "Pickup Returns", "Return drop-off at warehouse",
-                         "Returns processing / verification",
-                         "Returns restocking",
-                         "Invoice preparation / create invoice",
-                         "Discount Approval",
-                         "Debt Collection", "Distribute Payment",
-                         "Payment Received", "Debt Closure Approval",
-                         "Dispatch Cancel Restock"],
+    // Dispatch Case — always hidden (View DC button covers navigation)
+    "dispatch_case":    "__never__",
 
     // Status dropdowns -- always hidden (replaced by buttons)
     "delivery_status":      "__never__",
@@ -115,7 +104,11 @@ var TFV_KIND_MAP = {
     // Scan fields -- Pack/Returns only (not Order entry)
     "custom_task_scan_barcode":     "__scan_product__",
     "custom_task_scan_qty":         "__scan_product__",
-    "custom_task_scan_result":      "__scan_product__"
+    "custom_task_scan_result":      "__scan_product__",
+
+    // Standard fields (hidden via property setters, shown by TFV)
+    "sb_details":   "__all__",
+    "description":  "__all__"
 };
 
 // ── Photo gallery kinds (consumed by Task-Photo-System.js) ────
@@ -237,32 +230,134 @@ function tfv_apply(frm) {
             + " | wrapper=" + (frm.fields_dict[fieldname].$wrapper ? frm.fields_dict[fieldname].$wrapper.css("display") : "no$w"));
     });
 
-    // task_kind: read-only after first save
-    if (!frm.is_new()) {
-        frm.set_df_property("task_kind", "read_only", 1);
-    }
+    // task_kind read-only: moved to Task-Field-Editability.js (TFE)
+    // TFE owns all editability decisions.
 
-    // Description: collapsible for dispatch-flow tasks
+    // ── Details section: native Frappe collapsible for ALL tasks ──
+    // sb_details has Property Setters: hidden=1 (TFV shows via __all__), collapsible=1.
+    // Frappe renders the section with a chevron + click handler.
+    // Collapsed by default for all tasks. User can click to expand.
     var sb = frm.fields_dict.sb_details;
     if (sb) {
-        var has_text = !!(frm.doc.description || "").trim();
-        if (is_dispatch) {
-            sb.df.collapsible = 1;
-            sb.collapse(!has_text);
-        } else {
-            sb.df.collapsible = 0;
-            sb.collapse(false);
-        }
+        // Ensure collapsible is set (Property Setter should have done this)
+        sb.df.collapsible = 1;
         sb.refresh();
-        console.log("[TFV] description section: collapsible=" + sb.df.collapsible + " collapsed=" + !has_text);
+        // Collapse after refresh -- reliable because section was born collapsible
+        if (typeof sb.collapse === "function") {
+            sb.collapse(true);
+            console.log("[TFV] Details section: COLLAPSED via native sb.collapse(true)"
+                + " | collapsible=" + sb.df.collapsible
+                + " | has_body=" + !!(sb.body)
+                + " | body_visible=" + (sb.body ? $(sb.body).is(':visible') : 'no-body'));
+        } else {
+            // Fallback: DOM-based collapse
+            var $detailsHead = $(frm.wrapper).find('.section-head:contains("Details")');
+            if ($detailsHead.length) {
+                $detailsHead.closest('.form-section').find('.section-body').hide();
+                console.log("[TFV] Details section: COLLAPSED via DOM fallback (no .collapse method)");
+            } else {
+                console.warn("[TFV] Details section: no .collapse method AND no 'Details' section-head");
+            }
+        }
+    } else {
+        console.warn("[TFV] Details section: frm.fields_dict.sb_details not found");
     }
 
-    // Activity/Timeline: hidden on mobile
-    if (is_mobile) {
-        $(frm.wrapper).find(".form-footer .timeline-group, .form-footer .timeline-actions").hide();
-        $(frm.wrapper).find(".section-head:contains('Activity')").closest(".form-section").hide();
-        console.log("[TFV] mobile: hid Activity/Timeline");
+    // ── Comments: collapsible in form footer (ALL tasks) ──
+    // DOM: .comment-box > .comment-input-wrapper > .comment-input-header + .comment-input-container
+    // .comment-input-header has "Comments" title — keep visible as toggle.
+    // .comment-input-container has the Quill editor — hide by default.
+    var $footer = $(frm.wrapper).find('.form-footer');
+    console.log("[TFV] form-footer found=" + $footer.length);
+    if ($footer.length) {
+        var $commentBox = $footer.find('.comment-box');
+        console.log("[TFV] Comments: .comment-box found=" + $commentBox.length);
+        if ($commentBox.length) {
+                var $commentHeader = $commentBox.find('.comment-input-header');
+                var $commentContent = $commentBox.find('.comment-input-container');
+                console.log("[TFV] Comments: header found=" + $commentHeader.length
+                    + " | content found=" + $commentContent.length
+                    + " | content visible=" + $commentContent.is(':visible'));
+                // Collapse content by default
+                $commentContent.hide();
+                // Add collapse indicator if not already present
+                if (!$commentHeader.find('.tfv-indicator').length) {
+                    $commentHeader.find('.comment-title').after(
+                        '<span class="tfv-indicator" style="margin-left:6px;font-size:11px;color:var(--text-muted)">▸</span>'
+                    );
+                    console.log("[TFV] Comments: added collapse indicator");
+                }
+                $commentHeader.css('cursor', 'pointer');
+                // Bind click toggle (once per form load)
+                if (!$commentHeader.data('tfv-bound')) {
+                    $commentHeader.on('click.tfv', function() {
+                        $commentContent.toggle();
+                        var $ind = $commentHeader.find('.tfv-indicator');
+                        $ind.text($commentContent.is(':visible') ? '▾' : '▸');
+                        console.log("[TFV] Comments: toggled to " + ($commentContent.is(':visible') ? 'EXPANDED' : 'COLLAPSED'));
+                    });
+                    $commentHeader.data('tfv-bound', true);
+                    console.log("[TFV] Comments: click handler bound");
+                }
+                console.log("[TFV] Comments: COLLAPSED (content hidden, header clickable)");
+            }
+
+        // ── Activity: collapsible in form footer (ALL tasks) ──
+        // DOM: .new-timeline > .activity-title (h4 + .timeline-actions) + .timeline-items
+        // h4 "Activity" — keep visible as toggle.
+        // .timeline-actions (New Email button) — hide by default.
+        // .timeline-items (direct child of .new-timeline, the actual events) — hide by default.
+        var $newTimeline = $footer.find('.new-timeline');
+        console.log("[TFV] Activity: .new-timeline found=" + $newTimeline.length);
+        if ($newTimeline.length) {
+            var $actH4 = $newTimeline.find('h4').first();
+            var $actActions = $newTimeline.find('.timeline-actions');
+            // .timeline-items direct child of .new-timeline = actual events
+            // (not .timeline-actions which also has class .timeline-items but is inside .activity-title)
+            var $actEvents = $newTimeline.children('.timeline-items');
+            console.log("[TFV] Activity: h4 found=" + $actH4.length
+                + " | .timeline-actions found=" + $actActions.length
+                + " | direct .timeline-items children=" + $actEvents.length);
+            // Collapse by default
+            $actActions.hide();
+            $actEvents.hide();
+            // Add collapse indicator if not already present
+            if (!$actH4.find('.tfv-indicator').length) {
+                $actH4.append(
+                    '<span class="tfv-indicator" style="margin-left:6px;font-size:11px;color:var(--text-muted)">▸</span>'
+                );
+                console.log("[TFV] Activity: added collapse indicator");
+            }
+            $actH4.css('cursor', 'pointer');
+            // Bind click toggle (once per form load)
+            if (!$actH4.data('tfv-bound')) {
+                $actH4.on('click.tfv', function() {
+                    $actActions.toggle();
+                    $actEvents.toggle();
+                    var $ind = $actH4.find('.tfv-indicator');
+                    $ind.text($actEvents.is(':visible') ? '▾' : '▸');
+                    console.log("[TFV] Activity: toggled to " + ($actEvents.is(':visible') ? 'EXPANDED' : 'COLLAPSED'));
+                });
+                $actH4.data('tfv-bound', true);
+                console.log("[TFV] Activity: click handler bound");
+            }
+            console.log("[TFV] Activity: COLLAPSED (actions+events hidden, h4 clickable)");
+        }
     }
+
+    // ── Diagnostic: log all section heads in the DOM ──
+    var $allHeads = $(frm.wrapper).find('.section-head');
+    console.log("[TFV] DOM section-head inventory: " + $allHeads.length + " found");
+    $allHeads.each(function(i) {
+        var $h = $(this);
+        var $sec = $h.closest('.form-section');
+        var $body = $sec.find('.section-body');
+        console.log("[TFV]   head[" + i + "] text='" + $.trim($h.text()) + "'"
+            + " | .form-section=" + ($sec.length ? "yes" : "no")
+            + " | .section-body=" + $body.length
+            + " | body-visible=" + $body.filter(':visible').length
+            + " | section-display=" + $sec.css('display'));
+    });
 
     // Photo gallery flag
     frm._tfv_show_gallery = TFV_PHOTO_GALLERY_KINDS.indexOf(kind) !== -1;
@@ -271,25 +366,14 @@ function tfv_apply(frm) {
     }
     console.log("[TFV] photo gallery: show=" + frm._tfv_show_gallery);
 
-    // Dynamic labels/descriptions per task kind
+    // Dynamic section labels per task kind
     if (kind === "Order entry") {
-        frm.set_df_property("dispatch_case", "label", "Dispatch Case");
-        frm.set_df_property("dispatch_case", "description",
-            "Auto-created on task acceptance. Products you add are stored here.");
         frm.set_df_property("custom_product_work_section", "label", "Products");
     } else if (kind === "Pack / prepare items") {
-        frm.set_df_property("dispatch_case", "label", "Dispatch Case / Packing Items");
-        frm.set_df_property("dispatch_case", "description",
-            "Open to view batch/LOT, expiry, scanned qty, FEFO warnings, and packing problems.");
         frm.set_df_property("custom_product_work_section", "label", "Products / Packing");
     } else if (kind === "Returns processing / verification") {
-        frm.set_df_property("dispatch_case", "label", "Dispatch Case");
-        frm.set_df_property("dispatch_case", "description",
-            "Open to view product rows and return quantities.");
         frm.set_df_property("custom_product_work_section", "label", "Products / Returns");
     } else if (is_dispatch) {
-        frm.set_df_property("dispatch_case", "label", "Dispatch Case");
-        frm.set_df_property("dispatch_case", "description", "");
         frm.set_df_property("custom_product_work_section", "label", "Products / Dispatch Work");
     }
 

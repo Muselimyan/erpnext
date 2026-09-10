@@ -1,8 +1,10 @@
 ﻿// Name: Task-Lock Unaccepted
 // DocType: Task
-// Enabled: 1
+// Enabled: 0
 // ---
-// TFV Phase 6: removed per-field editable_fields list.
+// DISABLED: Absorbed into Task-Field-Editability.js (TFE) — 2026-09-09.
+// TFE is the single source of truth for editability.
+// Was: TFV Phase 6: removed per-field editable_fields list.
 // The blanket read_only toggle on all fields is sufficient.
 // TFV controls which fields are visible; this script controls editability.
 

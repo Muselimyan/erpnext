@@ -12,6 +12,23 @@ This applies to ALL changes — client scripts, server scripts, deploy scripts, 
 
 ---
 
+## No Client-Side Patching of Layout
+
+**NEVER use client-side JavaScript to patch, override, or fix layout issues after page load.** This includes:
+
+- Setting CSS `width`, `max-width`, `display`, or column classes via jQuery/JS after form render
+- Using `$wrapper.css(...)` or `.closest(...).css(...)` to override Frappe's rendered layout
+- Injecting `<style>` tags to compensate for structural field-order or column-break issues
+
+Layout problems (wrong column width, section width, field positioning) must be fixed **structurally** — by correcting the `field_order` Property Setter, moving Column Breaks, or adjusting Custom Field definitions. The rendered layout must be correct from the server response, not patched after load.
+
+The only acceptable client-side visibility changes are:
+- `toggle_display` / `set_df_property("hidden", ...)` for field visibility (TFV's job)
+- Collapsing sections via Frappe's native `sb.collapse()` API or equivalent
+- Adding click handlers for custom collapse behavior on footer elements (Comments, Activity)
+
+---
+
 ## Frappe Server Scripts — RestrictedPython Constraints
 
 Frappe Server Scripts run under RestrictedPython (`safe_exec`). The following constraints MUST be followed. Violations cause runtime `NameError`, `SyntaxError`, or `ImportError` with no compile-time warning.
@@ -92,7 +109,7 @@ The task system uses a mandatory acceptance model:
 4. Reassignment resets acceptance (clears `custom_accepted_by`, reverts status to Open).
 
 **Do NOT:**
-- Remove the acceptance requirement or bypass the lock without checking admin status.
+- Remove the acceptance requirement or bypass the lock. There is no admin exemption — `accepted_by === session.user` is the only check.
 - Allow task completion without prior acceptance.
 - Allow simultaneous reassignment and completion in one save.
 
@@ -111,14 +128,24 @@ The task system uses a mandatory acceptance model:
 ### Script naming conventions
 
 - Server Scripts: `Task-before-save-*`, `Task-after-save-*`, `dispatch_task_*`, `task_list_*`
-- Client Scripts: `Task-Accept Start`, `Task-Lock Unaccepted`, `Task-Auto Reload`, `Task-Dispatch Packing Usability`, `Global-Mobile Back Button List`
-- Log tags: `[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]` (server); `[TaskAccept]`, `[TaskLock]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]` (client)
+- Client Scripts: `Task-Accept Start`, `Task-Field-Editability`, `Task-Auto Reload`, `Task-Dispatch Packing Usability`, `Global-Mobile Back Button List`
+- Log tags: `[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]` (server); `[TaskAccept]`, `[TFE]`, `[TFV]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]` (client)
 
 ### Task field visibility — single owner: `Task-Field-Visibility.js`
 
 Field visibility on the Task form is owned exclusively by `Task-Field-Visibility.js` (TFV) via `TFV_KIND_MAP`. **No other client script may call `toggle_display`, `set_df_property('hidden')`, or DOM `.hide()/.show()` on any field listed in `TFV_KIND_MAP`.**
 
 If a new field needs conditional visibility, add it to `TFV_KIND_MAP` with the appropriate rule. Do not add visibility toggles to other scripts — this causes race conditions where setTimeout chains override TFV's correct state.
+
+### Task field editability — single owner: `Task-Field-Editability.js`
+
+Field editability on the Task form is owned exclusively by `Task-Field-Editability.js` (TFE) via `TFE_EDIT_MAP` and the `tfe_can_edit(frm)` gate. **No other client script may call `set_df_property('read_only')`, `frm.set_read_only()`, `frm.disable_save()`, or DOM `.prop('disabled')` for editability purposes.**
+
+- `tfe_can_edit(frm)` returns true only when `accepted_by === session.user` and task is not completed/cancelled. **No admin exemption.**
+- `TFE_EDIT_MAP` controls per-field kind-based editability (e.g. `customer` only editable on Order entry).
+- Product section controls (PWA renderers) check `tfe_can_edit(frm)` before rendering interactive HTML controls (checkboxes, inputs, buttons).
+- Server APIs also validate acceptance — no admin bypass.
+- Absorbed: `Task-Lock Unaccepted.js` (disabled), `Task-Lock Completed.js` (disabled).
 
 ### Deployment model
 

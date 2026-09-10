@@ -1,7 +1,7 @@
 # Dispatch Flow Redesign v4 — Implementation Status
 
 **Plan:** `plan-92e19be24c1dcf3f.md` (session: defiant-termite, 2026-09-02)
-**Audited:** 2026-09-08 (full re-audit from scratch)
+**Audited:** 2026-09-09 (updated after Phase 2 deployment)
 **Source plans:**
 - v4 redesign: `C:\Users\Vahe\.devin\plans\plan-92e19be24c1dcf3f.md`
 - Packing cleanup: `C:\Users\Vahe\.devin\plans\plan-93c3694240f4a2eb.md`
@@ -10,16 +10,16 @@
 
 ## Executive Summary
 
-The v4 plan defined 3 phases. Phase 1 is complete. Phase 2b (packing field cleanup) and 2c (product area redesign) are fully deployed. Phase 2 DC form cleanup has property setters done but script cleanup/disabling remains. Phase 3 is not started. A scan-field visibility bug was found and fixed (Account Details UI Cleanup was overriding TFV).
+The v4 plan defined 3 phases. Phase 1 is complete. Phase 2 (all sub-phases) is fully deployed to Test as of 2026-09-09. Phase 3 (cancel flow) is not started and requires design decisions before implementation — see `deploy/test/work/phase3-cancel-flow-plan.md`.
 
 | Phase | Status | Completion |
 |---|---|---|
 | Phase 1 — Order Entry Redesign | **Complete** | ~95% |
-| Phase 2 — DC Form Cleanup | **In progress** | ~55% |
+| Phase 2 — DC Form Cleanup | **Deployed** (2026-09-09) | 100% |
 | Phase 2b — Packing Field Cleanup | **Deployed** | 100% |
 | Phase 2c — Product Area Redesign | **Deployed** | 100% |
 | Phase 2d — Scan visibility fix | **Deployed** | 100% |
-| Phase 3 — Cancel Flow | **Not started** | 0% |
+| Phase 3 — Cancel Flow | **Not started** — plan written, needs design review | 0% |
 
 ---
 
@@ -66,51 +66,41 @@ All 4 new Task custom fields exist in `custom-fields.json` (`hidden: 1`, reveale
 
 ---
 
-## Phase 2: DC Form Cleanup — In Progress
+## Phase 2: DC Form Cleanup — Deployed (2026-09-09)
 
-### Property Setters (`allow_on_submit = 1`) — Mostly Done
+**Deploy script:** `deploy/test/scripts/deploy-phase2-dc-cleanup.ps1`
+
+### Property Setters (`allow_on_submit = 1`) — Done
 
 **DC parent fields (all done):** `customer`, `return_expected`, `client_location_warehouse`, `notes`, `case_items`, plus additional: `surgery_date`, `surgery_set_type`, `order_entry_task`, `discount_approval_task`, `discount_approval_status`, `pack_task`, `total_paid_amount`, `outstanding_amount`.
 
-**DC Item child fields:**
+**DC Item child fields (all done):** `item_code`, `item_name`, `dispatched_qty`, `unit_price`, `batch_no`, `serial_no`, `returned_qty`, `lost_damaged_qty`, `used_qty`, `custom_scanned_qty`, `discount_pct`.
 
-| Field | Status |
-|---|---|
-| `item_code` | **Done** |
-| `item_name` | **Done** |
-| `dispatched_qty` | **Done** |
-| `unit_price` | **Done** |
-| `batch_no` | **Done** |
-| `serial_no` | **Done** |
-| `returned_qty` | **Done** |
-| `lost_damaged_qty` | **Done** |
-| `used_qty` | **Done** |
-| `custom_scanned_qty` | **Done** |
-| `discount_pct` | **NOT DONE** — only has `permlevel` setter, no `allow_on_submit` |
+`discount_pct` `allow_on_submit` created (verified in exported `property-setters.json` line 3467).
 
-### Version History — Not Done
+### Version History — Done
 
-| Plan Item | Status |
-|---|---|
-| `track_changes = 1` on Dispatch Case | **NOT DONE** — still `0` at `custom-doctypes.json` line 952 |
+`track_changes = 1` on Dispatch Case (verified in exported `custom-doctypes.json` line 952).
 
-### DC Client Script Cleanup — Not Done
+### Dead Field Cleanup — Done
 
-The v4 plan listed 7 scripts to disable and 1 to simplify. **None have been disabled or simplified.** However, the packing cleanup plan (Phase 2b) supersedes 2 of these — they will be **deleted** rather than disabled.
+`allow_items_edit` custom field on Dispatch Case — deleted. Was only used by the removed lock logic in `Dispatch Case-Form.js`.
 
-| Script | v4 Plan | Packing Plan | Current |
-|---|---|---|---|
-| `Dispatch Case-Form.js` | SIMPLIFY | — | **Still has** `allow_items_edit`, hardcoded approvers, lock/unlock |
-| `Dispatch Case-Simplify for Order Creation.js` | DISABLE | — | **Enabled** (but already cleaned of packing field refs) |
-| `Dispatch Case-Lock Submitted.js` | DISABLE | — | **Enabled** |
-| `Dispatch Case-Products Button.js` | DISABLE | — | **Enabled** |
-| `Dispatch Case-Template Auto Fill.js` | DISABLE | — | **Enabled** |
-| `Dispatch Case-Item Code String Guard.js` | DISABLE | — | **Enabled** |
-| `Dispatch Case Item-Auto Fill Item Name.js` | DISABLE | — | **Enabled** |
-| `Dispatch Case-Packing Scan.js` | DISABLE | **DELETE** | **Enabled** (superseded by packing cleanup) |
-| `Dispatch Case-Packing Problem Alerts.js` | KEEP | **DELETE** | **Enabled** (v4 said KEEP, packing plan says DELETE) |
-| `Dispatch Case-Price Visibility.js` | KEEP | — | **Enabled** (correct) |
-| `Dispatch Case-Photo-Galleries.js` | KEEP | — | **Enabled** (correct) |
+### DC Client Script Cleanup — Done
+
+| Script | Action | Status |
+|---|---|---|
+| `Dispatch Case-Form.js` | **SIMPLIFIED** | Removed `allow_items_edit`, hardcoded `APPROVER_EMAILS`, lock/unlock. Kept: reqd removal, field hiding, mobile cleanup, `return_expected` styling. Deploy Step 4. |
+| `Dispatch Case-Lock Submitted.js` | **DISABLED** | Conflicts with `allow_on_submit` model. Server-side `Dispatch-Case-before-save-lock-submitted.py` is the authoritative lock. Deploy Step 5. |
+| `Dispatch Case-Packing Scan.js` | **DELETED** | Phase 2b (already deployed) |
+| `Dispatch Case-Packing Problem Alerts.js` | **DELETED** | Phase 2b (already deployed) |
+| `Dispatch Case-Simplify for Order Creation.js` | **KEEP** | Useful for Order Creating role navigating DC directly |
+| `Dispatch Case-Products Button.js` | **KEEP** | Useful for Director corrections on DC |
+| `Dispatch Case-Template Auto Fill.js` | **KEEP** | Useful for Director corrections on DC |
+| `Dispatch Case-Item Code String Guard.js` | **KEEP** | Defensive string coercion, low cost |
+| `Dispatch Case Item-Auto Fill Item Name.js` | **KEEP** | Auto-fetch item_name, useful |
+| `Dispatch Case-Price Visibility.js` | **KEEP** | Role-based price hiding |
+| `Dispatch Case-Photo-Galleries.js` | **KEEP** | Read-only photo display |
 
 ---
 
@@ -215,25 +205,11 @@ These changes support the dispatch flow but were done outside the v4 plan:
 
 ## Remaining Work — Ordered by Priority
 
-### A. Phase 2 schema gaps
+### A. Phase 3 (Cancel Flow) — not started, requires design decisions
 
-1. Add `allow_on_submit` property setter for `Dispatch Case Item-discount_pct`
-2. Set `track_changes = 1` on Dispatch Case DocType
-
-### B. Phase 2 DC client script decisions
-
-3. Simplify `Dispatch Case-Form.js` — remove `allow_items_edit`, hardcoded approvers, custom lock/unlock
-4. Decide on remaining 5 DC scripts: disable or keep?
-   - `Dispatch Case-Lock Submitted.js` — conflicts with `allow_on_submit` model
-   - `Dispatch Case-Products Button.js` — items added via Task; still useful for direct DC editing?
-   - `Dispatch Case-Template Auto Fill.js` — template loading moved to Task; still useful for direct DC?
-   - `Dispatch Case-Item Code String Guard.js` — defensive; low cost to keep
-   - `Dispatch Case Item-Auto Fill Item Name.js` — auto-fetch; low cost to keep
-   - `Dispatch Case-Simplify for Order Creation.js` — Order creators use Task now; still useful for cleanup?
-
-### C. Phase 3 (Cancel Flow) — not started, requires design decisions
-
-5. Full cancel flow implementation (see Phase 3 section above)
+1. Review and approve `deploy/test/work/phase3-cancel-flow-plan.md`
+2. Resolve open design questions (who can cancel, at which states, stock reversal rules)
+3. Implement per the approved plan
 
 ---
 
@@ -267,14 +243,15 @@ These changes support the dispatch flow but were done outside the v4 plan:
 | `Task-Accept Start.js` | Modified — visibility delegation | v4 Phase 1 |
 | `Task-Account Details UI Cleanup.js` | Modified — removed dead field refs | Product Area |
 | `Dispatch Case-Simplify for Order Creation.js` | Modified — cleaned packing field refs | Packing cleanup |
-| `Dispatch Case-Form.js` | Modified — cleaned packing field refs (still needs simplification) | Packing cleanup + v4 Phase 2 |
-| `Dispatch Case-Packing Scan.js` | **To be DELETED** | Packing cleanup |
-| `Dispatch Case-Packing Problem Alerts.js` | **To be DELETED** | Packing cleanup |
+| `Dispatch Case-Form.js` | **SIMPLIFIED** — removed allow_items_edit/approvers/lock | v4 Phase 2 (deployed 2026-09-09) |
+| `Dispatch Case-Lock Submitted.js` | **DISABLED** — conflicts with allow_on_submit | v4 Phase 2 (deployed 2026-09-09) |
+| `Dispatch Case-Packing Scan.js` | **DELETED** | Packing cleanup (deployed) |
+| `Dispatch Case-Packing Problem Alerts.js` | **DELETED** | Packing cleanup (deployed) |
 
 ### Schema (`deploy/test/schema/`)
 
 | File | Change | Plan |
 |---|---|---|
-| `custom-fields.json` | 4 Task fields added; 12 DC/DCI fields pending deletion; 2 Task fields pending deletion | v4 Phase 1 + Packing + Product Area |
-| `property-setters.json` | 10+ `allow_on_submit` setters added; 2 packing setters pending deletion; `discount_pct` setter missing | v4 Phase 2 + Packing |
-| `custom-doctypes.json` | `track_changes` still 0; `Cancelled` status not added | v4 Phase 2 + Phase 3 |
+| `custom-fields.json` | 4 Task fields added; 12 DC/DCI fields deleted; 2 Task fields deleted; `allow_items_edit` deleted | v4 Phase 1 + Packing + Product Area + Phase 2 |
+| `property-setters.json` | 10+ `allow_on_submit` setters incl. `discount_pct`; 2 packing setters deleted | v4 Phase 2 + Packing |
+| `custom-doctypes.json` | `track_changes = 1`; `Cancelled` status not added | v4 Phase 2 + Phase 3 |

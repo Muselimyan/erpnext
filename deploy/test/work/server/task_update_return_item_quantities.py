@@ -15,6 +15,10 @@ if not case_name:
 if item_idx is None:
     frappe.throw("Item index is required.")
 
+tfe_tasks = frappe.get_all("Task", filters={"dispatch_case": case_name, "status": ["not in", ["Completed", "Cancelled"]]}, fields=["custom_accepted_by"], limit_page_length=1)
+if not tfe_tasks or (tfe_tasks[0].custom_accepted_by or "") != frappe.session.user:
+    frappe.throw("You must accept the task before making changes.")
+
 case = frappe.get_doc("Dispatch Case", case_name)
 idx = int(item_idx)
 

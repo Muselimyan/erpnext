@@ -11,6 +11,8 @@ if not task_name or not template_name:
     frappe.throw("Task and template are required.")
 
 task = frappe.get_doc("Task", task_name)
+if (task.get("custom_accepted_by") or "") != frappe.session.user:
+    frappe.throw("You must accept the task before making changes.")
 if not task.dispatch_case:
     frappe.throw("No Dispatch Case linked to this task.")
 

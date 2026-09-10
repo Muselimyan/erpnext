@@ -126,6 +126,13 @@ function task_product_work_area_open_lot_dialog(frm, item_code) {
 }
 
 function task_product_work_area_scan(frm) {
+    // TFE gate: block scan if user has not accepted this task
+    if (!tfe_can_edit(frm)) {
+        frappe.msgprint(__("You must accept this task before scanning."));
+        task_product_work_area_error_beep();
+        frm.set_value("custom_task_scan_barcode", "");
+        return;
+    }
     const barcode = (frm.doc.custom_task_scan_barcode || "").trim();
     if (!barcode) {
         frappe.msgprint(__("Scan or enter barcode first."));
@@ -269,6 +276,9 @@ function task_product_work_area_refresh(frm, show_alert) {
 // ═══════════════════════════════════════════════════════════════
 
 function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
+    // TFE gate: disable interactive controls when not accepted
+    var returns_editable = tfe_can_edit(frm);
+    var rdis = returns_editable ? '' : ' disabled';
     const mobile_mode = task_product_work_area_get_mobile_return_mode();
     let html = `<style>
         .task-return-phone-toggle, .task-return-mobile-compact, .task-return-mobile-detail { display: none; }
@@ -314,27 +324,27 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
         const escaped_case = frappe.utils.escape_html(frm.doc.dispatch_case);
         const item_label = frappe.utils.escape_html(row.item_name || row.item_code || "");
         html += `<tr data-return-row="${idx}">
-            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
+            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
             <td>${item_label}</td>
             <td class="text-right" data-dispatched="${dispatched}">${dispatched}</td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" style="min-width:82px" onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" style="min-width:82px" onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
             <td class="text-right task-used-qty">${used}</td>
             <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
             <td>${frappe.utils.escape_html(row.expiry_date || row.custom_expiry_date || "")}</td>
         </tr>`;
         compact_html += `<tr data-return-row="${idx}">
-            <td data-dispatched="${dispatched}"><input type="checkbox" id="${compact_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
+            <td data-dispatched="${dispatched}"><input type="checkbox" id="${compact_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
             <td class="task-return-compact-item">${item_label}</td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"><span class="hidden task-used-qty">${used}</span></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"><span class="hidden task-used-qty">${used}</span></td>
         </tr>`;
         detail_html += `<div class="task-return-card" data-return-row="${idx}">
             <div class="task-return-card-title">${item_label}</div>
             <div class="task-return-card-grid">
-                <div class="task-return-card-full" data-dispatched="${dispatched}"><label><input type="checkbox" id="${detail_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"> Returned?</label></div>
-                <div><label>Returned Qty</label><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
-                <div><label>Lost/Damaged</label><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
+                <div class="task-return-card-full" data-dispatched="${dispatched}"><label><input type="checkbox" id="${detail_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"> Returned?</label></div>
+                <div><label>Returned Qty</label><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
+                <div><label>Lost/Damaged</label><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
                 <div><label>Used</label><div class="form-control input-xs task-used-qty" style="background:#f8f8f8">${used}</div></div>
                 <div><label>Sent</label><div class="form-control input-xs" style="background:#f8f8f8">${dispatched}</div></div>
             </div>
@@ -422,11 +432,10 @@ function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_
 function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
     var esc = frappe.utils.escape_html;
     var dc_name = doc.name;
-    var is_editable = !frm.is_new()
+    // TFE gate: editable only when accepted by current user + correct kind + DC linked
+    var is_editable = tfe_can_edit(frm)
         && frm.doc.task_kind === "Order entry"
-        && frm.doc.dispatch_case
-        && frm.doc.status !== "Completed"
-        && frm.doc.custom_accepted_by === frappe.session.user;
+        && frm.doc.dispatch_case;
 
     var html = '';
 
@@ -435,7 +444,7 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
             + '<i>No products yet. Use the row below to add items.</i></div>';
     }
 
-    html += '<div style="overflow-x:auto"><table class="table table-bordered table-condensed oe-editor-table">'
+    html += '<div><table class="table table-bordered table-condensed oe-editor-table">'
         + '<thead><tr>'
         + '<th>Item</th>'
         + '<th style="width:80px">Qty</th>'
@@ -454,12 +463,12 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
         if (is_editable) {
             html += '<tr data-row-name="' + rn + '">'
                 + '<td>' + esc(row.item_name || row.item_code || "") + '</td>'
-                + '<td><input type="number" class="form-control input-xs oe-edit" data-field="dispatched_qty" '
-                +     'value="' + qty + '" min="0.001" step="0.001" style="text-align:right"></td>'
-                + '<td><input type="number" class="form-control input-xs oe-edit" data-field="unit_price" '
-                +     'value="' + price + '" min="0" step="0.01" style="text-align:right"></td>'
-                + '<td><input type="number" class="form-control input-xs oe-edit" data-field="discount_pct" '
-                +     'value="' + discount + '" min="0" max="100" step="0.1" style="text-align:right"></td>'
+                + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-edit" data-field="dispatched_qty" '
+                +     'value="' + qty + '" style="text-align:right"></td>'
+                + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-edit" data-field="unit_price" '
+                +     'value="' + price + '" style="text-align:right"></td>'
+                + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-edit" data-field="discount_pct" '
+                +     'value="' + discount + '" style="text-align:right"></td>'
                 + '<td><input type="text" class="form-control input-xs oe-edit" data-field="batch_no" '
                 +     'value="' + esc(batch) + '"></td>'
                 + '<td class="text-center"><button type="button" class="btn btn-xs btn-danger oe-remove-btn" '
@@ -480,9 +489,9 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
     if (is_editable) {
         html += '<tr class="oe-add-row" style="background:#f9f9f9">'
             + '<td><div class="oe-add-item-cell"></div></td>'
-            + '<td><input type="number" class="form-control input-xs oe-add-qty" value="1" min="0.001" step="0.001" style="text-align:right"></td>'
-            + '<td><input type="number" class="form-control input-xs oe-add-price" value="0" min="0" step="0.01" style="text-align:right"></td>'
-            + '<td><input type="number" class="form-control input-xs oe-add-discount" value="0" min="0" max="100" step="0.1" style="text-align:right"></td>'
+            + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-add-qty" value="1" style="text-align:right"></td>'
+            + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-add-price" value="0" style="text-align:right"></td>'
+            + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-add-discount" value="0" style="text-align:right"></td>'
             + '<td><input type="text" class="form-control input-xs oe-add-batch" placeholder="LOT" style="font-size:12px"></td>'
             + '<td class="text-center"><button type="button" class="btn btn-xs btn-primary oe-add-btn" title="Add product">+</button></td>'
             + '</tr>';
@@ -613,6 +622,9 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
 }
 
 function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
+    // TFE gate: disable interactive controls when not accepted
+    var packing_editable = tfe_can_edit(frm);
+    var disabled_attr = packing_editable ? '' : ' disabled';
     let html = `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
         <th style="width:60px">Packed?</th><th>Name</th><th>Required</th><th>Scanned</th><th>Missing</th><th>Batch/LOT</th><th>Expiry</th><th>Status</th><th>Warning / Problem</th>
     </tr></thead><tbody>`;
@@ -625,7 +637,7 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
         const is_packed = (status === "Complete" || status === "Over Scanned");
         const checkbox_id = `pack_checkbox_${idx}`;
         html += `<tr>
-            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${is_packed ? 'checked' : ''} onchange="task_product_work_area_toggle_packed(this, '${frappe.utils.escape_html(frm.doc.dispatch_case)}', ${idx})"></td>
+            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${is_packed ? 'checked' : ''}${disabled_attr} onchange="task_product_work_area_toggle_packed(this, '${frappe.utils.escape_html(frm.doc.dispatch_case)}', ${idx})"></td>
             <td>${frappe.utils.escape_html(row.item_name || "")}</td>
             <td class="text-right">${required}</td>
             <td class="text-right">${scanned}</td>
@@ -637,7 +649,11 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
         </tr>`;
     });
     html += `</tbody></table></div>`;
-    html += `<div class="small text-muted" style="margin-top:8px"><i>Tip: Check the box when you've packed the item. The Scanned column will update to match Required and Missing will become 0.</i></div>`;
+    if (packing_editable) {
+        html += `<div class="small text-muted" style="margin-top:8px"><i>Tip: Check the box when you've packed the item. The Scanned column will update to match Required and Missing will become 0.</i></div>`;
+    } else {
+        html += `<div class="small text-muted" style="margin-top:8px"><i>Accept this task to interact with packing controls.</i></div>`;
+    }
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
@@ -651,6 +667,8 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
 // ═══════════════════════════════════════════════════════════════
 
 window.task_product_work_area_toggle_returned = function(checkbox, case_name, idx) {
+    // TFE gate
+    if (cur_frm && !tfe_can_edit(cur_frm)) { checkbox.checked = !checkbox.checked; return; }
     const row = $(checkbox).closest('[data-return-row]');
     const dispatched = flt(row.find('[data-dispatched]').attr('data-dispatched') || 0);
     const returned = checkbox.checked ? dispatched : 0;
@@ -660,6 +678,8 @@ window.task_product_work_area_toggle_returned = function(checkbox, case_name, id
 };
 
 window.task_product_work_area_update_return_qty = function(input, case_name, idx) {
+    // TFE gate
+    if (cur_frm && !tfe_can_edit(cur_frm)) return;
     const row = $(input).closest('[data-return-row]');
     const returned = flt(row.find('.task-returned-qty').val() || 0);
     const lost = flt(row.find('.task-lost-qty').val() || 0);
@@ -703,6 +723,8 @@ function task_product_work_area_save_return_row(case_name, idx, returned, lost, 
 }
 
 window.task_product_work_area_toggle_packed = function(checkbox, case_name, idx) {
+    // TFE gate
+    if (cur_frm && !tfe_can_edit(cur_frm)) { checkbox.checked = !checkbox.checked; return; }
     const packed = checkbox.checked;
     frappe.call({
         method: "task_mark_item_packed",
@@ -755,6 +777,11 @@ frappe.ui.form.on("Task", {
     order_template(frm) {
         if (!frm.doc.order_template) return;
         if (frm.doc.task_kind !== "Order entry") return;
+        // TFE gate
+        if (!tfe_can_edit(frm)) {
+            frm.set_value("order_template", "");
+            return;
+        }
         if (!frm.doc.dispatch_case) {
             frappe.msgprint(__("Create or link a Dispatch Case first."));
             frm.set_value("order_template", "");

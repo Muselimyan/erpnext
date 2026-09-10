@@ -3,7 +3,7 @@
 // Enabled: 1
 // ---
 // Unified button script for Task forms.
-// Owns: Accept, Create DC, Open DC, Complete (desktop header + mobile bottom floating).
+// Owns: Accept, Create DC, Open DC, Complete, multi-state (Delivery/Pickup Returns) (desktop header + mobile bottom floating).
 // Mobile sub-header bar: Back, Refresh, Open DC, Products.
 // Also owns: generic mobile CSS (tabs, grids, padding, subject sizing) and scroll-to-top.
 // Replaces buttons previously in Task-Accept Start, Task-Create Dispatch Case Items,
@@ -165,34 +165,42 @@ function tab_do_create_dc(frm) {
     });
 }
 
-function tab_do_complete_inner(frm, btn) {
-    var originalStatus = frm.doc.status;
-    var originalCompletedOn = frm.doc.completed_on;
-    if (btn) btn.data("busy", true).prop("disabled", true).text("Completing...");
+// ── generic field-save with revert-on-error ─────────────────
+// Sets one or more fields on the doc and saves via savedocs.
+// On error, reverts all fields to their original values.
+// Used by both Complete and multi-state transitions (Delivery, Pickup Returns).
+function tab_do_save_fields(frm, btn, fields, busyText, freezeText) {
+    if (btn && btn.data && btn.data("busy")) return;
+    var originals = {};
+    var originalLabel = btn ? btn.text() : "";
+    Object.keys(fields).forEach(function(k) { originals[k] = frm.doc[k]; });
+    if (btn) btn.data("busy", true).prop("disabled", true).text(busyText || "Saving...");
 
-    // Set completion fields on the local doc before sending
-    frm.doc.status = "Completed";
-    if (!frm.doc.completed_on) frm.doc.completed_on = frappe.datetime.get_today();
+    Object.keys(fields).forEach(function(k) { frm.doc[k] = fields[k]; });
     frm.doc.__unsaved = 1;
 
     // Call savedocs directly via frappe.call — bypasses frm.save() which has
     // unreliable promise rejection and argument-signature issues.
-    // frappe.call error callback fires reliably for all server errors.
     frappe.call({
         method: "frappe.desk.form.save.savedocs",
         args: { doc: frm.doc, action: "Save" },
         freeze: true,
-        freeze_message: __("Completing..."),
+        freeze_message: __(freezeText || "Saving..."),
         callback: function() {
             if (btn) btn.data("busy", false);
             frm.reload_doc();
         },
         error: function() {
-            frm.doc.status = originalStatus;
-            frm.doc.completed_on = originalCompletedOn || "";
-            if (btn) btn.data("busy", false).prop("disabled", false).text("Complete");
+            Object.keys(originals).forEach(function(k) { frm.doc[k] = originals[k]; });
+            if (btn) btn.data("busy", false).prop("disabled", false).text(originalLabel);
         }
     });
+}
+
+function tab_do_complete_inner(frm, btn) {
+    var fields = { status: "Completed" };
+    if (!frm.doc.completed_on) fields.completed_on = frappe.datetime.get_today();
+    tab_do_save_fields(frm, btn, fields, "Completing...", "Completing...");
 }
 
 function tab_do_complete(frm, btn) {
@@ -220,6 +228,51 @@ function tab_do_complete(frm, btn) {
     } else {
         tab_do_complete_inner(frm, btn);
     }
+}
+
+// ── primary action resolver ──────────────────────────────────
+// Returns { label, color, handler(frm, btn) } or null.
+// Multi-state tasks (Delivery, Pickup Returns) get state-specific buttons;
+// all other task kinds get the generic Complete action.
+function tab_get_primary_action(frm) {
+    var kind = (frm.doc.task_kind || "").trim();
+
+    // Delivery: Todo → "Picked Up" → "Delivered" (auto-completes on server)
+    if (kind === "Delivery") {
+        var ds = (frm.doc.delivery_status || "Todo").trim();
+        if (ds === "Todo") {
+            return { label: "Picked Up", color: "#e67e22", handler: function(frm2, btn) {
+                tab_do_save_fields(frm2, btn, { delivery_status: "Picked Up" });
+            }};
+        }
+        if (ds === "Picked Up") {
+            return { label: "Delivered", color: "#27ae60", handler: function(frm2, btn) {
+                tab_do_save_fields(frm2, btn, { delivery_status: "Delivered" });
+            }};
+        }
+        return null;
+    }
+
+    // Pickup Returns: Todo → "Picked Up" → "Returned to WH" (auto-completes on server)
+    if (kind === "Pickup Returns") {
+        var ps = (frm.doc.pickup_status || "Todo").trim();
+        if (ps === "Todo") {
+            return { label: "Picked Up", color: "#e67e22", handler: function(frm2, btn) {
+                tab_do_save_fields(frm2, btn, { pickup_status: "Picked Up" });
+            }};
+        }
+        if (ps === "Picked Up") {
+            return { label: "Returned to WH", color: "#27ae60", handler: function(frm2, btn) {
+                tab_do_save_fields(frm2, btn, { pickup_status: "Returned to Warehouse" });
+            }};
+        }
+        return null;
+    }
+
+    // All other task kinds: generic Complete
+    return { label: "Complete", color: "#27ae60", handler: function(frm2, btn) {
+        tab_do_complete(frm2, btn);
+    }};
 }
 
 // ── dashboard comments (absorbed from Task-Dispatch Packing Usability) ──
@@ -319,10 +372,13 @@ function tab_render_bottom_actions(frm) {
             container.append(createDCBtn);
         }
 
-        // Complete — right
-        var completeBtn = $('<button style="pointer-events:auto;padding:14px 24px;font-size:15px;font-weight:bold;background:#27ae60;color:#fff;border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.25);margin-left:auto;">Complete</button>');
-        completeBtn.on("click", function() { tab_do_complete(frm, $(this)); });
-        container.append(completeBtn);
+        // Primary action — right (Complete, Picked Up, Delivered, etc.)
+        var action = tab_get_primary_action(frm);
+        if (action) {
+            var actionBtn = $('<button style="pointer-events:auto;padding:14px 24px;font-size:15px;font-weight:bold;background:' + action.color + ';color:#fff;border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.25);margin-left:auto;">' + action.label + '</button>');
+            actionBtn.on("click", function() { action.handler(frm, $(this)); });
+            container.append(actionBtn);
+        }
     }
 
     if (container.children().length) {
@@ -350,10 +406,11 @@ function tab_render_desktop_buttons(frm) {
     }
 
     if (!isCompleted && !isCancelled) {
-        // Complete Task
-        if (isAccepted) {
-            frm.add_custom_button(__("Complete Task"), function() {
-                tab_do_complete(frm, null);
+        // Primary action (Complete, Picked Up, Delivered, etc.)
+        var action = tab_get_primary_action(frm);
+        if (isAccepted && action) {
+            frm.add_custom_button(__(action.label), function() {
+                action.handler(frm, null);
             });
         }
 
@@ -430,6 +487,51 @@ function tab_debug_header(frm) {
     console.log("[TaskButtons] ─── End Debug ───");
 }
 
+// ── auto-fill client location warehouse ─────────────────────
+// When Order Entry has return_expected checked and customer set but no
+// warehouse selected, extract the client code from the customer name
+// (e.g. "D148" from "D148 — Name — Hospital - Inmed") and find the
+// first warehouse whose name starts with that code.
+function tab_autofill_client_warehouse(frm) {
+    console.log("[TaskButtons] Warehouse auto-fill check: kind=" + frm.doc.task_kind
+        + " return_expected=" + frm.doc.order_return_expected
+        + " customer=" + (frm.doc.customer || "(none)")
+        + " warehouse=" + (frm.doc.order_client_location_warehouse || "(empty)"));
+    if (frm.doc.task_kind !== "Order entry") return;
+    if (!frm.doc.order_return_expected) return;
+    if (!frm.doc.customer) return;
+    if (frm.doc.order_client_location_warehouse) return;
+
+    // Extract code from customer name: "D148 — Name — Hospital - Inmed" → "D148"
+    var code = (frm.doc.customer.split(" \u2014 ")[0] || "").trim();
+    if (!code) {
+        console.log("[TaskButtons] Warehouse auto-fill: could not extract code from " + frm.doc.customer);
+        return;
+    }
+    console.log("[TaskButtons] Warehouse auto-fill: extracted code=" + code + " from " + frm.doc.customer);
+
+    frappe.call({
+        method: "frappe.client.get_list",
+        args: {
+            doctype: "Warehouse",
+            filters: { name: ["like", code + " %"] },
+            fields: ["name"],
+            limit_page_length: 1,
+            order_by: "name asc"
+        },
+        callback: function(r) {
+            var warehouses = r.message || [];
+            if (warehouses.length && !frm.doc.order_client_location_warehouse) {
+                frm.set_value("order_client_location_warehouse", warehouses[0].name);
+                console.log("[TaskButtons] Warehouse auto-fill: code=" + code
+                    + " matched=" + warehouses[0].name);
+            } else {
+                console.log("[TaskButtons] Warehouse auto-fill: code=" + code + " no match found");
+            }
+        }
+    });
+}
+
 // ── main event handler ─────────────────────────────────────────
 frappe.ui.form.on("Task", {
     refresh(frm) {
@@ -441,5 +543,11 @@ frappe.ui.form.on("Task", {
         tab_render_bottom_actions(frm);
         tab_render_desktop_buttons(frm);
         tab_debug_header(frm);
+    },
+    customer(frm) {
+        tab_autofill_client_warehouse(frm);
+    },
+    order_return_expected(frm) {
+        tab_autofill_client_warehouse(frm);
     }
 });

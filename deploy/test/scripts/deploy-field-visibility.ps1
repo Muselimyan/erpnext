@@ -222,9 +222,9 @@ if ($Mode -eq "Check") {
 # ============================================================================
 # Step 4: Add hidden=1 Property Setters for status and priority
 # ============================================================================
-Write-Host "`n[4] Property Setters: hidden=1 for status, priority" -ForegroundColor Magenta
+Write-Host "`n[4] Property Setters: hidden=1 for status, priority, sb_details, description" -ForegroundColor Magenta
 
-foreach ($stdField in @("status", "priority")) {
+foreach ($stdField in @("status", "priority", "sb_details", "description")) {
     $psFilter = '[["doc_type","=","Task"],["field_name","=","' + $stdField + '"],["property","=","hidden"]]'
     $psHidden = Get-ErpList "Property Setter" $psFilter '["name","value"]'
     $found = ($psHidden | Measure-Object).Count
@@ -253,6 +253,40 @@ foreach ($stdField in @("status", "priority")) {
             } | Out-Null
             Write-Host "  CREATED: $stdField hidden=1" -ForegroundColor Green
         }
+    }
+}
+
+# ============================================================================
+# Step 4b: Property Setter: collapsible=1 for sb_details
+# ============================================================================
+Write-Host "`n[4b] Property Setter: collapsible=1 for sb_details" -ForegroundColor Magenta
+
+$psColl = Get-ErpList "Property Setter" '[["doc_type","=","Task"],["field_name","=","sb_details"],["property","=","collapsible"]]' '["name","value"]'
+$collFound = ($psColl | Measure-Object).Count
+
+if ($Mode -eq "Check") {
+    if ($collFound -gt 0) {
+        Write-Host "  sb_details : collapsible already set (value=$($psColl[0].value))" -ForegroundColor DarkGray
+    } else {
+        Write-Host "  sb_details : WOULD CREATE collapsible=1" -ForegroundColor Yellow
+    }
+} else {
+    if ($collFound -gt 0) {
+        if ($psColl[0].value -ne "1") {
+            Put-ErpDoc "Property Setter" $psColl[0].name @{ value = "1" } | Out-Null
+            Write-Host "  UPDATED: sb_details collapsible=1" -ForegroundColor Green
+        } else {
+            Write-Host "  sb_details : already collapsible=1" -ForegroundColor DarkGray
+        }
+    } else {
+        Post-ErpDoc "Property Setter" @{
+            doctype_or_field = "DocField"
+            doc_type         = "Task"
+            field_name       = "sb_details"
+            property         = "collapsible"
+            value            = "1"
+        } | Out-Null
+        Write-Host "  CREATED: sb_details collapsible=1" -ForegroundColor Green
     }
 }
 
@@ -298,6 +332,61 @@ if ($foCount -gt 0) {
     }
 } else {
     Write-Host "  field_order property setter NOT FOUND" -ForegroundColor Red
+}
+
+# ============================================================================
+# Step 5b: Move column_break0 out of product section
+# ============================================================================
+Write-Host "`n[5b] Field order: move column_break0 out of product section" -ForegroundColor Magenta
+
+# column_break0 and its fields are currently between custom_product_work_section
+# and section_break_dafi, creating a 2-column layout inside the product section.
+# Move them after "duration" (inside section_break_dafi) so the product section
+# has no Column Break and renders full-width.
+
+$fieldsToMove = @("column_break0", "status", "priority", "task_weight", "parent_task", "completed_by", "completed_on")
+$insertAfter = "duration"
+
+# Reuse $currentOrder and $foName from step 5 (already parsed correctly as 91+ entries)
+if ($foCount -gt 0 -and $currentOrder -and $currentOrder.Count -gt 1) {
+    $foList = [System.Collections.ArrayList]::new(@($currentOrder))
+    Write-Host "  field_order entries: $($foList.Count)" -ForegroundColor DarkGray
+
+    # Check if column_break0 is currently between custom_product_work_section and section_break_dafi
+    $prodIdx = $foList.IndexOf("custom_product_work_section")
+    $sdfIdx  = $foList.IndexOf("section_break_dafi")
+    $cbIdx   = $foList.IndexOf("column_break0")
+    $durIdx  = $foList.IndexOf($insertAfter)
+    Write-Host "  Indices: prod=$prodIdx sdf=$sdfIdx cb0=$cbIdx dur=$durIdx" -ForegroundColor DarkGray
+
+    if ($cbIdx -gt $prodIdx -and $cbIdx -lt $sdfIdx) {
+        # column_break0 IS inside the product section — needs fixing
+        if ($Mode -eq "Check") {
+            Write-Host "  column_break0 at index $cbIdx (between product[$prodIdx] and section_break_dafi[$sdfIdx])" -ForegroundColor Yellow
+            Write-Host "  WOULD MOVE $($fieldsToMove -join ', ') after '$insertAfter' (index $durIdx)" -ForegroundColor Yellow
+        } else {
+            # Remove fields from current positions
+            foreach ($f in $fieldsToMove) {
+                $foList.Remove($f) | Out-Null
+            }
+            # Find new insert position after removal
+            $newDurIdx = $foList.IndexOf($insertAfter)
+            $insertIdx = $newDurIdx + 1
+            for ($i = 0; $i -lt $fieldsToMove.Count; $i++) {
+                $foList.Insert($insertIdx + $i, $fieldsToMove[$i])
+            }
+            $newOrderJson2 = ConvertTo-Json @($foList) -Compress
+            Put-ErpDoc "Property Setter" $foName @{ value = $newOrderJson2 } | Out-Null
+            Write-Host "  MOVED $($fieldsToMove -join ', ') after '$insertAfter'" -ForegroundColor Green
+            Write-Host "  Product section is now single-column (full-width)" -ForegroundColor Green
+        }
+    } elseif ($cbIdx -gt $durIdx) {
+        Write-Host "  column_break0 already after '$insertAfter' — no move needed" -ForegroundColor DarkGray
+    } else {
+        Write-Host "  column_break0 at index $cbIdx — not inside product section, skipping" -ForegroundColor DarkGray
+    }
+} else {
+    Write-Host "  field_order not available from step 5" -ForegroundColor Red
 }
 
 # ============================================================================

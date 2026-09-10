@@ -68,6 +68,8 @@ if is_completing_early and doc.task_kind == "Order entry":
         dc_doc = frappe.get_doc("Dispatch Case", doc.dispatch_case)
         if not dc_doc.case_items or len(dc_doc.case_items) == 0:
             frappe.throw("Add at least one product before completing.")
+        if not doc.customer:
+            frappe.throw("Select a Customer before completing the order.")
         if doc.order_return_expected and not doc.order_client_location_warehouse:
             frappe.throw("Client Location Warehouse is required when Return Expected is checked.")
 

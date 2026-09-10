@@ -17,6 +17,8 @@ def run_script():
     if not item_code:
         frappe.throw("Choose Product first.")
     task = frappe.get_doc("Task", task_name)
+    if (task.get("custom_accepted_by") or "") != frappe.session.user:
+        frappe.throw("You must accept the task before making changes.")
     if not task.get("dispatch_case"):
         frappe.throw("Create or link Dispatch Case / Packing Items first.")
     case = frappe.get_doc("Dispatch Case", task.dispatch_case)

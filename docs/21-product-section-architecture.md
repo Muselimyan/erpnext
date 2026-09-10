@@ -225,13 +225,18 @@ TFV applies task-specific labels dynamically:
 | File | Responsibility |
 |---|---|
 | `client/Task-Field-Visibility.js` | Visibility rules, product/scan classification, dynamic labels |
-| `client/Task-Product Work Area.js` | Product rendering, inline editor, scan flow, packing checkboxes |
+| `client/Task-Field-Editability.js` | Editability rules (`tfe_can_edit`, `TFE_EDIT_MAP`). No admin exemption. |
+| `client/Task-Product Work Area.js` | Product rendering, inline editor, scan flow, packing checkboxes. Checks `tfe_can_edit`. |
 | `client/Task-Action Buttons.js` | Action bar (no product controls — View DC button only) |
-| `server/task_add_dispatch_product.py` | Add item row to DC |
-| `server/task_update_dispatch_product.py` | Update existing row in DC |
-| `server/task_remove_dispatch_product.py` | Remove row from DC |
+| `server/task_add_dispatch_product.py` | Add item row to DC (acceptance check) |
+| `server/task_update_dispatch_product.py` | Update existing row in DC (acceptance check) |
+| `server/task_remove_dispatch_product.py` | Remove row from DC (acceptance check) |
 | `server/task_lookup_product_barcode.py` | Barcode → Item lookup |
-| `server/task_packing_scan.py` | Record scanned qty for packing |
+| `server/dispatch_case_packing_scan.py` | Record scanned qty for packing (acceptance check) |
+| `server/task_mark_item_packed.py` | Toggle single row packed/unpacked (acceptance check) |
+| `server/task_mark_items_packed_batch.py` | Toggle all rows packed/unpacked (acceptance check) |
+| `server/task_update_return_item_quantities.py` | Update return quantities (acceptance check) |
+| `server/task_apply_template.py` | Apply surgical kit template to DC (acceptance check) |
 
 ---
 
@@ -256,3 +261,16 @@ When another user/process changes the Task, auto-reload proceeds normally. An in
 ### 10.5 Scan state in JS variable
 
 Pack scan flow stores the pending item code in `pwa_pending_item_code` (a module-level JS variable) instead of a Frappe field. This avoids unnecessary server round-trips and form dirtying during the two-step scan.
+
+### 10.6 Editability via TFE (added 2026-09)
+
+All product section controls respect `tfe_can_edit(frm)` from `Task-Field-Editability.js`. If the current user has not accepted the task, or if the task is completed/cancelled:
+- Order Entry: read-only table (no inputs, no add row, no remove buttons)
+- Pack: checkboxes rendered with `disabled` attribute
+- Returns: qty inputs and checkboxes rendered with `disabled` attribute
+- Scan flow: blocked at entry point with error message
+- Template apply: blocked, field cleared
+
+**No admin exemption.** `accepted_by === session.user` is the only check. Server APIs also enforce this — calling `task_mark_item_packed` etc. without being the accepted user returns an error.
+
+This replaced `Task-Lock Unaccepted.js` (which used setTimeout(700ms) and couldn't lock product HTML controls) and `Task-Lock Completed.js`.
