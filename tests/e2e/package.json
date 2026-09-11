@@ -1,0 +1,24 @@
+{
+  "name": "erpnext-regression-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "playwright test --workers=1 --reporter=line",
+    "test:list": "playwright test --list",
+    "test:api": "playwright test --project=api --workers=1 --reporter=line",
+    "test:smoke": "playwright test --project=desktop --project=mobile --workers=1 --reporter=line",
+    "test:e2e": "playwright test --project=e2e --workers=1 --reporter=line",
+    "test:desktop": "playwright test --project=desktop --workers=1 --reporter=line",
+    "test:mobile": "playwright test --project=mobile --workers=1 --reporter=line"
+  },
+  "dependencies": {
+    "@playwright/test": "^1.55.0",
+    "dotenv": "^17.2.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.2.0",
+    "typescript": "^5.9.2"
+  }
+}
