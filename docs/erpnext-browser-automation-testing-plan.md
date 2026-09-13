@@ -118,7 +118,7 @@ All browser tests (Layers 2 and 3) run at **both desktop and mobile** viewports.
 
 ## 7. Layer 1 — API Regression Tests
 
-Pure HTTP tests. No browser. Tests call the same API methods the UI calls (not generic REST endpoints) to exercise the same server-side code paths.
+Pure HTTP tests. No browser. Tests call the same API methods the UI calls where available, and use generic REST only for direct document setup/state checks that are intentionally part of the invariant being tested.
 
 ### 7.1 Dispatch Case no-return lifecycle
 
@@ -126,21 +126,14 @@ Pure HTTP tests. No browser. Tests call the same API methods the UI calls (not g
 2. Accept task — verify `custom_accepted_by` set, status=Working
 3. Create Dispatch Case — verify DC created, `return_expected=0`
 4. Add items — verify DC items table populated
-5. Complete Order Entry — verify Pack task auto-created, DC status=Confirmed
-6. Accept + complete Pack task — verify dispatch Stock Entry (Main to Delivery In-Transit), Delivery task created, DC status=Packed
-7. Set `delivery_status=Picked Up` — verify DC status=In Transit
-8. Set `delivery_status=Delivered` — verify delivery SE, consumption SE, draft Sales Invoice, Invoice Preparation task, DC status=Invoice Pending
-9. Complete Invoice Preparation — verify Debt Collection task (if outstanding > 0), DC status=Payment Pending
-10. Record payment on Debt Collection task — verify Payment Entry created, DC status=Closed
+5. Complete Order Entry — verify Pack task auto-created, DC status advances
+6. Accept Pack task, upload required photo, mark case item indices packed through `task_mark_items_packed_batch`, then complete Pack task — verify Delivery task is created
+7. Set `delivery_status=Picked Up`
+8. Set `delivery_status=Delivered` — verify Invoice Preparation task is created
 
 ### 7.2 Dispatch Case return-expected lifecycle
 
-Same chain as 7.1 but with `return_expected=Yes`, plus:
-
-- Return Call task after delivery
-- Return Pickup task with `pickup_status` transitions (Todo, Picked Up, Returned to Warehouse)
-- Returns Inspection task with `returned_qty`, `lost_damaged_qty`, `used_qty` reconciliation
-- Invoice based on used qty, not dispatched qty
+Same chain as 7.1 but with `return_expected=Yes`. The current first implementation verifies that a return-expected API-created case can progress through Order Entry, Pack, Delivery, and Invoice Preparation creation. Return Call, Return Pickup, Returns Inspection, and used-quantity invoicing are later enhancements for a deeper return-path suite.
 
 ### 7.3 Discount approval gate
 
@@ -154,8 +147,8 @@ Same chain as 7.1 but with `return_expected=Yes`, plus:
 - Non-accepted user cannot complete task (API rejects)
 - Completed task cannot be re-completed
 - Task kind drives correct Task Access Policy lookup
-- Reassignment clears `custom_accepted_by`
-- Duplicate DC creation from same task is rejected
+- Generic API reassignment by a non-accepted/API user is blocked by the task lock
+- Duplicate DC creation from same task is idempotent and returns the existing Dispatch Case
 
 ### 7.5 Completion gates
 
@@ -222,7 +215,7 @@ On every page load, capture `console.error` and failed `/api/` network requests.
 
 ## 9. Layer 3 — Full Happy Path
 
-One comprehensive test, triggered manually. Not part of the regular suite. Run when needed to prove the entire chain works.
+One comprehensive test, triggered manually or as part of the full project run. The first implementation proves the no-return Dispatch Case chain through Delivery and verifies the Invoice Preparation gate.
 
 ### 9.1 No-return dispatch flow
 
@@ -240,11 +233,10 @@ Step 4: Login as Delivery Driver
   Accept Delivery task, set Picked Up, set Delivered
 
 Step 5: Login as Ops - Accounting
-  Accept Invoice Preparation task, verify Sales Invoice, complete task
+  Accept Invoice Preparation task, verify the Sales Invoice submission gate blocks completion until a submitted Sales Invoice exists
 
-Step 6: Login as Ops - Finance
-  Accept Debt Collection task, record payment, complete task
-  Verify DC status = Closed
+Future extension:
+  Submit/verify Sales Invoice, complete Invoice Preparation, create Debt Collection, record payment, and verify DC status = Closed
 ```
 
 At each step: screenshot, console log capture, network error capture. On failure: stop, save full state, report which step failed and why.
@@ -267,39 +259,31 @@ Stop the current scenario on dangerous failures:
 
 ## 11. Reports
 
-Reports go to `ERPNext-Automation-Reports/` (gitignored).
-
-Each run creates:
-
-- `report.json` — machine-readable pass/fail results
-- `report.html` — human-readable review with screenshots and step timeline
-- `run-manifest.json` — list of all created ERPNext records
-- `console.jsonl` — captured console errors
-- `network.jsonl` — captured network failures
-- `screenshots/` — failure and milestone screenshots
-
-Secrets, auth headers, and cookies are excluded from all reports.
+Playwright artifacts go to `ERPNext-Automation-Reports/test-results/` (gitignored). Failure artifacts can include screenshots, traces, and `error-context.md` files. Secrets, auth headers, and cookies are excluded from committed files and should not be copied into reports.
 
 ---
 
 ## 12. Running Tests
 
 ```bash
+# Type-check the test suite
+npx tsc --noEmit
+
 # Layer 1 — API tests, no browser
-npx playwright test --grep @api
+npx playwright test --project=api --workers=1 --reporter=line
 
 # Layer 2 — browser smoke tests
-npx playwright test --grep @smoke
+npx playwright test --project=desktop --project=mobile --workers=1 --reporter=line
 
-# Layer 3 — full happy path, visible browser
-npx playwright test --grep @happy-path --headed
+# Layer 3 — full no-return path through invoice gate
+npx playwright test --project=e2e --workers=1 --reporter=line
 
 # All layers
-npx playwright test
+npx playwright test --workers=1 --reporter=line
 
 # Mobile only / Desktop only
-npx playwright test --project=mobile
-npx playwright test --project=desktop
+npx playwright test --project=mobile --workers=1 --reporter=line
+npx playwright test --project=desktop --workers=1 --reporter=line
 ```
 
 ---
@@ -319,10 +303,11 @@ npx playwright test --project=desktop
 - Field visibility by task kind (Layer 2)
 - Field editability by state (Layer 2)
 - Console and network health (Layer 2)
-- Full no-return dispatch happy path (Layer 3)
+- Full no-return dispatch path through Delivery and Invoice Preparation gate (Layer 3)
 
 ### 13.2 Later
 
+- Extend no-return Layer 3 path through submitted Sales Invoice, Debt Collection, Payment Entry, and DC Closed
 - Return-expected happy path (Layer 3)
 - Purchase flow (PO, Purchase Receipt, LCV, Purchase Invoice)
 - Photo gate enforcement detail tests

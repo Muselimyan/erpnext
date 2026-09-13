@@ -1,0 +1,6 @@
+tests/e2e/.env.local
+tests/e2e/sessions/
+tests/e2e/node_modules/
+ERPNext-Automation-Reports/*
+!ERPNext-Automation-Reports/.gitkeep
+test-results/
