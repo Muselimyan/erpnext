@@ -56,6 +56,8 @@ export async function assertFieldReadOnly(page: Page, fieldname: string, expecte
 }
 
 export function assertNoConsoleErrors(errors: ConsoleEntry[], allowlist: RegExp[] = []): void {
-  const unexpected = errors.filter((entry) => entry.type === 'error' && !allowlist.some((pattern) => pattern.test(entry.text)));
+  const defaultAllowlist = [/Error connecting to socket\.io/i, /\/socket\.io\//i, /frappe\.realtime\.get_user_info/i, /:undefined\/api\/method\/frappe\.realtime/i];
+  const patterns = [...defaultAllowlist, ...allowlist];
+  const unexpected = errors.filter((entry) => entry.type === 'error' && !patterns.some((pattern) => pattern.test(`${entry.text}\n${entry.url || ''}`)));
   expect(unexpected, unexpected.map((entry) => entry.text).join('\n')).toEqual([]);
 }

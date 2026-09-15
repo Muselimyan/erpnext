@@ -51,17 +51,37 @@ export async function findTestWarehouse(api: FrappeApiClient): Promise<string> {
   return String(warehouse.name);
 }
 
+function isTransientTaskCreateError(error: unknown): boolean {
+  return /QueryDeadlockError|Record has changed since last read|Deadlock/i.test(String(error));
+}
+
+async function waitForRetry(milliseconds: number): Promise<void> {
+  await new Promise((resolvePromise) => setTimeout(resolvePromise, milliseconds));
+}
+
 export async function createTask(api: FrappeApiClient, taskKind: string, overrides: FrappeDoc = {}): Promise<FrappeDoc> {
   const assignedTo = String(overrides.custom_assigned_to || (await findPolicyTeam(api, taskKind)));
-  const subject = `AUTO ${taskKind} ${new Date().toISOString()}`;
-  return api.createDoc('Task', {
-    doctype: 'Task',
-    subject,
-    task_kind: taskKind,
-    status: 'Open',
-    custom_assigned_to: assignedTo,
-    ...overrides
-  });
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const subject = `AUTO ${taskKind} ${new Date().toISOString()} ${attempt}`;
+    try {
+      return await api.createDoc('Task', {
+        doctype: 'Task',
+        subject,
+        task_kind: taskKind,
+        status: 'Open',
+        custom_assigned_to: assignedTo,
+        ...overrides
+      });
+    } catch (error) {
+      if (!isTransientTaskCreateError(error) || attempt === 2) throw error;
+      lastError = error;
+      await waitForRetry(500 * (attempt + 1));
+    }
+  }
+
+  throw lastError;
 }
 
 export async function createOrderEntryTask(api: FrappeApiClient, returnExpected = false): Promise<FrappeDoc> {
