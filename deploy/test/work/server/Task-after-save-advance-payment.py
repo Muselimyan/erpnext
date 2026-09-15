@@ -33,6 +33,16 @@ else:
     })
     pe.flags.ignore_permissions = True
     pe.insert()
+    # SUBMIT the Payment Entry. It was previously left in Draft, which produces
+    # no GL entries at all -- so the ledger never saw the money, while
+    # DC.prepaid_amount was still written and still subtracted from the
+    # invoice. The workflow was granting credit for cash the books had no
+    # record of. On test this left customer D143 with a GL net receivable of
+    # -4,486,950 while the workflow believed the case was owed 1,560,000, and
+    # it fed that figure to the hourly Debt Alert scheduler.
+    # An unallocated submitted Receive entry is exactly ERPNext's model for a
+    # customer advance: real GL, real credit, allocated when an invoice exists.
+    pe.submit()
     if doc.dispatch_case:
         case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
         case.append("advance_payments", {
@@ -51,7 +61,9 @@ else:
         case.flags.ignore_permissions = True
         case.flags.ignore_validate_update_after_submit = True
         case.save()
-    existing_dc = frappe.db.get_value("Task", {"customer": doc.customer, "task_kind": "Debt Collection", "status": ["not in", ["Completed", "Cancelled"]]}, "name")
-    if existing_dc:
-        current_credit = frappe.db.get_value("Task", existing_dc, "available_advance_credit") or 0
-        frappe.db.set_value("Task", existing_dc, "available_advance_credit", current_credit + doc.new_payment_amount)
+    # The running total that used to be pushed onto the Debt Collection task's
+    # `available_advance_credit` field is gone. That field was write-only --
+    # incremented here and never read, decremented or used in allocation by any
+    # code. Unallocated customer credit is now read live from submitted Payment
+    # Entries by the task_debt_panel API, so there is nothing to push.
+    print(f"[Advance] {frappe.utils.now()} task={doc.name} customer={doc.customer} amount={doc.new_payment_amount} pe={pe.name} submitted")

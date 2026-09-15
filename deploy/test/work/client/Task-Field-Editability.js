@@ -73,14 +73,13 @@ var TFE_EDIT_MAP = {
     "payment_entry":         "__never__",
 
     // ── Informational display (visible for context, not editable) ──
+    // W2 deleted total_outstanding, available_advance_credit,
+    // custom_total_amount_paid, open_invoices and payment_history; debt is now
+    // rendered live into custom_debt_panel from the ledger.
     "current_debt_amd":         "__never__",
     "debt_threshold_amd":       "__never__",
-    "total_outstanding":        "__never__",
-    "available_advance_credit": "__never__",
     "custom_case_profit":       "__never__",
-    "custom_total_amount_paid": "__never__",
-    "open_invoices":            "__never__",
-    "payment_history":          "__never__",
+    "custom_debt_panel":        "__never__",
 
     // ── Kind-specific editability (requires acceptance AND kind match) ──
     "customer":                        ["Order entry", "Other: Entry", "Other: Processing"],

@@ -55,21 +55,25 @@ SYSTEM_FIELDS = [
     "dispatch_case_status",
     # Back-filled by Task-before-save-policy when empty, on any save.
     "task_access_policy",
-    # Debt bookkeeping written by Task-after-save-dispatch-flow's
-    # create_or_update_debt_task() when a second invoice is raised for a
-    # customer who already has an open Debt Collection task. This is the
-    # cross-task write that made an Ops - Accounting user unable to complete
-    # Invoice Preparation. These three entries are what fixes that.
-    # They become redundant once the debt fields are deleted (W2) and should be
-    # removed from this list at that point.
-    "open_invoices",
-    "payment_history",
-    "total_outstanding",
-    "sales_invoice",
-    "available_advance_credit",
+    # Debt Alert snapshot, refreshed hourly by Scheduled-debt-collection.
+    # These two are a deliberate exception to "no stored business facts": they
+    # record what the debt WAS at the moment the alarm was raised, which is a
+    # fact about the alert, not a live balance.
     "current_debt_amd",
     "debt_threshold_amd",
 ]
+
+# NOTE (W2): the debt bookkeeping fields -- open_invoices, payment_history,
+# total_outstanding, sales_invoice, available_advance_credit -- were listed here
+# during W1 because create_or_update_debt_task() still appended invoice rows to
+# an existing Debt Collection task. That cross-task write is what blocked
+# Ops - Accounting users from completing Invoice Preparation.
+#
+# W2 deleted those fields. Debt is read live from the ledger, so there is
+# nothing for the flow to append and the cross-task write no longer exists at
+# all. The entries are therefore removed rather than kept as dead allowances --
+# leaving them would have quietly permitted writes to fields that no longer
+# have any legitimate system writer.
 
 # Roles that may edit a task they do not own, and edit any task kind.
 # NOTE: this does NOT extend to completing another user's task — see below.

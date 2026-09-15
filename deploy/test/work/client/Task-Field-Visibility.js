@@ -74,18 +74,23 @@ var TFV_KIND_MAP = {
     "sales_invoice":    "__has_value__",
 
     // Payment / Debt
+    //
+    // W2 deleted total_outstanding, available_advance_credit,
+    // custom_total_amount_paid, open_invoices and payment_history. They stored
+    // a second copy of the receivables ledger on the Task and drifted from it.
+    // Debt is now rendered live into custom_debt_panel by Task-Debt-Panel.js,
+    // read from submitted Sales Invoices and Payment Entries.
     "payment_entry":            "__has_value__",
-    "current_debt_amd":         ["Debt Collection"],
-    "debt_threshold_amd":       ["Debt Collection"],
+    // Debt Alert snapshot fields -- these belong to the Debt Alert kind, not to
+    // Debt Collection. They were still mapped to Debt Collection from before
+    // B-08 split the two kinds apart.
+    "current_debt_amd":         ["Debt Alert"],
+    "debt_threshold_amd":       ["Debt Alert"],
     "new_payment_amount":       ["Payment Received", "Debt Collection"],
     "payment_method_dc":        ["Payment Received", "Debt Collection"],
     "payment_reference_dc":     ["Payment Received", "Debt Collection"],
-    "total_outstanding":        ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
-    "available_advance_credit": ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
     "custom_case_profit":       ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
-    "custom_total_amount_paid": ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
-    "open_invoices":            ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
-    "payment_history":          ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
+    "custom_debt_panel":        ["Debt Collection", "Debt Closure Approval"],
 
     // Returns
     "return_pickup_driver":  ["Pickup Returns", "Return drop-off at warehouse",

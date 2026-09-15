@@ -146,35 +146,44 @@ else:
         frappe.db.set_value("Dispatch Case", c.name, "sales_invoice", si.name)
 
     def create_or_update_debt_task(c, outstanding, inv_name, team_user):
+        # Ensures ONE open Debt Collection task exists for the customer, and
+        # stores no balances on it.
+        #
+        # This function used to append an invoice row to an EXISTING debt task
+        # and recompute its running total. That save was the cross-task write
+        # behind C1: an Ops - Accounting user completing Invoice Preparation was
+        # judged against Debt Collection's allowed roles (Ops - Finance /
+        # Ops - Directors) and refused, so no repeat customer's invoice task
+        # could be completed by the team that owns it.
+        #
+        # There is nothing to append any more. What the customer owes is read
+        # live from the ledger by the task_debt_panel API, so an existing task
+        # already covers every invoice for that customer, including this one.
+        # The cross-task write is therefore not permitted-around, it is gone.
         existing = frappe.db.get_value("Task", {"customer": c.customer, "task_kind": "Debt Collection", "status": ["not in", ["Completed", "Cancelled"]]}, "name")
-        inv_row = {"dispatch_case": c.name, "sales_invoice": inv_name, "invoice_amount": outstanding, "paid_amount": 0, "outstanding_amount": outstanding}
         if existing:
-            t = frappe.get_doc("Task", existing)
-            t.append("open_invoices", inv_row)
-            t.total_outstanding = sum((r.outstanding_amount or 0) for r in t.open_invoices)
-            t.sales_invoice = inv_name
-            t.flags.ignore_permissions = True
-            t.save()
-        else:
-            t = frappe.get_doc({
-                "doctype": "Task", "subject": f"Debt Collection: {c.customer}",
-                "task_kind": "Debt Collection", "task_access_policy": "Debt Collection",
-                "customer": c.customer, "total_outstanding": outstanding, "sales_invoice": inv_name,
-                "open_invoices": [inv_row],
-            })
-            t.flags.ignore_permissions = True
-            t.insert()
-            # FIXED: Update _assign via db (assign_to module not available in RestrictedPython)
-            frappe.db.set_value("Task", t.name, "_assign", json.dumps([team_user]))
-            todo = frappe.new_doc("ToDo")
-            todo.status = "Open"
-            todo.allocated_to = team_user
-            todo.reference_type = "Task"
-            todo.reference_name = t.name
-            todo.description = t.subject
-            todo.assigned_by = frappe.session.user
-            todo.flags.ignore_permissions = True
-            todo.insert()
+            print(f"[Dispatch] {frappe.utils.now()} debt task {existing} already open for {c.customer}, nothing to store")
+            return existing
+        t = frappe.get_doc({
+            "doctype": "Task", "subject": f"Debt Collection: {c.customer}",
+            "task_kind": "Debt Collection", "task_access_policy": "Debt Collection",
+            "customer": c.customer,
+        })
+        t.flags.ignore_permissions = True
+        t.insert()
+        # FIXED: Update _assign via db (assign_to module not available in RestrictedPython)
+        frappe.db.set_value("Task", t.name, "_assign", json.dumps([team_user]))
+        todo = frappe.new_doc("ToDo")
+        todo.status = "Open"
+        todo.allocated_to = team_user
+        todo.reference_type = "Task"
+        todo.reference_name = t.name
+        todo.description = t.subject
+        todo.assigned_by = frappe.session.user
+        todo.flags.ignore_permissions = True
+        todo.insert()
+        print(f"[Dispatch] {frappe.utils.now()} created debt task {t.name} for {c.customer}")
+        return t.name
 
     case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
 

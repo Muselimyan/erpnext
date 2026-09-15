@@ -38,19 +38,41 @@ def w1_verify(ACCOUNTING_USER, FINANCE_USER, DIRECTOR_USER):
         other = frappe.get_doc({"doctype": "Task", "subject": "W1VERIFY other-owned", "task_kind": "Other: Entry", "task_access_policy": "Other: Entry", "status": "Working", "custom_assigned_to": FINANCE_USER, "custom_accepted_by": FINANCE_USER})
         other.flags.ignore_permissions = True
         other.insert()
-        # ---- C1: system bookkeeping write by an Ops - Accounting user ----
-        # This is precisely what create_or_update_debt_task() does when a second
-        # invoice is raised for a customer who already has an open debt task.
+        # ---- C1: end-to-end. An Ops - Accounting user completes Invoice
+        # Preparation for a customer who ALREADY has an open Debt Collection
+        # task. This is the exact scenario that was impossible: the flow's
+        # follow-up touched that debt task, and the accountant was judged
+        # against Debt Collection's roles and refused.
+        #
+        # Note this check was originally written against the task's
+        # `open_invoices` child table. W2 deleted that table -- debt is read
+        # from the ledger now -- so the check exercises the real task
+        # completion instead, which is a better test of the same defect.
+        company = frappe.db.get_single_value("Global Defaults", "default_company") or "InMED"
+        item = frappe.db.get_value("Item", {"disabled": 0, "is_stock_item": 1}, "name")
+        si = frappe.get_doc({"doctype": "Sales Invoice", "customer": cust, "company": company, "currency": "AMD", "update_stock": 0, "items": [{"item_code": item, "qty": 1, "rate": 4000}]})
+        si.flags.ignore_permissions = True
+        si.insert()
+        si.submit()
+        case = frappe.new_doc("Dispatch Case")
+        case.status = "Invoice Pending"
+        case.customer = cust
+        case.flags.ignore_permissions = True
+        case.flags.ignore_mandatory = True
+        case.insert()
+        frappe.db.set_value("Dispatch Case", case.name, "sales_invoice", si.name)
+        inv_task = frappe.get_doc({"doctype": "Task", "subject": "W1VERIFY invoice prep", "task_kind": "Invoice preparation / create invoice", "task_access_policy": "Invoice preparation / create invoice", "customer": cust, "dispatch_case": case.name, "status": "Working", "custom_assigned_to": ACCOUNTING_USER, "custom_accepted_by": ACCOUNTING_USER})
+        inv_task.flags.ignore_permissions = True
+        inv_task.insert()
         frappe.set_user(ACCOUNTING_USER)
         try:
-            t = frappe.get_doc("Task", dc_task.name)
-            t.append("open_invoices", {"invoice_amount": 500, "paid_amount": 0, "outstanding_amount": 500})
-            t.total_outstanding = 1500
+            t = frappe.get_doc("Task", inv_task.name)
+            t.status = "Completed"
             t.flags.ignore_permissions = True
             t.save()
-            results.append(("C1  system debt write as Ops-Accounting", "PASS", "allowed"))
+            results.append(("C1  Ops-Accounting completes invoice prep", "PASS", "allowed with debt task open"))
         except Exception as e:
-            results.append(("C1  system debt write as Ops-Accounting", "FAIL", str(e)[:160]))
+            results.append(("C1  Ops-Accounting completes invoice prep", "FAIL", str(e)[:160]))
         # ---- D2a: non-owner must NOT complete another user's task -------
         frappe.set_user(ACCOUNTING_USER)
         try:
