@@ -2,8 +2,10 @@
 # Type: DocType Event
 # DocType: Task
 # Event: Before Save
-# Disabled: 0
+# Disabled: 1
 # ---
+# ABSORBED into Task-before-save-access-control.py (step 1).
+# This script should remain disabled.
 
 before = doc.get_doc_before_save()
 if before and before.status == 'Completed':

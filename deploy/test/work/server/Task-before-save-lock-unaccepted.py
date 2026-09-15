@@ -2,8 +2,19 @@
 # Type: DocType Event
 # DocType: Task
 # Event: Before Save
-# Disabled: 0
+# Disabled: 1
 # ---
+# ABSORBED into Task-before-save-access-control.py.
+# This script should remain disabled.
+#
+# It was the only one of the five acceptance/permission checks that honoured
+# `flags.ignore_permissions` as a "this is system housekeeping" signal. That
+# convention was load-bearing (without it, accepting a task would immediately
+# wipe the acceptance it had just granted, because accepting also reassigns the
+# task to the accepter) but it was never propagated to the four checks written
+# afterwards. The replacement makes the same distinction without borrowing a
+# Frappe permission flag: it compares the new assignee against the accepter, so
+# an accept is not mistaken for a reassignment.
 
 # Lock: all tasks require acceptance before editing
 # When assignment changes, reset acceptance so new assignee must accept

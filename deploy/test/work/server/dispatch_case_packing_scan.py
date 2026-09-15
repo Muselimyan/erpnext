@@ -15,9 +15,17 @@ if not case_name:
 if not barcode:
     frappe.throw("Barcode is required.")
 
-tfe_tasks = frappe.get_all("Task", filters={"dispatch_case": case_name, "status": ["not in", ["Completed", "Cancelled"]]}, fields=["custom_accepted_by"], limit_page_length=1)
-if not tfe_tasks or (tfe_tasks[0].custom_accepted_by or "") != frappe.session.user:
-    frappe.throw("You must accept the task before making changes.")
+# Deterministic ownership check — filter by the caller rather than taking an
+# arbitrary open task via limit_page_length=1 with no order_by.
+mytasks = frappe.get_all(
+    "Task",
+    filters={"dispatch_case": case_name, "custom_accepted_by": frappe.session.user,
+             "status": ["not in", ["Completed", "Cancelled"]]},
+    fields=["name", "task_kind"],
+    limit_page_length=0,
+)
+if not mytasks:
+    frappe.throw("You must accept a task for this Dispatch Case before making changes.")
 if qty <= 0:
     frappe.throw("Scan quantity must be greater than zero.")
 

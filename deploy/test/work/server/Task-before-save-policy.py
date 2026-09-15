@@ -5,6 +5,27 @@
 # Disabled: 0
 # ---
 
+# ═══════════════════════════════════════════════════════════════════════
+# Task Access Policy application: default team assignment, _assign sync,
+# policy validation, completion timestamp, and the legacy (non-Dispatch-Case)
+# mandatory photo gates.
+#
+# This script no longer enforces task-kind ROLE access. That check used to live
+# at old lines 67-75 and had no `ignore_permissions` guard, so it judged the
+# SESSION USER against the ALLOWED ROLES OF WHATEVER TASK WAS BEING SAVED —
+# including tasks the user had never opened. When the dispatch flow appended an
+# invoice row to a customer's Debt Collection task, an Ops - Accounting user
+# was measured against Debt Collection's roles (Ops - Finance, Ops - Directors)
+# and blocked, making it impossible to complete Invoice Preparation for any
+# repeat customer.
+#
+# Role access is now owned solely by Task-before-save-access-control.py, which
+# applies it only to genuine user edits.
+#
+# Log tags: [Policy], [Photo]
+# ═══════════════════════════════════════════════════════════════════════
+
+
 def task_has_image(task_name):
     """Check if a Task has at least one attached image File record."""
     exts = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
@@ -13,10 +34,10 @@ def task_has_image(task_name):
     print(f"[Photo] task_has_image({task_name}): total_files={len(files)}, images={len(images)}, urls={images[:5]}")
     return len(images) > 0
 
+
 before = doc.get_doc_before_save()
 before_status = before.status if before else None
 is_becoming_completed = (doc.status == "Completed" and before_status != "Completed")
-DIRECTOR_ROLE = "Ops - Directors"
 
 # Read role and team mappings from Task Access Policy (single source of truth)
 allowed_roles = []
@@ -32,20 +53,18 @@ if doc.task_kind:
 
 print(f"[Policy] {frappe.utils.now()} task={doc.name} kind={doc.task_kind} policy_found={'yes' if policy else 'no'} roles={len(allowed_roles)} default_team={default_team}")
 
-def current_user_roles():
-    return set(frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role"))
-def has_any_role(user_roles, allowed_roles):
-    return any(r in user_roles for r in (allowed_roles or []))
-def is_admin_override(user_roles):
-    return bool("System Manager" in user_roles or "Ops - Directors" in user_roles or frappe.session.user == "Administrator")
+
 def get_assigned_users(task_doc):
     try:
         return json.loads(task_doc.get("_assign") or "[]") or []
     except Exception:
         return []
+
+
 def user_has_allowed_role(user, allowed_roles):
     user_roles = set(frappe.get_all("Has Role", filters={"parent": user}, pluck="role"))
     return any(r in user_roles for r in (allowed_roles or []))
+
 
 # Default team user assignment: if task_kind is set and custom_assigned_to is empty, assign to default team user
 if doc.task_kind and not doc.custom_assigned_to:
@@ -64,15 +83,7 @@ if doc.task_kind and not doc.task_access_policy:
     doc.task_access_policy = doc.task_kind
 if doc.task_access_policy and not frappe.db.exists("Task Access Policy", doc.task_access_policy):
     frappe.throw("Task Access Policy '" + doc.task_access_policy + "' does not exist.")
-user_roles = current_user_roles()
-if before and doc.task_kind and not is_admin_override(user_roles):
-    if not has_any_role(user_roles, allowed_roles):
-        print(f"[Policy] {frappe.utils.now()} task={doc.name} role_check: user={frappe.session.user} allowed={allowed_roles} result=BLOCKED")
-        frappe.throw("You are not allowed to edit Task Kind '" + doc.task_kind + "'.")
-if is_becoming_completed and doc.task_kind and not is_admin_override(user_roles):
-    if not has_any_role(user_roles, allowed_roles):
-        print(f"[Policy] {frappe.utils.now()} task={doc.name} completing: user={frappe.session.user} allowed={allowed_roles} result=BLOCKED")
-        frappe.throw("Only " + ", ".join(allowed_roles) + " can complete Task Kind '" + doc.task_kind + "'.")
+
 # Old-flow mandatory attachments (only for tasks NOT linked to a Dispatch Case)
 if not doc.dispatch_case:
     if is_becoming_completed and doc.task_kind == "Delivery":
@@ -85,6 +96,7 @@ if not doc.dispatch_case:
         print(f"[Photo] {frappe.utils.now()} task={doc.name} policy Return drop-off gate (no DC): has_image={has_img}, result={'PASS' if has_img else 'BLOCKED'}")
         if not has_img:
             frappe.throw("At least one photo is required to complete a Return drop-off at warehouse task.")
+
 assigned_users = get_assigned_users(doc)
 is_becoming_working = (doc.status == "Working" and before_status != "Working")
 # TEMPORARILY DISABLED FOR LAUNCH - assignment validation causes issues with accept workflow

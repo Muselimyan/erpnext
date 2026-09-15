@@ -118,10 +118,13 @@ function task_account_details_render_photos_box(frm, photosControl) {
         window._photoWarn && window._photoWarn('acct', 'SKIP: no photosControl');
         return;
     }
-    var _roles = frappe.user_roles || [];
-    var _isAdmin = _roles.indexOf('System Manager') !== -1 || _roles.indexOf('Administrator') !== -1 || frappe.session.user === 'Administrator';
-    var _canEdit = _isAdmin || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
-    window._photoLog && window._photoLog('acct', 'ENTER task=' + (frm.doc.name || '?') + ' canEdit=' + _canEdit + ' (isAdmin=' + _isAdmin + ', accepted_by="' + (frm.doc.custom_accepted_by || '') + '", user="' + frappe.session.user + '")');
+    // Editability is owned by Task-Field-Editability.js (TFE). This used to be
+    // a third copy of the rule, with its own admin exemption that TFE
+    // explicitly disclaimed. Delegate so the admin policy lives in one place.
+    var _canEdit = (typeof tfe_can_edit === 'function')
+        ? tfe_can_edit(frm)
+        : (!!frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
+    window._photoLog && window._photoLog('acct', 'ENTER task=' + (frm.doc.name || '?') + ' canEdit=' + _canEdit + ' (accepted_by="' + (frm.doc.custom_accepted_by || '') + '", user="' + frappe.session.user + '")');
     photosControl.find('.account-details-add-photos-box').remove();
     if (_canEdit) {
         window._photoLog && window._photoLog('acct', 'upload button created');

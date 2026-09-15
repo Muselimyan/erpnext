@@ -15,9 +15,22 @@ if not case_name:
 if item_idx is None:
     frappe.throw("Item index is required.")
 
-tfe_tasks = frappe.get_all("Task", filters={"dispatch_case": case_name, "status": ["not in", ["Completed", "Cancelled"]]}, fields=["custom_accepted_by"], limit_page_length=1)
-if not tfe_tasks or (tfe_tasks[0].custom_accepted_by or "") != frappe.session.user:
-    frappe.throw("You must accept the task before making changes.")
+# Deterministic ownership check plus an explicit kind assertion: return and
+# lost/damaged quantities may only be set from a Returns inspection task.
+# Previously any open task on the case would do, chosen non-deterministically.
+mytasks = frappe.get_all(
+    "Task",
+    filters={"dispatch_case": case_name, "custom_accepted_by": frappe.session.user,
+             "status": ["not in", ["Completed", "Cancelled"]]},
+    fields=["name", "task_kind"],
+    limit_page_length=0,
+)
+acting_kind = ""
+for t in mytasks:
+    if t.task_kind == "Returns processing / verification":
+        acting_kind = t.task_kind
+if not acting_kind:
+    frappe.throw("Return quantities can only be changed from an accepted Returns processing / verification task.")
 
 case = frappe.get_doc("Dispatch Case", case_name)
 idx = int(item_idx)

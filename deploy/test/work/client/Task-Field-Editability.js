@@ -5,12 +5,33 @@
 // Single source of truth for Task form field editability.
 // Analogous to Task-Field-Visibility.js (TFV) for visibility.
 // Absorbs: Task-Lock Unaccepted, Task-Lock Completed (both now disabled).
-// No admin exemption — must be accepted by current user to edit.
 // See: docs/21-product-section-architecture.md
+//
+// ADMIN POLICY (decision D2/c) — mirrors the server gate in
+// Task-before-save-access-control.py:
+//   - Privileged users (System Manager / Ops - Directors / Administrator) MAY
+//     edit and unstick a task they do not own. This matters because stuck
+//     tasks exist and previously nobody could clear them.
+//   - NOBODY may complete a task they did not accept. The record of who did
+//     the work must stay truthful, so completion has no exemption at all.
+//
+// Other scripts must call tfe_can_edit() / tfe_can_complete() rather than
+// reimplementing the rule. Before this change, Task-Action Buttons.js,
+// Task-Photo-System.js and Task-Account Details UI Cleanup.js each carried
+// their own copy, and all three granted admins an exemption that this file
+// explicitly disclaimed.
 
 // ═══════════════════════════════════════════════════════════════
 // Section 1: Core editability gate
 // ═══════════════════════════════════════════════════════════════
+
+// Privileged roles may edit tasks they do not own (but never complete them).
+function tfe_is_privileged() {
+    var roles = frappe.user_roles || [];
+    return roles.indexOf("System Manager") !== -1
+        || roles.indexOf("Ops - Directors") !== -1
+        || frappe.session.user === "Administrator";
+}
 
 // Global function — other scripts (PWA, Action Buttons, Photo-System) use this.
 function tfe_can_edit(frm) {
@@ -18,7 +39,17 @@ function tfe_can_edit(frm) {
     if (frm.is_new()) return true;
     if (frm.doc.status === "Completed" || frm.doc.status === "Cancelled") return false;
     var accepted_by = (frm.doc.custom_accepted_by || "").trim();
-    return accepted_by === frappe.session.user;
+    if (accepted_by === frappe.session.user) return true;
+    return tfe_is_privileged();
+}
+
+// Completion is reserved to the accepter. No admin exemption, deliberately.
+function tfe_can_complete(frm) {
+    if (!frm || !frm.doc) return false;
+    if (frm.is_new()) return false;
+    if (frm.doc.status === "Completed" || frm.doc.status === "Cancelled") return false;
+    var accepted_by = (frm.doc.custom_accepted_by || "").trim();
+    return accepted_by !== "" && accepted_by === frappe.session.user;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -84,17 +115,21 @@ function tfe_apply(frm) {
     if (!frm || frm.doctype !== "Task") return;
 
     var can_edit = tfe_can_edit(frm);
+    var can_complete = tfe_can_complete(frm);
     var kind = (frm.doc.task_kind || "").trim();
     var is_completed = frm.doc.status === "Completed";
     var is_cancelled = frm.doc.status === "Cancelled";
     var is_new = frm.is_new();
+    var accepted_by = (frm.doc.custom_accepted_by || "").trim();
+    var is_owner = accepted_by === frappe.session.user;
 
     console.log("[TFE] ═══ tfe_apply START ═══ task=" + frm.doc.name
         + " kind=\"" + kind + "\""
         + " status=" + frm.doc.status
-        + " accepted_by=" + (frm.doc.custom_accepted_by || "(none)")
+        + " accepted_by=" + (accepted_by || "(none)")
         + " user=" + frappe.session.user
-        + " can_edit=" + can_edit);
+        + " can_edit=" + can_edit
+        + " can_complete=" + can_complete);
 
     // ── Intro messages ──────────────────────────────────────────
     frm.set_intro("");
@@ -105,6 +140,15 @@ function tfe_apply(frm) {
             frm.set_intro("This task is cancelled and cannot be modified.", "red");
         } else if (!can_edit) {
             frm.set_intro('You must accept this task before you can edit it. Click <b>Accept / Start Task</b>.', "yellow");
+        } else if (!is_owner) {
+            // Privileged override: make it explicit that this is someone
+            // else's task, and that completing it is still not permitted.
+            if (accepted_by) {
+                frm.set_intro('Editing as a privileged user. This task was accepted by <b>' + frappe.utils.escape_html(accepted_by)
+                    + '</b> and only they can complete it.', "orange");
+            } else {
+                frm.set_intro('Editing as a privileged user. This task has not been accepted, so it cannot be completed until someone accepts it.', "orange");
+            }
         }
     }
 

@@ -1,0 +1,20 @@
+﻿{
+    "captured_at":  "2026-09-16T01:16:29.9672430+04:00",
+    "target":  "https://test.erpnext.am",
+    "debt_task_docs":  719,
+    "dispatch_cases":  1036,
+    "dispatch_cases_submitted":  553,
+    "dispatch_cases_with_advances":  1,
+    "payment_entries":  15,
+    "payment_entry_references":  3,
+    "sales_invoices":  159,
+    "dc_items_total":  1777,
+    "w7_blast_radius":  {
+                            "note":  "Measured via direct DB query; unit_price is permlevel 2 and not exposed over REST.",
+                            "measured_at":  "2026-09-16",
+                            "rows_on_submitted_cases":  1292,
+                            "zero_price_rows":  840,
+                            "submitted_cases_with_rows":  553,
+                            "submitted_cases_with_any_zero_price":  103
+                        }
+}

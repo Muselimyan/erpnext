@@ -19,9 +19,18 @@ def run_script():
     task = frappe.get_doc("Task", task_name)
     if (task.get("custom_accepted_by") or "") != frappe.session.user:
         frappe.throw("You must accept the task before making changes.")
+    if (task.get("task_kind") or "") != "Order entry":
+        frappe.throw("Products can only be added from an Order entry task.")
     if not task.get("dispatch_case"):
         frappe.throw("Create or link Dispatch Case / Packing Items first.")
     case = frappe.get_doc("Dispatch Case", task.dispatch_case)
+    # Guard against adding products to a case that has already moved on.
+    # Without this, an Order entry task left open alongside a packed or
+    # delivered case could still mutate its contents.
+    if (case.docstatus or 0) != 0:
+        frappe.throw("This Dispatch Case is already submitted and its products cannot be changed.")
+    if case.status not in ("Draft", "Awaiting Approval"):
+        frappe.throw("Products can only be changed while the Dispatch Case is in Draft or Awaiting Approval. Current status: " + str(case.status))
     item_name = frappe.db.get_value("Item", item_code, "item_name") or item_code
     row = case.append("case_items", {})
     row.item_code = item_code

@@ -1,0 +1,1153 @@
+﻿{
+    "task_custom_fields":  [
+                               {
+                                   "name":  "Task-approval_note",
+                                   "dt":  "Task",
+                                   "fieldname":  "approval_note",
+                                   "fieldtype":  "Small Text",
+                                   "options":  null,
+                                   "insert_after":  "approval_outcome",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-approval_outcome",
+                                   "dt":  "Task",
+                                   "fieldname":  "approval_outcome",
+                                   "fieldtype":  "Select",
+                                   "options":  "Approved\nRejected",
+                                   "insert_after":  "sales_invoice",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-available_advance_credit",
+                                   "dt":  "Task",
+                                   "fieldname":  "available_advance_credit",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "custom_total_amount_paid",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-completed_at",
+                                   "dt":  "Task",
+                                   "fieldname":  "completed_at",
+                                   "fieldtype":  "Datetime",
+                                   "options":  null,
+                                   "insert_after":  "task_access_policy",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-current_debt_amd",
+                                   "dt":  "Task",
+                                   "fieldname":  "current_debt_amd",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "payment_entry",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-custom_accepted_at",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_accepted_at",
+                                   "fieldtype":  "Datetime",
+                                   "options":  null,
+                                   "insert_after":  "custom_accepted_by",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-custom_accepted_by",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_accepted_by",
+                                   "fieldtype":  "Link",
+                                   "options":  "User",
+                                   "insert_after":  "custom_team_queue_status",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-custom_assigned_to",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_assigned_to",
+                                   "fieldtype":  "Link",
+                                   "options":  "User",
+                                   "insert_after":  "task_kind",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-custom_case_profit",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_case_profit",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "total_outstanding",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-custom_next_task_assign_to",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_next_task_assign_to",
+                                   "fieldtype":  "Link",
+                                   "options":  "User",
+                                   "insert_after":  "custom_assigned_to",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-custom_product_work_section",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_product_work_section",
+                                   "fieldtype":  "Section Break",
+                                   "options":  null,
+                                   "insert_after":  "pickup_status",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-custom_task_product_summary",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_task_product_summary",
+                                   "fieldtype":  "HTML",
+                                   "options":  null,
+                                   "insert_after":  "custom_product_work_section",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-custom_task_scan_barcode",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_task_scan_barcode",
+                                   "fieldtype":  "Data",
+                                   "options":  null,
+                                   "insert_after":  "custom_task_product_summary",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-custom_task_scan_qty",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_task_scan_qty",
+                                   "fieldtype":  "Float",
+                                   "options":  null,
+                                   "insert_after":  "custom_task_scan_barcode",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-custom_task_scan_result",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_task_scan_result",
+                                   "fieldtype":  "Small Text",
+                                   "options":  null,
+                                   "insert_after":  "custom_task_scan_qty",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-custom_total_amount_paid",
+                                   "dt":  "Task",
+                                   "fieldname":  "custom_total_amount_paid",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "custom_case_profit",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-customer",
+                                   "dt":  "Task",
+                                   "fieldname":  "customer",
+                                   "fieldtype":  "Link",
+                                   "options":  "Customer",
+                                   "insert_after":  "sales_order",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-debt_threshold_amd",
+                                   "dt":  "Task",
+                                   "fieldname":  "debt_threshold_amd",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "current_debt_amd",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-delivery_status",
+                                   "dt":  "Task",
+                                   "fieldname":  "delivery_status",
+                                   "fieldtype":  "Select",
+                                   "options":  "Todo\nPicked Up\nDelivered",
+                                   "insert_after":  "dispatch_case_status",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-dispatch_case",
+                                   "dt":  "Task",
+                                   "fieldname":  "dispatch_case",
+                                   "fieldtype":  "Link",
+                                   "options":  "Dispatch Case",
+                                   "insert_after":  "custom_select_surgical_kit_template",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-dispatch_case_status",
+                                   "dt":  "Task",
+                                   "fieldname":  "dispatch_case_status",
+                                   "fieldtype":  "Data",
+                                   "options":  null,
+                                   "insert_after":  "dispatch_case",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-dispatch_group_id",
+                                   "dt":  "Task",
+                                   "fieldname":  "dispatch_group_id",
+                                   "fieldtype":  "Data",
+                                   "options":  null,
+                                   "insert_after":  "debt_threshold_amd",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-new_payment_amount",
+                                   "dt":  "Task",
+                                   "fieldname":  "new_payment_amount",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "scheduled_return_date",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-open_invoices",
+                                   "dt":  "Task",
+                                   "fieldname":  "open_invoices",
+                                   "fieldtype":  "Table",
+                                   "options":  "Debt Collection Invoice",
+                                   "insert_after":  "available_advance_credit",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-order_client_location_warehouse",
+                                   "dt":  "Task",
+                                   "fieldname":  "order_client_location_warehouse",
+                                   "fieldtype":  "Link",
+                                   "options":  "Warehouse",
+                                   "insert_after":  "order_return_expected",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-order_return_expected",
+                                   "dt":  "Task",
+                                   "fieldname":  "order_return_expected",
+                                   "fieldtype":  "Check",
+                                   "options":  null,
+                                   "insert_after":  "dispatch_case_status",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-order_surgery_date",
+                                   "dt":  "Task",
+                                   "fieldname":  "order_surgery_date",
+                                   "fieldtype":  "Date",
+                                   "options":  null,
+                                   "insert_after":  "order_client_location_warehouse",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-order_template",
+                                   "dt":  "Task",
+                                   "fieldname":  "order_template",
+                                   "fieldtype":  "Link",
+                                   "options":  "Surgical Kit Template",
+                                   "insert_after":  "order_surgery_date",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-other_budget",
+                                   "dt":  "Task",
+                                   "fieldname":  "other_budget",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "other_items",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-other_items",
+                                   "dt":  "Task",
+                                   "fieldname":  "other_items",
+                                   "fieldtype":  "Table",
+                                   "options":  "Task Other Item",
+                                   "insert_after":  "customer",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-other_supplier",
+                                   "dt":  "Task",
+                                   "fieldname":  "other_supplier",
+                                   "fieldtype":  "Link",
+                                   "options":  "Supplier",
+                                   "insert_after":  "other_budget",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-payment_entry",
+                                   "dt":  "Task",
+                                   "fieldname":  "payment_entry",
+                                   "fieldtype":  "Link",
+                                   "options":  "Payment Entry",
+                                   "insert_after":  "driver_handover_note",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-payment_history",
+                                   "dt":  "Task",
+                                   "fieldname":  "payment_history",
+                                   "fieldtype":  "Table",
+                                   "options":  "Debt Collection Payment",
+                                   "insert_after":  "open_invoices",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-payment_method_dc",
+                                   "dt":  "Task",
+                                   "fieldname":  "payment_method_dc",
+                                   "fieldtype":  "Select",
+                                   "options":  "\nCash\nBank Transfer\nCard",
+                                   "insert_after":  "new_payment_amount",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-payment_reference_dc",
+                                   "dt":  "Task",
+                                   "fieldname":  "payment_reference_dc",
+                                   "fieldtype":  "Data",
+                                   "options":  null,
+                                   "insert_after":  "payment_method_dc",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-pickup_status",
+                                   "dt":  "Task",
+                                   "fieldname":  "pickup_status",
+                                   "fieldtype":  "Select",
+                                   "options":  "Todo\nPicked Up\nReturned to Warehouse",
+                                   "insert_after":  "delivery_status",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-purchase_order",
+                                   "dt":  "Task",
+                                   "fieldname":  "purchase_order",
+                                   "fieldtype":  "Link",
+                                   "options":  "Purchase Order",
+                                   "insert_after":  "custom_team_notified",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-return_pickup_driver",
+                                   "dt":  "Task",
+                                   "fieldname":  "return_pickup_driver",
+                                   "fieldtype":  "Link",
+                                   "options":  "User",
+                                   "insert_after":  "custom_task_add_unit_price",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-sales_invoice",
+                                   "dt":  "Task",
+                                   "fieldname":  "sales_invoice",
+                                   "fieldtype":  "Link",
+                                   "options":  "Sales Invoice",
+                                   "insert_after":  "other_supplier",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-scheduled_return_date",
+                                   "dt":  "Task",
+                                   "fieldname":  "scheduled_return_date",
+                                   "fieldtype":  "Date",
+                                   "options":  null,
+                                   "insert_after":  "return_pickup_driver",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-task_access_policy",
+                                   "dt":  "Task",
+                                   "fieldname":  "task_access_policy",
+                                   "fieldtype":  "Link",
+                                   "options":  "Task Access Policy",
+                                   "insert_after":  "subject",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               },
+                               {
+                                   "name":  "Task-task_kind",
+                                   "dt":  "Task",
+                                   "fieldname":  "task_kind",
+                                   "fieldtype":  "Select",
+                                   "options":  "Order accepting\nOrder entry\nPack / prepare items\nDispatch picking / hand-off\nDelivery\nReturn Call\nReturn to warehouse (aborted delivery / cancelled order)\nPickup Returns\nReturn drop-off at warehouse\nReturns processing / verification\nReturns restocking\nInvoice preparation / create invoice\nDebt Collection\nDistribute Payment\nPayment Received\nDiscount Approval\nPurchase Approval\nWrite-off Approval\nAccount Details: Entry\nAccount Details: Processing\nOther\nOther: Entry\nOther: Processing\nDebt Closure Approval\nDebt Alert",
+                                   "insert_after":  "completed_at",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  0
+                               },
+                               {
+                                   "name":  "Task-total_outstanding",
+                                   "dt":  "Task",
+                                   "fieldname":  "total_outstanding",
+                                   "fieldtype":  "Currency",
+                                   "options":  null,
+                                   "insert_after":  "payment_reference_dc",
+                                   "allow_on_submit":  0,
+                                   "permlevel":  0,
+                                   "read_only":  1
+                               }
+                           ],
+    "dispatch_case_custom_fields":  [
+                                        {
+                                            "name":  "Dispatch Case-advance_payments",
+                                            "dt":  "Dispatch Case",
+                                            "fieldname":  "advance_payments",
+                                            "fieldtype":  "Table",
+                                            "options":  "Dispatch Case Advance Payment",
+                                            "insert_after":  "prepaid_payment_entry",
+                                            "allow_on_submit":  1,
+                                            "permlevel":  0,
+                                            "read_only":  1
+                                        },
+                                        {
+                                            "name":  "Dispatch Case-custom_select_surgical_kit_template",
+                                            "dt":  "Dispatch Case",
+                                            "fieldname":  "custom_select_surgical_kit_template",
+                                            "fieldtype":  "Link",
+                                            "options":  "Surgical Kit Template",
+                                            "insert_after":  "surgery_set_type",
+                                            "allow_on_submit":  0,
+                                            "permlevel":  0,
+                                            "read_only":  0
+                                        },
+                                        {
+                                            "name":  "Dispatch Case-profit",
+                                            "dt":  "Dispatch Case",
+                                            "fieldname":  "profit",
+                                            "fieldtype":  "Currency",
+                                            "options":  null,
+                                            "insert_after":  "sales_invoice",
+                                            "allow_on_submit":  0,
+                                            "permlevel":  0,
+                                            "read_only":  1
+                                        }
+                                    ],
+    "task_property_setters":  [
+                                  {
+                                      "name":  "Task-approval_note-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "approval_note",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-approval_outcome-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "approval_outcome",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-available_advance_credit-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "available_advance_credit",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-color-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "color",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-current_debt_amd-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "current_debt_amd",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-debt_threshold_amd-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "debt_threshold_amd",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-delivery_status-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "delivery_status",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-description-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "description",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-dispatch_case_status-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "dispatch_case_status",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-dispatch_case-bold",
+                                      "doc_type":  "Task",
+                                      "field_name":  "dispatch_case",
+                                      "property":  "bold",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-dispatch_case-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "dispatch_case",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-dispatch_case-description",
+                                      "doc_type":  "Task",
+                                      "field_name":  "dispatch_case",
+                                      "property":  "description",
+                                      "value":  "Open this Dispatch Case to view product rows, quantities, batch/LOT, expiry, scanned qty, missing qty, FEFO warnings, and packing problems."
+                                  },
+                                  {
+                                      "name":  "Task-dispatch_case-in_list_view",
+                                      "doc_type":  "Task",
+                                      "field_name":  "dispatch_case",
+                                      "property":  "in_list_view",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-dispatch_case-label",
+                                      "doc_type":  "Task",
+                                      "field_name":  "dispatch_case",
+                                      "property":  "label",
+                                      "value":  "Dispatch Case / Packing Items"
+                                  },
+                                  {
+                                      "name":  "Task-is_group-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "is_group",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-is_group-in_list_view",
+                                      "doc_type":  "Task",
+                                      "field_name":  "is_group",
+                                      "property":  "in_list_view",
+                                      "value":  "0"
+                                  },
+                                  {
+                                      "name":  "Task-is_milestone-in_list_view",
+                                      "doc_type":  "Task",
+                                      "field_name":  "is_milestone",
+                                      "property":  "in_list_view",
+                                      "value":  "0"
+                                  },
+                                  {
+                                      "name":  "Task-is_template-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "is_template",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-issue-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "issue",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-main-field_order",
+                                      "doc_type":  "Task",
+                                      "field_name":  null,
+                                      "property":  "field_order",
+                                      "value":  "[\"subject\",\"task_access_policy\",\"completed_at\",\"task_kind\",\"custom_assigned_to\",\"custom_next_task_assign_to\",\"custom_accepted_by\",\"custom_accepted_at\",\"purchase_order\",\"sales_order\",\"customer\",\"other_items\",\"other_budget\",\"other_supplier\",\"sales_invoice\",\"approval_outcome\",\"approval_note\",\"payment_entry\",\"current_debt_amd\",\"debt_threshold_amd\",\"dispatch_group_id\",\"dispatch_case\",\"dispatch_case_status\",\"delivery_status\",\"pickup_status\",\"custom_product_work_section\",\"custom_task_product_summary\",\"custom_task_scan_barcode\",\"custom_task_scan_qty\",\"custom_task_scan_result\",\"return_pickup_driver\",\"scheduled_return_date\",\"new_payment_amount\",\"payment_method_dc\",\"payment_reference_dc\",\"total_outstanding\",\"custom_case_profit\",\"custom_total_amount_paid\",\"available_advance_credit\",\"open_invoices\",\"payment_history\",\"project\",\"issue\",\"type\",\"color\",\"is_group\",\"section_break_dafi\",\"is_template\",\"column_break_vvfp\",\"start\",\"duration\",\"column_break0\",\"status\",\"priority\",\"task_weight\",\"parent_task\",\"completed_by\",\"completed_on\",\"sb_timeline\",\"exp_start_date\",\"expected_time\",\"column_break_11\",\"exp_end_date\",\"progress\",\"is_milestone\",\"sb_details\",\"description\",\"dependencies_tab\",\"sb_depends_on\",\"depends_on\",\"depends_on_tasks\",\"sb_actual\",\"act_start_date\",\"actual_time\",\"column_break_15\",\"act_end_date\",\"sb_costing\",\"total_costing_amount\",\"column_break_20\",\"total_billing_amount\",\"more_info_tab\",\"sb_more_info\",\"company\",\"review_date\",\"closing_date\",\"column_break_22\",\"department\",\"lft\",\"rgt\",\"old_parent\",\"template_task\"]"
+                                  },
+                                  {
+                                      "name":  "Task-main-show_title_field_in_link",
+                                      "doc_type":  "Task",
+                                      "field_name":  null,
+                                      "property":  "show_title_field_in_link",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-new_payment_amount-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "new_payment_amount",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-open_invoices-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "open_invoices",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-parent_task-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "parent_task",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-payment_entry-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "payment_entry",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-payment_history-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "payment_history",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-payment_method_dc-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "payment_method_dc",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-payment_reference_dc-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "payment_reference_dc",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-pickup_status-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "pickup_status",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-priority-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "priority",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-project-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "project",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-purchase_order-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "purchase_order",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-return_pickup_driver-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "return_pickup_driver",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-sales_invoice-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "sales_invoice",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-sb_details-collapsible",
+                                      "doc_type":  "Task",
+                                      "field_name":  "sb_details",
+                                      "property":  "collapsible",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-sb_details-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "sb_details",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-scheduled_return_date-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "scheduled_return_date",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-status-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "status",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-status-options",
+                                      "doc_type":  "Task",
+                                      "field_name":  "status",
+                                      "property":  "options",
+                                      "value":  "Open\nWorking\nOverdue\nCompleted\nCancelled"
+                                  },
+                                  {
+                                      "name":  "Task-subject-reqd",
+                                      "doc_type":  "Task",
+                                      "field_name":  "subject",
+                                      "property":  "reqd",
+                                      "value":  "0"
+                                  },
+                                  {
+                                      "name":  "Task-task_access_policy-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "task_access_policy",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-task_weight-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "task_weight",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  },
+                                  {
+                                      "name":  "Task-total_outstanding-depends_on",
+                                      "doc_type":  "Task",
+                                      "field_name":  "total_outstanding",
+                                      "property":  "depends_on",
+                                      "value":  ""
+                                  },
+                                  {
+                                      "name":  "Task-type-hidden",
+                                      "doc_type":  "Task",
+                                      "field_name":  "type",
+                                      "property":  "hidden",
+                                      "value":  "1"
+                                  }
+                              ],
+    "dispatch_case_property_setters":  [
+                                           {
+                                               "name":  "Dispatch Case-advance_payments-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "advance_payments",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-case_items-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "case_items",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-client_location_warehouse-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "client_location_warehouse",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-client_location_warehouse-reqd",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "client_location_warehouse",
+                                               "property":  "reqd",
+                                               "value":  "0"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-consumption_stock_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "consumption_stock_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-customer-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "customer",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-customer-reqd",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "customer",
+                                               "property":  "reqd",
+                                               "value":  "0"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-delivery_photo-hidden",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "delivery_photo",
+                                               "property":  "hidden",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-delivery_stock_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "delivery_stock_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-delivery_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "delivery_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-discount_approval_status-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "discount_approval_status",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-discount_approval_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "discount_approval_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-dispatch_stock_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "dispatch_stock_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-invoice_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "invoice_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-main-search_fields",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  null,
+                                               "property":  "search_fields",
+                                               "value":  "customer,notes,status"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-main-show_title_field_in_link",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  null,
+                                               "property":  "show_title_field_in_link",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-main-title_field",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  null,
+                                               "property":  "title_field",
+                                               "value":  "customer"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-notes-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "notes",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-order_entry_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "order_entry_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-outstanding_amount-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "outstanding_amount",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-outstanding_amount-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "outstanding_amount",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-pack_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "pack_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-prepaid_amount-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "prepaid_amount",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-prepaid_amount-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "prepaid_amount",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-prepaid_payment_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "prepaid_payment_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-prepaid_payment_entry-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "prepaid_payment_entry",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-profit-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "profit",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-restock_stock_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "restock_stock_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-restock_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "restock_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-return_dropoff_photo-hidden",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "return_dropoff_photo",
+                                               "property":  "hidden",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-return_expected-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "return_expected",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-return_pickup_stock_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "return_pickup_stock_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-return_pickup_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "return_pickup_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-return_receive_stock_entry-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "return_receive_stock_entry",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-return_waiting_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "return_waiting_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-returns_inspection_task-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "returns_inspection_task",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-sales_invoice-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "sales_invoice",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-sales_invoice-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "sales_invoice",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-surgery_date-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "surgery_date",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-surgery_set_type-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "surgery_set_type",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-total_invoice_amount-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "total_invoice_amount",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-total_invoice_amount-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "total_invoice_amount",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-total_paid_amount-allow_on_submit",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "total_paid_amount",
+                                               "property":  "allow_on_submit",
+                                               "value":  "1"
+                                           },
+                                           {
+                                               "name":  "Dispatch Case-total_paid_amount-permlevel",
+                                               "doc_type":  "Dispatch Case",
+                                               "field_name":  "total_paid_amount",
+                                               "property":  "permlevel",
+                                               "value":  "1"
+                                           }
+                                       ],
+    "planned_task_field_deletions":  [
+                                         "open_invoices",
+                                         "payment_history",
+                                         "total_outstanding",
+                                         "available_advance_credit",
+                                         "custom_total_amount_paid"
+                                     ],
+    "planned_dispatch_case_field_deletions":  [
+                                                  "prepaid_amount",
+                                                  "prepaid_payment_entry",
+                                                  "advance_payments",
+                                                  "total_paid_amount",
+                                                  "outstanding_amount",
+                                                  "total_invoice_amount",
+                                                  "sales_invoice"
+                                              ],
+    "planned_child_doctype_deletions":  [
+                                            "Debt Collection Invoice",
+                                            "Debt Collection Payment",
+                                            "Dispatch Case Advance Payment"
+                                        ]
+}

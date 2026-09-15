@@ -13,10 +13,18 @@ if not task_name or not template_name:
 task = frappe.get_doc("Task", task_name)
 if (task.get("custom_accepted_by") or "") != frappe.session.user:
     frappe.throw("You must accept the task before making changes.")
+if (task.get("task_kind") or "") != "Order entry":
+    frappe.throw("A template can only be applied from an Order entry task.")
 if not task.dispatch_case:
     frappe.throw("No Dispatch Case linked to this task.")
 
 dc = frappe.get_doc("Dispatch Case", task.dispatch_case)
+# Applying a template REPLACES all case items, so it must never run against a
+# case that has already been submitted, packed or delivered.
+if (dc.docstatus or 0) != 0:
+    frappe.throw("This Dispatch Case is already submitted; a template cannot replace its products.")
+if dc.status not in ("Draft", "Awaiting Approval"):
+    frappe.throw("A template can only be applied while the Dispatch Case is in Draft or Awaiting Approval. Current status: " + str(dc.status))
 template = frappe.get_doc("Surgical Kit Template", template_name)
 
 dc.set("case_items", [])

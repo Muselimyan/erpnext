@@ -5,6 +5,30 @@
 # Disabled: 0
 # ---
 
+# ═══════════════════════════════════════════════════════════════════════
+# DOMAIN gates for dispatch tasks: what must be true about the WORK before a
+# task may progress (photo taken, items scanned, status stepped in order,
+# invoice submitted, approval outcome chosen).
+#
+# This script does NOT enforce access control. Acceptance, ownership,
+# task-kind role access and completed-task immutability are owned solely by
+# Task-before-save-access-control.py. Previously this file also carried an
+# acceptance gate (old lines 16-22) and a completion-ownership gate
+# (old lines 39-54), which conflicted with the two other scripts implementing
+# the same rules under different bypass semantics.
+#
+# STRUCTURE — why the split matters
+# ---------------------------------
+# This file used to wrap every kind gate in a single `if not doc.dispatch_case`
+# guard. Any gate for a task kind WITHOUT a Dispatch Case was therefore dead
+# code: the Debt Closure Approval role check never ran for approval tasks with
+# no case, which on test is most of them. Gates are now separated by whether
+# they actually need a case, so DC-less kinds can be gated too.
+#
+# Log tags: [Gates], [Photo]
+# ═══════════════════════════════════════════════════════════════════════
+
+
 def task_has_image(task_name):
     """Check if a Task has at least one attached image File record."""
     exts = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".heic", ".heif")
@@ -13,99 +37,92 @@ def task_has_image(task_name):
     print(f"[Photo] task_has_image({task_name}): total_files={len(files)}, images={len(images)}, urls={images[:5]}")
     return len(images) > 0
 
-# Mandatory: task must be accepted before any save/change/complete
-if doc.task_kind and doc.status != "Template" and doc.status != "Cancelled":
-    accept_gate_before = doc.get_doc_before_save()
-    accept_gate_is_new = not accept_gate_before
-    if not accept_gate_is_new and not doc.custom_accepted_by:
-        print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=acceptance kind={doc.task_kind} accepted_by= result=BLOCKED")
-        frappe.throw("You must Accept this task before making any changes or completing it.")
 
-# Order Entry: full field sync (all fields, even when cleared)
-if doc.dispatch_case and doc.task_kind == "Order entry":
-    sync_fields = {
-        "return_expected": doc.order_return_expected or 0,
-        "client_location_warehouse": doc.order_client_location_warehouse or "",
-        "surgery_date": doc.order_surgery_date or None,
-    }
-    if doc.customer:
-        sync_fields["customer"] = doc.customer
-    frappe.db.set_value("Dispatch Case", doc.dispatch_case, sync_fields)
-# Other dispatch tasks: safety-net customer sync (only if DC customer is blank)
-elif doc.dispatch_case and doc.customer:
-    dc_customer = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "customer")
-    if not dc_customer:
-        frappe.db.set_value("Dispatch Case", doc.dispatch_case, "customer", doc.customer)
-# Global: cannot complete a task unless you are assigned to it
 before = doc.get_doc_before_save()
 before_status = before.status if before else None
-is_completing_global = (doc.status == "Completed" and before_status != "Completed")
-if is_completing_global:
-    # Block completion if assignment is being changed in the same save
-    old_assigned_user = before.custom_assigned_to if before else None
-    if (doc.custom_assigned_to or "") != (old_assigned_user or ""):
-        frappe.throw("You cannot reassign and complete a task at the same time. Save the reassignment first.")
-    accepted_by = doc.custom_accepted_by or frappe.db.get_value("Task", doc.name, "custom_accepted_by")
-    if not accepted_by and frappe.session.user != "Administrator":
-        print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=completion kind={doc.task_kind} user={frappe.session.user} accepted_by= result=BLOCKED")
-        frappe.throw("You must accept this task before completing it. Click Accept / Start Task first.")
-    if accepted_by and accepted_by != frappe.session.user and frappe.session.user != "Administrator":
-        print(f"[Gates] {frappe.utils.now()} task={doc.name} gate=completion kind={doc.task_kind} user={frappe.session.user} accepted_by={accepted_by} result=BLOCKED")
-        frappe.throw("Only the user who accepted this task (" + accepted_by + ") can complete it.")
+before_ds = (before.delivery_status if before else None) or "Todo"
+before_ps = (before.pickup_status if before else None) or "Todo"
+is_completing = (doc.status == "Completed" and before_status != "Completed")
 
-# Order entry completion: validate items, sync fields, handle discounts, submit DC
-before = doc.get_doc_before_save()
-before_status = before.status if before else None
-is_completing_early = (doc.status == "Completed" and before_status != "Completed")
-if is_completing_early and doc.task_kind == "Order entry":
-    if not doc.dispatch_case:
-        frappe.throw("No Dispatch Case linked to this task.")
-    # Guard: if DC is already submitted (manual submit or retry), skip
-    dc_docstatus = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "docstatus")
-    if dc_docstatus == 1:
-        print(f"[Gates] DC {doc.dispatch_case} already submitted, skipping completion gate")
-    else:
-        dc_doc = frappe.get_doc("Dispatch Case", doc.dispatch_case)
-        if not dc_doc.case_items or len(dc_doc.case_items) == 0:
-            frappe.throw("Add at least one product before completing.")
-        if not doc.customer:
-            frappe.throw("Select a Customer before completing the order.")
-        if doc.order_return_expected and not doc.order_client_location_warehouse:
-            frappe.throw("Client Location Warehouse is required when Return Expected is checked.")
+# ═══════════════════════════════════════════════════════════════════════
+# SECTION A — gates that do NOT require a Dispatch Case
+# ═══════════════════════════════════════════════════════════════════════
 
-        dc_doc.customer = doc.customer
-        dc_doc.return_expected = doc.order_return_expected or 0
-        dc_doc.client_location_warehouse = doc.order_client_location_warehouse or ""
-        dc_doc.surgery_date = doc.order_surgery_date or None
+# Discount Approval completion: require approval_outcome
+if is_completing and doc.task_kind == "Discount Approval":
+    if not doc.approval_outcome:
+        frappe.throw("Set Approval Outcome (Approved or Rejected) before completing.")
 
-        has_discount = any(float(row.discount_pct or 0) > 0 for row in dc_doc.case_items)
+# NOTE: the former Debt Closure Approval role check lived here and was
+# unreachable for tasks without a Dispatch Case. It is now redundant and has
+# been removed: dispatch_task_accept validates the accepter against the Task
+# Access Policy, and Task-before-save-access-control reserves completion to the
+# accepter, so only a policy-allowed user can ever complete the task.
+# Task-after-save-debt-closure.py retains its own equivalent check.
 
-        if has_discount:
-            dc_doc.status = "Awaiting Approval"
-            dc_doc.discount_approval_status = "Pending"
-            dc_doc.flags.ignore_permissions = True
-            dc_doc.save()
-            print(f"[Gates] DC {doc.dispatch_case} has discounts, set to Awaiting Approval")
-        else:
-            dc_doc.flags.ignore_permissions = True
-            dc_doc.submit()
-            print(f"[Gates] DC {doc.dispatch_case} submitted (no discounts)")
+# ═══════════════════════════════════════════════════════════════════════
+# SECTION B — gates that require a Dispatch Case
+# ═══════════════════════════════════════════════════════════════════════
 
 if not doc.dispatch_case:
     pass
 else:
+    # Order Entry: full field sync (all fields, even when cleared)
+    if doc.task_kind == "Order entry":
+        sync_fields = {
+            "return_expected": doc.order_return_expected or 0,
+            "client_location_warehouse": doc.order_client_location_warehouse or "",
+            "surgery_date": doc.order_surgery_date or None,
+        }
+        if doc.customer:
+            sync_fields["customer"] = doc.customer
+        frappe.db.set_value("Dispatch Case", doc.dispatch_case, sync_fields)
+    # Other dispatch tasks: safety-net customer sync (only if DC customer is blank)
+    elif doc.customer:
+        dc_customer = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "customer")
+        if not dc_customer:
+            frappe.db.set_value("Dispatch Case", doc.dispatch_case, "customer", doc.customer)
+
     # Update dispatch_case_status field for display
-    if doc.dispatch_case:
-        dc_status = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "status")
-        if dc_status:
-            doc.dispatch_case_status = dc_status
-    before = doc.get_doc_before_save()
-    before_status = before.status if before else None
-    before_ds = (before.delivery_status if before else None) or "Todo"
-    before_ps = (before.pickup_status if before else None) or "Todo"
-    is_completing = (doc.status == "Completed" and before_status != "Completed")
+    dc_status = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "status")
+    if dc_status:
+        doc.dispatch_case_status = dc_status
+
     ds_changing = (doc.task_kind == "Delivery" and doc.delivery_status != before_ds)
     ps_changing = (doc.task_kind == "Pickup Returns" and doc.pickup_status != before_ps)
+
+    # Order entry completion: validate items, sync fields, handle discounts, submit DC
+    if is_completing and doc.task_kind == "Order entry":
+        # Guard: if DC is already submitted (manual submit or retry), skip
+        dc_docstatus = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "docstatus")
+        if dc_docstatus == 1:
+            print(f"[Gates] DC {doc.dispatch_case} already submitted, skipping completion gate")
+        else:
+            dc_doc = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+            if not dc_doc.case_items or len(dc_doc.case_items) == 0:
+                frappe.throw("Add at least one product before completing.")
+            if not doc.customer:
+                frappe.throw("Select a Customer before completing the order.")
+            if doc.order_return_expected and not doc.order_client_location_warehouse:
+                frappe.throw("Client Location Warehouse is required when Return Expected is checked.")
+
+            dc_doc.customer = doc.customer
+            dc_doc.return_expected = doc.order_return_expected or 0
+            dc_doc.client_location_warehouse = doc.order_client_location_warehouse or ""
+            dc_doc.surgery_date = doc.order_surgery_date or None
+
+            has_discount = any(float(row.discount_pct or 0) > 0 for row in dc_doc.case_items)
+
+            if has_discount:
+                dc_doc.status = "Awaiting Approval"
+                dc_doc.discount_approval_status = "Pending"
+                dc_doc.flags.ignore_permissions = True
+                dc_doc.save()
+                print(f"[Gates] DC {doc.dispatch_case} has discounts, set to Awaiting Approval")
+            else:
+                dc_doc.flags.ignore_permissions = True
+                dc_doc.submit()
+                print(f"[Gates] DC {doc.dispatch_case} submitted (no discounts)")
 
     # Pack task: require at least one image before completing
     if is_completing and doc.task_kind == "Pack / prepare items":
@@ -166,16 +183,3 @@ else:
             frappe.throw("No Sales Invoice linked to this Dispatch Case yet.")
         if frappe.db.get_value("Sales Invoice", inv, "docstatus") != 1:
             frappe.throw("Submit the Sales Invoice before completing this task.")
-
-    # Discount Approval completion: require approval_outcome
-    if is_completing and doc.task_kind == "Discount Approval":
-        if not doc.approval_outcome:
-            frappe.throw("Set Approval Outcome (Approved or Rejected) before completing.")
-
-    # Debt Closure Approval: only users allowed by policy can complete
-    if is_completing and doc.task_kind == "Debt Closure Approval":
-        approval_policy = frappe.get_doc("Task Access Policy", "Debt Closure Approval")
-        allowed_roles = [r.role for r in (approval_policy.allowed_roles or []) if r.role]
-        user_roles = frappe.get_all("Has Role", filters={"parent": frappe.session.user}, pluck="role")
-        if frappe.session.user != "Administrator" and not set(allowed_roles).intersection(set(user_roles or [])):
-            frappe.throw("Only users allowed by the Debt Closure Approval Task Access Policy can approve and complete this task.")

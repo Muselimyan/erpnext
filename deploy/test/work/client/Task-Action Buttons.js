@@ -130,9 +130,21 @@ function tab_is_accepted(frm) {
     return !!frm.doc.custom_accepted_by;
 }
 
+// Editability and completion are owned by Task-Field-Editability.js (TFE).
+// This file previously reimplemented the rule with its own admin exemption,
+// which contradicted TFE and AGENTS.md. Delegate instead.
+//
+// tab_can_act  -> may this user change the task at all (TFE admin rule applies)
+// tab_can_complete -> may this user mark it done (accepter only, no exemption)
 function tab_can_act(frm) {
-    if (!tab_is_accepted(frm)) return false;
-    return frm.doc.custom_accepted_by === frappe.session.user || tab_is_admin();
+    if (typeof tfe_can_edit === "function") return tfe_can_edit(frm);
+    // Fallback if TFE has not loaded: fail closed to the accepter.
+    return tab_is_accepted(frm) && frm.doc.custom_accepted_by === frappe.session.user;
+}
+
+function tab_can_complete(frm) {
+    if (typeof tfe_can_complete === "function") return tfe_can_complete(frm);
+    return tab_is_accepted(frm) && frm.doc.custom_accepted_by === frappe.session.user;
 }
 
 function tab_needs_dc(frm) {
@@ -373,7 +385,10 @@ function tab_render_bottom_actions(frm) {
         }
 
         // Primary action — right (Complete, Picked Up, Delivered, etc.)
-        var action = tab_get_primary_action(frm);
+        // Gated on tab_can_complete, not tab_can_act: these buttons assert that
+        // work was performed, so a privileged user must not press them on
+        // someone else's task even though they may edit its fields.
+        var action = tab_can_complete(frm) ? tab_get_primary_action(frm) : null;
         if (action) {
             var actionBtn = $('<button style="pointer-events:auto;padding:14px 24px;font-size:15px;font-weight:bold;background:' + action.color + ';color:#fff;border:none;border-radius:12px;cursor:pointer;box-shadow:0 4px 12px rgba(0,0,0,0.25);margin-left:auto;">' + action.label + '</button>');
             actionBtn.on("click", function() { action.handler(frm, $(this)); });
@@ -407,8 +422,9 @@ function tab_render_desktop_buttons(frm) {
 
     if (!isCompleted && !isCancelled) {
         // Primary action (Complete, Picked Up, Delivered, etc.)
-        var action = tab_get_primary_action(frm);
-        if (isAccepted && action) {
+        // Gated on tab_can_complete, not tab_can_act — see the mobile branch.
+        var action = tab_can_complete(frm) ? tab_get_primary_action(frm) : null;
+        if (action) {
             frm.add_custom_button(__(action.label), function() {
                 action.handler(frm, null);
             });

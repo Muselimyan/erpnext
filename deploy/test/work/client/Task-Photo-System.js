@@ -457,12 +457,16 @@ window.PhotoGallery.prototype._uploadFile = function(file) {
                 return;
             }
 
-            // Compute mode
-            var roles = frappe.user_roles || [];
-            var isAdmin = roles.indexOf('System Manager') !== -1 || roles.indexOf('Administrator') !== -1 || frappe.session.user === 'Administrator';
-            var canEdit = isAdmin || (frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
+            // Compute mode.
+            // Editability is owned by Task-Field-Editability.js (TFE). This
+            // block used to reimplement the rule with its own admin exemption,
+            // which contradicted TFE and AGENTS.md; delegate instead so the
+            // admin policy lives in exactly one place.
+            var canEdit = (typeof tfe_can_edit === 'function')
+                ? tfe_can_edit(frm)
+                : (!!frm.doc.custom_accepted_by && frm.doc.custom_accepted_by === frappe.session.user);
             var mode = config.editable && canEdit ? 'editable' : 'readonly';
-            window._photoLog && window._photoLog('form', 'config: key=' + config.key + ' mode=' + mode + ' (editable=' + config.editable + ' canEdit=' + canEdit + ' isAdmin=' + isAdmin + ' accepted_by="' + (frm.doc.custom_accepted_by || '') + '")');
+            window._photoLog && window._photoLog('form', 'config: key=' + config.key + ' mode=' + mode + ' (editable=' + config.editable + ' canEdit=' + canEdit + ' accepted_by="' + (frm.doc.custom_accepted_by || '') + '")');
 
             // Fetch photos and create gallery
             if (config.needsPackLookup) {

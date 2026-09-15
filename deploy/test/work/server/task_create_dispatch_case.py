@@ -10,6 +10,14 @@ def run_script():
     if not task_name:
         frappe.throw('Task is required.')
     task = frappe.get_doc('Task', task_name)
+    # This API previously had NO acceptance check of any kind — the only guard
+    # was that the client hid the button until the task was accepted, which is
+    # not a guard at all. It creates a Dispatch Case and writes it back onto the
+    # task, so it must be held to the same standard as the other task_* APIs.
+    if (task.get('custom_accepted_by') or '') != frappe.session.user:
+        frappe.throw('You must accept the task before creating a Dispatch Case.')
+    if (task.get('task_kind') or '') != 'Order entry':
+        frappe.throw('A Dispatch Case can only be created from an Order entry task.')
     if task.get('dispatch_case'):
         frappe.response['message'] = {'ok': True, 'dispatch_case': task.dispatch_case, 'created': False}
         return

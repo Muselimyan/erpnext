@@ -2,8 +2,15 @@
 # Type: DocType Event
 # DocType: Dispatch Case
 # Event: Before Save
-# Disabled: 0
+# Disabled: 1
 # ---
+# ABSORBED into Dispatch-Case-before-save-access-control.py (step 4).
+# This script should remain disabled.
+#
+# It was the third and last place that read `flags.ignore_permissions` as a
+# business signal. The replacement decides by WHAT changed rather than by who
+# is writing, so the flow's own bookkeeping on submitted cases is allowed while
+# a person editing a submitted case still needs privilege.
 
 # Only Directors/Admins can edit ALREADY submitted Dispatch Cases
 # Allow initial creation and first submit for everyone

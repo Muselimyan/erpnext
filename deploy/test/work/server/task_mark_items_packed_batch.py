@@ -8,17 +8,33 @@
 case_name = frappe.form_dict.get('case_name')
 packed_json = frappe.form_dict.get('packed_indices') or '[]'
 packed_indices = json.loads(packed_json)
-task_kind = frappe.form_dict.get('task_kind') or ''
 
 if not case_name:
         frappe.throw('Dispatch Case is required.')
 
-tfe_tasks = frappe.get_all('Task', filters={'dispatch_case': case_name, 'status': ['not in', ['Completed', 'Cancelled']]}, fields=['custom_accepted_by'], limit_page_length=1)
-if not tfe_tasks or (tfe_tasks[0].custom_accepted_by or '') != frappe.session.user:
-        frappe.throw('You must accept the task before making changes.')
+# Deterministic ownership check. This previously used limit_page_length=1 with
+# no order_by, so when a case had more than one open task WHICH task was
+# checked depended on whatever row order MariaDB returned. Filtering by the
+# caller makes it deterministic.
+mytasks = frappe.get_all(
+        'Task',
+        filters={'dispatch_case': case_name, 'custom_accepted_by': frappe.session.user,
+                 'status': ['not in', ['Completed', 'Cancelled']]},
+        fields=['name', 'task_kind'],
+        limit_page_length=0,
+)
+if not mytasks:
+        frappe.throw('You must accept a task for this Dispatch Case before making changes.')
+acting_kind = mytasks[0].task_kind or ''
 
 case = frappe.get_doc('Dispatch Case', case_name)
-is_returns = (task_kind == 'Returns processing / verification')
+
+# The acting kind is derived from the caller's own accepted task, NOT from a
+# client-supplied `task_kind` parameter as it was before. Trusting the client
+# meant a user holding only a Pack task could pass
+# task_kind='Returns processing / verification' and overwrite returned_qty and
+# used_qty on the case.
+is_returns = (acting_kind == 'Returns processing / verification')
 
 for idx, row in enumerate(case.case_items):
         required_qty = float(row.dispatched_qty or 0)
