@@ -68,7 +68,10 @@ frappe.ui.form.on("Dispatch Case", {
                         "custom_scanned_qty",
                         "custom_last_scanned_barcode", "custom_last_scan_at", "custom_last_scanned_by",
                         "custom_fefo_warning",
-                        "returned_qty", "lost_damaged_qty", "used_qty"
+                        // lost_damaged_presence belongs with the other
+                        // returns-stage fields: it is recorded at inspection,
+                        // never at order creation.
+                        "returned_qty", "lost_damaged_qty", "lost_damaged_presence", "used_qty"
                     ];
                     
                     grid.docfields.forEach(function(df) {

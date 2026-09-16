@@ -67,6 +67,25 @@ if is_completing and doc.task_kind == "Discount Approval":
 # outcome is what makes the next episode's timing meaningful, since
 # Scheduled-debt-collection-episodes reads the follow-up date to decide when to
 # raise the next one.
+# Write-off Approval completion: require an outcome.
+#
+# Completing this task moves real stock and, on one branch, raises a real
+# invoice. Without an outcome the after-save handler has nothing to act on and
+# the units would stay in Lost & Damaged with the task closed -- the same
+# stranded state this whole path exists to remove.
+#
+# Placed in Section A alongside the other outcome gates. These tasks do carry a
+# Dispatch Case, so it would also work below, but the rule is about the task's
+# own field and does not need the case.
+#
+# Read via .get() rather than attribute access: a Frappe Document raises
+# AttributeError for an unknown fieldname, so if this script were ever deployed
+# ahead of the custom field, every Write-off Approval save would break.
+if is_completing and doc.task_kind == "Write-off Approval":
+    if not doc.get("writeoff_outcome"):
+        frappe.throw("Choose a Write-off Outcome -- Bill Client or Write Off -- before completing. "
+                     "Completing this task moves the stock out of Lost & Damaged.")
+
 if is_completing and doc.task_kind == "Debt Collection":
     if not doc.collection_outcome:
         frappe.throw("Record what happened (Collection Outcome) before completing this collection attempt.")
@@ -226,12 +245,24 @@ else:
         if not_packed:
             frappe.throw('All items must be packed before completing this task. Not packed: ' + ', '.join(not_packed))
 
-    # Returns Inspection completion: require returned_qty
+    # Returns Inspection completion: require returned_qty, and require the
+    # lost/damaged presence wherever a lost/damaged quantity was recorded.
+    #
+    # Without the presence check the attribute is optional in practice and the
+    # data is useless: the Director resolving the write-off cannot tell whether
+    # the units physically exist, which is the only thing that distinguishes a
+    # scrappable item from a missing one.
     if is_completing and doc.task_kind == "Returns processing / verification":
         case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+        missing_presence = []
         for row in (case.case_items or []):
             if row.returned_qty is None:
                 frappe.throw("Fill returned_qty for ALL items in Dispatch Case before completing.")
+            if float(row.lost_damaged_qty or 0) > 0 and not row.get("lost_damaged_presence"):
+                missing_presence.append(row.item_code or row.item_name or "Unknown")
+        if missing_presence:
+            frappe.throw("Say whether each lost/damaged item is damaged (in hand) or lost (not recoverable): "
+                         + ", ".join(missing_presence))
 
     # Invoice Preparation completion: require a submitted invoice for the case.
     #

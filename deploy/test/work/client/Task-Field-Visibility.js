@@ -69,6 +69,10 @@ var TFV_KIND_MAP = {
                          "Write-off Approval", "Debt Closure Approval"],
     "approval_note":    ["Purchase Approval", "Discount Approval",
                          "Write-off Approval", "Debt Closure Approval"],
+    // Write-off decision. Separate from approval_outcome, which is
+    // Approved/Rejected and shared with Discount and Purchase Approval --
+    // adding Bill Client / Write Off there would pollute both.
+    "writeoff_outcome": ["Write-off Approval"],
 
     // Invoice / Sales -- value-based
     "sales_invoice":    "__has_value__",

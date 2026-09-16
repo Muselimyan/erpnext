@@ -10,6 +10,13 @@ MAIN_WH = "Main - Inmed"
 DELIVERY_TRANSIT_WH = "Delivery In-Transit - Inmed"
 RETURN_PICKUP_TRANSIT_WH = "Return Pickup In-Transit - Inmed"
 RETURNS_WH = "Returns - Inmed"
+# Holding bucket for units whose disposition is undecided -- lost or damaged,
+# awaiting a Director decision to bill the client or write them off. It is an
+# accounting location, not a shelf: a lost unit does not physically exist, and
+# `lost_damaged_presence` on the row records which it is. The warehouse is
+# emptied by the resolution, so the fiction is bounded.
+LOST_DAMAGED_WH = "Lost & Damaged - Inmed"
+WRITEOFF_EXPENSE_ACCOUNT = "Stock Adjustment - Inmed"
 
 if not doc.dispatch_case:
     pass
@@ -30,7 +37,11 @@ else:
 
     print(f"[Dispatch] {frappe.utils.now()} task={doc.name} kind={doc.task_kind} dc={doc.dispatch_case} completing={is_completing} ds_changed={ds_changed} ps_changed={ps_changed} team_map_entries={len(team_map)}")
 
-    def create_se(src_wh, tgt_wh, items, purpose="Material Transfer"):
+    # expense_account defaults to COGS so every pre-existing call site behaves
+    # exactly as before. A write-off overrides it with Stock Adjustment: a lost
+    # or scrapped unit is not a cost of goods SOLD, and posting it to COGS would
+    # distort the very margin figures the profit rework (A1) exists to correct.
+    def create_se(src_wh, tgt_wh, items, purpose="Material Transfer", expense_account="Cost of Goods Sold - Inmed"):
         se_items = []
         for ic, q, sn, bn in items:
             if (q or 0) <= 0:
@@ -45,7 +56,7 @@ else:
                 "stock_uom": stock_uom,
                 "conversion_factor": 1,
                 "s_warehouse": src_wh,
-                "expense_account": "Cost of Goods Sold - Inmed",
+                "expense_account": expense_account,
                 "cost_center": "Main - Inmed",
                 "allow_zero_valuation_rate": 1
             }
@@ -75,6 +86,9 @@ else:
 
     def returned_items(c):
         return [(r.item_code, r.returned_qty, r.serial_no, r.batch_no) for r in (c.case_items or []) if (r.returned_qty or 0) > 0]
+
+    def lost_items(c):
+        return [(r.item_code, r.lost_damaged_qty, r.serial_no, r.batch_no) for r in (c.case_items or []) if (r.lost_damaged_qty or 0) > 0]
 
     def short_customer(cname):
         if not cname:
@@ -231,6 +245,43 @@ else:
         if u:
             c_se = create_se(RETURNS_WH, "", u, "Material Issue")
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "consumption_stock_entry", c_se.name if c_se else "")
+        # Segregate lost and damaged units out of Returns.
+        #
+        # The return pickup moves the full DISPATCHED quantity back, so Returns
+        # receives everything and only used and returned leave it. Without this
+        # transfer the lost/damaged remainder is stranded there indefinitely,
+        # mixed in with good sellable returns and indistinguishable from them.
+        # With it, Returns balances exactly:
+        #   dispatched = used (issued) + lost/damaged (moved) + returned (restocked)
+        #
+        # This is a Material TRANSFER, not an issue: value stays on the balance
+        # sheet because the disposition is still undecided. The stock moves at
+        # inspection rather than at approval deliberately -- physical truth must
+        # not wait for a signature, which is the mistake prepaid_amount made.
+        lost = lost_items(case)
+        if lost:
+            ld_se = create_se(RETURNS_WH, LOST_DAMAGED_WH, lost)
+            lost_lines = []
+            for row in (case.case_items or []):
+                if (row.lost_damaged_qty or 0) > 0:
+                    presence = row.get("lost_damaged_presence") or "not recorded"
+                    lost_lines.append(f"- {row.item_code} x{row.lost_damaged_qty} ({presence})")
+            # make_task dedupes on an open task of the same kind for this case,
+            # so re-completing the inspection cannot stack approvals.
+            make_task(
+                "Write-off Approval",
+                f"Lost/damaged: {short_customer(case.customer)} ({case.name})",
+                team_map.get("Write-off Approval", ""),
+                "Decide what happens to these units. They are held in "
+                + LOST_DAMAGED_WH + " pending your decision.\n\n"
+                + "\n".join(lost_lines)
+                + "\n\nSet Write-off Outcome to 'Bill Client' to invoice them, or "
+                + "'Write Off' to absorb the loss. Either way the stock leaves "
+                + LOST_DAMAGED_WH + " when you complete this task.",
+                "", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name,
+            )
+            print(f"[Dispatch] {frappe.utils.now()} case={case.name} lost/damaged segregated se={ld_se.name if ld_se else None} rows={len(lost)}")
+
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Invoice Pending")
         make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review the used quantities, then use Create & Submit Invoice on this task for {case.name}. If nothing was used, use Nothing to Invoice.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
         u = used_items(case)
@@ -315,3 +366,101 @@ else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"status": "Draft", "discount_approval_status": "Rejected"})
             make_task("Order entry", f"Discount rejected - {short_customer(case.customer)}", team_map.get("Order entry", ""), "Discount rejected by Directors. Open Dispatch Case, fix prices, save again.", None, doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
             print(f"[Dispatch] Discount rejected for DC {doc.dispatch_case}, new Order Entry created")
+
+    # Write-off Approval Completed -- resolve the held lost/damaged units.
+    #
+    # This handler lives here rather than in its own script because it needs
+    # create_se, which is a nested function in this file. RestrictedPython has no
+    # module system and forbids a function calling a sibling, so the alternative
+    # would be duplicating the whole Stock Entry builder.
+    #
+    # Either outcome empties LOST_DAMAGED_WH of this case's units. The only
+    # difference is where the value goes: to a client (revenue + COGS) or to the
+    # company (write-off expense).
+    if is_completing and doc.task_kind == "Write-off Approval":
+        case.reload()
+        lost = lost_items(case)
+        # .get() rather than attribute access -- a Frappe Document raises
+        # AttributeError for an unknown fieldname, so reading it directly would
+        # break every Write-off Approval save if this script were ever deployed
+        # ahead of the custom field.
+        writeoff_outcome = doc.get("writeoff_outcome") or ""
+        if not lost:
+            print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={doc.dispatch_case} has no lost/damaged rows, nothing to resolve")
+        elif writeoff_outcome == "Bill Client":
+            # Idempotency is keyed on source_task, so completing this task twice
+            # cannot raise a second invoice. The used-items invoice for the same
+            # case is keyed on its own task and is unaffected.
+            already = frappe.get_all(
+                "Sales Invoice",
+                filters={"source_task": doc.name, "docstatus": ["!=", 2]},
+                fields=["name"],
+                limit_page_length=1,
+            )
+            if already:
+                print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} already invoiced as {already[0].name}")
+            else:
+                ld_rows = []
+                unpriced = []
+                for row in (case.case_items or []):
+                    qty = float(row.lost_damaged_qty or 0)
+                    if qty <= 0:
+                        continue
+                    rate = float(row.unit_price or 0) * (1 - float(row.discount_pct or 0) / 100)
+                    if rate <= 0:
+                        unpriced.append(row.item_code or "Unknown")
+                        continue
+                    ld_rows.append({"item_code": row.item_code, "qty": qty, "rate": rate})
+                if unpriced:
+                    frappe.throw("These lost/damaged products have no price and cannot be billed: "
+                                 + ", ".join(unpriced)
+                                 + ". Set an Item Price, or choose Write Off instead.")
+                cust = frappe.get_doc("Customer", case.customer)
+                ld_hospital = cust.name if (cust.get("client_kind") or "") == "Hospital" else (cust.get("hospital") or "")
+                si_doc = {
+                    "doctype": "Sales Invoice",
+                    "customer": case.customer,
+                    "company": "InMED",
+                    "currency": "AMD",
+                    "update_stock": 0,
+                    "dispatch_case": case.name,
+                    "source_task": doc.name,
+                    "items": ld_rows,
+                }
+                if ld_hospital:
+                    si_doc["hospital"] = ld_hospital
+                if cust.get("doctor_name"):
+                    si_doc["doctor_name"] = cust.get("doctor_name")
+                if frappe.db.exists("Sales Taxes and Charges Template", "Armenia Tax - Inmed"):
+                    si_doc["taxes_and_charges"] = "Armenia Tax - Inmed"
+                if frappe.db.exists("Payment Terms Template", "Net 30"):
+                    si_doc["payment_terms_template"] = "Net 30"
+                ld_si = frappe.get_doc(si_doc)
+                ld_si.flags.ignore_permissions = True
+                ld_si.insert()
+                # Setting taxes_and_charges alone does not populate the tax rows;
+                # the template has to be expanded. Same trap as W6.
+                if si_doc.get("taxes_and_charges") and not ld_si.taxes:
+                    for t in (frappe.get_all("Sales Taxes and Charges",
+                                             filters={"parent": "Armenia Tax - Inmed", "parenttype": "Sales Taxes and Charges Template"},
+                                             fields=["charge_type", "account_head", "rate", "description", "cost_center", "included_in_print_rate"],
+                                             order_by="idx asc", limit_page_length=0) or []):
+                        ld_si.append("taxes", {
+                            "charge_type": t.charge_type, "account_head": t.account_head,
+                            "rate": t.rate, "description": t.description,
+                            "cost_center": t.cost_center,
+                            "included_in_print_rate": t.included_in_print_rate,
+                        })
+                    ld_si.flags.ignore_permissions = True
+                    ld_si.save()
+                ld_si.flags.ignore_permissions = True
+                ld_si.submit()
+                # Billed, therefore sold: the stock leaves at COGS like any sale.
+                out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue")
+                print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={case.name} BILLED invoice={ld_si.name} total={ld_si.grand_total} se={out_se.name if out_se else None}")
+        elif writeoff_outcome == "Write Off":
+            # Absorbed by the company. Posted to Stock Adjustment rather than
+            # COGS: these units were never sold, and routing them through cost of
+            # goods sold would silently worsen gross margin on real sales.
+            out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", WRITEOFF_EXPENSE_ACCOUNT)
+            print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={case.name} WRITTEN OFF se={out_se.name if out_se else None} expense={WRITEOFF_EXPENSE_ACCOUNT}")

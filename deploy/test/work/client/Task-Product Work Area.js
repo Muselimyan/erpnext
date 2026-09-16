@@ -313,7 +313,7 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
     </style>`;
     html += `<div class="task-return-phone-toggle"><span class="small text-muted">Phone view: <b>${mobile_mode === 'detail' ? 'Detailed' : 'Compact'}</b></span><button type="button" class="btn btn-xs btn-default" onclick="task_product_work_area_toggle_mobile_return_mode()">${mobile_mode === 'detail' ? 'Use Compact' : 'Use Detailed'}</button></div>`;
     html += `<div class="task-return-desktop-table" style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
-        <th style="width:70px">Returned?</th><th>Name</th><th>Dispatched</th><th>Returned Qty</th><th>Lost/Damaged</th><th>Used</th><th>Batch/LOT</th><th>Expiry</th>
+        <th style="width:70px">Returned?</th><th>Name</th><th>Dispatched</th><th>Returned Qty</th><th>Lost/Damaged</th><th style="width:150px">Lost or damaged?</th><th>Used</th><th>Batch/LOT</th><th>Expiry</th>
     </tr></thead><tbody>`;
     let compact_html = `<div class="task-return-mobile-compact ${mobile_mode === 'detail' ? 'task-return-hidden' : ''}"><table class="table table-bordered table-condensed task-return-compact-table"><thead><tr><th>Ret?</th><th>Item</th><th>Returned</th><th>Lost</th></tr></thead><tbody>`;
     let detail_html = `<div class="task-return-mobile-detail ${mobile_mode === 'detail' ? 'task-return-active' : ''}">`;
@@ -328,12 +328,30 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
         const detail_checkbox_id = `return_detail_checkbox_${idx}`;
         const escaped_case = frappe.utils.escape_html(frm.doc.dispatch_case);
         const item_label = frappe.utils.escape_html(row.item_name || row.item_code || "");
+        // Presence selector, built after escaped_case exists -- const is
+        // block-scoped and referencing it earlier is a ReferenceError, not a
+        // hoisted undefined.
+        //
+        // Required by the completion gate whenever a lost/damaged quantity is
+        // recorded: it is the only thing that tells the Director resolving the
+        // write-off whether the unit physically exists, and so whether it can be
+        // scrapped or claimed from a supplier. Disabled until a quantity is
+        // entered, so it cannot be set on a row with nothing lost.
+        const presence = row.lost_damaged_presence || "";
+        const pdis = (lost > 0 && returns_editable) ? "" : " disabled";
+        const presence_select = `<select class="form-control input-xs task-lost-presence" data-idx="${idx}"${pdis}`
+            + ` onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})">`
+            + `<option value=""${presence === "" ? " selected" : ""}>-- select --</option>`
+            + `<option value="Damaged - in hand"${presence === "Damaged - in hand" ? " selected" : ""}>Damaged - in hand</option>`
+            + `<option value="Lost - not recoverable"${presence === "Lost - not recoverable" ? " selected" : ""}>Lost - not recoverable</option>`
+            + `</select>`;
         html += `<tr data-return-row="${idx}">
             <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
             <td>${item_label}</td>
             <td class="text-right" data-dispatched="${dispatched}">${dispatched}</td>
             <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
             <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
+            <td>${presence_select}</td>
             <td class="text-right task-used-qty">${used}</td>
             <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
             <td>${frappe.utils.escape_html(row.expiry_date || row.custom_expiry_date || "")}</td>
@@ -342,7 +360,7 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
             <td data-dispatched="${dispatched}"><input type="checkbox" id="${compact_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
             <td class="task-return-compact-item">${item_label}</td>
             <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"><span class="hidden task-used-qty">${used}</span></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})">${presence_select}<span class="hidden task-used-qty">${used}</span></td>
         </tr>`;
         detail_html += `<div class="task-return-card" data-return-row="${idx}">
             <div class="task-return-card-title">${item_label}</div>
@@ -350,6 +368,7 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
                 <div class="task-return-card-full" data-dispatched="${dispatched}"><label><input type="checkbox" id="${detail_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"> Returned?</label></div>
                 <div><label>Returned Qty</label><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
                 <div><label>Lost/Damaged</label><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
+                <div class="task-return-card-full"><label>Lost or damaged?</label>${presence_select}</div>
                 <div><label>Used</label><div class="form-control input-xs task-used-qty" style="background:#f8f8f8">${used}</div></div>
                 <div><label>Sent</label><div class="form-control input-xs" style="background:#f8f8f8">${dispatched}</div></div>
             </div>
@@ -359,7 +378,8 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
     compact_html += `</tbody></table></div>`;
     detail_html += `</div>`;
     html += compact_html + detail_html;
-    html += `<div class="small text-muted" style="margin-top:8px"><i>Check Returned? for fully returned items. Edit Returned Qty or Lost/Damaged for partial cases. Values are saved into the linked Dispatch Case.</i></div>`;
+    html += `<div class="small text-muted" style="margin-top:8px"><i>Check Returned? for fully returned items. Edit Returned Qty or Lost/Damaged for partial cases. Values are saved into the linked Dispatch Case.<br>
+        Whenever you record a Lost/Damaged quantity, say which it is. Damaged units are physically in hand and can be scrapped or claimed from the supplier; lost units are not recoverable. Both are held in a separate warehouse until a Director decides whether to bill the client or write them off &mdash; you cannot complete this task without saying which.</i></div>`;
     if (frm.fields_dict.custom_task_product_summary) {
         frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
     }
@@ -428,7 +448,7 @@ function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_
     var html = `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
         <th>Name</th><th class="text-right">Used Qty</th><th class="text-right">Unit Price</th>
         <th class="text-right">Disc %</th><th class="text-right">Line Total</th>
-        <th class="text-right">Lost/Dmg</th><th>Batch/LOT</th>
+        <th class="text-right">Lost/Dmg</th><th>Lost or damaged?</th><th>Batch/LOT</th>
     </tr></thead><tbody>`;
     rows.forEach(function(row) {
         var used = flt(row.used_qty || 0);
@@ -448,6 +468,7 @@ function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_
             <td class="text-right">${disc ? disc + "%" : "-"}</td>
             <td class="text-right"><b>${line ? frappe.format(line, {fieldtype: "Currency"}) : "-"}</b></td>
             <td class="text-right">${lost || "-"}</td>
+            <td class="small text-muted">${lost > 0 ? esc(row.lost_damaged_presence || "not recorded") : "-"}</td>
             <td>${esc(row.batch_no || "")}</td>
         </tr>`;
     });
@@ -824,7 +845,11 @@ window.task_product_work_area_toggle_returned = function(checkbox, case_name, id
     const returned = checkbox.checked ? dispatched : 0;
     row.find('.task-returned-qty').val(returned);
     row.find('.task-lost-qty').val(0);
-    task_product_work_area_save_return_row(case_name, idx, returned, 0, checkbox);
+    // Nothing is lost if everything came back, so the presence must be cleared
+    // and re-disabled -- otherwise a stale value would survive on a row with a
+    // zero quantity and the server would reject the pair as inconsistent.
+    row.find('.task-lost-presence').val("").prop("disabled", true);
+    task_product_work_area_save_return_row(case_name, idx, returned, 0, "", checkbox);
 };
 
 window.task_product_work_area_update_return_qty = function(input, case_name, idx) {
@@ -833,17 +858,22 @@ window.task_product_work_area_update_return_qty = function(input, case_name, idx
     const row = $(input).closest('[data-return-row]');
     const returned = flt(row.find('.task-returned-qty').val() || 0);
     const lost = flt(row.find('.task-lost-qty').val() || 0);
-    task_product_work_area_save_return_row(case_name, idx, returned, lost, input);
+    const presence = row.find('.task-lost-presence').val() || "";
+    // Enable or disable the selector to match the quantity as it is typed, so
+    // the control's state always reflects whether a presence is required.
+    row.find('.task-lost-presence').prop("disabled", !(lost > 0));
+    task_product_work_area_save_return_row(case_name, idx, returned, lost, presence, input);
 };
 
-function task_product_work_area_save_return_row(case_name, idx, returned, lost, control) {
+function task_product_work_area_save_return_row(case_name, idx, returned, lost, presence, control) {
     frappe.call({
         method: "task_update_return_item_quantities",
         args: {
             case_name: case_name,
             item_idx: idx,
             returned_qty: returned,
-            lost_damaged_qty: lost
+            lost_damaged_qty: lost,
+            lost_damaged_presence: presence
         },
         freeze: true,
         freeze_message: __("Saving return quantities..."),
@@ -854,6 +884,12 @@ function task_product_work_area_save_return_row(case_name, idx, returned, lost, 
                 row.find('.task-used-qty').text(msg.used_qty);
                 row.find('.task-returned-qty').val(msg.returned_qty);
                 row.find('.task-lost-qty').val(msg.lost_damaged_qty);
+                // Echo the server's value rather than keeping the local one:
+                // the API clears the presence when the quantity drops to zero,
+                // and the control must show that.
+                row.find('.task-lost-presence')
+                    .val(msg.lost_damaged_presence || "")
+                    .prop("disabled", !(flt(msg.lost_damaged_qty) > 0));
                 row.find('input[type="checkbox"]').prop('checked', flt(msg.returned_qty) >= flt(msg.dispatched_qty) && flt(msg.lost_damaged_qty) === 0 && flt(msg.dispatched_qty) > 0);
                 frappe.show_alert({ message: __("Saved return quantities: {0}", [msg.item_code]), indicator: "green" });
                 const frm = cur_frm;

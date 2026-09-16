@@ -89,6 +89,9 @@ var TFE_EDIT_MAP = {
     "collection_outcome":              ["Debt Collection"],
     "collection_follow_up_date":       ["Debt Collection"],
     "collection_note":                 ["Debt Collection"],
+    // Completing a Write-off Approval moves real stock and, on one branch,
+    // raises a real invoice, so the gate requires this to be set first.
+    "writeoff_outcome":                ["Write-off Approval"],
     "customer":                        ["Order entry", "Other: Entry", "Other: Processing"],
     "order_return_expected":           ["Order entry"],
     "order_client_location_warehouse": ["Order entry"],

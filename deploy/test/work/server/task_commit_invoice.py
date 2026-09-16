@@ -56,9 +56,24 @@ case = frappe.get_doc("Dispatch Case", task.dispatch_case)
 # ── Idempotency ───────────────────────────────────────────────────────
 # Keyed on Sales Invoice.dispatch_case rather than Dispatch Case.sales_invoice,
 # so an amended invoice (which carries the same dispatch_case) is found too.
+#
+# `source_task` empty restricts this to the USED-ITEMS invoice. A case can
+# legitimately carry a second invoice for lost/damaged units billed after a
+# Write-off Approval, and that one is stamped with its approval task in
+# `source_task`. Without this qualifier the guard would refuse to invoice used
+# items on any case that had already billed a loss, and vice versa.
+#
+# CONVENTION, and the reason this invoice deliberately does NOT stamp
+# `source_task` even though it knows its task: an empty `source_task` means
+# "the used-items invoice for this case", of which there may be at most one.
+# A set `source_task` means "raised by that Write-off Approval", of which there
+# may be at most one per approval. Two unambiguous guards, no join needed to
+# tell the kinds apart. If this invoice stamped its own task, the filter below
+# would stop matching its own previous output and idempotency would break.
+# The task audit path for a used-items invoice is `Dispatch Case.invoice_task`.
 existing = frappe.get_all(
     "Sales Invoice",
-    filters={"dispatch_case": case.name, "docstatus": ["!=", 2]},
+    filters={"dispatch_case": case.name, "docstatus": ["!=", 2], "source_task": ["in", ["", None]]},
     fields=["name", "docstatus"],
     limit_page_length=0,
 )

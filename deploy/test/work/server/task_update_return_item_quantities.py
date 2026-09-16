@@ -5,10 +5,13 @@
 # Disabled: 0
 # ---
 
+PRESENCE_OPTIONS = ["Damaged - in hand", "Lost - not recoverable"]
+
 case_name = frappe.form_dict.get("case_name")
 item_idx = frappe.form_dict.get("item_idx")
 returned_qty = frappe.form_dict.get("returned_qty")
 lost_damaged_qty = frappe.form_dict.get("lost_damaged_qty")
+lost_damaged_presence = frappe.form_dict.get("lost_damaged_presence")
 
 if not case_name:
     frappe.throw("Dispatch Case is required.")
@@ -48,9 +51,22 @@ if returned < 0 or lost_damaged < 0:
 if returned + lost_damaged > dispatched_qty:
     frappe.throw("Returned plus lost/damaged quantity cannot be greater than dispatched quantity.")
 
+# Presence is meaningful only alongside a quantity, and a quantity without it is
+# unresolvable later -- the Director cannot tell a scrappable unit from a missing
+# one. Keep the pair consistent here rather than only at the completion gate, so
+# a half-filled row cannot be saved and then puzzled over.
+presence = (lost_damaged_presence or "").strip()
+if presence and presence not in PRESENCE_OPTIONS:
+    frappe.throw("Unknown lost/damaged presence '" + presence + "'. Expected one of: " + ", ".join(PRESENCE_OPTIONS))
+if lost_damaged > 0 and not presence:
+    presence = row.get("lost_damaged_presence") or ""
+if lost_damaged <= 0:
+    presence = ""
+
 used = dispatched_qty - returned - lost_damaged
 row.returned_qty = returned
 row.lost_damaged_qty = lost_damaged
+row.lost_damaged_presence = presence
 row.used_qty = used
 
 case.flags.ignore_permissions = True
@@ -63,5 +79,6 @@ frappe.response["message"] = {
     "dispatched_qty": dispatched_qty,
     "returned_qty": returned,
     "lost_damaged_qty": lost_damaged,
+    "lost_damaged_presence": presence,
     "used_qty": used
 }
