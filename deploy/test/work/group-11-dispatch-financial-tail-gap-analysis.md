@@ -1,16 +1,177 @@
-# Group 11 — Dispatch Financial Tail: Gap Analysis and Redesign
+# Group 11 — Dispatch Financial Tail
 
 > **Scope.** Everything after goods physically reach the client: consumption posting, Sales Invoice creation, receivables, payment recording, debt closure, profit, and the reports built on them.
 >
 > **Excludes.** Dispatch Case operational flow (task chain, packing, scanning, returns handling, cancel flow) — see **Group 1**.
 >
-> **Status.** **IMPLEMENTED on test.** See §0 for what shipped. The analysis below is retained as the record of why each change was made; the priority bands and proposals in §7 onward describe the state *before* implementation.
+> **The rebuild is done and deployed to test** (W1–W11, 58 automated checks). This
+> document is now two things: **§A–§C are the work that remains and the things
+> that will bite you** — read those. **§0 onward is the archive**: the original
+> analysis, kept because it explains why each change was made and because its
+> finding IDs (C*, G*) are referenced from other audits.
 >
-> **Revision note.** Previously circulated as `docs/23-dispatch-financial-tail-gap-analysis.md`. Renamed to Group 11 to sit alongside the other group audits. **All finding IDs (C*, G*, R*, V*) are unchanged from that revision** — notes made against the old numbering remain valid. The 1–100 importance scores from that revision have been replaced with three priority bands (see §7).
+> Original finding IDs are unchanged. The old §7 Recommendations table (R1–R14)
+> has been replaced by §C's traceability map, because every row in it was either
+> delivered or deliberately dropped, and a table of "Not started" statuses for
+> completed work is worse than no table.
 
 ---
 
-## 0. Implementation status (test only)
+## §A. Open work
+
+Ordered by consequence, not effort. Each entry says where to start.
+
+### A1 — Profit is computed from a list price, not from cost · **known wrong**
+
+`Payment Entry-after-submit-debt-closure-check` values cost as
+`Item Price` on the `Standard Buying` list. Doc 17 makes the **landed-cost
+valuation rate** authoritative, and ERPNext already exposes exactly the right
+number per line as `Sales Invoice Item.incoming_rate`.
+
+So every profit figure the system reports is wrong by whatever the difference
+between list buying price and landed cost happens to be — freight, duty and
+import tax are simply absent. Where no `Standard Buying` price exists at all,
+cost is taken as zero and profit equals revenue; the task raises a warning, but
+the number is still written.
+
+**Start at:** the profit block in
+`deploy/test/work/server/Payment Entry-after-submit-debt-closure-check.py`.
+Swap the `Item Price` lookup for `incoming_rate` on the invoice line. Compare
+against ERPNext's own Gross Profit report for the same invoice before trusting
+it. Note **A2 must land first** — `incoming_rate` is only meaningful once stock
+is actually valued.
+
+### A2 — Stock validation is bypassed, so consumption can post nothing · **G7**
+
+The consumption Stock Entries are submitted with `ignore_validate`,
+`ignore_stock_validation` and `allow_zero_valuation_rate`. Together these mean a
+Material Issue can be submitted that moves nothing, values nothing, and produces
+no ledger entries — silently.
+
+`client_location_warehouse` is also not required when a client-location movement
+occurs, so a no-return case with a blank warehouse posts a warehouse-less row
+rather than being refused.
+
+This is the root of A1: with `allow_zero_valuation_rate`, consuming un-valued
+stock succeeds instead of failing loudly, so nothing ever forces the valuation
+data to be correct.
+
+**Start at:** `create_se` in `Task-after-save-dispatch-flow.py`. Remove the
+bypasses, require the warehouse at Order Entry, and raise a blocker task on
+failure rather than submitting an empty entry. **This needs a data migration
+first** — on test there were 18 inert Material Issues, −218 units of negative
+stock in `Main - Inmed`, and 3 cases with `client_location_warehouse` set to
+`Main - Inmed`. Reversing the order makes submissions fail on historical data.
+
+### A3 — Lost and damaged items have no resolution path · **G12**
+
+`lost_damaged_qty` is captured at returns inspection and then nothing happens to
+it. It is deliberately **not** invoiced — charging a client for damage is a human
+decision — but there is also no write-off, no replacement path, and no GL
+consequence. The stock sits in `Returns - Inmed` indefinitely.
+
+**Start at:** the returns-inspection completion branch in
+`Task-after-save-dispatch-flow.py`. A `Write-off Approval` task with
+invoice / write-off / replace outcomes, each with its own stock and GL posting.
+The task kind already exists.
+
+### A4 — A paid invoice cannot be corrected in-system · **R13**
+
+Cancel + Amend works for an unpaid invoice and is the documented remedy. Once a
+payment is allocated, it does not: ERPNext will not cancel an invoice with
+submitted payment references without unwinding them first. There is no credit
+note path and no refund path.
+
+This has not bitten yet because the volume is low, but it is the obvious next
+gap — and VAT treatment may make a credit note legally required rather than
+merely convenient.
+
+**Start at:** a credit note (`Sales Invoice` with `is_return = 1`) plus a refund
+Payment Entry, behind Director approval. Decide whether it is task-driven like
+the rest of the flow or an Accounting-only action on the native form.
+
+### A5 — The Playwright harness cannot see permission defects · **W12**
+
+`tests/e2e/src/config.ts` supplies a single `API_KEY`/`API_SECRET` belonging to
+**Administrator**, and every Layer 1 API test uses it. Privileged users are
+exempt from the access-control gates, so that suite is **structurally incapable**
+of detecting C1, D2, or the `Ops - Finance` permission gap — all three of which
+shipped and passed earlier smoke tests for exactly this reason.
+
+Per-role browser sessions already exist (`auth.ts`, eight role users in config).
+Only the API layer is Administrator-only.
+
+**Start at:** issue per-user API tokens for the eight `e2e.*` users and add a
+`createApiBundleAsRole(role)` helper, or drive API calls through the per-role
+session cookies `auth.ts` already produces. Until then, any permission test must
+be a UI test via `asRole('accounting')`.
+
+The 58 checks in `deploy/test/deploy/group-11-financial-tail/w*-verify-*.py`
+already cover this ground as real non-privileged users, via `bench console`, and
+roll back. They are not in CI.
+
+### A6 — Reporting and notifications · **G17**
+
+Deliberately left until the figures underneath were trustworthy, which they now
+mostly are. Group 10 holds the detail: duplicate report pairs, broken shortcuts,
+dead task VIEWs, unbuilt KPI reports. Telegram money notifications (invoice
+submitted, payment received, threshold breached) are still disabled.
+
+Do **A1** first. Reports built on the current profit basis would only render a
+wrong number more attractively.
+
+---
+
+## §B. Traps — read before changing this area
+
+These are not bugs. They are properties of the system that will cost you a day
+if you do not know them. All are also recorded in `AGENTS.md`.
+
+| | |
+|---|---|
+| **`Before Save` never fires for submitted documents** | Frappe runs `before_save` only when `_action == "save"`; a submitted save is `update_after_submit`. A Dispatch Case is submitted for its whole working life, so a guard registered on `Before Save` misses almost everything. This is why there are **two** DC access-control scripts — a draft one and a submitted twin. **Change one, change the other.** |
+| **`SYSTEM_FIELDS` is default-deny** | The access-control gates allow a save that touches only fields on their `SYSTEM_FIELDS` list. If you add a field that server code writes and forget to register it, housekeeping starts failing — loudly, which is the intent. Conversely, when a field stops having a legitimate system writer, remove it, or you have left a hole. |
+| **Saving a Server Script does not prove it runs** | Frappe's compile check catches syntax errors, not the full RestrictedPython policy. A script can deploy cleanly and throw on first execution. For a Scheduler Event that means it looks deployed and silently never runs — and any test asserting "nothing happened" passes. Always execute what you deploy. |
+| **Augmented assignment to a subscript is forbidden** | `d[k] += 1` and `d[k]["x"] += 1` both fail under RestrictedPython. Read into a local, modify, write back. |
+| **Two `before_save` scripts have no defined order** | Do not let one set a field another gates on. Payment recording and the collection-outcome gate collided exactly this way; the fix was to make each correct independently. |
+| **Deploy scripts must handle UTF-8 in both directions** | PowerShell 5.1 reads BOM-less files as ANSI and mis-decodes responses as Latin-1. This corrupted script bodies on upload and produced false `DIFFERS` in Check mode. The `group-11-financial-tail/*.ps1` scripts are correct; **everything under `deploy/test/scripts/` still has both bugs.** |
+| **The Phase 3 cancel flow has no mechanism yet** | Bulk-cancelling tasks needs to write `status` on tasks the user does not own, and `status` cannot go on `SYSTEM_FIELDS` because it is the primary user-editable transition. That mechanism does not exist. See Group 1 ACT-05. |
+| **Order entry now refuses unpriced items** | Correct, but it means missing `Item Price` rows block work rather than silently producing a zero-value invoice. Test coverage is ~86% of enabled items. |
+
+---
+
+## §C. Where each original finding ended up
+
+Traceability for the C*/G* IDs referenced by the other group audits. Replaces
+the old R1–R14 recommendations table.
+
+| Finding | Outcome | Where it lives now |
+|---|---|---|
+| **C1** acceptance rule implemented three ways | Fixed, W1 | `Task-before-save-access-control` — one gate per doctype; `ignore_permissions` retired as a business signal |
+| **C2** tender validation vs flow pricing deadlock | Unreachable, W7 | Price resolved tender-first when items are added; tender quantity checked at order entry |
+| **G1** invoice task permanently uncompletable | Fixed, W6 | `task_close_case_nothing_to_invoice`; gate requires an invoice only when a line is billable |
+| **G2** `Closed` unreachable | Fixed, W5 | `Payment Entry-after-submit-debt-closure-check` |
+| **G3** advance Payment Entries never submitted | Fixed, W2 | `pe.submit()` in `Task-after-save-advance-payment` |
+| **G4** no completion gate on Debt Collection | Fixed, W4 | `collection_outcome` gate in `Task-before-save-dispatch-gates` §A |
+| **G5** financial fields bypass the submit contract | Fixed, W9 | `doc.save()` for financial writes; `allow_on_submit` was already granted |
+| **G6** outstanding a one-shot snapshot, dead fields | Fixed, W2 + W8 | Read from `Sales Invoice.outstanding_amount`; nine fields deleted |
+| **G7** stock validation disabled | **Open — §A2** | — |
+| **G8** price from `Item.standard_rate` | Fixed, W7 | `task_add_dispatch_product` / `task_update_dispatch_product` |
+| **G9** profit from buying list price | **Open — §A1** | — |
+| **G10** no existence guard on Debt Closure Approval | Fixed, W5 | One open approval per customer; profit computed once at creation |
+| **G11** no invoice back-link, no clinical metadata | Fixed, W6 | `Sales Invoice.dispatch_case`, `hospital`, `doctor_name` |
+| **G12** lost/damaged has no resolution path | **Open — §A3** | — |
+| **G13** invoice metadata depends on unasserted defaults | Fixed, W6 | Tax template and Net 30 terms applied explicitly |
+| **G17** reporting, workspaces, notifications | **Partly open — §A6** | Prepaid report fixed in W8; rest deferred |
+| **R13** credit note / refund path | **Open — §A4** | — |
+| **C3/C4** split photo rule, module-level `get_doc_before_save` | Not addressed | Group 2 hygiene items, unchanged |
+
+Three defects found during the work that were not in the original analysis are
+in §0 as **N1–N3**.
+
+---
+
+## §0. What shipped (test only)
 
 Nine workstreams deployed to `test.erpnext.am` and verified by 58 automated checks
 run as genuinely non-privileged users. Verification scripts live beside the deploy
@@ -110,7 +271,10 @@ first. They are data operations, so they are listed rather than scripted.
 
 ---
 
-## 1. Fix these three first
+## 1. The three original blockers — all fixed
+
+*Archive. This was the top of the document when the analysis was written; all
+three are closed. Live work is in §A.*
 
 Everything else in this document can wait. These three are blockers, and two of them are also prerequisites for the task-native direction (§2).
 
@@ -159,22 +323,25 @@ Extending that to invoicing and debt changes the priority of three findings from
 
 ---
 
-## 3. Symptoms you may already be seeing
+## 3. Symptoms — and which are still live
 
-Business-readable translation, for triaging against support history rather than waiting on write tests.
+Business-readable translation. Useful in both directions: for triaging old
+support history, and for recognising the three that a user can **still** report.
 
-| Symptom a user would report | Finding |
-|---|---|
-| "I can't finish my invoice task — it says I'm not allowed to edit a Debt Collection task I never opened" | C1 |
-| "The invoice task won't close. It says no Sales Invoice is linked and there's nothing I can do" | G1 |
-| "The invoice won't submit — it says the rate must equal the tender price" | C2 |
-| "This case says Payment Pending but the customer paid months ago" | G2, G6 |
-| "The customer paid a deposit but accounting says we never received it" | G3 |
-| "Who changed the outstanding amount on this case?" — no answer available | G5 |
-| "This report says the client owes us, the ledger says they're in credit" | G3, G6 |
-| "Profit on this case looks far too high" | G9 |
-| "Nothing tells us what to do with the implant the hospital lost" | G12 |
-| "Which of these two debt reports is the right one?" | G17 |
+| Symptom a user would report | Finding | Still possible? |
+|---|---|---|
+| "I can't finish my invoice task — it says I'm not allowed to edit a Debt Collection task I never opened" | C1 | No — W1 |
+| "The invoice task won't close. It says no Sales Invoice is linked and there's nothing I can do" | G1 | No — W6 |
+| "The invoice won't submit — it says the rate must equal the tender price" | C2 | No — W7 |
+| "This case says Payment Pending but the customer paid months ago" | G2, G6 | No — W5 |
+| "The customer paid a deposit but accounting says we never received it" | G3 | No — W2 |
+| "Who changed the outstanding amount on this case?" — no answer available | G5 | No — W9 |
+| "This report says the client owes us, the ledger says they're in credit" | G3, G6 | No — W2/W8 |
+| "I can't record a payment at all — it says insufficient permission for Account" | N1 | No — W2 |
+| **"Profit on this case looks far too high"** | G9 | **Yes — §A1.** Cost is a list price, so freight, duty and import tax are missing entirely; where no buying price exists, profit equals revenue |
+| **"Nothing tells us what to do with the implant the hospital lost"** | G12 | **Yes — §A3.** Captured at inspection, then nothing happens to it |
+| **"We over-billed a client who has already paid and I can't fix it"** | R13 | **Yes — §A4.** Cancel + Amend only works while the invoice is unpaid |
+| "Which of these two debt reports is the right one?" | G17 | Partly — §A6. The prepaid report is fixed; duplicates remain |
 
 ---
 
@@ -401,47 +568,20 @@ Excluded from the invoice by design. But grep for `Write-off` across all server 
 
 ---
 
-## 7. Recommendations
+## 7. Recommendations — superseded
 
-Three bands, ordered within each. Effort is relative sizing (S / M / L / XL), not a schedule.
+The original R1–R14 recommendations table lived here, with an Owner and Status
+column per row. Every row has since been delivered, deliberately dropped, or
+moved to **§A Open work**, so the table was removed rather than left showing
+"Not started" against finished work.
 
-**Acceptance criteria name the role the test must be run as.** The group-3 lesson is that privileged testing hides role-gated defects — several items below are invisible when tested as System Manager or a Director.
-
-### Band 1 — Blockers
-
-| ID | Action | Fixes | Effort | Acceptance criteria | Owner | Status |
-|---|---|---|---|---|---|---|
-| **R1** | Unify the acceptance/permission gate into one script with one bypass contract: system writes bypass via a single agreed mechanism, the role check applies only to the task the *user opened*, and Administrator exemption is decided once and applied uniformly | C1 | M | As a user holding **only `Ops - Accounting`**, complete Invoice Preparation for a customer who already has an *unaccepted* open Debt Collection task. Must succeed, and the second invoice must appear in `open_invoices`. | | Not started |
-| **R3** | Turn invoicing into one explicit, idempotent, precondition-checked action: refuse if a non-cancelled invoice exists; if no line qualifies, **do not create the Invoice Preparation task** — route to a "nothing to invoice / close case" outcome; resolve rate tender-first; populate `hospital` / `doctor_name` / `hospital_branch`; add a `dispatch_case` Link on Sales Invoice; set tax and payment-terms templates explicitly | G1, G11, G13, part of C2 | L | As **`Ops - Accounting`**: (a) a case where every item was returned unused produces no zombie task; (b) a tender-covered case submits first time; (c) the invoice carries VAT, a real `due_date`, hospital and doctor. | | Not started |
-| **R4** | Server-side price resolution in strict precedence — active Tender Agreement price → customer-specific `Item Price` → `Standard Selling` → refuse. Gate DC submission on every row having a resolved price | C2, G8 | M | As **`Ops - Order Creating`**: adding a tender-covered item yields the tender price without manual entry; a DC with any zero-price row cannot be submitted. | | Not started |
-| **R5** | Stop bypassing stock validation: remove `ignore_validate` and `ignore_stock_validation`; require `client_location_warehouse` whenever any client-location movement occurs; drop `allow_zero_valuation_rate` so consuming un-valued stock fails loudly; raise a blocker task on failure instead of submitting an empty entry | G7 | M | A no-return case with a blank client warehouse is refused at Order Entry, not silently posted. Every consumption Stock Entry produces SLE rows. **Requires the migration below.** | | Not started |
-| **R5-M** | *Migration, prerequisite to R5:* reconcile the 18 inert Material Issues, the −218 units of negative stock in `Main - Inmed`, and the 3 cases with `client_location_warehouse = "Main - Inmed"` | data | M | Zero negative bins; no submitted Stock Entry with a warehouse-less row. | | Not started |
-| **R6** | Call `pe.submit()` in `advance-payment.py`. An advance becomes a submitted unallocated Payment Entry, allocated against the invoice when it exists. Retire `DC.prepaid_amount` as an independent number; derive prepayment from unallocated Payment Entries | G3 | S | As **`Ops - Finance`**: recording an advance produces GL entries immediately, and customer net receivable in the ledger matches the workflow view. | | Not started |
-| **R6-M** | *Migration:* resolve the 5 draft customer Payment Entries (submit or cancel, per Accounting) | data | S | No draft `Receive` Payment Entries remain. | | Not started |
-| **R7** | Declare `allow_on_submit = 1` on `sales_invoice`, `total_invoice_amount`, `outstanding_amount`, `prepaid_amount`, `profit`, the stock-entry links and `invoice_task`; write them through `doc.save()` | G5 | S | Changing any financial field produces a `tabVersion` row naming the user. | | Not started |
-
-### Band 2 — Should fix
-
-| ID | Action | Fixes | Effort | Acceptance criteria | Owner | Status |
-|---|---|---|---|---|---|---|
-| **R2** | Make ERPNext the single source of receivables truth. The Debt Collection task stops **storing** balances and becomes a view plus an action: outstanding read live from Sales Invoice / GL at render; `open_invoices` a computed display; only amount / method / reference writable. Delete `total_paid_amount` and `available_advance_credit` | G4, G6, G15, G16 | XL | As **`Ops - Finance`**: the task's outstanding figure always equals the sum of linked Sales Invoice outstanding amounts, with no stored copy. Task cannot be completed while outstanding > 0. | | Not started |
-| **R2-M** | *Migration:* reconcile the 3 Completed and 5 Open Debt Collection tasks, including the 2 completed with outstanding debt and the 4 with NULL customer | data | M | No Completed Debt Collection task with non-zero outstanding. | | Not started |
-| **R9** | Derive Dispatch Case status on read from the documents that exist; or, as the pragmatic step, add one reconciliation routine on Payment Entry submit that recomputes outstanding and closes at zero. Remove `Invoiced` from the options | G2 | M | A fully paid case reaches `Closed` without manual intervention. | | Not started |
-| **R8** | Replace the hand-rolled profit calculation with `Sales Invoice Item.incoming_rate` / ERPNext Gross Profit. Compute per-case figures on read rather than storing them. **Depends on R5.** | G9, G10 | M | Profit for a case matches ERPNext's Gross Profit report for the same invoice; no profit is written to Draft cases. | | Not started |
-| **R10** | Move Payment Entry creation out of `before_save` into `after_save` or a whitelisted "Record Payment" endpoint with an idempotency key. Fold into R2 | G14 | S | Recording a payment twice in rapid succession produces one Payment Entry. | | Not started |
-| **R11** | Create a `Write-off Approval` task when any row has `lost_damaged_qty > 0`, with invoice / write-off / replace outcomes and matching stock and GL postings | G12 | M | As **`Ops - Returns`**: completing an inspection with a lost item produces a Director-owned task; the stock leaves `Returns - Inmed` only via its resolution. | | Not started |
-
-### Band 3 — Later
-
-| ID | Action | Fixes | Effort | Acceptance criteria | Owner | Status |
-|---|---|---|---|---|---|---|
-| **R12** | Reporting cleanup: resolve the 3 duplicate pairs (keep the GL/reference-based versions), fix the 2 broken shortcuts, remove the 2 dead task VIEWs, either build the 3 KPI reports or delete and relabel the workspace, add one report over `DC.profit`. **Do after R4/R5/R8** — reports built earlier only render wrong numbers more attractively | G17 | M | No duplicate or 404 report links; KPI workspace either populated or removed. | | Not started |
-| **R13** | Define the credit-note / refund path: ERPNext credit note (`is_return = 1`) plus refund Payment Entry, with Director approval | — | M | An over-billed submitted invoice can be corrected in-system. | | Not started |
-| **R14** | Re-enable money notifications (invoice submitted, payment received, threshold breached) once the figures are trustworthy | G17 | S | Finance/Directors receive Telegram notification for each event. | | Not started |
-| **C3/C4** | Consolidate the split Delivery photo rule into one owner; move module-level `get_doc_before_save()` calls inside their `task_kind` filters | C3, C4 | S | One file owns the Delivery photo rule. | | Not started |
+**§C** maps each original finding to where it ended up. **§A** is what is left
+to do. The acceptance criteria that named a role to test as were the most useful
+part of that table, and that idea now lives in docs/14-go-live-checklist.md
+§9.1, which instructs the tester to run the payment and invoice scenarios as the
+owning role rather than as Administrator.
 
 ---
-
 ## 8. Retractions and corrections
 
 Recorded so they do not propagate.
@@ -462,27 +602,46 @@ Recorded so they do not propagate.
 
 ---
 
-## 9. Sequencing
+## 9. Sequencing — spent
 
-Dependency order matters more than the band ratings.
+The original dependency order was followed, with two deviations worth recording.
 
-1. **Unblock the flow — R1.** Nothing else can be tested end-to-end by a non-privileged user until this lands.
-2. **Stop creating stuck tasks — R3 + R4 together.** Same code path; R4 is the precondition that makes C2 unreachable.
-3. **Repair stock and costing, strictly in this order — R5 → R5-M → drop `allow_zero_valuation_rate`.** Reversing it makes submissions fail on historical data.
-4. **Trivial correctness — R6 + R6-M, R7.**
-5. **Simplify the model — R2 with R2-M, R9, R10.**
-6. **Then delete code — R8.**
-7. **Presentation last — R11, R12, R13, R14, C3/C4.**
+**W6 and W7 were swapped.** The plan put invoicing before pricing; pricing had to
+land first, because resolving the tender price when items are *added* is what
+makes the tender validator unreachable at invoice submission. Fixing the invoice
+without fixing the price would have left C2 alive.
+
+**W9 shrank and then grew.** It was sized as the risky workstream — converting
+`frappe.db.set_value` to `doc.save()` on submitted documents was expected to
+surface months of hidden validation errors. It surfaced none: `allow_on_submit`
+was already granted on every affected field, and W5 had already delivered the
+reconciliation half. Instead it uncovered something larger that was not on any
+list — that `Before Save` never fires for submitted documents, so the Dispatch
+Case gate had been guarding only drafts. The workstream that looked most
+dangerous was cheap; the danger was somewhere nobody had looked.
+
+What remains is in **§A**, and its only hard ordering constraint is that **A2
+(stock validation) precedes A1 (profit basis)** — `incoming_rate` means nothing
+until stock is actually valued — and that **A1 precedes A6 (reporting)**, since
+reports on a wrong profit basis only present the error more convincingly.
 
 ---
 
-## 10. Outstanding verification
+## 10. Open questions — answered
 
-| # | Question | Method | Priority |
-|---|---|---|---|
-| **V1** | Confirm C1 empirically: does an `Ops - Accounting` user completing Invoice Preparation for a customer with an existing open Debt Collection task actually throw? | Controlled write test on TEST **as a non-privileged Accounting user** | Critical |
-| **V2** | Confirm G1 empirically: complete a returns inspection where all items were returned unused | Controlled write test on TEST | High |
-| **V3** | Is prod's master data configured — item valuation rates, `Item.standard_rate`, default tax template, customer payment terms? **G8 and G13 severity, and therefore the R4 / R3 ratings, are provisional until this is answered.** | Read-only query set against prod — **explicit approval required** | High |
-| **V4** | Correct Armenian VAT template and payment terms | Business input | High |
-| **V5** | Cleanup scope and disposal decisions for existing bad data (feeds R5-M, R6-M, R2-M) | Business decision with Accounting | Medium |
-| **V6** | Task-native invoicing: does the Invoice task edit a draft Sales Invoice, or edit the Dispatch Case with the invoice generated and submitted in one atomic commit? Does Accounting actually want a task-side editor, or a correct pre-filled invoice plus the native form? | Design decision with Accounting — see §2 | High |
+| # | Question | Answer |
+|---|---|---|
+| **V1** | Does an `Ops - Accounting` user completing Invoice Preparation for a customer with an open Debt Collection task actually throw? | **Yes, confirmed empirically** as `e2e.accounting@test.erpnext.am` before the fix: *"You must Accept this task before making any changes."* Passes after W1. This is the single most important confirmation in the document — the defect was real, and invisible to privileged testing. |
+| **V2** | Confirm G1: complete a returns inspection where everything came back unused | **Confirmed.** The task was uncompletable by anyone, including Administrator. W6 added an explicit close path. |
+| **V3** | Is master data configured — valuation rates, `Item.standard_rate`, tax template, payment terms? | **Partly answered, from test.** `Item.standard_rate` is populated on **zero** items, which is why client-supplied prices were almost always 0. `Standard Selling` covers ~86% of enabled items, so server-side resolution works. The `Armenia Tax - Inmed` template existed all along with `is_default = 0`, so nothing ever applied it. No Net 30 term existed; W6 created one. **Prod was never queried** — that still requires explicit approval. |
+| **V4** | Correct Armenian VAT template and payment terms | **Settled for now:** VAT 20% via `Armenia Tax - Inmed` → `VAT - Inmed`, and a new `Net 30` term. Both are applied explicitly by `task_commit_invoice` rather than relying on a default. If 30 days is the wrong term commercially, changing the template is enough — no code change. |
+| **V5** | Cleanup scope for existing bad data | **Decided: not reconciled.** Test data is synthetic and reconciling it has no value. What matters is that the new code copes with it, which was measured rather than assumed — see §0 "W11". Go-live prerequisites are listed for whatever the target data turns out to be. |
+| **V6** | Does the invoice task edit a draft, or commit atomically? | **Resolved: commit atomically.** No draft is created at any point. §2 records the reasoning and the two consequences that were not anticipated — the closer colliding with the completion gate, and `Dispatch Case.sales_invoice` having to stop being the authoritative link. |
+
+One question the original analysis did not think to ask, and should have:
+
+**Which event is each guard registered on?** Two rules in this area had never
+executed — the submitted-case restriction, and the Debt Closure Approval role
+check that sat inside a `if not doc.dispatch_case` block. Both looked
+implemented. Neither ran. Reviewing *what a script says* is not the same as
+establishing *that it fires*.
