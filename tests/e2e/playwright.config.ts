@@ -26,6 +26,14 @@ export default defineConfig({
     {
       name: 'api',
       testMatch: /tests[\\/]e2e[\\/]tests[\\/]api[\\/].*\.spec\.ts$/,
+      grepInvert: /@audit/,
+      dependencies: ['setup'],
+      use: {}
+    },
+    {
+      name: 'api-audit',
+      testMatch: /tests[\\/]e2e[\\/]tests[\\/]api[\\/].*\.spec\.ts$/,
+      grep: /@audit/,
       dependencies: ['setup'],
       use: {}
     },
@@ -52,6 +60,18 @@ export default defineConfig({
     {
       name: 'e2e',
       testMatch: /tests[\\/]e2e[\\/]tests[\\/]e2e[\\/].*\.spec\.ts$/,
+      grepInvert: /@audit/,
+      dependencies: ['setup'],
+      use: {
+        ...devices['Desktop Chrome'],
+        headless: false,
+        screenshot: 'on'
+      }
+    },
+    {
+      name: 'e2e-audit',
+      testMatch: /tests[\\/]e2e[\\/]tests[\\/]e2e[\\/].*\.spec\.ts$/,
+      grep: /@audit/,
       dependencies: ['setup'],
       use: {
         ...devices['Desktop Chrome'],

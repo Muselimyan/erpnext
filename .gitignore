@@ -4,3 +4,5 @@ tests/e2e/node_modules/
 ERPNext-Automation-Reports/*
 !ERPNext-Automation-Reports/.gitkeep
 test-results/
+tests/e2e/.last-*.log
+**/__pycache__/

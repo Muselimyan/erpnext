@@ -290,6 +290,8 @@ npx playwright test --project=desktop --workers=1 --reporter=line
 
 ## 13. Scope
 
+This file is the high-level implementation plan. Detailed current and future coverage candidates are tracked in `docs/erpnext-expanded-playwright-test-catalog.md`.
+
 ### 13.1 First implementation
 
 - Dispatch Case no-return lifecycle (Layer 1)
