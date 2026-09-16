@@ -181,10 +181,47 @@ Pass criteria:
 
 For expiry-tracked items: confirm earliest-expiry batch is selected at Pack step (FEFO).
 
-Payment check:
-- Record a **partial** payment — confirm outstanding decreases but case stays open.
-- Record a second payment to clear outstanding — confirm case → `Closed`.
-- Confirm no `Distribute Payment` task is created while the disabled/deferred script remains out of active flow.
+Invoice check (**revised by Group 11 W6** — there is no draft invoice to find):
+- On the Invoice Preparation task, confirm the preview shows priced lines, net, VAT and total. Use **Create & Submit Invoice**.
+- Confirm the invoice is **submitted**, carries 20% VAT (`Armenia Tax - Inmed`), a due date 30 days out (`Net 30`), and `hospital` / `doctor_name` populated from the customer.
+- Run the same case as a **fully-returned** case and confirm the task offers **Nothing to Invoice** and closes the case with a reason. This path used to be an unfinishable task.
+
+Payment check (**run these as a plain `Ops - Finance` user, not as Administrator**):
+- Record a **partial** payment — confirm outstanding decreases but the case stays open.
+- Record a second payment to clear outstanding — confirm the case → `Closed` and one `Debt Closure Approval` is raised.
+- Confirm the Debt Collection episode cannot be completed without a `collection_outcome`, and that a `Promised` outcome requires a future follow-up date.
+- Confirm an advance recorded on a `Payment Received` task produces a **submitted** Payment Entry with GL entries — not a draft.
+
+> ⚠️ **Run the payment and invoice scenarios as the role that owns the task**,
+> never as Administrator or System Manager. Three separate defects in this area
+> were invisible to privileged testing and passed earlier smoke tests for
+> exactly that reason: an `Ops - Accounting` user could not complete Invoice
+> Preparation for a repeat customer; an `Ops - Finance` user could not record a
+> payment at all, lacking permission on `Account`; and the Dispatch Case access
+> gate did not cover submitted cases. Privileged accounts are exempt from all
+> three.
+
+### 9.1a Existing-data prerequisites (Group 11)
+
+If this instance carries data created before the Group 11 rebuild, do these
+before the scenarios above, or they will behave oddly:
+
+- **Close or cancel every legacy open `Debt Collection` task.** The
+  one-open-episode-per-customer rule treats a leftover task as an episode in
+  progress and will decline to raise a real one, silently suppressing collection
+  for that customer.
+- **Resolve legacy open `Debt Closure Approval` tasks.** They were raised by the
+  old task-completion trigger and may assert closures that never happened.
+- **Submit or cancel draft customer Payment Entries.** A draft produces no GL
+  entries, so the money is invisible to the ledger the new code reads.
+- **Triage cases stuck in `Invoice Pending`** — each needs an invoice committed
+  or an explicit nothing-to-invoice close.
+- **Populate `Item Price` on `Standard Selling` for every orderable item.**
+  Order entry now refuses an unpriced item rather than silently pricing it at
+  zero, which is correct but will block work where prices are missing.
+
+Full detail: `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`,
+"Go-live prerequisites".
 
 ### 9.2 Scenario B — Discount approval gate
 Pass criteria:

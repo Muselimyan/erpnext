@@ -11,8 +11,26 @@ Scope includes ERPNext functional setup and business workflows. Infrastructure t
 
 ## 2.1) Working-condition status
 **Last reviewed:** 2026-06-01
+**Financial-tail statuses revised:** 2026-09-16 (Group 11)
 
 These statuses describe whether the matching ERPNext area is already in working condition, not only whether the document text is written.
+
+> ### Where the current truth lives
+>
+> This set is the *design* documentation. Two places outrank it for what the
+> system actually does today:
+>
+> - **`AGENTS.md`** — the binding architectural rules and platform constraints.
+>   Read before changing any Server Script, Client Script or deploy script.
+> - **`deploy/test/work/group-*.md`** — audits of the deployed code, each a
+>   point-in-time record. `group-11-dispatch-financial-tail-gap-analysis.md` is
+>   the most recent and covers the invoicing, receivables, payment and closure
+>   rebuild (§0 lists what shipped, what was deliberately left, and the go-live
+>   prerequisites for existing data).
+>
+> Where a design doc and an audit disagree, the audit describes reality.
+> Superseded sections in this set now carry a banner saying so rather than being
+> silently rewritten, so the reasoning behind a change stays readable.
 
 ### Working or mostly working in ERPNext
 | File | Working status |
@@ -44,9 +62,9 @@ These statuses describe whether the matching ERPNext area is already in working 
 | `13-reporting-pack-implementation.md` | 🟡 Reports/workspace deployed; report outputs still need validation with real/test transactions |
 | `15-reporting-requirements-review.md` | 🟡 Software deployed; report value quality depends on Standard Buying prices and real/test transactions |
 | `15a-reporting-requirements-implementation.md` | 🟡 26/26 reports/functions/workspaces deployed or existing; remaining work is smoke testing and master-data-dependent value validation |
-| `16-unified-dispatch-flow.md` | ✅ Current for Group 3 TEST state: Dispatch Case flow deployed; `unit_price` optional; B-10 financial field server-side protection deployed to TEST with permlevels/DocPerm rows; role-permission smoke test passed on TEST; production/main not touched |
-| `16a-unified-dispatch-flow-implementation.md` | 🟡 Dispatch Case implementation deployed; `unit_price` optional; end-to-end no-return and return-expected smoke tests still required |
-| `16b-unified-dispatch-flow-gap-analysis.md` | 🟡 No core implementation gap remains; `Dispatch - Task Queues` workspace deployed; business workflow still needs smoke test |
+| `16-unified-dispatch-flow.md` | ✅ **Current.** Financial tail rebuilt by Group 11 (W1–W11) and revised in place — §4.3, 6.9–6.12, 11, 12, 12.1. No draft invoice; debt read live from the ledger; prices resolved server-side (`unit_price` is **no longer optional or user-entered**); advances submitted to GL; `Closed` now reachable; `Distribute Payment` retired |
+| `16a-unified-dispatch-flow-implementation.md` | ⚠️ **Partly stale.** Predates Group 11. Where it describes the draft-invoice handoff, stored debt fields, `prepaid_amount`, or the overlapping acceptance checks, read Doc 16 and `AGENTS.md` instead |
+| `16b-unified-dispatch-flow-gap-analysis.md` | ⚠️ **Historical.** Its gap list predates Group 11; the financial-tail gaps are tracked in `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md` §0 |
 | `17-purchase-cost-and-valuation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete |
 | `17a-purchase-cost-and-valuation-implementation.md` | 🟡 Costing support deployed; Standard Buying prices, HS codes/import tax rates still incomplete; LCV flow needs smoke test |
 | `18-photo-system.md` | Photo system requirements - authoritative reference; deployed logging on test; corrections to other docs applied |
@@ -312,15 +330,22 @@ These statuses describe whether the matching ERPNext area is already in working 
 - **Purpose**: Single unified flow for all client deliveries. Replaces the separate standard sale (Doc 09) and surgery case (Doc 12) flows with a single `Dispatch Case` DocType. The `return_expected` flag on the case selects the path: **No** = stock flows all the way through to consumption; **Yes** = stock is delivered to client warehouse, returned after use, inspected, and invoiced for used quantities only.
 - **Key concepts**:
   - Dispatch Case DocType with full automated task chain
-  - 14 case states from Draft → Closed
+  - 13 case states from Draft → Closed (`Invoiced` removed in Group 11 W9: no code ever set it and no case ever held it)
   - Stock entries auto-submitted at each transition
   - Roles: `Ops - Order Creating`, `Ops - Order Accepting`, `Ops - Inventory`, `Delivery Driver`, `Ops - Returns`, `Ops - Accounting`, `Ops - Finance`
-  - Debt Collection integrated; Distribute Payment is disabled/deferred pending final keep/delete decision
+- **Financial tail rebuilt by Group 11 (W1–W11), deployed to test, 58 checks passing:**
+  - No draft Sales Invoice. Accounting reviews a priced preview on the task and commits, creating and submitting in one action, with VAT and Net 30 terms applied and a `Nothing to Invoice` route for a fully-returned case
+  - Debt is not stored. It is read live from submitted Sales Invoices and Payment Entries; nine fields and three child doctypes were deleted
+  - A Debt Collection task is one *attempt* at collecting, raised once an invoice is overdue and closed with an outcome
+  - Prices resolved server-side, tender first; `unit_price` is no longer user-entered
+  - Advances are submitted Payment Entries carrying `dispatch_case` and `source_task`
+  - Settlement, case closure and profit are driven by the ledger, not by task completion
+  - `Distribute Payment` retired entirely
 
 ### 16A — Unified Dispatch Flow (Implementation)
 **File**: `16a-unified-dispatch-flow-implementation.md`
 - **Purpose**: Step-by-step ERPNext setup for Dispatch Case DocType, child tables, custom fields, server scripts, client scripts, roles, and Task Access Policies.
-- **Current status**: Deployed; `Dispatch Case Item.unit_price` is optional; workspace/task shortcuts are available through `Dispatch - Task Queues`.
+- **Current status**: ⚠️ **Predates Group 11 and is partly stale.** The Dispatch Case and task-chain setup remains accurate. The financial-tail sections — draft invoice handoff, stored debt fields, `prepaid_amount`, the overlapping acceptance checks, and `Dispatch Case Item.unit_price` being optional — have all been superseded. Read Doc 16 §4.3 and §6.9–6.12, and `AGENTS.md`, for current behaviour.
 
 ### 16B — Unified Dispatch Flow Gap Analysis
 **File**: `16b-unified-dispatch-flow-gap-analysis.md`

@@ -1,5 +1,26 @@
 # 16 — Unified Dispatch Flow
 
+> **The financial tail of this flow was rebuilt by Group 11 (workstreams W1–W11),
+> deployed to test and verified by 58 automated checks.** Sections 4.3, 6.9,
+> 6.10, 6.10A, 6.11, 6.12, 11, 12 and 12.1 have been revised in place; each
+> revision says what changed and why. The rest of the document is unaffected.
+>
+> Headline changes, if you read nothing else:
+>
+> - **No draft Sales Invoice exists.** Accounting reviews a priced preview on the
+>   task and commits, which creates and submits in one action.
+> - **Debt is not stored.** It is read live from submitted Sales Invoices and
+>   Payment Entries. Nine fields and three child doctypes were deleted.
+> - **A Debt Collection task is one attempt at collecting**, closed with an
+>   outcome — not a permanent record of what a customer owes.
+> - **Prices are resolved server-side**, tender first, and cannot be typed.
+> - **Advances are submitted Payment Entries**, so the money reaches the ledger.
+> - **`Closed` is now reachable.** No case on test had ever reached it.
+> - **`Distribute Payment` is retired.**
+>
+> Full record: `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`.
+> Architectural rules that came out of it: `AGENTS.md`.
+
 ## 1. Overview
 
 All order types — standard sales and surgery cases — are handled through a single unified workflow called the **Dispatch Case**. Every team member works primarily from their task inbox. Order Creation creates, submits, and links the Dispatch Case. Inventory prepares products from the Pack task. Barcode/Product Work Area behavior is optional/future until tracking is re-enabled. Returns may open the Dispatch Case or use the task return summary to record returned quantities.
@@ -83,14 +104,33 @@ Each row represents one item in the dispatch. Columns:
 
 ### 4.3 Payment Fields
 
-| Field | Description |
-|---|---|
-| `prepaid_amount` | Total amount already paid upfront before dispatch; recalculated from advance payment history |
-| `prepaid_payment_entry` | Latest advance Payment Entry link, kept for quick reference/backward compatibility |
-| `advance_payments` | Child table audit trail of all advance Payment Entries linked to this Dispatch Case |
-| `total_invoice_amount` | Auto-filled from submitted Sales Invoice |
-| `total_paid_amount` | Tracked from linked Payment Entries |
-| `outstanding_amount` | `total_invoice_amount - total_paid_amount` |
+> **Revised by Group 11 (W8).** Four of the six fields below were deleted. They
+> were a private copy of the receivables ledger on the Dispatch Case, and the
+> copy drifted: cases showed millions outstanding against invoices the ledger
+> reported as fully paid.
+>
+> `prepaid_amount` was the worst of them. It was subtracted from the invoice
+> total **once**, at Invoice Preparation completion, so an advance recorded after
+> that moment changed `prepaid_amount` and nothing recomputed outstanding.
+> `prepaid_payment_entry` held a single link, so a second advance for one case
+> silently pointed at only the latest. `total_paid_amount` was written by no code
+> at all.
+
+| Field | Status | Description |
+|---|---|---|
+| `prepaid_amount` | **Deleted** | Read prepayment from unallocated submitted Payment Entries instead. |
+| `prepaid_payment_entry` | **Deleted** | A case can have many advances; `Payment Entry.dispatch_case` carries the link on each. |
+| `advance_payments` | **Deleted** | Child table, with its `Dispatch Case Advance Payment` doctype. |
+| `total_paid_amount` | **Deleted** | Never written by any code. |
+| `total_invoice_amount` | Kept | Auto-filled from the submitted Sales Invoice, via `doc.save()` so the change is versioned. |
+| `outstanding_amount` | Kept | Taken from `Sales Invoice.outstanding_amount`, which already nets off any advance applied at commit time. No longer computed as total minus a stored prepaid figure. |
+
+An advance is now a **submitted, unallocated Payment Entry** — real GL entries,
+real customer credit — carrying `dispatch_case` (what it was paid for) and
+`source_task` (which task recorded it). `task_commit_invoice` consumes it when
+the invoice is raised, preferring credit tagged to that case and leaving credit
+earmarked for a different case alone. This is why the order in which the money
+and the invoice arrive no longer matters.
 
 ### 4.4 Linked Documents
 
@@ -405,27 +445,38 @@ Access to these APIs must remain aligned with Task visibility and Dispatch Case 
 **Default assignee:** Accounting Team
 **Created by:** completion of Task 6.4 (Delivery task, Delivered state — no-return path) or Task 6.7 (return path)
 
+> **Revised by Group 11 (W6).** **No draft Sales Invoice is created any more.**
+>
+> A draft used to appear automatically the moment goods were delivered, and
+> Accounting was expected to find it, check it and submit it by hand. When no
+> line qualified — the client returned everything unused, a routine outcome —
+> nothing was created, yet this task was created regardless and its gate
+> demanded a submitted invoice. The task then could not be completed by anyone,
+> including an Administrator, and the case sat open forever.
+>
+> Accounting now works entirely inside the task.
+
 **Contains:**
 - Subject: `Invoice: [Case ID] — [Customer]`
-- Link to auto-created draft Sales Invoice
-- Used quantities summary per item (from Case Items `used_qty`)
+- A priced **preview** of exactly what will be billed: used quantity, unit price, discount, line total, net, VAT and invoice total. Lost/damaged quantity is shown for context but is **not** billed — charging a client for damage needs a human decision.
+- Two actions, and no ERPNext form to open.
 
 **Actions:**
-- Accounting team member opens the linked Sales Invoice
-- Verifies:
-  - Items and quantities match `used_qty` from Case Items
-  - `Update Stock` is **unchecked** (stock already moved by Consumption SE)
-  - Prices and taxes are correct
-  - Payment terms are correct
-- Submits the Sales Invoice
+- **Create & Submit Invoice** (`task_commit_invoice`) — builds, values and submits in one step. It refuses if the case already has a non-cancelled invoice, and refuses if any billable line has no price. It sets `taxes_and_charges` (VAT 20%), `payment_terms_template` (Net 30), `hospital`, `doctor_name` and `dispatch_case`, and consumes any unallocated customer credit, preferring credit tagged to this case.
+- **Nothing to Invoice** (`task_close_case_nothing_to_invoice`) — shown instead when no item has a used quantity. Requires a reason, which is recorded on both the case and the task, then closes the case.
+
+Prices are **not** computed here. They were resolved server-side when the items
+were added — tender price first — which is what stops the Sales Invoice tender
+validator refusing the invoice at submission (see §4.3 and Doc 09).
 
 **Before marking Completed:**
-- ✅ Sales Invoice is `Submitted`
+- ✅ A **submitted** Sales Invoice exists for the case, resolved by querying `Sales Invoice.dispatch_case` — not by following `Dispatch Case.sales_invoice`, which goes stale on Cancel + Amend because the amendment is a new document with a new name. An amendment carries `dispatch_case` forward, so this survives it with no special handling.
+- An invoice is only *required* when something is billable; a fully-returned case is completed through the Nothing to Invoice route instead.
 
 **On Completion:**
-- System checks outstanding amount = `invoice_total - prepaid_amount`
-- **If outstanding > 0:** Case state → `Payment Pending`; Task 6.10 (Debt Collection) created or updated for Finance Team
-- **If outstanding = 0** (fully pre-paid): Case state → `Closed`
+- Outstanding is read from the invoice, which already nets off any advance applied at commit time. It is no longer computed as `invoice_total - prepaid_amount`; that subtraction happened once, at a fixed moment, and ignored any advance recorded afterwards.
+- **If outstanding > 0:** Case state → `Payment Pending`. No Debt Collection task is created here any more — chasing a client on day zero is noise when they have thirty days to pay. Collection episodes are raised by `Scheduled-debt-collection-episodes` once an invoice is actually overdue (see Task 6.10).
+- **If outstanding = 0** (fully covered by advances): Case state → `Closed`.
 
 ---
 
@@ -437,19 +488,47 @@ Access to these APIs must remain aligned with Task visibility and Dispatch Case 
 
 This is the Finance payment workflow task. It is separate from Director `Debt Alert` tasks created by the scheduled GL-based threshold check.
 
-**One active task per customer at any time.** If a Debt Collection task already exists for this customer, the new case's outstanding amount is added to the existing task's running balance rather than creating a new task.
+> **Redesigned by Group 11 (W4).** A Debt Collection task is now **one attempt at
+> collecting**, not a permanent record of what a customer owes.
+>
+> It used to be created the instant an invoice was raised and then live forever,
+> absorbing every later invoice for that customer. It could not be completed
+> while anything was owed, so completing it was never truthful — and two on test
+> were closed still carrying real outstanding balances. A task means "this work
+> is done", and the work of chasing a debt is done when the call has been made,
+> not when the customer eventually pays.
+>
+> The debt is not the task. The debt lives in the ledger.
+
+**Created by:** `Scheduled-debt-collection-episodes` (Daily), when
+
+1. an invoice is overdue by more than 3 days, or
+2. the customer's outstanding exceeds their `debt_threshold_amd`, or
+3. a previous episode promised a follow-up and that date has arrived, or
+4. a previous episode closed without a follow-up date and 7 days have passed.
+
+**One open episode per customer at a time**, and never any episode for a
+customer with nothing unpaid. Both are deduplication rules — no balance is
+stored on the task.
 
 **Contains:**
 - Customer name
-- **Open invoices table** (per Dispatch Case):
-  | Case ID | Invoice | Invoice Amount | Paid | Outstanding |
-  |---|---|---|---|---|
-  | SC-001 | INV-001 | 1 000 | 0 | 1 000 |
-  | SC-002 | INV-002 | 2 000 | 0 | 2 000 |
-  | SC-003 | INV-003 | 3 000 | 1 500 | 1 500 |
-- **Total outstanding** (sum)
-- **Available advance credit** (from any unallocated advance payments)
+- **`custom_debt_panel`** — a live view rendered by `Task-Debt-Panel.js` from the `task_debt_panel` API: unpaid submitted invoices with age and days overdue, unallocated advances and what each was paid for, payment history from submitted Payment Entries, and the net figure. Recomputed every time the form opens, so it cannot go stale. Nothing here is stored on the task.
+- **Episode outcome fields**, which *are* facts about the work and so do belong on the task: `collection_outcome` (Paid / Promised / Disputed / Unreachable / No Answer), `collection_follow_up_date`, `collection_note`.
 - **Record Payment** section (see below)
+
+**Before marking Completed:**
+- ✅ `collection_outcome` is set — there was previously no gate at all, so an episode could be closed with no record of what happened.
+- ✅ If the outcome is `Promised`, `collection_follow_up_date` is set and in the future. The scheduler reads that date to decide when to raise the next episode.
+
+Completing an episode means "this attempt is finished", not "the customer has
+paid". When a payment settles the account, the episode auto-completes with
+outcome `Paid`.
+
+**Deleted fields.** The old `open_invoices` and `payment_history` child tables,
+`total_outstanding` and `available_advance_credit` were a second copy of the
+receivables ledger and drifted from it. See §4.3 and the work-facts /
+business-facts rule in `AGENTS.md`.
 
 **Recording a payment:**
 Finance fills in:
@@ -466,22 +545,22 @@ Payment Entry received-money account mapping:
 | Card | Bank - Inmed |
 
 **Allocation (FIFO):**
-- Default: system auto-allocates to oldest Sales Invoices first, using each invoice's posting date and invoice name as a tie-breaker.
-- Every payable row in the Open Invoices table must have a linked Sales Invoice before payment can be recorded; otherwise the save is blocked so task balances cannot diverge from accounting allocation.
-- The auto-created Payment Entry includes Sales Invoice reference rows with the exact allocated amount for each invoice, so ERPNext's accounting ledger and the Debt Collection task stay aligned.
+- The system allocates to the oldest unpaid Sales Invoices first, using posting date and invoice name as a tie-breaker. Since W2 it reads **live** invoice outstanding amounts rather than the task's own copy.
+- A payment larger than the customer's total outstanding is refused, rather than silently mis-allocated. Record the excess as an advance on a Payment Received task.
+- The Payment Entry carries Sales Invoice reference rows with the exact allocated amount, plus `source_task` recording which task took the payment — that link replaces the deleted `payment_history` table as the audit trail, on the authoritative document rather than beside it.
 
 **Completing the task:**
-The Debt Collection task is marked Completed only when total outstanding = 0 for all cases it covers. It can be updated multiple times as partial payments arrive.
-
-**On each payment recorded:**
-- Server script auto-creates a **Payment Entry** in ERPNext with the specified allocation
-- **Distribute Payment is currently disabled/deferred** and no physical-handling task is created unless the business flow is re-enabled later
-- Any decision to re-enable or delete Distribute Payment should be made after final review with the colleague
+An episode completes when the collector records an outcome (see above). If the
+payment settles the account, it auto-completes with outcome `Paid` — the outcome
+is set in the same write as the status, because this script and the completion
+gate both run in `before_save` with no defined order between them.
 
 **On full payment (outstanding = 0):**
-- Case(s) state → `Closed`
-- Task auto-completes
-- Debt Closure Approval task is created for Directors to review payment evidence and calculate profit
+- Every one of the customer's cases whose invoices are all settled → `Closed`
+- One `Debt Closure Approval` is raised
+
+Both are done by `Payment Entry-after-submit-debt-closure-check`, **not** by
+completing this task. See Task 6.10A.
 
 ---
 
@@ -489,20 +568,41 @@ The Debt Collection task is marked Completed only when total outstanding = 0 for
 
 **Kind:** `Debt Closure Approval`
 **Default assignee:** `Debt Closure Approval` Task Access Policy default team user
-**Created by:** completion of Task 6.10 (Debt Collection)
-**Completion allowed by:** roles listed in the `Debt Closure Approval` Task Access Policy, or Administrator
+**Completion allowed by:** the accepter only. Accepting already validates the user against the Task Access Policy, so a policy-allowed user is the only one who can ever complete it.
+
+> **Redesigned by Group 11 (W5).** Raised by a **ledger event**, not by task
+> completion.
+>
+> It used to be raised when a Debt Collection task was completed, which
+> conflated "a person finished chasing" with "the customer paid" — and since
+> nothing stopped an episode being closed with money still owed, it asserted
+> closures that had not happened.
+
+**Created by:** `Payment Entry-after-submit-debt-closure-check`, when a submitted
+Payment Entry leaves the customer with **no unpaid submitted invoice**. One open
+approval per customer.
+
+This is also what makes `Closed` reachable at all. Previously the state could
+only be reached by a case that was fully prepaid *before* its invoice task
+completed; for the normal pay-after-invoice flow nothing ever moved the case
+again, and **no case on test had ever been Closed**.
 
 **Contains:**
-- Customer
-- Open Invoices copied from the Debt Collection task
-- Payment History copied from the Debt Collection task
-- Total amount paid
+- Customer, and the cases this settlement closed
+- The invoices covered, and the profit on them
+- Payment history read from submitted Payment Entries — not copied from anywhere
 
-**On Completion:**
-- System calculates profit across all unique Sales Invoices in the Open Invoices table
-- Total profit is written to the approval task's `custom_case_profit`
-- Each linked Dispatch Case receives its own invoice profit in the Dispatch Case `profit` field
-- If Standard Buying prices are missing, the task shows a warning because profit may be overstated
+**Profit is computed once, when the approval is created**, over exactly the cases
+that settlement closed. It used to be recomputed on every completion by summing
+*every* invoice for the customer, so two approvals counted the same invoices
+twice. A case reaches `Closed` only once, which makes that set idempotent by
+construction. Approving now means approving a figure, not regenerating it.
+
+⚠️ The **basis** of that figure is still `Item Price` / `Standard Buying` list
+price, which Doc 17 supersedes with the landed-cost valuation rate
+(`Sales Invoice Item.incoming_rate`). Replacing it was out of scope for Group 11.
+A missing Standard Buying price still raises a warning, and profit is then
+overstated.
 
 For the operational walkthrough, see `docs/manual/debt-closure-approval.md`.
 
@@ -522,24 +622,21 @@ For the operational walkthrough, see `docs/manual/debt-alert.md`.
 
 ---
 
-### Task 6.11 — Distribute Payment — disabled/deferred
+### Task 6.11 — Distribute Payment — RETIRED
 
-**Kind:** `Distribute Payment`
-**Default assignee:** Finance Team if re-enabled
-**Current status:** disabled/out of active flow pending final decision
-**Would be created by:** each time a payment is recorded on the Debt Collection task, if the disabled script is re-enabled
+**Removed by Group 11 (W10).** The task kind, its Task Access Policy record and
+its Server Script are deleted.
 
-**Contains:**
-- Amount received
-- Payment method
-- What to do: take cash to bank / confirm bank transfer to correct account / etc.
-- Link to the auto-created Payment Entry (for reference)
+Zero tasks were ever created with it, the script was disabled from the start,
+and nothing created it. Group 3's audit recorded it as *"intentionally out of
+active flow, do not enable unless the business flow changes"* (B-02); that
+change never came, and leaving it in the `task_kind` dropdown offered users a
+state the system could not service.
 
-**If re-enabled later:**
-- Finance performs the physical payment action (bank deposit, account transfer, etc.)
-- Finance marks task Completed when done
-
-*This task does not currently affect the Dispatch Case state because the script that creates it is disabled.*
+The physical-handling step it described (take cash to the bank, confirm the
+transfer) is not modelled in the system. If it is needed later it should be
+designed fresh against the current payment flow rather than revived from this
+description.
 
 ---
 
@@ -553,16 +650,28 @@ For the operational walkthrough, see `docs/manual/debt-alert.md`.
 - Customer name
 - Amount received
 - Payment method and reference
-- Option: "Apply to upcoming case" (link to a specific Dispatch Case) or "Hold as advance credit"
+- Optional link to a specific Dispatch Case, recording what the money was paid for
+
+> **Revised by Group 11 (W2, W8).** The Payment Entry is now **submitted**, and
+> nothing is written back to the Dispatch Case.
+>
+> It used to be left in **Draft**, which produces no GL entries at all — while
+> `DC.prepaid_amount` was still written and still subtracted from the invoice
+> total. The workflow was granting credit for cash the books had no record of.
+> On test that left one customer at a GL net receivable of −4,486,950 against a
+> workflow belief of 1,560,000, and fed that figure to the hourly Debt Alert
+> scheduler.
 
 **On Completion:**
-- Server script auto-creates a **Customer Advance Payment Entry** in ERPNext (not linked to any invoice)
-- The Payment Entry uses the same payment-method-to-`paid_to` account mapping as Debt Collection payments
-- Customer's available advance credit is updated
-- If a Debt Collection task exists for this customer, it reflects the credit and reduces the required collection amount
-- If a specific Dispatch Case is linked, the advance is appended to the case's `advance_payments` audit table
-- The case's `prepaid_amount` is recalculated from all `advance_payments` rows, so multiple partial advances accumulate correctly
-- The case's `prepaid_payment_entry` stores the latest advance Payment Entry for quick reference
+- A **submitted** Payment Entry is created, using the same payment-method-to-`paid_to` mapping as Debt Collection payments.
+- It carries `dispatch_case` (what the money was paid for) and `source_task` (which task recorded it). The intent travels with the transaction instead of in a child table beside it.
+- It is left **unallocated**. An unallocated submitted Receive entry is exactly ERPNext's model for customer credit: real GL, real credit, allocated when an invoice exists.
+- Nothing is written to the Dispatch Case. The credit is read live from the ledger by `task_debt_panel`, and consumed by `task_commit_invoice` when the invoice is raised.
+
+An advance is not a special kind of object — it is a payment that arrived before
+its invoice. Because allocation is a ledger operation rather than a subtraction
+performed once at a fixed moment, the order in which the money and the invoice
+arrive no longer matters.
 
 ---
 
@@ -648,15 +757,15 @@ Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-su
 | `Pickup Returns` | Multi-state return pickup | `Delivery Driver` |
 | `Returns processing / verification` | Inspecting and recording returned quantities | `Ops - Returns` |
 | `Returns restocking` | Moving returned items from Returns WH to Main | `Ops - Returns` |
-| `Invoice preparation / create invoice` | Reviewing and submitting auto-created invoice | `Ops - Accounting` |
-| `Debt Collection` | Tracking and recording customer payments against open invoices | `Ops - Finance` |
+| `Invoice preparation / create invoice` | Reviewing a priced preview, then creating and submitting the invoice in one action | `Ops - Accounting` |
+| `Debt Collection` | One attempt at collecting an overdue balance, closed with an outcome | `Ops - Finance` |
 | `Debt Alert` | Director threshold/risk alert from scheduled GL-based debt check | `Ops - Directors` |
-| `Debt Closure Approval` | Director review after full customer payment; calculates multi-invoice profit | `Ops - Directors` |
-| `Distribute Payment` | Disabled/deferred physical payment handling step; keep only until final keep/delete decision | `Ops - Finance` if re-enabled |
+| `Debt Closure Approval` | Director review once the ledger shows the customer settled; approves the profit figure | `Ops - Directors` |
 | `Payment Received` | Logging advance/upfront payments before invoice | `Ops - Finance` |
 
 Current TEST `task_kind` coverage notes:
 - Group 3 TEST deployment added/uses `Payment Received`, `Debt Alert`, and `Debt Closure Approval`; these flows were smoke-tested on TEST.
+- Group 11 reworked the financial tail of this flow (W1–W11) and **retired `Distribute Payment`** — kind, policy record and script all removed. See `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md` §0.
 - `Returns restocking` remains listed as part of the broader dispatch design and should be confirmed separately if that flow is included in a later validation pass.
 
 ---
@@ -682,10 +791,12 @@ Task inbox (filtered by `Delivery` and `Pickup Returns`). Uses multi-state butto
 Task inbox. For `Return Call` tasks: assigns driver and schedules pickup. For Inspection tasks: opens Dispatch Case to fill returned quantities (the only interaction with the Dispatch Case form for this role). For Restock tasks: marks done when physical restocking complete.
 
 ### `Ops - Accounting`
-Task inbox. Opens linked draft Sales Invoice, verifies, submits. Also reviews/submits draft advance Payment Entries created from Payment Received tasks. Never opens a Dispatch Case.
+Task inbox. Reviews the priced preview on the Invoice Preparation task, then uses **Create & Submit Invoice** — or **Nothing to Invoice** when the client returned everything unused. Never opens a Sales Invoice form and never opens a Dispatch Case. There is no draft to find: nothing exists until the commit.
 
 ### `Ops - Finance`
-Task inbox. Records incoming payments on Debt Collection tasks. Creates Payment Received tasks for advances. Distribute Payment tasks are currently disabled/deferred pending final decision. Never opens an ERPNext Payment Entry form.
+Task inbox. Records incoming payments on Debt Collection episodes, and closes each episode with an outcome. Creates Payment Received tasks for advances, which post to the ledger immediately. Never opens an ERPNext Payment Entry form.
+
+> Note: this role needs read access to `Account`, `Mode of Payment`, `Cost Center`, `Currency` and `Company`. It had create rights on `Payment Entry` but no permission on `Account`, so validating `paid_to` failed and **recording a payment was impossible for the role that owns the task** — every Payment Entry on test had been created by a System Manager or Administrator. Granted in Group 11 W2.
 
 ---
 
@@ -694,18 +805,21 @@ Task inbox. Records incoming payments on Debt Collection tasks. Creates Payment 
 Sensitive Dispatch Case fields are protected server-side with Frappe field permission levels. Client-side hiding remains only a UI convenience.
 
 **Payment/profit fields** are restricted to `Ops - Accounting`, `Ops - Finance`, `Ops - Directors`, and `System Manager`:
-- `sales_invoice`
-- `prepaid_amount`
-- `prepaid_payment_entry`
+- `sales_invoice` — now only a convenience pointer; `Sales Invoice.dispatch_case` is authoritative
 - `total_invoice_amount`
-- `total_paid_amount`
 - `outstanding_amount`
 - `profit`
-- `advance_payments`
 
-**Pricing fields** on Dispatch Case Items are also available to `Ops - Order Creating`, because Order Creating must enter prices and discounts while creating the case:
-- `unit_price`
-- `discount_pct`
+`prepaid_amount`, `prepaid_payment_entry`, `total_paid_amount` and
+`advance_payments` were deleted in Group 11 W8 — see §4.3.
+
+**Pricing fields** on Dispatch Case Items remain permlevel-restricted, and are
+also readable by `Ops - Order Creating`:
+- `unit_price` — **no longer user-entered.** Group 11 W7 resolves it server-side (active Tender Agreement → customer-specific `Item Price` → `Standard Selling` → refuse) and ignores any price sent by the client. It is read-only in the Product Work Area. The browser used to pre-fill it from `Item.standard_rate`, a field populated on **no items at all**, which is why 94% of submitted case rows carried `unit_price = 0` and the resulting invoices were near-worthless.
+- `discount_pct` — still user-entered, and the route for any price deviation, since it goes through Director approval. A tender-priced item refuses a discount outright, because a tender price is contractual.
+
+Note this means `permlevel` is no longer the only thing protecting the price: it
+is protected by not being writable through the task APIs at all.
 
 ---
 

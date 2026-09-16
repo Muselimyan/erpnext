@@ -1,5 +1,48 @@
 # Group 2 — Task System and Gates: Production Audit
 
+> ## ⚠️ The access-control half of this audit is SUPERSEDED
+>
+> Group 11 W1 and W9 rebuilt Task and Dispatch Case access control. Where this
+> document describes the *overlapping* acceptance, ownership, role and
+> completed-immutability checks, that is now history:
+>
+> - Five overlapping checks across four scripts are replaced by **one gate per
+>   doctype**: `Task-before-save-access-control`,
+>   `Dispatch-Case-before-save-access-control` (draft) and
+>   `Dispatch-Case-before-save-submitted-access-control` (submitted).
+> - `Task-before-save-lock-unaccepted`, `Task-before-save-lock-completed` and
+>   `Dispatch-Case-before-save-lock-submitted` are **disabled**.
+> - **`flags.ignore_permissions` is no longer read as a business-rule bypass.**
+>   It is standard Frappe and means "skip Frappe's permission check". Only one of
+>   the five checks honoured it, which is how an `Ops - Accounting` user came to
+>   be unable to complete Invoice Preparation for any repeat customer. The gates
+>   now ask *what changed*, not who is writing, with default-deny polarity.
+> - **The admin policy changed.** Any statement here that there is no admin
+>   exemption is now only half true: privileged users may **edit** a task they do
+>   not own, because stuck tasks existed and nobody could clear them.
+>   **Completion remains reserved to the accepter, with no exemption anywhere.**
+>
+> Two findings of exactly this audit's kind emerged during that work, and are
+> worth reading even though they carry no number here:
+>
+> - **`Before Save` Server Scripts never fire for submitted documents.** Frappe
+>   runs `before_save` only when `_action == "save"`. Any gate on a doctype whose
+>   records get submitted is invisible to them — which is why the "only Directors
+>   may edit a submitted Dispatch Case" rule had never once been enforced, and
+>   why a Dispatch Case was unguarded for the whole of packing, delivery and
+>   returns.
+> - **Saving a Server Script does not prove it runs.** Frappe's compile check
+>   catches syntax errors but not the full RestrictedPython policy, so a script
+>   can deploy cleanly and fail on first execution — silently, in the case of a
+>   scheduler.
+>
+> Both are now rules in `AGENTS.md`. The task-kind, gate-ordering and UI findings
+> in this document are otherwise unaffected.
+>
+> **Current reference:** `AGENTS.md` ("Acceptance and lock model", "One gate per
+> doctype", "`Before Save` does NOT fire for submitted documents") and
+> `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md` §0.
+
 ---
 
 ## What This Is About

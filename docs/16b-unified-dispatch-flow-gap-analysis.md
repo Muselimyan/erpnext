@@ -1,5 +1,23 @@
 ﻿# Doc 16B — Unified Dispatch Flow: Gap Analysis (What Needs to Be Deployed)
 
+> ## ⚠️ HISTORICAL — this gap list predates Group 11
+>
+> The gaps tracked here were about getting the Dispatch Case flow *installed*.
+> The financial tail of that flow was later found to have behavioural defects
+> this analysis does not cover, and has since been rebuilt: no draft invoice,
+> debt read live from the ledger rather than stored, server-side pricing,
+> advances posted to the GL, ledger-driven case closure, and the
+> `Distribute Payment` kind retired.
+>
+> Where this document mentions `prepaid_amount`, `advance_payments`,
+> `total_paid_amount`, `total_outstanding`, `open_invoices`, `payment_history`
+> or `Distribute Payment`, those no longer exist.
+>
+> **Current references:** `docs/16-unified-dispatch-flow.md` (revised in place,
+> each revision explaining what changed), `AGENTS.md` for the architectural
+> rules, and `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`
+> §0 for the full record, including what was deliberately left undone.
+
 ## 0. Deployment Progress
 
 | Date | Action | Result |

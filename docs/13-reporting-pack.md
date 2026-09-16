@@ -1,5 +1,26 @@
 ﻿# Doc 13 — Reporting Pack (Operational)
 
+> **Group 11 note.** Two reports in this pack were affected by the financial-tail
+> rebuild:
+>
+> - **`RPT - Prepaid Orders Awaiting Delivery`** (§4.7B) had never returned a
+>   single row. It summed `Payment Entry Reference.reference_name` — a *Sales
+>   Invoice* name — and joined it to `Dispatch Case.name`, which can never match,
+>   so its own `> 0` filter excluded everything. It now reads
+>   `Payment Entry.dispatch_case`, set when the advance is recorded, and also
+>   reports how much of each advance is still unallocated.
+> - **`RPT - Clients Exceeding Debt Threshold`** needed no change. It already
+>   computed net debt from `Sales Invoice.outstanding_amount` minus unallocated
+>   `Payment Entry` amounts rather than from the Task fields, so it was written
+>   for the derived model before the rest of the system was. It is now the
+>   canonical example.
+>
+> Reports that read `Task.total_outstanding`, `open_invoices` or
+> `payment_history` would now fail — those fields are deleted. None did.
+>
+> See `docs/13-reporting-pack-implementation.md` §5.11 and
+> `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`.
+
 ## 1) Purpose
 This document defines the “how to see everything” reporting pack: the minimum set of views that let you run operations and management.
 

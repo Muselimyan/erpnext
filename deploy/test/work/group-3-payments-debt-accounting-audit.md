@@ -1,5 +1,43 @@
 # Group 3 — Payments, Debt, and Accounting: Production Audit
 
+> ## ⚠️ SUPERSEDED — historical record, do not use as a reference
+>
+> This audit describes the payments and debt implementation **as it stood on
+> 2026-07-20**. That implementation has since been rebuilt by **Group 11
+> (W1–W11)**, and most of what is described below no longer exists.
+>
+> Notably gone: the `open_invoices` / `payment_history` child tables and their
+> doctypes, `total_outstanding`, `available_advance_credit`,
+> `custom_total_amount_paid`, `DC.prepaid_amount`, `prepaid_payment_entry`,
+> `total_paid_amount`, `advance_payments`, the `Distribute Payment` task kind,
+> and `Task-after-save-debt-closure`. Debt is no longer stored anywhere; it is
+> read live from submitted Sales Invoices and Payment Entries.
+>
+> Several fixes recorded here as *deployed* were later found not to work, or to
+> fix the wrong thing:
+>
+> - **B-03** accumulated `prepaid_amount` correctly into a field that was still
+>   only ever subtracted **once**, at Invoice Preparation completion — so an
+>   advance recorded afterwards changed the total and nothing recomputed
+>   outstanding. The field is deleted.
+> - **B-02** deferred `Distribute Payment` pending a business decision that never
+>   came. Retired in W10.
+> - The advance Payment Entry was left in **Draft** throughout, producing no GL
+>   entries while the workflow granted credit against it (**G3**).
+> - No plain `Ops - Finance` user could record a payment at all: the role had
+>   create rights on `Payment Entry` but no permission on `Account`. Every
+>   Payment Entry on test was created by a System Manager or Administrator,
+>   which is why the smoke tests passed.
+>
+> **Current reference:** `deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`
+> (§0 maps each finding to the workstream that closed it), `docs/16-unified-dispatch-flow.md`
+> §4.3 and §6.9–6.12, and `AGENTS.md` for the rules that came out of it.
+>
+> Kept unedited below, because the B-* finding IDs are referenced elsewhere and
+> because it records what was believed at the time.
+
+---
+
 **Audit date:** 2026-07-20
 **Auditor:** AI Assistant (Devin)
 **Scope:** Static analysis of all deployed scripts, schema metadata, and documentation for the Payments, Debt, and Accounting functional group.

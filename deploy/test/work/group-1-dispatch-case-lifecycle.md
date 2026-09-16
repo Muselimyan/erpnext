@@ -3,6 +3,38 @@
 > **Scope:** Test server only. All deployed scripts, schema, and client code for the Dispatch Case operational flow.
 > **Evidence:** Code in `deploy/test/work/`, schema in `deploy/test/schema/`.
 > **Excludes:** Financial-tail items (invoicing, payments, pricing, profit, debt closure, outstanding calculation, `allow_on_submit` gaps, stock validation bypass, acceptance-rule conflicts) — those are in **Group 11**.
+>
+> **Partly addressed by Group 11.** Several findings here were fixed as a
+> side-effect of the financial-tail rebuild, because they lived in the same
+> scripts:
+>
+> - **ACT-03** — the six product/packing/scan APIs selected the task to
+>   authorise against with `limit_page_length=1` and no `order_by`, so
+>   authorisation depended on whatever row order MariaDB returned. They now
+>   filter by the caller and assert the acting task kind server-side. (W1)
+> - **ACT-06 / ACT-07** — `task_add_dispatch_product` and `task_apply_template`
+>   had no Dispatch Case status guard, so an Order entry task left open beside an
+>   already-packed case could still mutate its contents. Both now refuse once the
+>   case leaves Draft / Awaiting Approval. (W1)
+> - `task_create_dispatch_case` had **no acceptance check at all** — the only
+>   guard was the client hiding the button. (W1)
+> - The **zombie Invoice Preparation task**: a case where the client returned
+>   everything unused produced a task that nobody, not even an Administrator,
+>   could complete. There is now an explicit close path with a recorded reason.
+>   (W6, tracked as Group 11 G1)
+> - A **client-supplied `task_kind`** in `task_mark_items_packed_batch` decided
+>   whether to write `returned_qty`, so a user holding only a Pack task could
+>   overwrite return quantities on the case. Derived server-side now. (W1)
+> - The Dispatch Case access-control gate was found to cover only **draft** cases
+>   — `Before Save` never fires for submitted documents — so most of the
+>   operational lifecycle was unguarded. Fixed with a submitted-document twin.
+>   (W9)
+>
+> **Still open, with a new dependency:** the Phase 3 cancel flow (ACT-05). When
+> it is built it will need to cancel tasks in bulk, and `status` cannot be added
+> to the access-control gates' `SYSTEM_FIELDS` because it is the primary
+> user-editable transition. Bulk cancellation will therefore need a sanctioned
+> mechanism that does not exist yet — see `AGENTS.md`, "One gate per doctype".
 
 ---
 

@@ -473,6 +473,42 @@ Operational rule reminder (Doc 13):
 ---
 
 ### 5.11 RPT — Ops — Prepaid Orders Awaiting Delivery (Doc 13 §4.7B)
+
+> ⚠️ **This section describes neither the report that exists nor the mechanism
+> now in use.** Corrected by Group 11 W8.
+>
+> The deployed report is named **`RPT - Prepaid Orders Awaiting Delivery`**
+> (no `Ops -`) with Ref DocType **`Dispatch Case`**, because Doc 16 replaced the
+> Sales Order flow with the Dispatch Case. The operating rule below — allocate
+> the Payment Entry against a Sales Order — does not apply: Accounting never
+> opens a Payment Entry form at all, and advances are created from a
+> `Payment Received` task.
+>
+> **The deployed report had also never returned a single row.** Its subquery
+> grouped `Payment Entry Reference.reference_name` — which holds a *Sales
+> Invoice* name — and joined it to `Dispatch Case.name`. Those can never match,
+> so its own `COALESCE(total_advance, 0) > 0` filter excluded every row. The
+> report looked healthy and was empty for a structural reason.
+>
+> It now reads **`Payment Entry.dispatch_case`** directly, which is set when the
+> advance is recorded, and reports both the total advance and how much of it is
+> still unallocated. Current query:
+> `deploy/test/deploy/group-11-financial-tail/w8-advances-on-the-ledger.ps1`.
+>
+> How prepaid money is actually recorded now:
+>
+> 1. Finance creates a **`Payment Received`** task with the amount, method,
+>    reference, and optionally the Dispatch Case the money is for.
+> 2. Completing it creates a **submitted, unallocated** Payment Entry carrying
+>    `dispatch_case` and `source_task`. It is submitted, not draft — a draft
+>    produces no GL entries, and the previous implementation left it in draft
+>    while still granting the customer credit.
+> 3. `task_commit_invoice` consumes that credit when the invoice is raised,
+>    preferring credit tagged to the same case and leaving credit earmarked for
+>    another case alone.
+>
+> The historical instructions are retained below for context only.
+
 Required operating rule (go-live decision):
 - When Accounting receives prepaid money intended for a specific Sales Order, they must allocate that Payment Entry against the Sales Order (Payment Entry Reference row to `Sales Order`).
 

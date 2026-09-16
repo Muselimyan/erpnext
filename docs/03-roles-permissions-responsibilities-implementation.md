@@ -255,7 +255,6 @@ Steps:
      - Returns processing / verification
      - Invoice preparation / create invoice
      - Debt Collection
-     - Distribute Payment
      - Discount Approval
      - Purchase Approval
      - Write-off Approval
@@ -326,7 +325,6 @@ Create these policies:
 - `Returns processing / verification`
 - `Invoice preparation / create invoice`
 - `Debt Collection`
-- `Distribute Payment`
 - `Discount Approval`
 - `Purchase Approval`
 - `Write-off Approval`
@@ -374,6 +372,22 @@ if doc.task_kind:
         frappe.throw(f"Missing Task Access Policy record for Task Kind '{doc.task_kind}'")
 
 # 2) Enforce that only owning team can complete each Task Kind
+#
+# ⚠️ DO NOT COPY THIS PATTERN. The hardcoded map below is how it was first
+# built and is kept here only to explain the history. AGENTS.md now forbids it:
+# task-kind role mappings and default team users live in `Task Access Policy`
+# records and must be read at runtime, because a hardcoded dict silently
+# diverges from the policy records the rest of the system trusts.
+#
+#     policy = frappe.get_doc("Task Access Policy", doc.task_kind)
+#     allowed_roles = [r.role for r in (policy.allowed_roles or [])]
+#     default_team = policy.default_team_user or ""
+#
+# Enforcement itself also no longer lives in a per-kind map. It is one gate per
+# doctype -- `Task-before-save-access-control` -- which reads the policy for the
+# task being saved. Spreading the same rule across several scripts is what
+# produced the C1 defect, where five overlapping checks disagreed about whether
+# server-side housekeeping was permitted.
 TASK_KIND_REQUIRED_ROLE = {
     "Order entry": "Ops - Order Accepting",
     "Pack / prepare items": "Ops - Inventory",
@@ -384,7 +398,6 @@ TASK_KIND_REQUIRED_ROLE = {
     "Returns processing / verification": ["Ops - Returns", "Ops - Inventory"],
     "Invoice preparation / create invoice": "Ops - Accounting",
     "Debt Collection": "Ops - Directors",
-    "Distribute Payment": "Ops - Directors",
     "Discount Approval": "Ops - Directors",
     "Purchase Approval": "Ops - Directors",
     "Write-off Approval": "Ops - Directors",

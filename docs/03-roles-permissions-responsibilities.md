@@ -137,9 +137,21 @@ Purpose:
 - Record incoming payments; manage debt collection per customer.
 
 Can do:
-- Record payments on Debt Collection tasks (triggers Payment Entry auto-creation).
-- Complete Distribute Payment and Payment Received tasks.
+- Record payments on Debt Collection episodes (triggers Payment Entry auto-creation), and close each episode with an outcome.
+- Complete Payment Received tasks, which post an advance to the ledger immediately.
 - View Sales Invoices (read).
+
+> **Revised by Group 11.** `Distribute Payment` was retired in W10 — zero tasks
+> were ever created with it and its script was disabled from the start.
+>
+> This role also needs **read access to `Account`, `Mode of Payment`,
+> `Cost Center`, `Currency` and `Company`** (granted in W2). It had create rights
+> on `Payment Entry` but no permission on `Account`, so validating the `paid_to`
+> account failed with *"Insufficient Permission for Account"* — meaning **no
+> plain `Ops - Finance` user could record a payment at all.** Every Payment Entry
+> on test had been created by a System Manager or Administrator, which is why it
+> went unnoticed. When adding a role that creates accounting documents, check its
+> link-field permissions, not just the doctype's.
 
 ### 4.7 Order Creating Team
 Purpose:

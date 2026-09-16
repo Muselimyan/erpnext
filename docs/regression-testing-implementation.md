@@ -517,7 +517,46 @@ API: `POST /api/method/frappe.client.submit` with the SI doc
 
 Assert: SI `docstatus = 1`
 
-#### Step 10 — Complete Invoice Preparation
+> ⚠️ **Steps 10 and 11 below are obsolete.** Group 11 (W2, W4, W5, W6) changed
+> both the fields and the behaviour they assert. Written against the current
+> system these steps would fail, and two of them assert things that were bugs.
+>
+> **Deleted fields.** `total_outstanding`, `open_invoices` and `payment_history`
+> no longer exist. Debt is read live from submitted Sales Invoices and Payment
+> Entries. A payment's Payment Entry is found via `Payment Entry.source_task`,
+> not `payment_history[0].payment_entry`.
+>
+> **No draft invoice.** Invoice Preparation is completed by calling
+> `task_commit_invoice`, which creates *and submits* the invoice; there is no
+> draft to submit beforehand, and the invoice now carries 20% VAT and Net 30
+> terms, so `grand_total` is no longer equal to the net total.
+>
+> **No Debt Collection task at invoice time.** With real due dates, chasing on
+> day zero is noise. Episodes are raised by
+> `Scheduled-debt-collection-episodes` once an invoice is overdue, so asserting
+> one exists immediately after Step 10 is wrong.
+>
+> **The Note at the end asserted a bug as correct behaviour.** It recorded that
+> the case stays at `Payment Pending` after payment and that the only route to
+> `Closed` is full prepayment — accurately, at the time. That *was* Group 11 G2:
+> the terminal state was unreachable for the normal pay-after-invoice flow, and
+> across every case ever created on test, `Closed` had never once been reached.
+> Payment now closes the case, via
+> `Payment Entry-after-submit-debt-closure-check`. A test that verifies current
+> behaviour without asking whether that behaviour is *correct* will faithfully
+> lock in a defect.
+>
+> **Replacement coverage exists and runs.** The financial tail is covered by 58
+> checks in `deploy/test/deploy/group-11-financial-tail/w*-verify-*.py`, executed
+> via `bench console` as genuinely non-privileged users
+> (`e2e.accounting@test.erpnext.am` etc.) and rolled back, so no records survive.
+> They are not Playwright specs; porting them is tracked as W12, which also needs
+> per-role API auth for the harness, since the Layer 1 suite authenticates as
+> Administrator and is therefore structurally blind to permission defects.
+>
+> The original steps are kept below for reference.
+
+#### Step 10 — Complete Invoice Preparation *(obsolete — see note above)*
 
 API:
 1. `dispatch_task_accept` with Invoice Preparation task
@@ -534,7 +573,7 @@ Assert on Debt Collection task (query: `customer = <test_customer>, task_kind = 
 - `open_invoices` child table has 1 row with correct SI name and amounts
 - Track in manifest
 
-#### Step 11 — Record payment
+#### Step 11 — Record payment *(obsolete — see note above)*
 
 API:
 1. `dispatch_task_accept` with Debt Collection task
@@ -562,7 +601,7 @@ Assert on Debt Closure Approval task (query: `customer = <test_customer>, task_k
 - Exists (created by after-save)
 - Track in manifest
 
-**Note:** The DC remains at `status = "Payment Pending"` after payment. The Debt Closure Approval calculates profit but does not change DC status to "Closed". The only path to "Closed" is when Invoice Preparation completes with outstanding <= 0 (i.e., fully prepaid). This is the current server-side behavior — the test verifies it accurately.
+**Note (historical, and now known to be wrong):** The DC remains at `status = "Payment Pending"` after payment. The Debt Closure Approval calculates profit but does not change DC status to "Closed". The only path to "Closed" is when Invoice Preparation completes with outstanding <= 0 (i.e., fully prepaid). This is the current server-side behavior — the test verifies it accurately.
 
 ---
 

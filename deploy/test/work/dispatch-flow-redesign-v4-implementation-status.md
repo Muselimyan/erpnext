@@ -74,6 +74,16 @@ All 4 new Task custom fields exist in `custom-fields.json` (`hidden: 1`, reveale
 
 **DC parent fields (all done):** `customer`, `return_expected`, `client_location_warehouse`, `notes`, `case_items`, plus additional: `surgery_date`, `surgery_set_type`, `order_entry_task`, `discount_approval_task`, `discount_approval_status`, `pack_task`, `total_paid_amount`, `outstanding_amount`.
 
+> **Group 11 note.** `total_paid_amount` was deleted in W8 (no code ever wrote
+> it). The `allow_on_submit` grants listed here turned out to be more complete
+> than the Group 11 plan assumed — W9 had expected to grant them and found the
+> work already done, so that half of the workstream was unnecessary.
+>
+> They are also not sufficient on their own. `allow_on_submit` controls *which
+> fields* may change after submit; it says nothing about *who* may change them,
+> and a `Before Save` gate never runs for a submitted document at all. See
+> `AGENTS.md`, "`Before Save` does NOT fire for submitted documents".
+
 **DC Item child fields (all done):** `item_code`, `item_name`, `dispatched_qty`, `unit_price`, `batch_no`, `serial_no`, `returned_qty`, `lost_damaged_qty`, `used_qty`, `custom_scanned_qty`, `discount_pct`.
 
 `discount_pct` `allow_on_submit` created (verified in exported `property-setters.json` line 3467).
@@ -197,7 +207,26 @@ These changes support the dispatch flow but were done outside the v4 plan:
 | Server scripts | 49 | 45 | 4 |
 | Client scripts | 37 | 24 | 13 |
 
-**Disabled server scripts:** `Item-before-save-reorder-change-reason.py`, `Payment Entry-after-submit-distribute-payment.py`, `Purchase Order-validate-one-supplier.py`, `perm_disable_batch_expiry_dbset.py` (still enabled but one-off utility).
+**Disabled server scripts:** `Item-before-save-reorder-change-reason.py`, `Purchase Order-validate-one-supplier.py`, `perm_disable_batch_expiry_dbset.py` (still enabled but one-off utility).
+
+> **Group 11 update to this list.**
+>
+> `Payment Entry-after-submit-distribute-payment` is no longer merely disabled —
+> it is **deleted**, along with the `Distribute Payment` task kind and its Task
+> Access Policy record (W10). Zero tasks were ever created with it.
+>
+> Newly disabled: `Task-before-save-lock-unaccepted`,
+> `Task-before-save-lock-completed`,
+> `Dispatch-Case-before-save-lock-submitted` (all absorbed into the single
+> access-control gate per doctype, W1) and `Task-after-save-debt-closure`
+> (superseded by `Payment Entry-after-submit-debt-closure-check`, W5).
+>
+> Newly added: `Task-before-save-access-control`,
+> `Dispatch-Case-before-save-access-control`,
+> `Dispatch-Case-before-save-submitted-access-control`,
+> `Payment Entry-after-submit-debt-closure-check`,
+> `Scheduled-debt-collection-episodes`, `task_commit_invoice`,
+> `task_close_case_nothing_to_invoice`, `task_debt_panel`.
 
 **Disabled client scripts:** `Global-Mobile Back Button.js`, `Order entry - barcode scanning section - hide.js`, `Task Product Line-Item Code String Guard.js`, `Task-Account Details UI Cleanup.js`, `Task-Create Dispatch Case Items.js`, `Task-Delivery UI Fix.js`, `Task-Dispatch Packing Usability.js`, `Task-Header Long Subject Fix.js`, `Task-Inspect Returns Next Assign Visible.js`, `Task-Lock Completed.js` (was temporarily disabled?), `Task-Mobile Form Layout Fix.js`, `Task-Packing Checkboxes.js`, `Task-Product Lines Display.js`.
 
