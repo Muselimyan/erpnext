@@ -31,22 +31,82 @@ def run_script():
     if not acting_kind:
         frappe.throw("Products can only be changed from an accepted Order entry task.")
     case = frappe.get_doc("Dispatch Case", case_name)
+    if (case.docstatus or 0) != 0:
+        frappe.throw("This Dispatch Case is already submitted and its products cannot be changed.")
+    if case.status not in ("Draft", "Awaiting Approval"):
+        frappe.throw("Products can only be changed while the Dispatch Case is in Draft or Awaiting Approval. Current status: " + str(case.status))
+
     found = False
+    target_item = ""
+    for row in case.case_items:
+        if row.name == row_name:
+            target_item = row.item_code
+            found = True
+    if not found:
+        frappe.throw("Row not found in Dispatch Case.")
+
+    # ── Re-resolve the selling price on the SERVER ────────────────────
+    # Duplicated from task_add_dispatch_product rather than shared: Frappe
+    # Server Scripts run under RestrictedPython, where a module-level function
+    # cannot call a sibling, and there is no module system. AGENTS.md records
+    # duplication as the required pattern for shared logic here.
+    #
+    # A client-supplied `unit_price` is ignored. Precedence: active Tender
+    # Agreement -> customer-specific Item Price -> Standard Selling -> refuse.
+    resolved_price = 0
+    price_source = ""
+    tender_name = ""
+
+    for t in (frappe.get_all("Tender Agreement",
+                             filters={"hospital": case.customer, "status": "Active"},
+                             fields=["name"], limit_page_length=0) or []):
+        tender = frappe.get_doc("Tender Agreement", t.name)
+        for ti in (tender.items or []):
+            if ti.item_code == target_item and (ti.tender_price or 0) > 0:
+                resolved_price = float(ti.tender_price)
+                price_source = "Tender Agreement " + tender.name
+                tender_name = tender.name
+
+    if not resolved_price and case.customer:
+        cust_price = frappe.db.get_value(
+            "Item Price",
+            {"item_code": target_item, "price_list": "Standard Selling", "customer": case.customer},
+            "price_list_rate")
+        if cust_price and float(cust_price) > 0:
+            resolved_price = float(cust_price)
+            price_source = "Customer price for " + str(case.customer)
+
+    if not resolved_price:
+        list_price = frappe.db.get_value(
+            "Item Price",
+            {"item_code": target_item, "price_list": "Standard Selling"},
+            "price_list_rate")
+        if list_price and float(list_price) > 0:
+            resolved_price = float(list_price)
+            price_source = "Standard Selling"
+
+    if not resolved_price:
+        frappe.throw("No selling price is set up for " + str(target_item) + ". Add an Item Price on the Standard Selling price list (or a Tender Agreement price for this hospital) before ordering it.")
+
+    new_discount = None
+    if discount_pct is not None:
+        new_discount = float(discount_pct)
+    if tender_name and new_discount and new_discount > 0:
+        frappe.throw("Item " + str(target_item) + " is covered by " + tender_name + " at " + str(resolved_price) + ". A tender price cannot be discounted.")
+
     for row in case.case_items:
         if row.name == row_name:
             if dispatched_qty is not None:
                 row.dispatched_qty = float(dispatched_qty)
-            if unit_price is not None:
-                row.unit_price = float(unit_price)
-            if discount_pct is not None:
-                row.discount_pct = float(discount_pct)
+            if new_discount is not None:
+                row.discount_pct = new_discount
             if batch_no is not None:
                 row.batch_no = batch_no or None
-            found = True
-            break
-    if not found:
-        frappe.throw("Row not found in Dispatch Case.")
+            row.unit_price = resolved_price
+
+    print(f"[Price] {frappe.utils.now()} case={case.name} item={target_item} price={resolved_price} source={price_source}")
+
     case.flags.ignore_permissions = True
     case.save()
-    frappe.response["message"] = {"ok": True}
+    frappe.response["message"] = {"ok": True, "unit_price": resolved_price, "price_source": price_source}
 run_script()

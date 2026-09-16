@@ -465,8 +465,14 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
                 + '<td>' + esc(row.item_name || row.item_code || "") + '</td>'
                 + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-edit" data-field="dispatched_qty" '
                 +     'value="' + qty + '" style="text-align:right"></td>'
-                + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-edit" data-field="unit_price" '
-                +     'value="' + price + '" style="text-align:right"></td>'
+                // Unit price is resolved server-side and shown read-only. It
+                // was an editable input, but the server now ignores anything
+                // sent for it -- see the note by the item selector. Price
+                // deviations go through Discount %, which routes to Director
+                // approval; a tender-priced item refuses any discount.
+                + '<td class="text-right" title="Resolved from the tender or price list">'
+                +     (price ? frappe.format(price, {fieldtype: "Currency"}) : '<span style="color:#c0392b">not set</span>')
+                + '</td>'
                 + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-edit" data-field="discount_pct" '
                 +     'value="' + discount + '" style="text-align:right"></td>'
                 + '<td><input type="text" class="form-control input-xs oe-edit" data-field="batch_no" '
@@ -490,7 +496,7 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
         html += '<tr class="oe-add-row" style="background:#f9f9f9">'
             + '<td><div class="oe-add-item-cell"></div></td>'
             + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-add-qty" value="1" style="text-align:right"></td>'
-            + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-add-price" value="0" style="text-align:right"></td>'
+            + '<td class="text-right text-muted" style="font-size:11px;">auto</td>'
             + '<td><input type="text" inputmode="decimal" class="form-control input-xs oe-add-discount" value="0" style="text-align:right"></td>'
             + '<td><input type="text" class="form-control input-xs oe-add-batch" placeholder="LOT" style="font-size:12px"></td>'
             + '<td class="text-center"><button type="button" class="btn btn-xs btn-primary oe-add-btn" title="Add product">+</button></td>'
@@ -525,17 +531,16 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
         only_input: true
     });
     item_control.refresh();
-    // Auto-fill price from standard_rate when item selected
-    item_control.$input.on("change", function() {
-        var item_code = item_control.get_value();
-        if (item_code) {
-            frappe.db.get_value("Item", item_code, ["standard_rate"], function(v) {
-                if (v && v.standard_rate) {
-                    wrapper.find(".oe-add-price").val(flt(v.standard_rate));
-                }
-            });
-        }
-    });
+    // Price is resolved on the SERVER by task_add_dispatch_product:
+    //   active Tender Agreement -> customer-specific Item Price ->
+    //   Standard Selling -> refuse.
+    // The browser used to pre-fill this from Item.standard_rate, which is
+    // populated on no items at all, so the price sent was almost always 0 and
+    // the resulting invoices were near-worthless. It also bypassed the tender
+    // price, which the Sales Invoice validator then refused at submission --
+    // leaving an invoice task that could never be completed.
+    // Anything typed here is ignored by the server; the resolved price comes
+    // back in the response and is shown once the row is added.
 
     // ── Debounced auto-save for existing row edits (800ms) ──
     var save_timer = null;
@@ -551,7 +556,8 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
                     case_name: dc_name,
                     row_name: row_name,
                     dispatched_qty: tr.find('[data-field="dispatched_qty"]').val(),
-                    unit_price: tr.find('[data-field="unit_price"]').val(),
+                    // unit_price is not sent: the server re-resolves it from
+                    // the tender or price list on every update.
                     discount_pct: tr.find('[data-field="discount_pct"]').val(),
                     batch_no: tr.find('[data-field="batch_no"]').val()
                 },
@@ -602,7 +608,8 @@ function task_product_work_area_render_order_entry(frm, doc, rows, show_alert) {
                 item_code: item_code,
                 qty: wrapper.find(".oe-add-qty").val() || 1,
                 batch_no: wrapper.find(".oe-add-batch").val() || "",
-                unit_price: wrapper.find(".oe-add-price").val() || 0,
+                // unit_price is intentionally not sent: the server resolves it
+                // from the tender or price list and ignores client values.
                 discount_pct: wrapper.find(".oe-add-discount").val() || 0
             },
             freeze: true,

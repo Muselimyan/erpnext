@@ -111,6 +111,41 @@ else:
             dc_doc.client_location_warehouse = doc.order_client_location_warehouse or ""
             dc_doc.surgery_date = doc.order_surgery_date or None
 
+            # Every row must carry a resolved selling price. Without this the
+            # flow happily produced near-zero invoices: 94% of submitted case
+            # rows on test had unit_price = 0, because the price was whatever
+            # the browser sent, pre-filled from Item.standard_rate which is
+            # populated on no items at all.
+            unpriced = []
+            for row in dc_doc.case_items:
+                if float(row.unit_price or 0) <= 0:
+                    unpriced.append(row.item_code or row.item_name or "Unknown")
+            if unpriced:
+                frappe.throw("These products have no selling price: " + ", ".join(unpriced)
+                             + ". Set an Item Price on the Standard Selling price list (or a Tender Agreement price for this hospital), then re-add them.")
+
+            # Tender remaining-quantity check, applied HERE rather than at
+            # invoice submission. Sales-Invoice-before-submit-tender-validation
+            # refuses an invoice whose quantity exceeds the tender remainder,
+            # and by then the order is packed and delivered and the Invoice
+            # Preparation task can never be completed. Catching it at order
+            # entry leaves the user somewhere they can still change the order.
+            for t in (frappe.get_all("Tender Agreement",
+                                     filters={"hospital": dc_doc.customer, "status": "Active"},
+                                     fields=["name"], limit_page_length=0) or []):
+                tender = frappe.get_doc("Tender Agreement", t.name)
+                for ti in (tender.items or []):
+                    ordered = 0
+                    for row in dc_doc.case_items:
+                        if row.item_code == ti.item_code:
+                            ordered += float(row.dispatched_qty or 0)
+                    if ordered > 0:
+                        remaining = float(ti.won_quantity or 0) - float(ti.supplied_quantity or 0)
+                        if ordered > remaining:
+                            frappe.throw("Tender " + tender.name + " has only " + str(remaining)
+                                         + " remaining for " + str(ti.item_code) + ", but this order has "
+                                         + str(ordered) + ". Reduce the quantity or review the tender before continuing.")
+
             has_discount = any(float(row.discount_pct or 0) > 0 for row in dc_doc.case_items)
 
             if has_discount:
