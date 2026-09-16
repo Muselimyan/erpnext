@@ -47,14 +47,17 @@
 SYSTEM_FIELDS = [
     "status",
     "discount_approval_status",
-    # Financial bookkeeping
+    # Financial bookkeeping.
+    #
+    # W8 removed prepaid_amount, prepaid_payment_entry, advance_payments and
+    # total_paid_amount from this list along with the fields themselves. They
+    # duplicated facts the Payment Entry already states, and nothing writes
+    # them any more -- an advance is a submitted unallocated Payment Entry
+    # carrying its own dispatch_case and source_task. Leaving dead entries here
+    # would quietly permit writes to fields with no legitimate system writer.
     "sales_invoice",
     "total_invoice_amount",
     "outstanding_amount",
-    "total_paid_amount",
-    "prepaid_amount",
-    "prepaid_payment_entry",
-    "advance_payments",
     "profit",
     # Stock movement audit links
     "dispatch_stock_entry",

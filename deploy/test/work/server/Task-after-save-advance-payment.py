@@ -30,6 +30,12 @@ else:
         "reference_date": frappe.utils.today(),
         "company": "InMED",
         "paid_to": paid_to_account,
+        # Business intent, recorded on the transaction itself: which case the
+        # money was paid for, and which task recorded it. Previously this
+        # context lived only in a Dispatch Case child table, so the Payment
+        # Entry -- the authoritative document -- had no idea why it existed.
+        "dispatch_case": doc.dispatch_case or "",
+        "source_task": doc.name,
     })
     pe.flags.ignore_permissions = True
     pe.insert()
@@ -43,27 +49,27 @@ else:
     # An unallocated submitted Receive entry is exactly ERPNext's model for a
     # customer advance: real GL, real credit, allocated when an invoice exists.
     pe.submit()
-    if doc.dispatch_case:
-        case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
-        case.append("advance_payments", {
-            "payment_date": frappe.utils.now_datetime(),
-            "amount": doc.new_payment_amount,
-            "method": method,
-            "reference": doc.payment_reference_dc or "",
-            "payment_entry": pe.name,
-            "source_task": doc.name,
-        })
-        total_prepaid = 0
-        for row in case.advance_payments:
-            total_prepaid += row.amount or 0
-        case.prepaid_amount = total_prepaid
-        case.prepaid_payment_entry = pe.name
-        case.flags.ignore_permissions = True
-        case.flags.ignore_validate_update_after_submit = True
-        case.save()
-    # The running total that used to be pushed onto the Debt Collection task's
-    # `available_advance_credit` field is gone. That field was write-only --
-    # incremented here and never read, decremented or used in allocation by any
-    # code. Unallocated customer credit is now read live from submitted Payment
-    # Entries by the task_debt_panel API, so there is nothing to push.
-    print(f"[Advance] {frappe.utils.now()} task={doc.name} customer={doc.customer} amount={doc.new_payment_amount} pe={pe.name} submitted")
+
+    # NOTHING is written back to the Dispatch Case.
+    #
+    # This used to append a row to DC.advance_payments, re-sum it into
+    # DC.prepaid_amount and stamp DC.prepaid_payment_entry. All three were
+    # copies of a fact the Payment Entry already stated, and they were the
+    # wrong shape for it:
+    #
+    #   - prepaid_amount was subtracted from the invoice total ONCE, at Invoice
+    #     Preparation completion. An advance recorded after that moment changed
+    #     prepaid_amount but nothing recomputed outstanding, so the case showed
+    #     a balance the ledger disagreed with.
+    #   - prepaid_payment_entry held a single link, so on the second advance for
+    #     a case it silently pointed at only the latest one.
+    #   - Task.available_advance_credit was incremented here and never read,
+    #     decremented, or used in allocation by any code. Write-only.
+    #
+    # An advance is not a special kind of object -- it is a payment that
+    # arrived before its invoice. Left unallocated on a submitted Payment
+    # Entry it is exactly ERPNext's model for customer credit: real GL, real
+    # credit, allocated by task_commit_invoice when the invoice is raised.
+    # That is why the order the money and the invoice arrive in stopped
+    # mattering.
+    print(f"[Advance] {frappe.utils.now()} task={doc.name} customer={doc.customer} amount={doc.new_payment_amount} pe={pe.name} case={doc.dispatch_case or '-'} submitted, unallocated")

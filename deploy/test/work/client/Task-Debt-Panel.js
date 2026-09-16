@@ -81,12 +81,19 @@ function tdp_render(frm, data) {
     if (advances.length) {
         html += '<div style="font-weight:600;margin:12px 0 6px;">Unallocated Advances (' + advances.length + ')</div>';
         html += '<div style="overflow-x:auto;"><table class="table table-bordered table-condensed" style="font-size:12px;"><thead><tr>'
-            + '<th>Payment Entry</th><th>Date</th><th>Method</th><th>Reference</th><th class="text-right">Credit</th>'
+            + '<th>Payment Entry</th><th>Date</th><th>Paid For</th><th>Method</th><th>Reference</th><th class="text-right">Credit</th>'
             + '</tr></thead><tbody>';
         advances.forEach(function (r) {
+            // "Paid For" comes from Payment Entry.dispatch_case. That intent
+            // used to live only in a Dispatch Case child table, so the
+            // authoritative document had no record of why it existed.
+            var paid_for = r.dispatch_case
+                ? '<a href="/app/dispatch-case/' + encodeURIComponent(r.dispatch_case) + '">' + esc(r.dispatch_case) + '</a>'
+                : '<span class="text-muted">general credit</span>';
             html += '<tr>'
                 + '<td><a href="/app/payment-entry/' + encodeURIComponent(r.payment_entry) + '">' + esc(r.payment_entry) + '</a></td>'
                 + '<td>' + esc(r.posting_date) + '</td>'
+                + '<td>' + paid_for + '</td>'
                 + '<td>' + esc(r.method || "") + '</td>'
                 + '<td>' + esc(r.reference || "") + '</td>'
                 + '<td class="text-right" style="font-weight:600;">' + tdp_money(r.unallocated_amount) + '</td>'

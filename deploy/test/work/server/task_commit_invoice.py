@@ -150,14 +150,61 @@ if si_doc.get("taxes_and_charges") and not si.taxes:
 # rather than tracked as a separate prepaid figure on the case. Allocation is a
 # ledger operation, which is why the order the money and the invoice arrive in
 # no longer matters.
+# Allocation is explicit rather than delegated to set_advances(), which pulls
+# EVERY unallocated advance the customer holds in its own order. That ignores
+# the intent recorded on each Payment Entry: money a client paid for case A
+# would be silently consumed by case B's invoice. Observed doing exactly that
+# during verification -- a 285 advance produced a 684 allocation by absorbing
+# unrelated credit.
+#
+# Order of preference:
+#   1. credit tagged to THIS case  - what the client paid for
+#   2. untagged general credit     - oldest first
+# Credit tagged to a DIFFERENT case is deliberately left alone. It is earmarked,
+# and reassigning it is a human decision, not something an invoice should do
+# quietly.
 advance_applied = 0
 try:
-    si.set_advances()
-    for adv in (si.advances or []):
-        advance_applied += float(adv.allocated_amount or 0)
+    open_credit = frappe.get_all(
+        "Payment Entry",
+        filters={"party_type": "Customer", "party": case.customer, "docstatus": 1,
+                 "payment_type": "Receive", "unallocated_amount": [">", 0]},
+        fields=["name", "posting_date", "unallocated_amount", "dispatch_case"],
+        order_by="posting_date asc, creation asc",
+        limit_page_length=0,
+    )
+    this_case_credit = []
+    general_credit = []
+    for pe in (open_credit or []):
+        tagged = pe.dispatch_case or ""
+        if tagged == case.name:
+            this_case_credit.append(pe)
+        elif not tagged:
+            general_credit.append(pe)
+
+    allocatable = float(si.grand_total or 0)
+    for pe in (this_case_credit + general_credit):
+        if allocatable <= 0:
+            continue
+        available = float(pe.unallocated_amount or 0)
+        to_apply = allocatable
+        if available < to_apply:
+            to_apply = available
+        if to_apply <= 0:
+            continue
+        si.append("advances", {
+            "reference_type": "Payment Entry",
+            "reference_name": pe.name,
+            "advance_amount": available,
+            "allocated_amount": to_apply,
+        })
+        advance_applied += to_apply
+        allocatable = allocatable - to_apply
+
     if advance_applied > 0:
         si.flags.ignore_permissions = True
         si.save()
+        print(f"[Invoice] {frappe.utils.now()} case={case.name} allocated {advance_applied} from {len(si.advances or [])} advance(s), case-tagged first")
 except Exception as e:
     print(f"[Invoice] {frappe.utils.now()} case={case.name} advance allocation skipped: {str(e)[:120]}")
     advance_applied = 0

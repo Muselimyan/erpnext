@@ -95,6 +95,10 @@ else:
             "reference_date": frappe.utils.nowdate(),
             "company": "InMED",
             "paid_to": paid_to_account,
+            # Which task recorded this payment. Replaces the deleted
+            # payment_history child table as the audit trail, on the
+            # authoritative document rather than beside it.
+            "source_task": doc.name,
         })
         for allocation in allocations:
             pe.append("references", {

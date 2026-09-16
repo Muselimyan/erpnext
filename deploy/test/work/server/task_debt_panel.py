@@ -90,7 +90,7 @@ advance_rows = frappe.get_all(
     filters={"party_type": "Customer", "party": customer, "docstatus": 1,
              "payment_type": "Receive", "unallocated_amount": [">", 0]},
     fields=["name", "posting_date", "paid_amount", "unallocated_amount",
-            "mode_of_payment", "reference_no"],
+            "mode_of_payment", "reference_no", "dispatch_case", "source_task"],
     order_by="posting_date asc, name asc",
     limit_page_length=0,
 )
@@ -107,6 +107,10 @@ for pe in (advance_rows or []):
         "unallocated_amount": unallocated,
         "method": pe.mode_of_payment,
         "reference": pe.reference_no,
+        # Business intent, read from the transaction rather than from a
+        # Dispatch Case child table copy.
+        "dispatch_case": pe.dispatch_case or "",
+        "source_task": pe.source_task or "",
     })
 
 # ── Payment history, from the ledger rather than a stored table ───────
