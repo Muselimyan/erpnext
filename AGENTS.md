@@ -69,6 +69,29 @@ Frappe Server Scripts run under RestrictedPython (`safe_exec`). The following co
 
 5. **No `exec()`, `eval()`, `compile()`, `__import__()`.** All blocked.
 
+6. **No augmented assignment to a subscript.** `d[k] += 1`, `d[k]["x"] += 1`, `lst[0] += 1` all fail with *"Augmented assignment of object items and slices is not allowed"*. Read into a local, modify, write back:
+
+   Bad:
+   ```python
+   totals[cust]["outstanding"] += amount
+   ```
+
+   Good:
+   ```python
+   entry = totals[cust]
+   entry["outstanding"] = entry["outstanding"] + amount
+   ```
+
+   Plain assignment to a subscript (`d[k] = v`) is fine — only the augmented form is blocked. Augmented assignment to a plain local (`total += x`) is also fine.
+
+### Saving a Server Script does NOT prove it runs
+
+Frappe's `ServerScript.validate()` calls `check_if_compilable_in_restricted_context()`, so a script with a syntax error will refuse to save. **It does not catch the full RestrictedPython policy.** A script violating rule 6 above saves cleanly and then throws the first time it executes.
+
+This matters most for Scheduler Events, which may not run for hours: a broken scheduler looks deployed and simply never does anything. It also produces false-positive tests — a check asserting "no new task was created" passes trivially when the scheduler crashed on line 1.
+
+**Only execution proves a Server Script works.** After deploying one, run it (for schedulers, `frappe.get_doc("Server Script", name).execute_scheduled_method()` from `bench console`) and assert on the result.
+
 ### Patterns to use instead
 
 - **Regex:** Use `.endswith(tuple)`, `.startswith()`, `in` checks instead of `re`.
@@ -79,6 +102,49 @@ Frappe Server Scripts run under RestrictedPython (`safe_exec`). The following co
 ### Before deploying any server script
 
 Mentally check every `def` body: does it reference anything defined outside that `def`? If so, it will fail. The only names available inside a `def` are: its own locals, its parameters, builtins, and `frappe`.
+
+---
+
+## `Before Save` does NOT fire for submitted documents
+
+Frappe's `run_before_save_methods()` runs `validate` and `before_save` **only** when `_action == "save"`. Saving a document with `docstatus = 1` sets `_action = "update_after_submit"`, which runs `before_update_after_submit` instead.
+
+**A Server Script registered on "Before Save" is therefore invisible to every submitted document.** Same for "After Save" versus "After Save (Submitted Document)".
+
+This is easy to get wrong and fails silently — the rule appears to be in place and simply never runs. It is how the "only Directors may edit a submitted Dispatch Case" rule went unenforced for its entire existence, and how the W1 Dispatch Case gate initially covered only draft cases while a Dispatch Case is submitted for the whole of packing, delivery and returns.
+
+Rules:
+
+- A guard on a doctype whose records get **submitted** needs a twin on `Before Save (Submitted Document)`. Because RestrictedPython has no module system, that means a duplicated script — say so in a header comment on both, and keep them in sync.
+- When writing a test for such a guard, **make the fixture submitted**. A draft fixture will pass against a gate that does not actually cover the submitted case, which is exactly what happened here.
+- Before assuming a rule works, check which event it is registered on.
+
+Current twin pair:
+`Dispatch-Case-before-save-access-control` (draft) and
+`Dispatch-Case-before-save-submitted-access-control` (submitted).
+
+---
+
+## Deploy scripts must read and write UTF-8 explicitly
+
+Windows PowerShell 5.1 reads BOM-less files as **ANSI**, not UTF-8. `Get-Content -Raw` therefore mangles every non-ASCII character before upload, and `Invoke-RestMethod` mis-decodes non-ASCII in JSON **responses** as Latin-1 when the server declares no charset.
+
+Both directions must be handled, or box-drawing characters, em-dashes and Armenian text are corrupted on the server:
+
+```powershell
+# Reading a script file for upload
+$raw = Get-Content $Path -Raw -Encoding UTF8
+
+# Reading a document back (for Check mode comparison)
+$wc = New-Object System.Net.WebClient
+$wc.Encoding = [System.Text.Encoding]::UTF8
+$wc.Headers.Add("Authorization", "token $($ApiKey):$($ApiSec)")
+$doc = ($wc.DownloadString($uri) | ConvertFrom-Json).data
+```
+
+Without the first, uploaded content is corrupted — this is the origin of the mojibake found in `Task-after-save-debt-closure` and in the Discount Approval task subject. Without the second, Check mode reports a false `DIFFERS` for any script containing non-ASCII, and a Check → Deploy loop can ping-pong content indefinitely.
+
+Reference implementation: `deploy/test/deploy/group-11-financial-tail/*.ps1`. Older deploy scripts under `deploy/test/scripts/` have not all been audited for this.
 
 ---
 
@@ -105,13 +171,44 @@ TASK_KIND_ALLOWED_ROLES = {"Order entry": ["Ops - Order Accepting"], ...}
 The task system uses a mandatory acceptance model:
 1. Tasks start assigned to a **team placeholder** (e.g. `delivery.team@example.com`) with status **Open**.
 2. A user must click "Accept / Start Task" (calls `dispatch_task_accept` API) to take ownership.
-3. Once accepted, **only that user** can edit or complete the task. Others see it read-only.
+3. Once accepted, only that user may **complete** the task. Privileged users may edit it (see below); everyone else sees it read-only.
 4. Reassignment resets acceptance (clears `custom_accepted_by`, reverts status to Open).
 
+**Completion is reserved to the accepter, with no exemption at all** — not for Administrator, not for System Manager, not for Ops - Directors. The record of who did the work must stay truthful. Cancellation is the escape hatch for a stuck task.
+
+**Editing** allows a privileged override (`System Manager`, `Ops - Directors`, or the `Administrator` user), because stuck tasks exist and previously nobody could clear them. The form shows an explicit banner when a privileged user is editing someone else's task.
+
 **Do NOT:**
-- Remove the acceptance requirement or bypass the lock. There is no admin exemption — `accepted_by === session.user` is the only check.
+- Remove the acceptance requirement, or grant any exemption to *completion*.
 - Allow task completion without prior acceptance.
 - Allow simultaneous reassignment and completion in one save.
+- Re-introduce `flags.ignore_permissions` as a "this is the system writing" signal — see below.
+
+### One gate per doctype, and no bypass flag
+
+Acceptance, ownership, task-kind role access and completed-task immutability are owned by exactly one script per doctype:
+
+| DocType | Owner |
+|---|---|
+| Task | `Task-before-save-access-control` |
+| Dispatch Case (draft) | `Dispatch-Case-before-save-access-control` |
+| Dispatch Case (submitted) | `Dispatch-Case-before-save-submitted-access-control` |
+
+No other script may enforce those rules. Domain rules — photo required, delivery status order, invoice submitted, collection outcome recorded — live in `Task-before-save-dispatch-gates`, which must not contain access control.
+
+**`flags.ignore_permissions` is standard Frappe and means "skip Frappe's DocType permission check". It does not mean "skip our business rules", and must never be read as such.** Three scripts used to read it that way and only one of the five overlapping checks honoured it, which is how an `Ops - Accounting` user came to be blocked from completing Invoice Preparation for any repeat customer.
+
+The gates instead ask **what changed**, not who is writing: a save touching only fields in that gate's `SYSTEM_FIELDS` list is bookkeeping and is allowed; anything else needs ownership. Polarity is **default-deny**, so forgetting to register a new system-managed field makes housekeeping fail loudly rather than silently opening a hole. When a field stops having a legitimate system writer, remove it from the list.
+
+### Work facts belong on the Task; business facts belong in the ledger
+
+A Task is a unit of work. It may store facts about **the work**: who accepted it, when it completed, what the outcome of a collection attempt was, what the caller said.
+
+It must **not** store facts about the business that outlive the work — what a customer owes, which invoices are unpaid, how much has been paid. Those live in Sales Invoices, Payment Entries and the GL, and are read live (see `task_debt_panel`). A second copy always drifts: the deleted `total_outstanding` / `open_invoices` / `payment_history` fields had Dispatch Cases showing millions outstanding against invoices the ledger reported as fully paid.
+
+The same rule applies to the Dispatch Case: it holds operational state, not a private copy of the receivables ledger.
+
+Deliberate exception, documented so it is not "fixed" by mistake: `Task.current_debt_amd` and `Task.debt_threshold_amd` on a **Debt Alert** task record what the debt *was at the moment the alarm was raised*. That is a fact about the alert, not a live balance.
 
 ### Key custom fields on Task
 
@@ -141,19 +238,25 @@ If a new field needs conditional visibility, add it to `TFV_KIND_MAP` with the a
 
 Field editability on the Task form is owned exclusively by `Task-Field-Editability.js` (TFE) via `TFE_EDIT_MAP` and the `tfe_can_edit(frm)` gate. **No other client script may call `set_df_property('read_only')`, `frm.set_read_only()`, `frm.disable_save()`, or DOM `.prop('disabled')` for editability purposes.**
 
-- `tfe_can_edit(frm)` returns true only when `accepted_by === session.user` and task is not completed/cancelled. **No admin exemption.**
+- `tfe_can_edit(frm)` returns true when the task is not completed/cancelled **and** either `accepted_by === session.user` or the user is privileged (`System Manager` / `Ops - Directors` / `Administrator`).
+- `tfe_can_complete(frm)` returns true **only** for the accepter. No exemption — it mirrors the server gate.
+- Other scripts must call these two rather than reimplementing the rule. `Task-Action Buttons.js`, `Task-Photo-System.js` and `Task-Account Details UI Cleanup.js` each used to carry their own copy, and all three granted an admin exemption that this file explicitly disclaimed.
+- Work-progress buttons (Complete, Picked Up, Delivered, …) are gated on `tfe_can_complete`, not `tfe_can_edit`: a privileged user may fix data but must not assert that someone else's work was performed.
 - `TFE_EDIT_MAP` controls per-field kind-based editability (e.g. `customer` only editable on Order entry).
 - Product section controls (PWA renderers) check `tfe_can_edit(frm)` before rendering interactive HTML controls (checkboxes, inputs, buttons).
-- Server APIs also validate acceptance — no admin bypass.
+- Server APIs also validate acceptance; completion has no bypass anywhere.
 - Absorbed: `Task-Lock Unaccepted.js` (disabled), `Task-Lock Completed.js` (disabled).
 
 ### Deployment model
 
 - Scripts live in `deploy/test/work/server/` and `deploy/test/work/client/` with metadata headers.
-- Deploy scripts in `deploy/test/scripts/` push to the test environment only.
+- Deploy scripts in `deploy/test/scripts/` and `deploy/test/deploy/<group>/` push to the test environment only.
 - Each script file has a header block (e.g. `# Name:`, `# Type:`, `# ---`) that is stripped before upload.
+- Every deploy script must support `-Mode Check` (report differences, change nothing) and `-Mode Deploy`. Schema **deletions** should sit behind an additional explicit switch, e.g. `-ConfirmDeletions`.
+- **Read source files as UTF-8 and decode responses as UTF-8** — see the dedicated section above. Reference implementation: `deploy/test/deploy/group-11-financial-tail/*.ps1`.
 - After deploying, always clear cache: `docker exec frappe-test-backend-1 bench --site test.erpnext.am clear-cache`
 - After deployment, run `deploy/test/export.ps1` to capture the current state.
+- Then **execute** what you deployed and assert on the result — saving a Server Script does not prove it runs. The `group-11-financial-tail` folder pairs each `wN-*.ps1` deploy script with a `wN-verify-*.py` script that runs against test via `bench console` and rolls everything back, so no records survive a verification run.
 
 ### Telegram notifications
 
@@ -168,6 +271,18 @@ Field editability on the Task form is owned exclusively by `Task-Field-Editabili
 - `doc`, `frappe`, `json`, `print` are available inside `def` bodies (injected by safe_exec).
 - Module-level code can call module-level functions (but functions cannot call sibling functions).
 - `frappe.get_doc`, `frappe.get_all`, `frappe.db.get_value`, `frappe.db.set_value`, `frappe.db.exists`, `frappe.db.sql` are all verified working.
+- `frappe.get_meta(doctype)` works, including `.fields` and `.get_field(fieldname)`. Used by the access-control gates to enumerate fields.
+- `doc.get_doc_before_save()` and `doc.has_value_changed(fieldname)` work. **Caution:** `has_value_changed` compares child tables by object identity, so it reports every `Table` field as changed on every save. To detect a real child-table change, compare a signature built from the rows (see the access-control gates).
+- `doc.set_advances()` and other Document methods are callable, but prefer explicit logic where business rules matter — `set_advances()` consumes every unallocated advance a customer holds, ignoring which case each was paid for.
 - `frappe.get_cached_doc` is NOT verified in safe_exec (never observed working in Server Scripts).
 - `frappe.make_post_request` works for HTTP calls (used for Telegram API).
 - `raise SystemExit` works for early exit in API scripts.
+- Scheduler scripts can be run on demand for testing: `frappe.get_doc("Server Script", name).execute_scheduled_method()`. API scripts: `.execute_method()` after populating `frappe.form_dict`.
+
+### Two before_save scripts on one doctype have no defined order
+
+Frappe runs the Server Scripts registered for an event in whatever order it retrieves them. If two scripts both act in `before_save` on the same doctype, **do not rely on one seeing the other's changes**, and do not let one set a field another gates on.
+
+Concretely: `Task-before-save-payment-recording` auto-completes a settled Debt Collection task, while `Task-before-save-dispatch-gates` requires `collection_outcome` before completion. Depending on order, the save would either be refused (losing the payment) or slip past the gate (closing an episode with no record). The fix was to make the outcome part of the same write — `collection_outcome = "Paid"` — so the result is identical either way.
+
+When two scripts must cooperate, make each one's result correct independently.

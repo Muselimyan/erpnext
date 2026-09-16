@@ -89,7 +89,9 @@ var TFV_KIND_MAP = {
     "new_payment_amount":       ["Payment Received", "Debt Collection"],
     "payment_method_dc":        ["Payment Received", "Debt Collection"],
     "payment_reference_dc":     ["Payment Received", "Debt Collection"],
-    "custom_case_profit":       ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
+    // "Distribute Payment" retired in W10: zero tasks ever created, its server
+    // script disabled from the start, and nothing created it.
+    "custom_case_profit":       ["Debt Collection", "Debt Closure Approval"],
     "custom_debt_panel":        ["Debt Collection", "Debt Closure Approval"],
     // Episode outcome. A Debt Collection task is one attempt at collecting,
     // so what happened on that attempt is a fact about the work and belongs

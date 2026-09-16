@@ -1,12 +1,12 @@
 ﻿{
     "env":  "Test",
-    "exported_at":  "2026-09-16T11:57:04Z",
+    "exported_at":  "2026-09-16T12:16:15Z",
     "base_url":  "https://test.erpnext.am",
     "schema":  {
                    "custom-fields":  99,
                    "notifications":  5,
                    "client-scripts":  37,
-                   "server-scripts":  57,
+                   "server-scripts":  56,
                    "workflows":  0,
                    "property-setters":  201,
                    "role-profiles":  6,
@@ -31,7 +31,7 @@
                  "price-lists":  2,
                  "item-prices":  500,
                  "brands":  1,
-                 "task-access-policies":  26
+                 "task-access-policies":  25
              },
     "gaps_count":  1,
     "gaps":  [

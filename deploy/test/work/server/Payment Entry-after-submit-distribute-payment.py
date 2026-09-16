@@ -1,4 +1,22 @@
-﻿# Name: Payment Entry-after-submit-distribute-payment
+﻿# RETIRED AND DELETED FROM THE SERVER (W10).
+#
+# This Server Script no longer exists on test. The `Distribute Payment` task
+# kind it belonged to has been retired: zero tasks were ever created with it,
+# the script was disabled from the start, and nothing created it. Group 3's
+# audit recorded it as "intentionally out of active flow, do not enable unless
+# the business flow changes" (B-02) -- that change never came.
+#
+# The file is kept only as a record of what the flow would have done. Do not
+# redeploy it; `deploy/test/deploy/group-11-financial-tail/w10-retire-distribute-payment.ps1`
+# removes the Select option, the Task Access Policy record and the script itself.
+#
+# Payment allocation now happens in two places instead: task_record_payment
+# logic inside Task-before-save-payment-recording (allocating a collection
+# payment across live invoices, oldest first) and task_commit_invoice
+# (consuming unallocated advances, case-tagged credit first).
+#
+# ORIGINAL HEADER BELOW
+# Name: Payment Entry-after-submit-distribute-payment
 # Type: DocType Event
 # DocType: Payment Entry
 # Event: After Submit

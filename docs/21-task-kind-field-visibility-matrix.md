@@ -132,19 +132,41 @@ Controlled by custom field `depends_on` and mirrored by property setter. Visible
 
 ### 3.5 Debt / Payment Fields
 
-| Field | Debt Collect. | Distrib. Pay. | Payment Rec. | Debt Clos. Appr. | All others |
+> **Updated by Group 11 (W2, W4, W5, W8, W10).** Five fields in this section no
+> longer exist, and the `Distribute Payment` kind has been retired.
+>
+> **Deleted:** `total_outstanding`, `available_advance_credit`, `open_invoices`,
+> `payment_history`, `custom_total_amount_paid`. They stored a second copy of
+> the receivables ledger on the Task and drifted from it — Dispatch Cases showed
+> millions outstanding against invoices the ledger reported as fully paid. Debt
+> is now rendered live into `custom_debt_panel` by `Task-Debt-Panel.js`, reading
+> submitted Sales Invoices and Payment Entries through the `task_debt_panel`
+> API. See the work-facts / business-facts rule in `AGENTS.md`.
+>
+> **Retired kind:** `Distribute Payment` — 0 tasks ever created, its server
+> script disabled from the start, nothing creating it.
+>
+> **Moved:** `current_debt_amd` / `debt_threshold_amd` were mapped to
+> `Debt Collection` but belong to `Debt Alert`, which is what writes them; they
+> have since `B-08` split the two kinds apart.
+
+| Field | Debt Collect. | Debt Alert | Payment Rec. | Debt Clos. Appr. | All others |
 |---|---|---|---|---|---|
-| current_debt_amd | V | H | H | H | H |
-| debt_threshold_amd | V | H | H | H | H |
+| current_debt_amd | H | V | H | H | H |
+| debt_threshold_amd | H | V | H | H | H |
 | new_payment_amount | V | H | V | H | H |
 | payment_method_dc | V | H | V | H | H |
 | payment_reference_dc | V | H | V | H | H |
-| total_outstanding | V | V | H | H | H |
-| available_advance_credit | V | V | H | H | H |
-| open_invoices | V | V | H | H | H |
-| payment_history | V | V | H | H | H |
-| custom_case_profit | H | H | H | V | H |
-| custom_total_amount_paid | H | H | H | V | H |
+| custom_debt_panel | V | H | H | V | H |
+| collection_outcome | V | H | H | H | H |
+| collection_follow_up_date | V | H | H | H | H |
+| collection_note | V | H | H | H | H |
+| custom_case_profit | V | H | H | V | H |
+
+`collection_outcome`, `collection_follow_up_date` and `collection_note` are the
+episode outcome fields added in W4. A Debt Collection task is one *attempt* at
+collecting, so what happened on that attempt is a fact about the work and
+belongs on the task — unlike the balance, which does not.
 
 ### 3.6 Product / Scanning Fields
 

@@ -4,9 +4,49 @@
 >
 > **Excludes.** Dispatch Case operational flow (task chain, packing, scanning, returns handling, cancel flow) — see **Group 1**.
 >
-> **Status.** Analysis and proposal. No code changes made, per project rule "No Changes Without Approval".
+> **Status.** **IMPLEMENTED on test.** See §0 for what shipped. The analysis below is retained as the record of why each change was made; the priority bands and proposals in §7 onward describe the state *before* implementation.
 >
 > **Revision note.** Previously circulated as `docs/23-dispatch-financial-tail-gap-analysis.md`. Renamed to Group 11 to sit alongside the other group audits. **All finding IDs (C*, G*, R*, V*) are unchanged from that revision** — notes made against the old numbering remain valid. The 1–100 importance scores from that revision have been replaced with three priority bands (see §7).
+
+---
+
+## 0. Implementation status (test only)
+
+Nine workstreams deployed to `test.erpnext.am` and verified by 58 automated checks
+run as genuinely non-privileged users. Verification scripts live beside the deploy
+scripts in `deploy/test/deploy/group-11-financial-tail/` and roll everything back.
+
+| WS | What shipped | Findings closed |
+|---|---|---|
+| W0 | Pre-deletion snapshot of every field and table later deleted | — |
+| W1 | One access-control gate per doctype; `ignore_permissions` retired as a business signal | **C1**, ACT-03, ACT-06/07 |
+| W2 | Debt read live from the ledger; 5 Task fields + 2 child doctypes deleted | **G4**, **G6**, G15, G16 |
+| W6 | Invoice built, valued and submitted in one action; VAT, Net 30 terms, clinical metadata, `Sales Invoice.dispatch_case` | **G1**, G11, G13, G14, G15 |
+| W7 | Prices resolved server-side, tender first; tender quantity checked at order entry | **C2**, G8 |
+| W8 | Advances are submitted Payment Entries carrying `dispatch_case` / `source_task`; 4 DC fields + 1 child doctype deleted | **G3**, G17 (prepaid report) |
+| W4 | Debt Collection becomes an *episode* of chasing work, with an outcome gate | **G4** |
+| W5 | Settlement raised by the ledger, not by task completion; profit computed once | **G2**, **G10** |
+| W9 | Submitted-document gate hole closed; financial writes produce version history; `Invoiced` status removed | **G5**, G9 |
+| W10 | `AGENTS.md` rules, this document, `Distribute Payment` retired | — |
+
+**Not done, deliberately:** profit *basis* rework (still Standard Buying list
+price rather than landed cost — Doc 17), credit-note / refund path, lost-damaged
+resolution task (**G12**), stock-validation bypass removal (**G7**), reporting and
+KPI cleanup, Telegram re-enablement. Remaining data cleanup is W11; Playwright
+coverage and per-role API auth for the harness is W12.
+
+### Three findings that only appeared once the work started
+
+None of these were in the original analysis. Each was invisible until the code
+was exercised as the role that owns it.
+
+| # | Finding |
+|---|---|
+| **N1** | `Ops - Finance` could not record a payment at all. It had create rights on Payment Entry but **no permission on `Account`**, so validating `paid_to` failed. Every Payment Entry on test was created by a System Manager or Administrator — the Finance payment workflow had never once worked for the role that owns it. Same shape as C1. |
+| **N2** | **`Before Save` Server Scripts never fire for submitted documents** (Frappe runs `before_save` only when `_action == "save"`; a submitted save is `update_after_submit`). So neither the W1 gate nor the `lock-submitted` script it replaced had ever guarded a submitted Dispatch Case — and a case is submitted for the whole of packing, delivery and returns. The unguarded half was the larger half. |
+| **N3** | Deploy tooling read script bodies as ANSI, corrupting non-ASCII on upload; this is the origin of the mojibake in `Task-after-save-debt-closure` and the Discount Approval task subject. Check mode also reported false `DIFFERS` by decoding responses as Latin-1. **Every deploy script under `deploy/test/scripts/` still has both bugs.** |
+
+All three are recorded as rules in `AGENTS.md`.
 
 ---
 
@@ -14,11 +54,11 @@
 
 Everything else in this document can wait. These three are blockers, and two of them are also prerequisites for the task-native direction (§2).
 
-| # | What | Why it can't wait |
-|---|---|---|
-| **C1** | Three before-save scripts on Task implement the same acceptance rule with three different bypass semantics | An `Ops - Accounting` user **cannot** complete Invoice Preparation for any customer who already has an open Debt Collection task. Repeat hospitals are the normal case. Code-certain. |
-| **G1 + C2** | The Invoice Preparation task can become permanently uncompletable, by two independent routes | Both reachable in routine operation: (a) client returned everything unused, (b) item is covered by an active tender. No in-app recovery, not even as Administrator. |
-| **G5** | Every financial field on Dispatch Case is written via `frappe.db.set_value` on fields declared `allow_on_submit = 0` | No validation, no version history, **no audit trail on any money field**. Becomes critical the moment the underlying document stops being user-visible (§2). |
+| # | What | Why it can't wait | Status |
+|---|---|---|---|
+| **C1** | Three before-save scripts on Task implement the same acceptance rule with three different bypass semantics | An `Ops - Accounting` user **cannot** complete Invoice Preparation for any customer who already has an open Debt Collection task. Repeat hospitals are the normal case. Code-certain. | **Fixed (W1).** Reproduced as `Ops - Accounting` before the fix, passes after. |
+| **G1 + C2** | The Invoice Preparation task can become permanently uncompletable, by two independent routes | Both reachable in routine operation: (a) client returned everything unused, (b) item is covered by an active tender. No in-app recovery, not even as Administrator. | **Fixed (W6, W7).** G1 has an explicit close path with a recorded reason; C2 is unreachable — the price *is* the tender price, and over-quantity is caught at order entry. |
+| **G5** | Every financial field on Dispatch Case is written via `frappe.db.set_value` on fields declared `allow_on_submit = 0` | No validation, no version history, **no audit trail on any money field**. Becomes critical the moment the underlying document stops being user-visible (§2). | **Fixed (W9).** Financial writes go through `doc.save()` and produce a `Version` row. Note `allow_on_submit` turned out to be already granted via Property Setters, so the premise was half wrong. |
 
 Everything below is detail, evidence, and sequencing for these plus 15 lesser findings.
 
@@ -37,6 +77,25 @@ Extending that to invoicing and debt changes the priority of three findings from
 | **G5** | Task-native trades user-side inspectability for system-side guarantees. Removing the user's ability to open the Dispatch Case while its money fields still have no version history is a net regression. |
 
 **Design decision still open:** whether the Invoice task edits a draft Sales Invoice (mirroring the DC pattern) or edits the Dispatch Case with the invoice generated *and submitted* in one atomic commit. The second removes G1, removes draft-drift, and makes idempotency trivial, at the cost of needing an explicit Accounting escape hatch for genuine edge cases. Not yet decided — see V6.
+
+> **RESOLVED (W6).** The second option was chosen. No draft invoice is created at
+> any point: the Invoice Preparation task shows a priced preview and one action
+> builds, values and submits the invoice. The escape hatch is
+> `task_close_case_nothing_to_invoice`, which closes a case with nothing to bill
+> and records a reason on both the case and the task.
+>
+> Two consequences worth noting, neither anticipated here:
+>
+> - The commit action and the completion gate had to be reconciled. The closer
+>   completes the task via `task.save()`, which tripped the gate demanding a
+>   submitted invoice — the same trap, one layer up. The gate now requires an
+>   invoice only when a line is actually billable.
+> - `Dispatch Case.sales_invoice` could not remain the authoritative link,
+>   because Cancel + Amend produces a new document with a new name and strands
+>   the case (G11). `Sales Invoice.dispatch_case` is authoritative instead, and
+>   because amendments copy custom fields it survives Cancel + Amend with **no
+>   special handling at all** — the amend-chain logic originally planned was
+>   deleted rather than written.
 
 ---
 
