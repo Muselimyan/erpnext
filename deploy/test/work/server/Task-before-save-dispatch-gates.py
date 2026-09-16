@@ -53,6 +53,28 @@ if is_completing and doc.task_kind == "Discount Approval":
     if not doc.approval_outcome:
         frappe.throw("Set Approval Outcome (Approved or Rejected) before completing.")
 
+# Debt Collection completion: require an outcome, and a date if one was promised.
+#
+# This gate lives in Section A deliberately. A collection episode spans every
+# unpaid invoice for a customer and so has NO Dispatch Case -- had it been put
+# inside the `if doc.dispatch_case` block below it would have been dead code,
+# exactly as the old Debt Closure Approval role check was.
+#
+# Completing an episode means "this attempt at collecting is finished", not
+# "the customer has paid". There was previously no gate at all, so an episode
+# could be closed silently with no record of what happened -- and two on test
+# were closed while still carrying real outstanding balances. Requiring an
+# outcome is what makes the next episode's timing meaningful, since
+# Scheduled-debt-collection-episodes reads the follow-up date to decide when to
+# raise the next one.
+if is_completing and doc.task_kind == "Debt Collection":
+    if not doc.collection_outcome:
+        frappe.throw("Record what happened (Collection Outcome) before completing this collection attempt.")
+    if doc.collection_outcome == "Promised" and not doc.collection_follow_up_date:
+        frappe.throw("The client promised to pay, so set a Follow-up Date. The next collection attempt is raised on that date.")
+    if doc.collection_follow_up_date and frappe.utils.date_diff(doc.collection_follow_up_date, frappe.utils.nowdate()) < 0:
+        frappe.throw("The Follow-up Date is in the past. Set a future date, or clear it to fall back to the standard follow-up interval.")
+
 # NOTE: the former Debt Closure Approval role check lived here and was
 # unreachable for tasks without a Dispatch Case. It is now redundant and has
 # been removed: dispatch_task_accept validates the accepter against the Task

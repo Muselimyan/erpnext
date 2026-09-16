@@ -91,6 +91,12 @@ var TFV_KIND_MAP = {
     "payment_reference_dc":     ["Payment Received", "Debt Collection"],
     "custom_case_profit":       ["Debt Collection", "Distribute Payment", "Debt Closure Approval"],
     "custom_debt_panel":        ["Debt Collection", "Debt Closure Approval"],
+    // Episode outcome. A Debt Collection task is one attempt at collecting,
+    // so what happened on that attempt is a fact about the work and belongs
+    // on the task -- unlike the balance, which belongs in the ledger.
+    "collection_outcome":         ["Debt Collection"],
+    "collection_follow_up_date":  ["Debt Collection"],
+    "collection_note":            ["Debt Collection"],
 
     // Returns
     "return_pickup_driver":  ["Pickup Returns", "Return drop-off at warehouse",

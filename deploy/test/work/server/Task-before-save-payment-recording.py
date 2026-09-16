@@ -128,5 +128,14 @@ else:
             limit_page_length=1,
         )
         if not still_open:
-            print(f"[Pay] {frappe.utils.now()} task={doc.name} customer={doc.customer} fully settled, completing task")
+            # Set the outcome as well as the status. The Debt Collection
+            # completion gate requires collection_outcome, and both this script
+            # and that gate run in before_save with NO defined order between
+            # them -- so auto-completing without an outcome would either be
+            # refused (payment lost) or slip past the gate (episode closed with
+            # no record), depending purely on which script Frappe ran first.
+            # Recording the outcome makes the result the same either way, and
+            # "Paid" is what actually happened.
+            print(f"[Pay] {frappe.utils.now()} task={doc.name} customer={doc.customer} fully settled, completing task as Paid")
+            doc.collection_outcome = "Paid"
             doc.status = "Completed"

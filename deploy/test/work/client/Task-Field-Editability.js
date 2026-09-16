@@ -82,6 +82,13 @@ var TFE_EDIT_MAP = {
     "custom_debt_panel":        "__never__",
 
     // ── Kind-specific editability (requires acceptance AND kind match) ──
+    // Episode outcome: the collector records what happened on this attempt.
+    // The completion gate requires an outcome, and a follow-up date when the
+    // outcome is "Promised", because the episode scheduler reads that date to
+    // decide when to raise the next attempt.
+    "collection_outcome":              ["Debt Collection"],
+    "collection_follow_up_date":       ["Debt Collection"],
+    "collection_note":                 ["Debt Collection"],
     "customer":                        ["Order entry", "Other: Entry", "Other: Processing"],
     "order_return_expected":           ["Order entry"],
     "order_client_location_warehouse": ["Order entry"],
