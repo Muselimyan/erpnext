@@ -272,11 +272,26 @@ else:
             # recorded afterwards was never reflected and the case showed a
             # balance the ledger disagreed with.
             outstanding = float(inv.outstanding_amount or 0)
-            frappe.db.set_value("Dispatch Case", doc.dispatch_case, {
-                "total_invoice_amount": float(inv.grand_total or 0),
-                "outstanding_amount": outstanding,
-                "sales_invoice": inv.name,
-            })
+            # Written through doc.save(), NOT frappe.db.set_value.
+            #
+            # set_value writes straight to the table: no validation, no hooks,
+            # and no `tabVersion` row. Every financial field on this doctype was
+            # maintained that way, so there was no record of who changed a money
+            # figure, when, or from what -- on the one doctype where that
+            # question matters most. A save produces version history naming the
+            # user.
+            #
+            # The case is submitted by this point, so this runs
+            # before_update_after_submit and is seen by
+            # Dispatch-Case-before-save-submitted-access-control. All three
+            # fields are in that gate's SYSTEM_FIELDS, so it is recognised as
+            # bookkeeping and allowed without anyone holding a task.
+            fin_case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+            fin_case.total_invoice_amount = float(inv.grand_total or 0)
+            fin_case.outstanding_amount = outstanding
+            fin_case.sales_invoice = inv.name
+            fin_case.flags.ignore_permissions = True
+            fin_case.save()
             if outstanding <= 0:
                 frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Closed")
                 print(f"[Dispatch] {frappe.utils.now()} case={doc.dispatch_case} fully settled at invoice time, closed")

@@ -14,7 +14,12 @@ if doc.status == "Awaiting Approval" and not doc.discount_approval_task:
         )
         t = frappe.get_doc({
             "doctype": "Task",
-            "subject": f"Discount Approval: {doc.name} â€” {doc.customer}",
+            # The em-dash here was mojibake ("â€”") until the deploy tooling was
+            # fixed to read script files as UTF-8; PowerShell 5.1 defaults to
+            # ANSI for BOM-less files, mangling non-ASCII on upload. This is
+            # user-visible text: it appeared in every Discount Approval task
+            # subject.
+            "subject": f"Discount Approval: {doc.name} — {doc.customer}",
             "task_kind": "Discount Approval",
             "task_access_policy": "Discount Approval",
             "dispatch_case": doc.name,

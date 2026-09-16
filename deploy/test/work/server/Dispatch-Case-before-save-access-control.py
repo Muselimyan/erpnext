@@ -76,9 +76,13 @@ SYSTEM_FIELDS = [
     "restock_task",
     "invoice_task",
     "discount_approval_task",
+    # Packing problem tracking, written by Dispatch Case-packing-problem-alerts.
+    "custom_packing_problem_status",
+    "custom_packing_problem_summary",
+    "custom_problem_alert_sent",
 ]
 
-# May edit a case they hold no task on, including a submitted case.
+# May edit a case they hold no task on.
 PRIVILEGED_ROLES = ["System Manager", "Ops - Directors"]
 
 LAYOUT_FIELDTYPES = [
@@ -166,10 +170,28 @@ else:
             print(f"[DCAC] {frappe.utils.now()} dc={doc.name} gate=no_accepted_task user={dcuser} open_tasks={len(opentasks or [])} result=BLOCKED fields={userchanged}")
             frappe.throw("You must accept a task for this Dispatch Case before changing it.")
 
-        # ── 4. Submitted cases are restricted ───────────────────────────
-        # Absorbed from Dispatch-Case-before-save-lock-submitted.py.
-        if (before.docstatus or 0) == 1 and not dcprivileged:
-            print(f"[DCAC] {frappe.utils.now()} dc={doc.name} gate=submitted user={dcuser} result=BLOCKED fields={userchanged}")
-            frappe.throw("Only Directors or Administrators can edit a submitted Dispatch Case.")
+        # NOTE: there is deliberately no "only Directors may edit a submitted
+        # case" branch here.
+        #
+        # Two reasons. First, it could never fire: Frappe runs `before_save`
+        # only when _action == "save", and a submitted document saves with
+        # _action == "update_after_submit", which runs
+        # `before_update_after_submit` instead. Every Before Save script --
+        # including the lock-submitted script this one absorbed -- is therefore
+        # invisible to submitted documents, so that rule has never once been
+        # enforced. Verified with w9-probe-submitted-gate.py.
+        #
+        # Second, enforcing it literally would break the whole operational flow.
+        # A case is submitted at order confirmation and then spends its working
+        # life submitted -- packing, delivery, returns inspection all mutate it.
+        # Restricting that to Directors would stop Ops working entirely.
+        #
+        # What submission is actually meant to freeze is the COMMERCIAL terms,
+        # and Frappe already enforces that through allow_on_submit: a field
+        # without it cannot change after submit, whoever is asking.
+        #
+        # Ownership for submitted cases is enforced by the twin script
+        # Dispatch-Case-before-save-submitted-access-control, registered on
+        # "Before Save (Submitted Document)".
 
         print(f"[DCAC] {frappe.utils.now()} dc={doc.name} user={dcuser} holder={holder} privileged={dcprivileged} result=ALLOWED fields={userchanged}")
