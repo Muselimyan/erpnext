@@ -211,10 +211,45 @@ else:
             if row.returned_qty is None:
                 frappe.throw("Fill returned_qty for ALL items in Dispatch Case before completing.")
 
-    # Invoice Preparation completion: require submitted invoice
+    # Invoice Preparation completion: require a submitted invoice for the case.
+    #
+    # Resolved by querying Sales Invoice.dispatch_case rather than by following
+    # Dispatch Case.sales_invoice. The old check read that link and refused
+    # whenever it pointed at a cancelled document -- which is exactly what
+    # Cancel + Amend produces, since the amendment gets a NEW name and the case
+    # keeps pointing at the cancelled original. DC-2026-00015 on test is stuck
+    # that way: ACC-SINV-2026-00001 cancelled, ACC-SINV-2026-00001-1 submitted
+    # and orphaned. An amendment carries dispatch_case forward, so this finds it.
+    #
+    # task_close_case_nothing_to_invoice completes the task by its own route for
+    # cases with nothing to bill, so this gate no longer traps them.
     if is_completing and doc.task_kind == "Invoice preparation / create invoice":
-        inv = frappe.db.get_value("Dispatch Case", doc.dispatch_case, "sales_invoice")
-        if not inv:
-            frappe.throw("No Sales Invoice linked to this Dispatch Case yet.")
-        if frappe.db.get_value("Sales Invoice", inv, "docstatus") != 1:
-            frappe.throw("Submit the Sales Invoice before completing this task.")
+        submitted_invoices = frappe.get_all(
+            "Sales Invoice",
+            filters={"dispatch_case": doc.dispatch_case, "docstatus": 1},
+            fields=["name"],
+            limit_page_length=1,
+        )
+        if not submitted_invoices:
+            any_invoice = frappe.get_all(
+                "Sales Invoice",
+                filters={"dispatch_case": doc.dispatch_case, "docstatus": ["!=", 2]},
+                fields=["name", "docstatus"],
+                limit_page_length=1,
+            )
+            if any_invoice:
+                frappe.throw("Invoice " + any_invoice[0].name + " for this case is still a draft. Submit it before completing this task.")
+            # An invoice is only REQUIRED when there is something to bill.
+            # Demanding one unconditionally is what made a fully-returned case
+            # unfinishable, and it would also have blocked
+            # task_close_case_nothing_to_invoice, which completes this task
+            # after closing the case.
+            gate_case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+            billable = False
+            for gate_row in (gate_case.case_items or []):
+                if float(gate_row.used_qty or 0) > 0:
+                    billable = True
+            if billable:
+                frappe.throw("This case has items to bill but no submitted Sales Invoice yet. Use 'Create & Submit Invoice' on this task.")
+            if gate_case.status != "Closed":
+                frappe.throw("There is nothing to invoice on this case. Use 'Nothing to Invoice' so the case is closed with a recorded reason.")

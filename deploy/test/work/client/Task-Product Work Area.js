@@ -259,8 +259,13 @@ function task_product_work_area_refresh(frm, show_alert) {
                 task_product_work_area_render_restocking(frm, doc, returned_rows, show_alert);
             } else if (is_invoice_task) {
                 const invoice_rows = rows.filter(function(row) { return flt(row.used_qty || 0) > 0 || flt(row.lost_damaged_qty || 0) > 0; });
-                if (!invoice_rows.length) {
-                    task_product_work_area_empty(frm, "No used or lost/damaged product rows to invoice for this Dispatch Case.", "warning");
+                const billable_rows = rows.filter(function(row) { return flt(row.used_qty || 0) > 0; });
+                if (!billable_rows.length) {
+                    // Nothing to bill -- the client returned everything unused.
+                    // This used to be a dead end: a message with no action, on a
+                    // task whose gate demands a submitted invoice, so it could
+                    // never be completed by anyone. (Group 11 G1.)
+                    task_product_work_area_render_nothing_to_invoice(frm, doc, show_alert);
                     return;
                 }
                 task_product_work_area_render_invoice_preparation(frm, doc, invoice_rows, show_alert);
@@ -404,25 +409,163 @@ function task_product_work_area_render_restocking(frm, doc, rows, show_alert) {
     }
 }
 
+// Invoice preview plus the commit action.
+//
+// No draft invoice exists any more. This shows exactly what WILL be billed --
+// line values, VAT and total -- and the accountant commits it in one step via
+// task_commit_invoice. Previously a draft was created automatically at delivery
+// and this panel only listed quantities, with no money and no way to act.
+//
+// Lost/damaged quantity is shown for context but is NOT billed: charging a
+// client for damage needs a human decision (Group 11 G12).
 function task_product_work_area_render_invoice_preparation(frm, doc, rows, show_alert) {
-    let html = `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
-        <th>Name</th><th>Used Qty</th><th>Lost/Damaged Qty</th><th>Batch/LOT</th><th>Expiry</th>
+    var esc = frappe.utils.escape_html;
+    var can_act = (typeof tfe_can_edit === "function") ? tfe_can_edit(frm) : false;
+
+    var net = 0;
+    var unpriced = [];
+
+    var html = `<div style="overflow-x:auto"><table class="table table-bordered table-condensed"><thead><tr>
+        <th>Name</th><th class="text-right">Used Qty</th><th class="text-right">Unit Price</th>
+        <th class="text-right">Disc %</th><th class="text-right">Line Total</th>
+        <th class="text-right">Lost/Dmg</th><th>Batch/LOT</th>
     </tr></thead><tbody>`;
     rows.forEach(function(row) {
-        const used = flt(row.used_qty || 0);
-        const lost = flt(row.lost_damaged_qty || 0);
+        var used = flt(row.used_qty || 0);
+        var lost = flt(row.lost_damaged_qty || 0);
+        var price = flt(row.unit_price || 0);
+        var disc = flt(row.discount_pct || 0);
+        var rate = price * (1 - disc / 100);
+        var line = used > 0 ? rate * used : 0;
+        net += line;
+        if (used > 0 && price <= 0) {
+            unpriced.push(row.item_code || row.item_name || "Unknown");
+        }
         html += `<tr>
-            <td>${frappe.utils.escape_html(row.item_name || row.item_code || "")}</td>
+            <td>${esc(row.item_name || row.item_code || "")}</td>
             <td class="text-right">${used}</td>
-            <td class="text-right">${lost}</td>
-            <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
-            <td>${frappe.utils.escape_html(row.expiry_date || row.custom_expiry_date || "")}</td>
+            <td class="text-right">${price ? frappe.format(price, {fieldtype: "Currency"}) : '<span style="color:#c0392b">not set</span>'}</td>
+            <td class="text-right">${disc ? disc + "%" : "-"}</td>
+            <td class="text-right"><b>${line ? frappe.format(line, {fieldtype: "Currency"}) : "-"}</b></td>
+            <td class="text-right">${lost || "-"}</td>
+            <td>${esc(row.batch_no || "")}</td>
         </tr>`;
     });
     html += `</tbody></table></div>`;
-    html += `<div class="small text-muted" style="margin-top:8px"><i>Review only used and lost/damaged quantities for invoice preparation.</i></div>`;
+
+    var vat = net * 0.20;
+    html += '<div style="margin-top:10px;padding:10px;border:1px solid var(--border-color,#d1d8dd);border-radius:8px;max-width:340px;">'
+        + '<div style="display:flex;justify-content:space-between;"><span>Net total</span><b>' + frappe.format(net, {fieldtype: "Currency"}) + '</b></div>'
+        + '<div style="display:flex;justify-content:space-between;color:var(--text-muted,#6c7680);"><span>VAT 20%</span><span>' + frappe.format(vat, {fieldtype: "Currency"}) + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;margin-top:6px;padding-top:6px;border-top:1px solid var(--border-color,#d1d8dd);font-size:15px;">'
+        + '<span>Invoice total</span><b>' + frappe.format(net + vat, {fieldtype: "Currency"}) + '</b></div>'
+        + '<div class="text-muted" style="font-size:11px;margin-top:6px;">Estimate. The invoice is valued by the server on commit; any unallocated advance is applied then.</div>'
+        + '</div>';
+
+    if (unpriced.length) {
+        html += '<div style="margin-top:10px;color:#c0392b;"><b>Cannot invoice yet:</b> no price for '
+            + esc(unpriced.join(", ")) + '. Set an Item Price on the Standard Selling price list.</div>';
+    }
+
+    if (can_act && !unpriced.length && net > 0) {
+        html += '<div style="margin-top:12px;"><button type="button" class="btn btn-primary btn-sm ip-commit-btn">'
+            + 'Create &amp; Submit Invoice</button></div>';
+    } else if (!can_act) {
+        html += '<div class="text-muted small" style="margin-top:10px;"><i>Accept this task to create the invoice.</i></div>';
+    }
+
     if (frm.fields_dict.custom_task_product_summary) {
-        frm.fields_dict.custom_task_product_summary.$wrapper.html(html);
+        var $w = frm.fields_dict.custom_task_product_summary.$wrapper;
+        $w.html(html);
+        $w.find(".ip-commit-btn").on("click", function() {
+            var $btn = $(this);
+            if ($btn.data("busy")) return;
+            frappe.confirm(
+                "Create and submit the Sales Invoice for this case?<br><br>"
+                + "Total approximately <b>" + frappe.format(net + vat, {fieldtype: "Currency"}) + "</b>.<br>"
+                + "It will be submitted immediately, so correcting it afterwards means cancelling and amending.",
+                function() {
+                    $btn.data("busy", true).prop("disabled", true).text("Creating...");
+                    frappe.call({
+                        method: "task_commit_invoice",
+                        args: { task_name: frm.doc.name },
+                        freeze: true,
+                        freeze_message: __("Creating and submitting invoice..."),
+                        callback: function(r) {
+                            var m = r && r.message ? r.message : {};
+                            console.log("[TaskPWA] invoice committed: " + JSON.stringify(m));
+                            frappe.msgprint({
+                                title: __("Invoice Submitted"),
+                                indicator: "green",
+                                message: "<b>" + esc(m.sales_invoice || "") + "</b><br><br>"
+                                    + "Net: " + frappe.format(m.net_total || 0, {fieldtype: "Currency"}) + "<br>"
+                                    + "VAT: " + frappe.format(m.total_taxes_and_charges || 0, {fieldtype: "Currency"}) + "<br>"
+                                    + "Total: <b>" + frappe.format(m.grand_total || 0, {fieldtype: "Currency"}) + "</b><br>"
+                                    + (m.advance_applied ? "Advance applied: " + frappe.format(m.advance_applied, {fieldtype: "Currency"}) + "<br>" : "")
+                                    + "Outstanding: <b>" + frappe.format(m.outstanding_amount || 0, {fieldtype: "Currency"}) + "</b><br>"
+                                    + "Due: " + esc(m.due_date || "-")
+                            });
+                            frm.reload_doc();
+                        },
+                        error: function() {
+                            $btn.data("busy", false).prop("disabled", false).text("Create & Submit Invoice");
+                        }
+                    });
+                }
+            );
+        });
+    }
+    if (show_alert) {
+        frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });
+    }
+}
+
+// Shown when a case has nothing to bill -- every item came back unused. Offers
+// the explicit close action rather than leaving an unfinishable task behind.
+function task_product_work_area_render_nothing_to_invoice(frm, doc, show_alert) {
+    var esc = frappe.utils.escape_html;
+    var can_act = (typeof tfe_can_edit === "function") ? tfe_can_edit(frm) : false;
+
+    var html = '<div style="padding:12px;border:1px solid #f0ad4e;border-radius:8px;background:rgba(240,173,78,0.08);">'
+        + '<div style="font-weight:600;margin-bottom:6px;">Nothing to invoice</div>'
+        + '<div>No item on this case has a used quantity above zero, so there is nothing to bill. '
+        + 'This is normal when the client returned everything unused.</div>';
+    if (can_act) {
+        html += '<div style="margin-top:12px;"><button type="button" class="btn btn-warning btn-sm nti-btn">'
+            + 'Nothing to Invoice &mdash; Close Case</button></div>';
+    } else {
+        html += '<div class="text-muted small" style="margin-top:10px;"><i>Accept this task to close the case.</i></div>';
+    }
+    html += '</div>';
+
+    if (frm.fields_dict.custom_task_product_summary) {
+        var $w = frm.fields_dict.custom_task_product_summary.$wrapper;
+        $w.html(html);
+        $w.find(".nti-btn").on("click", function() {
+            frappe.prompt(
+                [{
+                    fieldname: "reason", fieldtype: "Small Text", reqd: 1,
+                    label: __("Why is there nothing to invoice?"),
+                    description: __("Recorded on the case and the task, for audit.")
+                }],
+                function(values) {
+                    frappe.call({
+                        method: "task_close_case_nothing_to_invoice",
+                        args: { task_name: frm.doc.name, reason: values.reason },
+                        freeze: true,
+                        freeze_message: __("Closing case..."),
+                        callback: function(r) {
+                            var m = r && r.message ? r.message : {};
+                            console.log("[TaskPWA] case closed with no invoice: " + JSON.stringify(m));
+                            frappe.show_alert({ message: __("Case closed with no invoice"), indicator: "orange" });
+                            frm.reload_doc();
+                        }
+                    });
+                },
+                __("Close Case Without Invoice"),
+                __("Close Case")
+            );
+        });
     }
     if (show_alert) {
         frappe.show_alert({ message: __("Product summary refreshed"), indicator: "green" });

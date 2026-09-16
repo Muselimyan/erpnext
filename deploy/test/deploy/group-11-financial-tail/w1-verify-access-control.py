@@ -50,16 +50,26 @@ def w1_verify(ACCOUNTING_USER, FINANCE_USER, DIRECTOR_USER):
         # completion instead, which is a better test of the same defect.
         company = frappe.db.get_single_value("Global Defaults", "default_company") or "InMED"
         item = frappe.db.get_value("Item", {"disabled": 0, "is_stock_item": 1}, "name")
-        si = frappe.get_doc({"doctype": "Sales Invoice", "customer": cust, "company": company, "currency": "AMD", "update_stock": 0, "items": [{"item_code": item, "qty": 1, "rate": 4000}]})
-        si.flags.ignore_permissions = True
-        si.insert()
-        si.submit()
         case = frappe.new_doc("Dispatch Case")
         case.status = "Invoice Pending"
         case.customer = cust
         case.flags.ignore_permissions = True
         case.flags.ignore_mandatory = True
+        crow = case.append("case_items", {})
+        crow.item_code = item
+        crow.item_name = item
+        crow.dispatched_qty = 1
+        crow.used_qty = 1
+        crow.unit_price = 4000
         case.insert()
+        # The invoice must carry dispatch_case: that is the authoritative link
+        # now, and the completion gate resolves the case's invoice through it so
+        # that Cancel + Amend cannot strand the case. Setting only the old
+        # Dispatch Case.sales_invoice pointer is no longer sufficient.
+        si = frappe.get_doc({"doctype": "Sales Invoice", "customer": cust, "company": company, "currency": "AMD", "update_stock": 0, "dispatch_case": case.name, "items": [{"item_code": item, "qty": 1, "rate": 4000}]})
+        si.flags.ignore_permissions = True
+        si.insert()
+        si.submit()
         frappe.db.set_value("Dispatch Case", case.name, "sales_invoice", si.name)
         inv_task = frappe.get_doc({"doctype": "Task", "subject": "W1VERIFY invoice prep", "task_kind": "Invoice preparation / create invoice", "task_access_policy": "Invoice preparation / create invoice", "customer": cust, "dispatch_case": case.name, "status": "Working", "custom_assigned_to": ACCOUNTING_USER, "custom_accepted_by": ACCOUNTING_USER})
         inv_task.flags.ignore_permissions = True

@@ -124,26 +124,24 @@ else:
         print(f"[Dispatch] {frappe.utils.now()} task={parent_task} created: kind={kind} new_task={t.name} assignee={assignee} dc={dc_name}")
         return t.name
 
-    def create_invoice(c):
-        items_rows = []
-        for r in (c.case_items or []):
-            if r.used_qty is not None and str(r.used_qty) != "":
-                qty = float(r.used_qty)
-            else:
-                qty = float(r.dispatched_qty or 0)
-            if qty <= 0:
-                continue
-            rate = (r.unit_price or 0) * (1 - (r.discount_pct or 0) / 100)
-            items_rows.append({"item_code": r.item_code, "qty": qty, "rate": rate})
-        if not items_rows:
-            return
-        currency = "AMD"
-        if c.get("currency"):
-            currency = c.currency
-        si = frappe.get_doc({"doctype": "Sales Invoice", "customer": c.customer, "company": "InMED", "currency": currency, "update_stock": 0, "items": items_rows})
-        si.flags.ignore_permissions = True
-        si.insert()
-        frappe.db.set_value("Dispatch Case", c.name, "sales_invoice", si.name)
+    # NOTE: create_invoice() has been removed.
+    #
+    # A draft Sales Invoice used to be created here, automatically, the moment
+    # goods were delivered or returns were inspected. Two problems followed:
+    #
+    #   - When no line qualified -- the client returned everything unused, a
+    #     routine outcome -- it returned without creating anything, yet the
+    #     caller created the Invoice Preparation task regardless. That task's
+    #     gate demands a submitted invoice, so it could never be completed by
+    #     anyone, including an Administrator. (Group 11 G1.)
+    #   - It priced lines from whatever was on the case with no tender
+    #     awareness, so a tender-covered invoice was refused at submission and
+    #     the task deadlocked after the goods had already shipped. (C2.)
+    #
+    # The invoice is now built and submitted in one deliberate action by
+    # task_commit_invoice, called from the Invoice Preparation task, with
+    # task_close_case_nothing_to_invoice as the explicit alternative when there
+    # is nothing to bill.
 
     def create_or_update_debt_task(c, outstanding, inv_name, team_user):
         # Ensures ONE open Debt Collection task exists for the customer, and
@@ -199,8 +197,7 @@ else:
         if not case.return_expected:
             c_se = create_se(case.client_location_warehouse, "", all_items(case), "Material Issue")
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"consumption_stock_entry": c_se.name if c_se else "", "status": "Invoice Pending"})
-            create_invoice(case)
-            make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review and submit draft Sales Invoice for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+            make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review the products, then use Create & Submit Invoice on this task for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
         else:
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Awaiting Return Pickup")
             make_task("Return Call", f"Return call: {short_customer(case.customer)} ({case.name})", team_map.get("Return Call", ""), f"Waiting for {case.customer} to call regarding return pickup. Fill in details and assign to driver.", "return_waiting_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
@@ -252,9 +249,8 @@ else:
         if u:
             c_se = create_se(RETURNS_WH, "", u, "Material Issue")
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "consumption_stock_entry", c_se.name if c_se else "")
-        create_invoice(case)
         frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Invoice Pending")
-        make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review draft invoice for {case.name}.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+        make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review the used quantities, then use Create & Submit Invoice on this task for {case.name}. If nothing was used, use Nothing to Invoice.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
         u = used_items(case)
         r = returned_items(case)
         if r:
@@ -271,17 +267,40 @@ else:
 
     # Invoice Preparation Completed
     if is_completing and doc.task_kind == "Invoice preparation / create invoice":
-        case.reload()
-        inv_name = case.sales_invoice
-        if inv_name:
-            inv_total = frappe.db.get_value("Sales Invoice", inv_name, "grand_total") or 0
-            outstanding = inv_total - (case.prepaid_amount or 0)
-            frappe.db.set_value("Dispatch Case", doc.dispatch_case, {"total_invoice_amount": inv_total, "outstanding_amount": outstanding})
+        # The invoice is found by querying Sales Invoice.dispatch_case, not by
+        # reading Dispatch Case.sales_invoice. That link is only a convenience
+        # pointer now: it went stale whenever an invoice was cancelled and
+        # amended, because the amendment is a NEW document with a new name,
+        # leaving the case pointing at the cancelled one and its gate refusing
+        # to let the task finish. An amendment carries dispatch_case forward, so
+        # querying that way survives Cancel + Amend.
+        submitted = frappe.get_all(
+            "Sales Invoice",
+            filters={"dispatch_case": doc.dispatch_case, "docstatus": 1},
+            fields=["name", "grand_total", "outstanding_amount"],
+            order_by="creation desc",
+            limit_page_length=0,
+        )
+        if submitted:
+            inv = submitted[0]
+            # Outstanding comes from the invoice, which already nets off any
+            # advance applied at commit time. It is no longer computed as
+            # grand_total minus a separately stored prepaid figure -- that
+            # subtraction happened once, at a fixed moment, so an advance
+            # recorded afterwards was never reflected and the case showed a
+            # balance the ledger disagreed with.
+            outstanding = float(inv.outstanding_amount or 0)
+            frappe.db.set_value("Dispatch Case", doc.dispatch_case, {
+                "total_invoice_amount": float(inv.grand_total or 0),
+                "outstanding_amount": outstanding,
+                "sales_invoice": inv.name,
+            })
             if outstanding <= 0:
                 frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Closed")
+                print(f"[Dispatch] {frappe.utils.now()} case={doc.dispatch_case} fully settled at invoice time, closed")
             else:
                 frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Payment Pending")
-                create_or_update_debt_task(case, outstanding, inv_name, team_map.get("Debt Collection", ""))
+                create_or_update_debt_task(case, outstanding, inv.name, team_map.get("Debt Collection", ""))
 
     # Discount Approval Completed
     if is_completing and doc.task_kind == "Discount Approval":
