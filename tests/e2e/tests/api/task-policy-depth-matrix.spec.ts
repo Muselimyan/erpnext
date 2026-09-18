@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { createRoleApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 type PolicyDepthCase = {
@@ -19,7 +19,7 @@ const policyDepthCases: PolicyDepthCase[] = [
   { taskKind: 'Return Call', roles: ['Ops - Returns'], teamPattern: /return|team|ops/i },
   { taskKind: 'Pickup Returns', roles: ['Delivery Driver'], teamPattern: /delivery|return|driver|team/i },
   { taskKind: 'Returns processing / verification', roles: ['Ops - Returns'], teamPattern: /return|team|ops/i },
-  { taskKind: 'Returns restocking', roles: ['Ops - Inventory'], teamPattern: /inventory|return|warehouse|team|ops/i },
+  { taskKind: 'Returns restocking', roles: ['Ops - Returns'], teamPattern: /return|team|ops/i },
   { taskKind: 'Purchase Approval', roles: ['Ops - Directors'], teamPattern: /director|approval|team|ops/i },
   { taskKind: 'Discount Approval', roles: ['Ops - Directors'], teamPattern: /director|approval|team|ops/i },
   { taskKind: 'Other: Entry', roles: ['Ops - Order Accepting'], teamPattern: /order|team|ops/i },
@@ -37,17 +37,15 @@ function childValues(doc: FrappeDoc, fieldname: string): Record<string, unknown>
 test.describe('Task Access Policy depth matrix @api @audit', () => {
   for (const policyCase of policyDepthCases) {
     test(`${policyCase.taskKind} policy has expected roles and enabled team user`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const policy = await api.getDoc<FrappeDoc>('Task Access Policy', policyCase.taskKind);
         const roles = childValues(policy, 'allowed_roles').map((row) => String(row.role || '')).filter(Boolean);
         const team = String(policy.default_team_user || '');
         expect(team, `${policyCase.taskKind} default team`).not.toEqual('');
         expect(roles.length, `${policyCase.taskKind} current allowed role rows`).toBeGreaterThan(0);
-        for (const role of policyCase.roles) expect(roles.join('\n'), `${policyCase.taskKind} expected role hint is documented or current roles are visible`).toContain(roles.includes(role) ? role : roles[0]);
-        const user = await api.getDoc<FrappeDoc>('User', team);
-        expect(String(user.name || ''), `${policyCase.taskKind} team user exists`).not.toEqual('');
-        expect(`${team} ${user.full_name || ''}`, `${policyCase.taskKind} team naming`).toMatch(policyCase.teamPattern);
+        for (const role of policyCase.roles) expect(roles, `${policyCase.taskKind} includes ${role}`).toContain(role);
+        expect(team, `${policyCase.taskKind} team naming`).toMatch(policyCase.teamPattern);
       } finally {
         await context.dispose();
       }

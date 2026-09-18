@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js';
 import { assertNoDuplicateButtons } from '../../src/assertions.js';
-import { createApiBundle, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createTask, openTaskAsRole } from '../../src/test-data.js';
 import type { RoleName } from '../../src/types.js';
 
 type ReturnsUiCase = {
@@ -32,7 +32,7 @@ test.describe('Returns browser smoke @smoke', () => {
   for (const returnsCase of returnsUiCases) {
     test(`${returnsCase.taskKind} returns task opens cleanly`, async ({ browser }) => {
       const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(returnsCase.role);
       try {
         const task = await createTask(api, returnsCase.taskKind);
         const page = await openTaskAsRole(browser, returnsCase.role, String(task.name));
@@ -51,8 +51,8 @@ test.describe('Returns browser smoke @smoke', () => {
     });
   }
 
-  test('Returns processing phone layout exposes compact or detailed return work area when present', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+  test('Returns processing phone layout exposes compact or detailed return work area', async ({ browser }) => {
+    const { context, api } = await createRoleApiBundle('returns');
     try {
       const task = await createTask(api, 'Returns processing / verification');
       const page = await openTaskAsRole(browser, 'returns', String(task.name));
@@ -60,7 +60,7 @@ test.describe('Returns browser smoke @smoke', () => {
       const detailedToggle = page.getByText(/Use Detailed|Use Compact/).first();
       const returnInputs = page.getByText(/Returned Qty|Lost\/Damaged|Used|Sent/).first();
       const visibleCount = Number(await compactTable.count()) + Number(await detailedToggle.count()) + Number(await returnInputs.count());
-      expect(visibleCount, 'return work area marker probe does not fail when returns UI is absent').toBeGreaterThanOrEqual(0);
+      expect(visibleCount, 'return work area marker is visible').toBeGreaterThan(0);
       await page.context().close();
     } finally {
       await context.dispose();

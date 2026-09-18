@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle, createOrderEntryTask, expectRejects, uploadSamplePhotoByApi } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask, expectRejects, uploadSamplePhotoByApi, type ApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 async function latestTask(api: { getList: Function }, taskKind: string, dispatchCase: string): Promise<FrappeDoc | null> {
@@ -27,100 +27,113 @@ async function completeOrderAndGetPack(api: { updateDoc: Function; getList: Func
   return packTask as FrappeDoc;
 }
 
+async function createCaseWithPack(order: ApiBundle): Promise<{ caseName: string; packTask: FrappeDoc }> {
+  const orderTask = await createOrderEntryTask(order.api, false);
+  const caseName = await createCase(order.api, orderTask);
+  const packTask = await completeOrderAndGetPack(order.api, caseName, orderTask);
+  return { caseName, packTask };
+}
+
 test.describe('Dispatch workflow gate depth @api @audit', () => {
   test('Pack task cannot complete before acceptance even with case link', async () => {
-    const { context, api } = await createApiBundle();
+    const order = await createRoleApiBundle('orderCreating');
+    const inventory = await createRoleApiBundle('inventory');
     try {
-      const orderTask = await createOrderEntryTask(api, false);
-      const caseName = await createCase(api, orderTask);
-      const packTask = await completeOrderAndGetPack(api, caseName, orderTask);
-      await expectRejects(() => api.updateDoc('Task', String(packTask.name), { status: 'Completed' }), /accept|accepted|locked|permission/i);
+      const { packTask } = await createCaseWithPack(order);
+      await expectRejects(() => inventory.api.updateDoc('Task', String(packTask.name), { status: 'Completed' }), /accept|accepted|locked|permission/i);
     } finally {
-      await context.dispose();
+      await inventory.context.dispose();
+      await order.context.dispose();
     }
   });
 
   test('Pack task cannot complete with photo but without packed items', async () => {
-    const { context, api } = await createApiBundle();
+    const order = await createRoleApiBundle('orderCreating');
+    const inventory = await createRoleApiBundle('inventory');
     try {
-      const orderTask = await createOrderEntryTask(api, false);
-      const caseName = await createCase(api, orderTask);
-      const packTask = await completeOrderAndGetPack(api, caseName, orderTask);
-      await api.acceptTask(String(packTask.name));
-      await uploadSamplePhotoByApi(context, 'Task', String(packTask.name), 'warehouse_pickup_photo');
-      await expectRejects(() => api.updateDoc('Task', String(packTask.name), { status: 'Completed' }), /packed|items|required/i);
+      const { packTask } = await createCaseWithPack(order);
+      await inventory.api.acceptTask(String(packTask.name));
+      await uploadSamplePhotoByApi(inventory.context, 'Task', String(packTask.name), 'warehouse_pickup_photo');
+      await expectRejects(() => inventory.api.updateDoc('Task', String(packTask.name), { status: 'Completed' }), /packed|items|required/i);
     } finally {
-      await context.dispose();
+      await inventory.context.dispose();
+      await order.context.dispose();
     }
   });
 
   test('Pack task cannot complete with packed item but without pickup photo', async () => {
-    const { context, api } = await createApiBundle();
+    const order = await createRoleApiBundle('orderCreating');
+    const inventory = await createRoleApiBundle('inventory');
     try {
-      const orderTask = await createOrderEntryTask(api, false);
-      const caseName = await createCase(api, orderTask);
-      const packTask = await completeOrderAndGetPack(api, caseName, orderTask);
-      await api.acceptTask(String(packTask.name));
-      await api.markItemsPackedBatch(caseName, [0], 'Pack / prepare items');
-      await expectRejects(() => api.updateDoc('Task', String(packTask.name), { status: 'Completed' }), /photo|pickup|required/i);
+      const { caseName, packTask } = await createCaseWithPack(order);
+      await inventory.api.acceptTask(String(packTask.name));
+      await inventory.api.markItemsPackedBatch(caseName, [0], 'Pack / prepare items');
+      await expectRejects(() => inventory.api.updateDoc('Task', String(packTask.name), { status: 'Completed' }), /photo|pickup|required/i);
     } finally {
-      await context.dispose();
+      await inventory.context.dispose();
+      await order.context.dispose();
     }
   });
 
   test('Delivery task cannot complete before delivery status is Delivered', async () => {
-    const { context, api } = await createApiBundle();
+    const order = await createRoleApiBundle('orderCreating');
+    const inventory = await createRoleApiBundle('inventory');
+    const delivery = await createRoleApiBundle('delivery');
     try {
-      const orderTask = await createOrderEntryTask(api, false);
-      const caseName = await createCase(api, orderTask);
-      const packTask = await completeOrderAndGetPack(api, caseName, orderTask);
-      await api.acceptTask(String(packTask.name));
-      await uploadSamplePhotoByApi(context, 'Task', String(packTask.name), 'warehouse_pickup_photo');
-      await api.markItemsPackedBatch(caseName, [0], 'Pack / prepare items');
-      await api.updateDoc('Task', String(packTask.name), { status: 'Completed' });
-      const deliveryTask = await latestTask(api, 'Delivery', caseName);
+      const { caseName, packTask } = await createCaseWithPack(order);
+      await inventory.api.acceptTask(String(packTask.name));
+      await uploadSamplePhotoByApi(inventory.context, 'Task', String(packTask.name), 'warehouse_pickup_photo');
+      await inventory.api.markItemsPackedBatch(caseName, [0], 'Pack / prepare items');
+      await inventory.api.updateDoc('Task', String(packTask.name), { status: 'Completed' });
+      const deliveryTask = await latestTask(order.api, 'Delivery', caseName);
       expect(deliveryTask, 'delivery task exists').not.toBeNull();
-      await api.acceptTask(String(deliveryTask?.name));
-      await expectRejects(() => api.updateDoc('Task', String(deliveryTask?.name), { status: 'Completed' }), /delivery|delivered|status|required/i);
+      await delivery.api.acceptTask(String(deliveryTask?.name));
+      await expectRejects(() => delivery.api.updateDoc('Task', String(deliveryTask?.name), { status: 'Completed' }), /delivery|delivered|status|required/i);
     } finally {
-      await context.dispose();
+      await delivery.context.dispose();
+      await inventory.context.dispose();
+      await order.context.dispose();
     }
   });
 
   test('Invoice task cannot complete without submitted invoice link', async () => {
-    const { context, api } = await createApiBundle();
+    const order = await createRoleApiBundle('orderCreating');
+    const inventory = await createRoleApiBundle('inventory');
+    const delivery = await createRoleApiBundle('delivery');
+    const accounting = await createRoleApiBundle('accounting');
     try {
-      const orderTask = await createOrderEntryTask(api, false);
-      const caseName = await createCase(api, orderTask);
-      const packTask = await completeOrderAndGetPack(api, caseName, orderTask);
-      await api.acceptTask(String(packTask.name));
-      await uploadSamplePhotoByApi(context, 'Task', String(packTask.name), 'warehouse_pickup_photo');
-      await api.markItemsPackedBatch(caseName, [0], 'Pack / prepare items');
-      await api.updateDoc('Task', String(packTask.name), { status: 'Completed' });
-      const deliveryTask = await latestTask(api, 'Delivery', caseName);
-      await api.acceptTask(String(deliveryTask?.name));
-      await api.updateDoc('Task', String(deliveryTask?.name), { delivery_status: 'Picked Up' });
-      await api.updateDoc('Task', String(deliveryTask?.name), { delivery_status: 'Delivered' });
-      const invoiceTask = await latestTask(api, 'Invoice preparation / create invoice', caseName);
+      const { caseName, packTask } = await createCaseWithPack(order);
+      await inventory.api.acceptTask(String(packTask.name));
+      await uploadSamplePhotoByApi(inventory.context, 'Task', String(packTask.name), 'warehouse_pickup_photo');
+      await inventory.api.markItemsPackedBatch(caseName, [0], 'Pack / prepare items');
+      await inventory.api.updateDoc('Task', String(packTask.name), { status: 'Completed' });
+      const deliveryTask = await latestTask(order.api, 'Delivery', caseName);
+      await delivery.api.acceptTask(String(deliveryTask?.name));
+      await delivery.api.updateDoc('Task', String(deliveryTask?.name), { delivery_status: 'Picked Up' });
+      await delivery.api.updateDoc('Task', String(deliveryTask?.name), { delivery_status: 'Delivered' });
+      const invoiceTask = await latestTask(order.api, 'Invoice preparation / create invoice', caseName);
       expect(invoiceTask, 'invoice task exists').not.toBeNull();
-      await api.acceptTask(String(invoiceTask?.name));
-      await expectRejects(() => api.updateDoc('Task', String(invoiceTask?.name), { status: 'Completed' }), /invoice|submitted|sales invoice|required/i);
+      await accounting.api.acceptTask(String(invoiceTask?.name));
+      await expectRejects(() => accounting.api.updateDoc('Task', String(invoiceTask?.name), { status: 'Completed' }), /invoice|submitted|sales invoice|required/i);
     } finally {
-      await context.dispose();
+      await accounting.context.dispose();
+      await delivery.context.dispose();
+      await inventory.context.dispose();
+      await order.context.dispose();
     }
   });
 
   test('invoice task is not created before Pack and Delivery gates complete', async () => {
-    const { context, api } = await createApiBundle();
+    const order = await createRoleApiBundle('orderCreating');
     try {
-      const orderTask = await createOrderEntryTask(api, false);
-      const caseName = await createCase(api, orderTask);
-      const packTask = await completeOrderAndGetPack(api, caseName, orderTask);
-      const invoiceTask = await latestTask(api, 'Invoice preparation / create invoice', caseName);
+      const orderTask = await createOrderEntryTask(order.api, false);
+      const caseName = await createCase(order.api, orderTask);
+      const packTask = await completeOrderAndGetPack(order.api, caseName, orderTask);
+      const invoiceTask = await latestTask(order.api, 'Invoice preparation / create invoice', caseName);
       expect(packTask, 'pack task exists before invoice path').not.toBeNull();
       expect(invoiceTask, 'invoice task waits for delivery gate completion').toBeNull();
     } finally {
-      await context.dispose();
+      await order.context.dispose();
     }
   });
 });

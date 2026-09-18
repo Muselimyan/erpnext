@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { assertButtonFullyVisible, assertNoConsoleErrors, assertNoDuplicateButtons } from '../../src/assertions.js';
 import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js';
-import { createApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
 import type { RoleName } from '../../src/types.js';
 
 type UiTaskCase = {
@@ -35,7 +35,7 @@ test.describe('Task form UI matrix @smoke', () => {
   for (const taskCase of uiTaskCases) {
     test(`${taskCase.taskKind} form loads cleanly and keeps primary controls visible`, async ({ browser }) => {
       const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(taskCase.role);
       try {
         const task = await createTask(api, taskCase.taskKind);
         const page = await openTaskAsRole(browser, taskCase.role, String(task.name));
@@ -60,7 +60,7 @@ test.describe('Task form UI matrix @smoke', () => {
 
   test('accepted Order Entry with Dispatch Case keeps dispatch controls visible and usable', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createOrderEntryTask(api, false);
       await api.createDispatchCase(String(task.name));

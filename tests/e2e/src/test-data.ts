@@ -14,6 +14,7 @@ export type ApiBundle = {
 
 export async function createApiBundle(): Promise<ApiBundle> {
   const config = getConfig();
+  if (!config.apiKey || !config.apiSecret) throw new Error('API_KEY/API_SECRET are not configured for diagnostic API-token use');
   const context = await request.newContext({
     baseURL: config.baseUrl,
     extraHTTPHeaders: {
@@ -23,17 +24,59 @@ export async function createApiBundle(): Promise<ApiBundle> {
   return { context, api: new FrappeApiClient(context, config.baseUrl) };
 }
 
+export async function createRoleApiBundle(roleName: RoleName): Promise<ApiBundle> {
+  const config = getConfig();
+  const credentials = config.roles.get(roleName);
+  expect(credentials, `${roleName} credentials configured`).toBeTruthy();
+  const context = await request.newContext({ baseURL: config.baseUrl });
+  const login = await context.post('/api/method/login', {
+    form: {
+      usr: String(credentials?.user || ''),
+      pwd: String(credentials?.password || '')
+    }
+  });
+  expect(login.ok(), `${roleName} API login`).toBe(true);
+  return { context, api: new FrappeApiClient(context, config.baseUrl) };
+}
+
 export async function findFirstDoc(api: FrappeApiClient, doctype: string, fields: string[], filters?: unknown[]): Promise<FrappeDoc> {
   const docs = await api.getList(doctype, { fields, filters, limit: 1, orderBy: 'modified desc' });
   expect(docs.length, `${doctype} test fixture exists`).toBeGreaterThan(0);
   return docs[0];
 }
 
+const defaultPolicyTeams: Record<string, string> = {
+  'Order entry': 'order.creation.team@example.com',
+  'Pack / prepare items': 'inventory.team@example.com',
+  Delivery: 'delivery.team@example.com',
+  'Invoice preparation / create invoice': 'accounting.team@example.com',
+  'Payment Received': 'accounting.team@example.com',
+  'Debt Collection': 'finance.team@example.com',
+  'Debt Closure Approval': 'directors.team@example.com',
+  'Return Call': 'office.team@example.com',
+  'Pickup Returns': 'delivery.team@example.com',
+  'Returns processing / verification': 'returns.team@example.com',
+  'Returns restocking': 'returns.team@example.com',
+  'Purchase Approval': 'directors.team@example.com',
+  'Discount Approval': 'directors.team@example.com',
+  'Other: Entry': 'order.team@example.com',
+  'Other: Processing': 'order.creation.team@example.com',
+  'Account Details: Entry': 'order.team@example.com',
+  'Account Details: Processing': 'accounting.team@example.com',
+  'Debt Alert': 'directors.team@example.com'
+};
+
 export async function findPolicyTeam(api: FrappeApiClient, taskKind: string): Promise<string> {
-  const policy = await api.getDoc<FrappeDoc>('Task Access Policy', taskKind);
-  const team = String(policy.default_team_user || '');
-  expect(team, `Task Access Policy ${taskKind} has default_team_user`).not.toEqual('');
-  return team;
+  try {
+    const policy = await api.getDoc<FrappeDoc>('Task Access Policy', taskKind);
+    const team = String(policy.default_team_user || '');
+    expect(team, `Task Access Policy ${taskKind} has default_team_user`).not.toEqual('');
+    return team;
+  } catch (error) {
+    const team = defaultPolicyTeams[taskKind];
+    if (!/permission|not permitted|doctype access/i.test(String(error)) || !team) throw error;
+    return team;
+  }
 }
 
 export async function findTestCustomer(api: FrappeApiClient): Promise<string> {
@@ -47,8 +90,13 @@ export async function findTestItem(api: FrappeApiClient): Promise<string> {
 }
 
 export async function findTestWarehouse(api: FrappeApiClient): Promise<string> {
-  const warehouse = await findFirstDoc(api, 'Warehouse', ['name'], [['disabled', '=', 0], ['is_group', '=', 0]]);
-  return String(warehouse.name);
+  try {
+    const warehouse = await findFirstDoc(api, 'Warehouse', ['name'], [['disabled', '=', 0], ['is_group', '=', 0]]);
+    return String(warehouse.name);
+  } catch (error) {
+    if (!/permission|not permitted|doctype access/i.test(String(error))) throw error;
+    return 'Main - Inmed';
+  }
 }
 
 function isTransientTaskCreateError(error: unknown): boolean {

@@ -6,12 +6,11 @@ import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js
 type WorkspaceNavigationCase = {
   workspace: string;
   role: 'directors' | 'accounting' | 'inventory';
-  expectedLinks: RegExp[];
 };
 
 const workspaceNavigationCases: WorkspaceNavigationCase[] = [
-  { workspace: 'Dispatch - Task Queues', role: 'directors', expectedLinks: [] },
-  { workspace: 'Management - KPI Dashboard', role: 'directors', expectedLinks: [] }
+  { workspace: 'Dispatch - Task Queues', role: 'directors' },
+  { workspace: 'Management - KPI Dashboard', role: 'directors' }
 ];
 
 async function openWorkspaceAsRole(browser: Browser, role: WorkspaceNavigationCase['role'], workspace: string): Promise<Page> {
@@ -37,21 +36,19 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 
 test.describe('Workspace navigation and usability @smoke', () => {
   for (const workspaceCase of workspaceNavigationCases) {
-    test(`${workspaceCase.workspace} shortcuts are visible and usable`, async ({ browser }) => {
+    test(`${workspaceCase.workspace} workspace route and layout are usable`, async ({ browser }) => {
       const page = await openWorkspaceAsRole(browser, workspaceCase.role, workspaceCase.workspace);
       const consoleEntries = attachConsoleCapture(page);
       const networkEntries = attachNetworkCapture(page);
 
       await expect(page.locator('.page-title, .title-text, h3, h1').filter({ hasText: workspaceCase.workspace }).first()).toBeVisible({ timeout: 20000 });
-      for (const linkPattern of workspaceCase.expectedLinks) {
-        const shortcut = page.locator('a, .shortcut-widget-box, .widget, .link-content').filter({ hasText: linkPattern }).first();
-        await expect(shortcut).toBeVisible({ timeout: 20000 });
-        const box = await shortcut.boundingBox();
-        expect(box, `${linkPattern} shortcut bounds`).not.toBeNull();
-        if (box) {
-          expect(box.width, `${linkPattern} shortcut width`).toBeGreaterThan(20);
-          expect(box.height, `${linkPattern} shortcut height`).toBeGreaterThan(20);
-        }
+      const mainContent = page.locator('.layout-main-section, .page-content, .workspace, .desk-page').first();
+      await expect(mainContent).toBeVisible({ timeout: 20000 });
+      const box = await mainContent.boundingBox();
+      expect(box, `${workspaceCase.workspace} main content bounds`).not.toBeNull();
+      if (box) {
+        expect(box.width, `${workspaceCase.workspace} main content width`).toBeGreaterThan(20);
+        expect(box.height, `${workspaceCase.workspace} main content height`).toBeGreaterThan(20);
       }
       await expectNoHorizontalOverflow(page);
       await expectNoServerErrors(page, networkEntries);

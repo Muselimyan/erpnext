@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { createRoleApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 type ReportContentExpectation = {
@@ -28,7 +28,7 @@ function reportText(report: FrappeDoc): string {
 test.describe('Report content and filters @api @audit', () => {
   for (const expectation of reportContentExpectations) {
     test(`${expectation.name} stores expected query definition family`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const report = await api.getDoc<FrappeDoc>('Report', expectation.name);
         const text = reportText(report);
@@ -44,7 +44,7 @@ test.describe('Report content and filters @api @audit', () => {
 
   for (const expectation of reportContentExpectations) {
     test(`${expectation.name} report metadata has report type and role rows`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const report = await api.getDoc<FrappeDoc>('Report', expectation.name);
         const roles = Array.isArray(report.roles) ? report.roles : [];
@@ -57,7 +57,7 @@ test.describe('Report content and filters @api @audit', () => {
   }
 
   test('core stock reports have stored query definitions', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const stockReports = reportContentExpectations.filter((report) => /Stock|Item|Collection|Price|Supplier/.test(report.name));
       for (const stockReport of stockReports) {
@@ -70,7 +70,7 @@ test.describe('Report content and filters @api @audit', () => {
   });
 
   test('core finance reports have stored query definitions', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const financeReports = reportContentExpectations.filter((report) => /Debt|Advance|Refund|Returns/.test(report.name));
       for (const financeReport of financeReports) {
@@ -83,7 +83,7 @@ test.describe('Report content and filters @api @audit', () => {
   });
 
   test('core operational reports have stored query definitions', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const operationalReports = reportContentExpectations.filter((report) => /Dispatch|Delivery/.test(report.name));
       for (const operationalReport of operationalReports) {

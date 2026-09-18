@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { createRoleApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 type ReportDepthCase = {
@@ -31,7 +31,7 @@ function childValues(doc: FrappeDoc, fieldname: string): Record<string, unknown>
 test.describe('Report metadata depth @api @audit', () => {
   for (const reportCase of reportDepthCases) {
     test(`${reportCase.name} has runnable operational report metadata`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const report = await api.getDoc<FrappeDoc>('Report', reportCase.name);
         const roles = childValues(report, 'roles').map((row) => String(row.role || '')).filter(Boolean);
@@ -49,7 +49,7 @@ test.describe('Report metadata depth @api @audit', () => {
 
   for (const reportCase of reportDepthCases.slice(0, 8)) {
     test(`${reportCase.name} stores query definition metadata`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const report = await api.getDoc<FrappeDoc>('Report', reportCase.name);
         const queryText = String(report.query || report.json || report.javascript || report.name || '');

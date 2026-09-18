@@ -6,7 +6,8 @@ export type RoleName =
   | 'returns'
   | 'accounting'
   | 'finance'
-  | 'directors';
+  | 'directors'
+  | 'purchasing';
 
 export type RoleCredentials = {
   user: string;
@@ -15,8 +16,8 @@ export type RoleCredentials = {
 
 export type TestConfig = {
   baseUrl: string;
-  apiKey: string;
-  apiSecret: string;
+  apiKey?: string;
+  apiSecret?: string;
   roles: Map<RoleName, RoleCredentials>;
 };
 

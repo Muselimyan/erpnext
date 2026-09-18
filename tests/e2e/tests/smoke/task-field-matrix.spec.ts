@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { assertButtonState, assertNoDuplicateButtons } from '../../src/assertions.js';
 import { isFieldReadOnly, isFieldVisible } from '../../src/frappe-ui.js';
-import { createApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
 import type { RoleName } from '../../src/types.js';
 
 type TaskFieldCase = {
@@ -87,12 +87,16 @@ async function visibleExistingFields(page: Page, fieldnames: string[]): Promise<
 test.describe('Task field visibility and editability matrix @smoke', () => {
   for (const fieldCase of fieldCases) {
     test(`${fieldCase.taskKind} field visibility follows configured matrix`, async ({ browser }) => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(fieldCase.role);
       try {
         const task = await createTask(api, fieldCase.taskKind);
         const page = await openTaskAsRole(browser, fieldCase.role, String(task.name));
 
         await expect(page.locator('body')).toBeVisible({ timeout: 20000 });
+
+        for (const fieldname of fieldCase.visibleFields) {
+          expect(await isFieldVisible(page, fieldname), `${fieldCase.taskKind}.${fieldname} visible`).toBe(true);
+        }
 
         for (const fieldname of fieldCase.hiddenFields) {
           expect(await isFieldVisible(page, fieldname), `${fieldCase.taskKind}.${fieldname} hidden`).toBe(false);
@@ -107,7 +111,7 @@ test.describe('Task field visibility and editability matrix @smoke', () => {
 
   for (const fieldCase of fieldCases) {
     test(`${fieldCase.taskKind} unaccepted task keeps visible workflow fields read-only`, async ({ browser }) => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(fieldCase.role);
       try {
         const task = await createTask(api, fieldCase.taskKind);
         const page = await openTaskAsRole(browser, fieldCase.role, String(task.name));
@@ -126,7 +130,7 @@ test.describe('Task field visibility and editability matrix @smoke', () => {
 
   test('accepted Order Entry exposes Create Dispatch Case but keeps completion hidden before case link', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createOrderEntryTask(api, false);
       const page = await openTaskAsRole(browser, 'orderCreating', String(task.name));
@@ -142,7 +146,7 @@ test.describe('Task field visibility and editability matrix @smoke', () => {
 
   test('browser role can accept an Order Entry task without breaking task controls', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       const page = await openTaskAsRole(browser, 'orderCreating', String(task.name));
@@ -162,7 +166,7 @@ test.describe('Task field visibility and editability matrix @smoke', () => {
 
   test('completed task hides action buttons and keeps workflow fields read-only', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderAccepting');
     try {
       const task = await createTask(api, 'Other: Entry');
       await api.acceptTask(String(task.name));

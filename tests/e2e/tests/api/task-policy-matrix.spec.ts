@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { createRoleApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 type ExpectedPolicy = {
@@ -42,7 +42,7 @@ function childRoles(policy: FrappeDoc): string[] {
 test.describe('Task Access Policy matrix @api @audit', () => {
   for (const expectedPolicy of expectedPolicies) {
     test(`${expectedPolicy.taskKind} policy has expected role and team mapping`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const policy = await api.getDoc<FrappeDoc>('Task Access Policy', expectedPolicy.taskKind);
         const roles = childRoles(policy);
@@ -53,7 +53,7 @@ test.describe('Task Access Policy matrix @api @audit', () => {
         expect(roles.length, `${expectedPolicy.taskKind} allowed roles`).toBeGreaterThan(0);
 
         for (const expectedRole of expectedPolicy.expectedRoles) {
-          expect(roles.join('\n'), `${expectedPolicy.taskKind} expected role hint is documented or current roles are visible`).toContain(roles.includes(expectedRole) ? expectedRole : roles[0]);
+          expect(roles, `${expectedPolicy.taskKind} includes ${expectedRole}`).toContain(expectedRole);
         }
       } finally {
         await context.dispose();
@@ -62,7 +62,7 @@ test.describe('Task Access Policy matrix @api @audit', () => {
   }
 
   test('all dispatch-chain policy allowed roles exist as Role records', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const uniqueRoles = new Set<string>();
       for (const expectedPolicy of expectedPolicies) {
@@ -80,7 +80,7 @@ test.describe('Task Access Policy matrix @api @audit', () => {
   });
 
   test('non-dispatch operational policies exist when enabled in the business model', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       for (const policyName of nonDispatchPolicies) {
         const policy = await api.getDoc<FrappeDoc>('Task Access Policy', policyName);
@@ -94,7 +94,7 @@ test.describe('Task Access Policy matrix @api @audit', () => {
   });
 
   test('Task task_kind options include policies required by automated flows', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const meta = await api.callMethod<{ fields?: FrappeDoc[]; docs?: FrappeDoc[]; doctype?: { fields?: FrappeDoc[] } }>('frappe.desk.form.load.getdoctype', { doctype: 'Task' }) || {};
       const fields = Array.isArray(meta.fields) ? meta.fields : Array.isArray(meta.doctype?.fields) ? meta.doctype.fields : ((meta.docs || []).find((row) => row.name === 'Task' || row.doctype === 'DocType')?.fields as FrappeDoc[] || []);

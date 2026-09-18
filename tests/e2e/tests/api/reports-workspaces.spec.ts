@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { createRoleApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 type ExpectedReport = {
@@ -29,9 +29,9 @@ const reportDuplicatePairs = [
   ['RPT - Prepaid Orders Awaiting Delivery']
 ];
 
-const workspaceShortcuts = [
-  { workspace: 'Dispatch - Task Queues', labels: [] },
-  { workspace: 'Management - KPI Dashboard', labels: [] }
+const workspaceMetadataCases = [
+  { workspace: 'Dispatch - Task Queues' },
+  { workspace: 'Management - KPI Dashboard' }
 ];
 
 function childValues(doc: FrappeDoc, fieldname: string): Record<string, unknown>[] {
@@ -42,7 +42,7 @@ function childValues(doc: FrappeDoc, fieldname: string): Record<string, unknown>
 test.describe('Reports and workspaces metadata @api @audit', () => {
   for (const expectedReport of expectedReports) {
     test(`${expectedReport.name} metadata matches expected reporting pack shape`, async () => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const report = await api.getDoc<FrappeDoc>('Report', expectedReport.name);
         const roles = childValues(report, 'roles').map((row) => String(row.role || '')).filter(Boolean);
@@ -62,7 +62,7 @@ test.describe('Reports and workspaces metadata @api @audit', () => {
   }
 
   test('known duplicate report pairs remain explicit for colleague review', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       for (const pair of reportDuplicatePairs) {
         for (const reportName of pair) {
@@ -75,20 +75,13 @@ test.describe('Reports and workspaces metadata @api @audit', () => {
     }
   });
 
-  for (const expectedWorkspace of workspaceShortcuts) {
-    test(`${expectedWorkspace.workspace} exposes expected shortcut labels`, async () => {
-      const { context, api } = await createApiBundle();
+  for (const expectedWorkspace of workspaceMetadataCases) {
+    test(`${expectedWorkspace.workspace} metadata is readable as a deployed workspace`, async () => {
+      const { context, api } = await createRoleApiBundle('directors');
       try {
         const workspace = await api.getDoc<FrappeDoc>('Workspace', expectedWorkspace.workspace);
-        const links = childValues(workspace, 'links');
-        const labels = links.map((row) => String(row.label || row.link_to || '')).filter(Boolean);
-
         expect(workspace.name).toBe(expectedWorkspace.workspace);
-        expect(labels.length, `${expectedWorkspace.workspace} link count`).toBeGreaterThanOrEqual(expectedWorkspace.labels.length);
-
-        for (const label of expectedWorkspace.labels) {
-          expect(labels, `${expectedWorkspace.workspace} includes ${label}`).toContain(label);
-        }
+        expect(String(workspace.title || workspace.label || workspace.name || ''), `${expectedWorkspace.workspace} title metadata`).toContain(expectedWorkspace.workspace);
       } finally {
         await context.dispose();
       }
@@ -96,7 +89,7 @@ test.describe('Reports and workspaces metadata @api @audit', () => {
   }
 
   test('Management KPI dashboard current skeleton state is visible in metadata', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const workspace = await api.getDoc<FrappeDoc>('Workspace', 'Management - KPI Dashboard');
       expect(childValues(workspace, 'charts').length, 'KPI dashboard chart count').toBe(0);
