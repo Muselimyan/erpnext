@@ -85,6 +85,25 @@ if is_completing and doc.task_kind == "Write-off Approval":
     if not doc.get("writeoff_outcome"):
         frappe.throw("Choose a Write-off Outcome -- Bill Client or Write Off -- before completing. "
                      "Completing this task moves the stock out of Lost & Damaged.")
+    # Billing needs a price on every lost/damaged line. The after-save handler
+    # refuses too, and its refusal is the authoritative one -- but it fires after
+    # the Director has already chosen an outcome and pressed Complete, so the
+    # failure arrives at the worst possible moment. Checked here as well so it is
+    # pre-emptive. Advisory copy, authoritative enforcement: the same split as the
+    # client-side hints over the server gates.
+    if doc.get("writeoff_outcome") == "Bill Client" and doc.dispatch_case:
+        wo_case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
+        wo_unpriced = []
+        for row in (wo_case.case_items or []):
+            if float(row.lost_damaged_qty or 0) <= 0:
+                continue
+            wo_rate = float(row.unit_price or 0) * (1 - float(row.discount_pct or 0) / 100)
+            if wo_rate <= 0:
+                wo_unpriced.append(row.item_code or row.item_name or "Unknown")
+        if wo_unpriced:
+            frappe.throw("These lost/damaged products have no price, so they cannot be billed: "
+                         + ", ".join(wo_unpriced)
+                         + ". Set an Item Price, or choose Write Off instead.")
 
 if is_completing and doc.task_kind == "Debt Collection":
     if not doc.collection_outcome:

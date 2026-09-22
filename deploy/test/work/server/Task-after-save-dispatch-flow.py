@@ -1,4 +1,4 @@
-﻿# Name: Task-after-save-dispatch-flow
+# Name: Task-after-save-dispatch-flow
 # Type: DocType Event
 # DocType: Task
 # Event: After Save
@@ -41,7 +41,26 @@ else:
     # exactly as before. A write-off overrides it with Stock Adjustment: a lost
     # or scrapped unit is not a cost of goods SOLD, and posting it to COGS would
     # distort the very margin figures the profit rework (A1) exists to correct.
-    def create_se(src_wh, tgt_wh, items, purpose="Material Transfer", expense_account="Cost of Goods Sold - Inmed"):
+    #
+    # source_task stamps the Task that caused the movement. Two reasons: nothing
+    # previously connected a Stock Entry back to the work that produced it, and
+    # the lost/damaged resolution needs it as an idempotency key -- an already
+    # resolved approval is recognised by the Stock Entry carrying its name.
+    #
+    # strict=1 runs the movement with ERPNext's own validation intact: no
+    # ignore_validate, no ignore_stock_validation, no allow_zero_valuation_rate.
+    #
+    # It exists because the lost/damaged path cannot work without it. Verification
+    # proved the point: ignore_validate skips set_basic_rate, so a transfer
+    # arrives valued at ZERO regardless of what the source was worth. The units
+    # therefore reached Lost & Damaged with no value and the write-off had nothing
+    # to write off. Item A2 does not merely make these amounts untrustworthy --
+    # on this path it makes a real write-off impossible.
+    #
+    # Used by the three lost/damaged movements only. Every other call site keeps
+    # the old lenient behaviour until A2 is done properly, because those have
+    # legacy data behind them and this does not.
+    def create_se(src_wh, tgt_wh, items, purpose="Material Transfer", expense_account="Cost of Goods Sold - Inmed", source_task="", strict=0):
         se_items = []
         for ic, q, sn, bn in items:
             if (q or 0) <= 0:
@@ -58,7 +77,7 @@ else:
                 "s_warehouse": src_wh,
                 "expense_account": expense_account,
                 "cost_center": "Main - Inmed",
-                "allow_zero_valuation_rate": 1
+                "allow_zero_valuation_rate": 0 if strict else 1
             }
             if sn:
                 row["serial_no"] = sn
@@ -69,13 +88,18 @@ else:
             se_items.append(row)
         if not se_items:
             return None
-        se = frappe.get_doc({"doctype": "Stock Entry", "stock_entry_type": purpose, "purpose": purpose, "company": "InMED", "items": se_items})
+        se_doc = {"doctype": "Stock Entry", "stock_entry_type": purpose, "purpose": purpose, "company": "InMED", "items": se_items}
+        if source_task:
+            se_doc["source_task"] = source_task
+        se = frappe.get_doc(se_doc)
         se.flags.ignore_permissions = True
-        se.flags.ignore_validate = True
-        frappe.flags.ignore_stock_validation = True
+        if not strict:
+            se.flags.ignore_validate = True
+            frappe.flags.ignore_stock_validation = True
         se.insert()
         se.submit()
-        frappe.flags.ignore_stock_validation = False
+        if not strict:
+            frappe.flags.ignore_stock_validation = False
         return se
 
     def all_items(c):
@@ -260,7 +284,7 @@ else:
         # not wait for a signature, which is the mistake prepaid_amount made.
         lost = lost_items(case)
         if lost:
-            ld_se = create_se(RETURNS_WH, LOST_DAMAGED_WH, lost)
+            ld_se = create_se(RETURNS_WH, LOST_DAMAGED_WH, lost, "Material Transfer", "Cost of Goods Sold - Inmed", doc.name, 1)
             lost_lines = []
             for row in (case.case_items or []):
                 if (row.lost_damaged_qty or 0) > 0:
@@ -385,8 +409,21 @@ else:
         # break every Write-off Approval save if this script were ever deployed
         # ahead of the custom field.
         writeoff_outcome = doc.get("writeoff_outcome") or ""
+        # Both branches move stock, so an already-resolved approval is recognised
+        # by the Stock Entry stamped with this task. Previously only the billing
+        # branch was guarded (by Sales Invoice.source_task) and the write-off
+        # branch relied on nothing but the edge-triggered save -- one branch
+        # defended by design, the other only by circumstance.
+        prior_se = frappe.get_all(
+            "Stock Entry",
+            filters={"source_task": doc.name, "docstatus": ["!=", 2]},
+            fields=["name"],
+            limit_page_length=1,
+        )
         if not lost:
             print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={doc.dispatch_case} has no lost/damaged rows, nothing to resolve")
+        elif prior_se:
+            print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} already resolved by se={prior_se[0].name}, skipping")
         elif writeoff_outcome == "Bill Client":
             # Idempotency is keyed on source_task, so completing this task twice
             # cannot raise a second invoice. The used-items invoice for the same
@@ -456,11 +493,41 @@ else:
                 ld_si.flags.ignore_permissions = True
                 ld_si.submit()
                 # Billed, therefore sold: the stock leaves at COGS like any sale.
-                out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue")
+                out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", "Cost of Goods Sold - Inmed", doc.name, 1)
                 print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={case.name} BILLED invoice={ld_si.name} total={ld_si.grand_total} se={out_se.name if out_se else None}")
         elif writeoff_outcome == "Write Off":
             # Absorbed by the company. Posted to Stock Adjustment rather than
             # COGS: these units were never sold, and routing them through cost of
             # goods sold would silently worsen gross margin on real sales.
-            out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", WRITEOFF_EXPENSE_ACCOUNT)
+            #
+            # Refuse un-valued stock. This is the one operation whose entire
+            # purpose IS the GL amount: everywhere else item A2's
+            # allow_zero_valuation_rate makes a number wrong, but here it would
+            # book a zero-value loss and report success, recognising nothing.
+            # Checked explicitly against the bin as well as running strict, because
+            # a zero here means the segregation transfer lost the valuation on the
+            # way in and the loss would silently book nothing. Better to refuse and
+            # say why than to record a loss of zero.
+            unvalued = []
+            for ic, q, sn, bn in lost:
+                vrate = frappe.db.get_value("Bin", {"item_code": ic, "warehouse": LOST_DAMAGED_WH}, "valuation_rate")
+                if not vrate or float(vrate) <= 0:
+                    unvalued.append(ic)
+            if unvalued:
+                frappe.throw("These products have no stock valuation, so writing them off would "
+                             "record a loss of zero: " + ", ".join(unvalued)
+                             + ". Fix the item valuation first, or choose Bill Client instead.")
+            out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", WRITEOFF_EXPENSE_ACCOUNT, doc.name, 1)
             print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={case.name} WRITTEN OFF se={out_se.name if out_se else None} expense={WRITEOFF_EXPENSE_ACCOUNT}")
+        else:
+            # No silent third path. Without this the task would complete, nothing
+            # would move, and the units would sit in Lost & Damaged with no open
+            # task pointing at them -- exactly the stranding A3 exists to remove,
+            # reintroduced one layer further along. The before-save gate also
+            # requires an outcome, but that is a different script, and the whole
+            # reason W1 exists is that rules split across scripts drift apart.
+            # Throwing here rolls the completion back, so the task stays open.
+            frappe.throw("Cannot resolve these lost/damaged units: the Write-off Outcome is '"
+                         + str(writeoff_outcome) + "', which is not Bill Client or Write Off. "
+                         "Choose one before completing -- otherwise the stock stays in "
+                         + LOST_DAMAGED_WH + " with nothing tracking it.")

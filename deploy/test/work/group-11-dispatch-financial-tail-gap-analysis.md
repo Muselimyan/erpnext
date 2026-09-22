@@ -4,7 +4,7 @@
 >
 > **Excludes.** Dispatch Case operational flow — task chain, packing, scanning, returns handling, cancel flow. See **Group 1**.
 >
-> **State.** The rebuild is done and deployed to test (W1–W11, 58 automated checks). This document now covers only **what is still open** and **what will bite you**.
+> **State.** The rebuild is done and deployed to test (W1–W11 plus A3, 80 automated checks). This document now covers only **what is still open** and **what will bite you**.
 >
 > The original analysis — 18 findings with evidence, the R1–R14 recommendations, the priority bands — has been removed rather than annotated, because a document that is nine-tenths closed work is not readable. It is in git history: `git show 07645d6 -- deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`. §4 keeps the finding-ID map, since other audits cite those IDs.
 
@@ -52,6 +52,29 @@ frappe.flags.ignore_stock_validation = True
 insufficient stock all pass, and the entry submits **having posted nothing** —
 no stock ledger entries, no GL.
 
+**It also destroys valuation on transfers, which is worse than it sounds.**
+Proven while building A3, not inferred: `ignore_validate` skips
+`Stock Entry.set_basic_rate()`, so a Material Transfer arrives at the
+destination valued at **zero** no matter what the source stock was worth. The
+lost/damaged units reached their warehouse valued at nothing, and the write-off
+— whose entire purpose is the GL amount — had nothing to write off. So A2 does
+not merely make amounts inaccurate; on any path that depends on the value of
+transferred stock it makes the feature *impossible*, while every entry still
+submits and looks successful.
+
+It also means `ignore_validate` cannot simply be removed: it is currently
+load-bearing. It suppresses the mandatory-field check on `transfer_qty`, `uom`
+and `conversion_factor`, which `validate()` would otherwise have populated. Any
+call site that loses the flag must supply those explicitly — `create_se` already
+does, which is why the strict path below works.
+
+**There is now a working reference.** The three lost/damaged movements in
+`create_se` run with `strict=1`: no `ignore_validate`, no
+`ignore_stock_validation`, no `allow_zero_valuation_rate`, and they post correct
+valuation. The remaining seven call sites keep the lenient flags only because
+they have legacy data behind them. `strict=1` is the target state for all of
+them, and the migration below is what stands in the way.
+
 Compounding it, `client_location_warehouse` is required only when
 `return_expected` is checked, yet the **no-return** path also routes stock
 through it — as `t_warehouse` on delivery and `s_warehouse` on consumption. A
@@ -71,22 +94,6 @@ warehouse-less rows and zero SLE/GL each, 13 items at negative stock in
 `Main - Inmed` (−218 units), and 3 legacy cases with `client_location_warehouse`
 set to `Main - Inmed`. Removing the bypasses before reconciling these makes
 submissions fail on historical data.
-
-### A3 — Lost and damaged items have no resolution path
-
-`lost_damaged_qty` is captured at returns inspection and then nothing happens to
-it. It is deliberately **not** invoiced — charging a client for damage is a human
-decision — but there is no write-off, no replacement path and no GL consequence.
-The stock sits in `Returns - Inmed` with no task, flag or report.
-
-A `Write-off Approval` Task Access Policy exists (`directors.team@example.com`)
-and the `task_kind` option exists. Grepping `Write-off` across all server scripts
-returns **zero** hits: nothing creates one.
-
-**Start at:** the returns-inspection completion branch in
-`Task-after-save-dispatch-flow.py`. Create a `Write-off Approval` task when any
-row has `lost_damaged_qty > 0`, with invoice / write-off / replace outcomes and
-the matching stock and GL postings for each.
 
 ### A4 — A paid invoice cannot be corrected in-system
 
@@ -154,7 +161,6 @@ All are also in `AGENTS.md`.
 | Symptom | Item |
 |---|---|
 | "Profit on this case looks far too high" | A1 |
-| "Nothing tells us what to do with the implant the hospital lost" | A3 |
 | "We over-billed a client who has already paid and I can't fix it" | A4 |
 | "Which of these two debt reports is the right one?" | A6 |
 
@@ -199,7 +205,7 @@ history (`git show 07645d6`).
 | **G9** | **Open — A1** |
 | **G10** | Fixed W5 — one open approval per customer; profit computed once at creation |
 | **G11** | Fixed W6 — `Sales Invoice.dispatch_case`, `hospital`, `doctor_name` |
-| **G12** | **Open — A3** |
+| **G12** | Fixed A3 — lost/damaged segregated, then billed or written off by Director decision |
 | **G13** | Fixed W6 — tax template and Net 30 terms applied explicitly |
 | **G14** | Fixed W2/W8 — payment creation carries `source_task`; overpayment refused |
 | **G15 / G16** | Fixed W2 — debt read live from the ledger |

@@ -16,6 +16,7 @@
 #   Custom Field  Dispatch Case Item.lost_damaged_presence  (Select)
 #   Custom Field  Task.writeoff_outcome                     (Select)
 #   Custom Field  Sales Invoice.source_task                 (Link -> Task)
+#   Custom Field  Stock Entry.source_task                    (Link -> Task)
 #
 # Updates:
 #   Task-after-save-dispatch-flow       segregation transfer, approval task,
@@ -37,10 +38,15 @@
 # units were never sold, and routing them through COGS would distort the gross
 # margin on real sales -- the very figures item A1 exists to make trustworthy.
 #
-# KNOWN LIMIT: create_se still sets ignore_validate and
-# allow_zero_valuation_rate (item A2), so a write-off of un-valued stock posts a
-# zero-value expense and still looks like it worked. The stock movement is
-# correct; the GL amount is only trustworthy once A2 is fixed.
+# A write-off REFUSES un-valued stock. It is the one operation whose entire
+# purpose is the GL amount, so item A2's allow_zero_valuation_rate would have it
+# book a zero-value loss and report success -- recognising nothing while looking
+# like it worked. Checked explicitly against the bin, because create_se also sets
+# ignore_validate and that skips ERPNext's own check.
+#
+# KNOWN LIMIT: that carve-out covers the write-off branch only. A2 is still open
+# everywhere else, including the segregation transfer and the billed-out issue,
+# so those can still post movements whose value is not trustworthy.
 #
 # TEST ONLY. Credentials read from deploy/test/export.ps1.
 #
@@ -105,6 +111,23 @@ function Read-WorkScript { param([string]$Path)
     return $raw.Substring($i + $marker.Length).TrimStart("`r", "`n")
 }
 
+# ── 0. Pre-flight ─────────────────────────────────────────────────────
+# The approval task is assigned from Task Access Policy.default_team_user. If
+# that is blank the flow would create a ToDo with no allocated_to -- a task
+# nobody is assigned and nobody sees. The policy record existed when last
+# checked, but that is configuration rather than code, and A3 is the first thing
+# to depend on it. Fail here rather than on the first real loss.
+Write-Host "[0] Pre-flight" -ForegroundColor Magenta
+$Policy = Get-ErpDoc "Task Access Policy" "Write-off Approval"
+if (-not $Policy) {
+    throw "Task Access Policy 'Write-off Approval' does not exist. The approval task cannot be assigned; create the policy before deploying A3."
+}
+if (-not $Policy.default_team_user) {
+    throw "Task Access Policy 'Write-off Approval' has no default_team_user. The approval task would be created unassigned and invisible. Set it before deploying A3."
+}
+Write-Host ("  {0,-28} {1}" -f "Write-off Approval policy", $Policy.default_team_user) -ForegroundColor DarkGray
+Write-Host ""
+
 # ── 1. Warehouse ──────────────────────────────────────────────────────
 Write-Host "[1] Warehouse" -ForegroundColor Magenta
 $existingWh = Get-ErpDoc "Warehouse" $LD_WH
@@ -139,7 +162,11 @@ $Fields = @(
     @{ Name = "Sales Invoice-source_task"; dt = "Sales Invoice"
         fieldname = "source_task"; label = "Raised From Task"; fieldtype = "Link"; options = "Task"
         insert_after = "dispatch_case"
-        description = "Set only on an invoice raised by a Write-off Approval. Empty means this is the case's used-items invoice. Gives each kind its own idempotency guard." }
+        description = "Set only on an invoice raised by a Write-off Approval. Empty means this is the case's used-items invoice. Gives each kind its own idempotency guard." },
+    @{ Name = "Stock Entry-source_task"; dt = "Stock Entry"
+        fieldname = "source_task"; label = "Raised From Task"; fieldtype = "Link"; options = "Task"
+        insert_after = "stock_entry_type"
+        description = "The Task whose completion produced this movement. Nothing previously connected a Stock Entry back to the work that caused it; the lost/damaged resolution also uses it as its idempotency key." }
 )
 
 Write-Host ""
