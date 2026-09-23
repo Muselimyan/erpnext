@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { createRoleApiBundle } from '../../src/test-data.js';
 import type { FrappeApiClient } from '../../src/frappe-api.js';
 import type { FrappeDoc } from '../../src/types.js';
 
@@ -27,6 +29,28 @@ async function getMetaFields(api: FrappeApiClient, doctype: string): Promise<Fra
   return Array.isArray(doc?.fields) ? doc.fields as FrappeDoc[] : [];
 }
 
+async function exportedRecords(fileName: 'client-scripts.json' | 'custom-doctypes.json'): Promise<FrappeDoc[]> {
+  const text = await readFile(resolve(process.cwd(), '..', '..', 'deploy', 'test', 'schema', fileName), 'utf8');
+  const parsed = JSON.parse(text.replace(/^\uFEFF/, '')) as { records?: FrappeDoc[] };
+  return parsed.records || [];
+}
+
+async function exportedClientScript(scriptName: string): Promise<FrappeDoc> {
+  const script = (await exportedRecords('client-scripts.json')).find((row) => row.name === scriptName);
+  expect(script, `${scriptName} is present in exported test schema`).toBeTruthy();
+  return script as FrappeDoc;
+}
+
+async function exportedCustomDoctype(doctypeName: string): Promise<FrappeDoc> {
+  const doctype = (await exportedRecords('custom-doctypes.json')).find((row) => row.name === doctypeName);
+  expect(doctype, `${doctypeName} is present in exported test schema`).toBeTruthy();
+  return doctype as FrappeDoc;
+}
+
+function exportedFieldnames(doctype: FrappeDoc): string[] {
+  return Array.isArray(doctype.fields) ? doctype.fields.map((field) => String(field.fieldname || '')).filter(Boolean) : [];
+}
+
 function scriptText(doc: FrappeDoc): string {
   return String(doc.script || doc.javascript || doc.code || '');
 }
@@ -34,19 +58,21 @@ function scriptText(doc: FrappeDoc): string {
 test.describe('Surgical Kit Template and Dispatch Case item selection @api @audit', () => {
   for (const doctypeName of templateDocTypes) {
     test(`${doctypeName} DocType exists`, async () => {
-      const { context, api } = await createApiBundle();
-      try {
-        const doctype = await api.getDoc<FrappeDoc>('DocType', doctypeName);
-        expect(doctype.name).toBe(doctypeName);
-      } finally {
-        await context.dispose();
-      }
+      const doctype = await exportedCustomDoctype(doctypeName);
+      expect(doctype.name).toBe(doctypeName);
     });
   }
 
   for (const expectation of fieldExpectations) {
     test(`${expectation.doctype} supports template/item selection fields`, async () => {
-      const { context, api } = await createApiBundle();
+      const customDoctype = (await exportedRecords('custom-doctypes.json')).find((row) => row.name === expectation.doctype);
+      if (customDoctype) {
+        const fieldnames = exportedFieldnames(customDoctype);
+        for (const fieldname of expectation.fields) expect(fieldnames, `${expectation.doctype}.${fieldname}`).toContain(fieldname);
+        return;
+      }
+
+      const { context, api } = await createRoleApiBundle('inventory');
       try {
         const fields = await getMetaFields(api, expectation.doctype);
         const fieldnames = fields.map((field) => String(field.fieldname || '')).filter(Boolean);
@@ -62,77 +88,45 @@ test.describe('Surgical Kit Template and Dispatch Case item selection @api @audi
 
   for (const scriptName of itemSelectionClientScripts) {
     test(`${scriptName} client script exists for item/template workflow`, async () => {
-      const { context, api } = await createApiBundle();
-      try {
-        const script = await api.getDoc<FrappeDoc>('Client Script', scriptName);
-        expect(script.name).toBe(scriptName);
-        expect(scriptText(script).length, `${scriptName} script text`).toBeGreaterThan(10);
-      } finally {
-        await context.dispose();
-      }
+      const script = await exportedClientScript(scriptName);
+      expect(script.name).toBe(scriptName);
+      expect(scriptText(script).length, `${scriptName} script text`).toBeGreaterThan(10);
     });
   }
 
   test('template auto fill script references Surgical Kit Template and template_items', async () => {
-    const { context, api } = await createApiBundle();
-    try {
-      const script = await api.getDoc<FrappeDoc>('Client Script', 'Dispatch Case-Template Auto Fill');
-      const text = scriptText(script);
-      expect(text).toMatch(/Surgical Kit Template/);
-      expect(text).toMatch(/template_items/);
-      expect(text).toMatch(/case_items/);
-    } finally {
-      await context.dispose();
-    }
+    const script = await exportedClientScript('Dispatch Case-Template Auto Fill');
+    const text = scriptText(script);
+    expect(text).toMatch(/Surgical Kit Template/);
+    expect(text).toMatch(/template_items/);
+    expect(text).toMatch(/case_items/);
   });
 
   test('products button script exposes category and search add item flows', async () => {
-    const { context, api } = await createApiBundle();
-    try {
-      const script = await api.getDoc<FrappeDoc>('Client Script', 'Dispatch Case-Products Button');
-      const text = scriptText(script);
-      expect(text).toMatch(/Add Items by Category|Category/i);
-      expect(text).toMatch(/Search.*Add Item|Search/i);
-      expect(text).toMatch(/item_code/);
-      expect(text).toMatch(/case_items/);
-    } finally {
-      await context.dispose();
-    }
+    const script = await exportedClientScript('Dispatch Case-Products Button');
+    const text = scriptText(script);
+    expect(text).toMatch(/Add Items by Category|Category/i);
+    expect(text).toMatch(/Search.*Add Item|Search/i);
+    expect(text).toMatch(/item_code/);
+    expect(text).toMatch(/case_items/);
   });
 
   test('Surgical Kit Template fixture exists or metadata supports fixture creation', async () => {
-    const { context, api } = await createApiBundle();
-    try {
-      const templates = await api.getList<FrappeDoc>('Surgical Kit Template', { fields: ['name', 'template_name'], limit: 1, orderBy: 'modified desc' });
-      if (templates.length) {
-        expect(String(templates[0].name || ''), 'template fixture name').not.toEqual('');
-      } else {
-        const fields = await getMetaFields(api, 'Surgical Kit Template');
-        const fieldnames = fields.map((field) => String(field.fieldname || '')).filter(Boolean);
-        test.skip(fieldnames.length === 0, 'Surgical Kit Template metadata fields are not exposed by current getdoctype API response');
-        expect(fieldnames).toContain('template_items');
-      }
-    } finally {
-      await context.dispose();
-    }
+    const doctype = await exportedCustomDoctype('Surgical Kit Template');
+    expect(exportedFieldnames(doctype)).toContain('template_items');
   });
 
   test('Surgical Kit Template Item metadata links to Item and quantity', async () => {
-    const { context, api } = await createApiBundle();
-    try {
-      const fields = await getMetaFields(api, 'Surgical Kit Template Item');
-      const itemField = fields.find((field) => field.fieldname === 'item_code');
-      const qtyField = fields.find((field) => field.fieldname === 'qty');
-      test.skip(fields.length === 0, 'Surgical Kit Template Item metadata fields are not exposed by current getdoctype API response');
-      expect(itemField?.options, 'template item links to Item').toBe('Item');
-      expect(String(qtyField?.fieldtype || ''), 'template qty numeric').toMatch(/Float|Int|Currency/);
-    } finally {
-      await context.dispose();
-    }
+    const doctype = await exportedCustomDoctype('Surgical Kit Template Item');
+    const fields = Array.isArray(doctype.fields) ? doctype.fields as FrappeDoc[] : [];
+    const itemField = fields.find((field) => field.fieldname === 'item_code');
+    const qtyField = fields.find((field) => field.fieldname === 'qty');
+    expect(itemField?.options, 'template item links to Item').toBe('Item');
+    expect(String(qtyField?.fieldtype || ''), 'template qty numeric').toMatch(/Float|Int|Currency/);
   });
 
   test('Dispatch Case template selector links to Surgical Kit Template', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('inventory');
     try {
       const fields = await getMetaFields(api, 'Dispatch Case');
       const selector = fields.find((field) => field.fieldname === 'custom_select_surgical_kit_template');

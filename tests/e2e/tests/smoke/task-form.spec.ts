@@ -2,13 +2,13 @@ import { expect, test } from '@playwright/test';
 import { assertButtonFullyVisible, assertButtonState, assertFieldReadOnly, assertNoConsoleErrors, assertNoDuplicateButtons } from '../../src/assertions.js';
 import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js';
 import { isFieldVisible, waitForFrappeFormReady } from '../../src/frappe-ui.js';
-import { createApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
 import type { FrappeDoc } from '../../src/types.js';
 
 test.describe('Task form browser smoke @smoke', () => {
   test('button state matrix for unaccepted Order Entry task', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       const openPage = await openTaskAsRole(browser, 'orderCreating', String(task.name));
@@ -27,7 +27,7 @@ test.describe('Task form browser smoke @smoke', () => {
 
   test('Open DC replaces Create Dispatch Case when Dispatch Case exists', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createOrderEntryTask(api, false);
       await api.createDispatchCase(String(task.name));
@@ -43,12 +43,13 @@ test.describe('Task form browser smoke @smoke', () => {
   });
 
   test('field visibility and editability follows task state', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const unaccepted = await createTask(api, 'Order entry');
       const unacceptedPage = await openTaskAsRole(browser, 'orderCreating', String(unaccepted.name));
       await expect(unacceptedPage.locator('body')).toBeVisible({ timeout: 20000 });
-      if (await isFieldVisible(unacceptedPage, 'customer')) await assertFieldReadOnly(unacceptedPage, 'customer', true);
+      expect(await isFieldVisible(unacceptedPage, 'customer'), 'Order Entry customer field is visible before accept').toBe(true);
+      await assertFieldReadOnly(unacceptedPage, 'customer', true);
       await unacceptedPage.context().close();
     } finally {
       await context.dispose();
@@ -57,7 +58,7 @@ test.describe('Task form browser smoke @smoke', () => {
 
   test('completed and other-user tasks do not show edit action buttons', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderAccepting');
     try {
       const task = await createTask(api, 'Other: Entry');
       await api.acceptTask(String(task.name));

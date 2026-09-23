@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { assertButtonState, assertNoConsoleErrors, assertNoDuplicateButtons } from '../../src/assertions.js';
 import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js';
 import { isFieldReadOnly, isFieldVisible } from '../../src/frappe-ui.js';
-import { createApiBundle, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createTask, openTaskAsRole } from '../../src/test-data.js';
 import type { ConsoleEntry, NetworkEntry, RoleName } from '../../src/types.js';
 
 type TaskStateCase = {
@@ -37,7 +37,7 @@ test.describe('Task state browser depth @smoke', () => {
   for (const taskCase of taskStateCases) {
     test(`${taskCase.taskKind} unaccepted state hides completion and keeps workflow field read-only`, async ({ browser }) => {
       const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(taskCase.role);
       try {
         const task = await createTask(api, taskCase.taskKind);
         const page = await openTaskAsRole(browser, taskCase.role, String(task.name));
@@ -47,7 +47,8 @@ test.describe('Task state browser depth @smoke', () => {
         await assertNoDuplicateButtons(page, viewportName);
         await assertButtonState(page, 'Accept / Start Task', 'visible', viewportName);
         await assertButtonState(page, 'Complete', 'hidden', viewportName);
-        if (await isFieldVisible(page, taskCase.editableField)) expect(await isFieldReadOnly(page, taskCase.editableField), `${taskCase.editableField} read-only before accept`).toBe(true);
+        expect(await isFieldVisible(page, taskCase.editableField), `${taskCase.editableField} visible before accept`).toBe(true);
+        expect(await isFieldReadOnly(page, taskCase.editableField), `${taskCase.editableField} read-only before accept`).toBe(true);
         await expectHealthyPage(networkEntries, consoleEntries);
         await page.context().close();
       } finally {
@@ -59,7 +60,7 @@ test.describe('Task state browser depth @smoke', () => {
   for (const taskCase of directlyCompletableTaskStateCases) {
     test(`${taskCase.taskKind} completed state hides edit actions`, async ({ browser }) => {
       const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(taskCase.role);
       try {
         const task = await createTask(api, taskCase.taskKind, taskCase.taskKind.includes('Approval') ? { approval_outcome: 'Approved' } : {});
         await api.acceptTask(String(task.name));
@@ -71,7 +72,8 @@ test.describe('Task state browser depth @smoke', () => {
         await assertNoDuplicateButtons(page, viewportName);
         await assertButtonState(page, 'Accept / Start Task', 'hidden', viewportName);
         await assertButtonState(page, 'Complete', 'hidden', viewportName);
-        if (await isFieldVisible(page, taskCase.editableField)) expect(await isFieldReadOnly(page, taskCase.editableField), `${taskCase.editableField} read-only after completion`).toBe(true);
+        expect(await isFieldVisible(page, taskCase.editableField), `${taskCase.editableField} visible after completion`).toBe(true);
+        expect(await isFieldReadOnly(page, taskCase.editableField), `${taskCase.editableField} read-only after completion`).toBe(true);
         await expectHealthyPage(networkEntries, consoleEntries);
         await page.context().close();
       } finally {

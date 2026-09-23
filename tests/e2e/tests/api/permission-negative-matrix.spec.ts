@@ -1,7 +1,6 @@
-import { expect, request, test, type APIRequestContext } from '@playwright/test';
+import { expect, test } from '@playwright/test';
 import { getConfig } from '../../src/config.js';
-import { FrappeApiClient } from '../../src/frappe-api.js';
-import { createApiBundle, createOrderEntryTask, createTask, expectRejects } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask, createTask, expectRejects, type ApiBundle } from '../../src/test-data.js';
 import type { FrappeDoc, RoleName } from '../../src/types.js';
 
 type NegativeRoleCase = {
@@ -20,19 +19,10 @@ const negativeRoleCases: NegativeRoleCase[] = [
   { taskKind: 'Debt Collection', allowedRole: 'finance', blockedRoles: ['orderAccepting', 'orderCreating', 'inventory', 'delivery', 'returns'] }
 ];
 
-async function createRoleApiContext(role: RoleName): Promise<{ context: APIRequestContext; api: FrappeApiClient }> {
-  const config = getConfig();
-  const credentials = config.roles.get(role);
-  expect(credentials, `${role} credentials configured`).toBeTruthy();
-  const context = await request.newContext({ baseURL: config.baseUrl });
-  const login = await context.post('/api/method/login', {
-    form: {
-      usr: String(credentials?.user || ''),
-      pwd: String(credentials?.password || '')
-    }
-  });
-  expect(login.ok(), `${role} API login`).toBe(true);
-  return { context, api: new FrappeApiClient(context, config.baseUrl) };
+async function closeBundles(...bundles: (ApiBundle | null)[]): Promise<void> {
+  for (const bundle of bundles) {
+    if (bundle) await bundle.context.dispose();
+  }
 }
 
 test.describe('Permission and negative security matrix @api @audit', () => {
@@ -40,40 +30,33 @@ test.describe('Permission and negative security matrix @api @audit', () => {
     for (const blockedRole of roleCase.blockedRoles) {
       test(`${blockedRole} cannot accept ${roleCase.taskKind} task`, async () => {
         test.skip(true, 'current deployed environment does not consistently enforce blocked-role acceptance gates');
-        const { context, api } = await createApiBundle();
-        let roleContext: APIRequestContext | null = null;
+        const owner = await createRoleApiBundle(roleCase.allowedRole);
+        const blocked = await createRoleApiBundle(blockedRole);
         try {
-          const task = await createTask(api, roleCase.taskKind);
-          const roleBundle = await createRoleApiContext(blockedRole);
-          roleContext = roleBundle.context;
-          await expectRejects(() => roleBundle.api.acceptTask(String(task.name)), /permission|role|not allowed|assigned|access|accept/i);
+          const task = await createTask(owner.api, roleCase.taskKind);
+          await expectRejects(() => blocked.api.acceptTask(String(task.name)), /permission|role|not allowed|assigned|access|accept/i);
         } finally {
-          if (roleContext) await roleContext.dispose();
-          await context.dispose();
+          await closeBundles(blocked, owner);
         }
       });
     }
   }
 
   test('allowed Order Entry role can accept assigned Order Entry task', async () => {
-    const { context, api } = await createApiBundle();
-    let roleContext: APIRequestContext | null = null;
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
-      const roleBundle = await createRoleApiContext('orderCreating');
-      roleContext = roleBundle.context;
-      await roleBundle.api.acceptTask(String(task.name));
+      await api.acceptTask(String(task.name));
       const saved = await api.getDoc<FrappeDoc>('Task', String(task.name));
-      expect(String(saved.custom_accepted_by || ''), 'accepted by is set').not.toEqual('');
+      expect(String(saved.custom_accepted_by || ''), 'accepted by is set').toBe(getConfig().roles.get('orderCreating')?.user);
     } finally {
-      if (roleContext) await roleContext.dispose();
       await context.dispose();
     }
   });
 
   test('generic REST update cannot complete unaccepted Order Entry task', async () => {
     test.skip(true, 'current deployed environment does not consistently enforce this acceptance gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       await expectRejects(() => api.updateDoc('Task', String(task.name), { status: 'Completed' }), /accept|accepted|start|lock/i);
@@ -84,11 +67,13 @@ test.describe('Permission and negative security matrix @api @audit', () => {
 
   test('generic REST update cannot reassign accepted task without lock reset path', async () => {
     test.skip(true, 'current deployed environment does not consistently enforce this lock gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderAccepting');
     try {
       const task = await createTask(api, 'Other: Entry');
       await api.acceptTask(String(task.name));
-      await expectRejects(() => api.updateDoc('Task', String(task.name), { custom_assigned_to: 'Administrator' }), /reassign|accepted|lock|not allowed|owner/i);
+      const blockedUser = String(getConfig().roles.get('delivery')?.user || '');
+      expect(blockedUser, 'blocked reassignment target user').not.toEqual('');
+      await expectRejects(() => api.updateDoc('Task', String(task.name), { custom_assigned_to: blockedUser }), /reassign|accepted|lock|not allowed|owner/i);
     } finally {
       await context.dispose();
     }
@@ -96,22 +81,19 @@ test.describe('Permission and negative security matrix @api @audit', () => {
 
   test('generic REST update cannot complete task accepted by a different API user', async () => {
     test.skip(true, 'current deployed environment does not consistently enforce this ownership lock gate');
-    const { context, api } = await createApiBundle();
-    let roleContext: APIRequestContext | null = null;
+    const owner = await createRoleApiBundle('orderCreating');
+    const blocked = await createRoleApiBundle('delivery');
     try {
-      const task = await createTask(api, 'Order entry');
-      const roleBundle = await createRoleApiContext('orderCreating');
-      roleContext = roleBundle.context;
-      await roleBundle.api.acceptTask(String(task.name));
-      await expectRejects(() => api.updateDoc('Task', String(task.name), { status: 'Completed' }), /accepted|lock|owner|only|user/i);
+      const task = await createTask(owner.api, 'Order entry');
+      await owner.api.acceptTask(String(task.name));
+      await expectRejects(() => blocked.api.updateDoc('Task', String(task.name), { status: 'Completed' }), /accepted|lock|owner|only|user/i);
     } finally {
-      if (roleContext) await roleContext.dispose();
-      await context.dispose();
+      await closeBundles(blocked, owner);
     }
   });
 
   test('Delivery task cannot be marked Delivered before acceptance', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('delivery');
     try {
       const task = await createTask(api, 'Delivery');
       await expectRejects(() => api.updateDoc('Task', String(task.name), { delivery_status: 'Delivered' }), /accept|accepted|start|lock/i);
@@ -121,7 +103,7 @@ test.describe('Permission and negative security matrix @api @audit', () => {
   });
 
   test('Payment Received task cannot be completed before acceptance', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const task = await createTask(api, 'Payment Received', { new_payment_amount: 100, payment_method: 'Cash' });
       await expectRejects(() => api.updateDoc('Task', String(task.name), { status: 'Completed' }), /accept|accepted|start|lock/i);
@@ -132,7 +114,7 @@ test.describe('Permission and negative security matrix @api @audit', () => {
 
   test('Order Entry completion remains gated even after acceptance without Dispatch Case', async () => {
     test.skip(true, 'current deployed environment does not consistently enforce this dispatch link gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       await api.acceptTask(String(task.name));
@@ -144,7 +126,7 @@ test.describe('Permission and negative security matrix @api @audit', () => {
 
   test('Create Dispatch Case API rejects unaccepted Order Entry task', async () => {
     test.skip(true, 'current deployed environment does not consistently enforce this acceptance gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       await expectRejects(() => api.createDispatchCase(String(task.name)), /accept|accepted|start|lock/i);
@@ -155,7 +137,7 @@ test.describe('Permission and negative security matrix @api @audit', () => {
 
   test('Add product API rejects unaccepted Order Entry task', async () => {
     test.skip(true, 'current deployed environment does not consistently enforce this acceptance gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const orderTask = await createTask(api, 'Order entry');
       const acceptedTask = await createOrderEntryTask(api, false);

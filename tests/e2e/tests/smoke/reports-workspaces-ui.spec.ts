@@ -11,7 +11,6 @@ type ReportCase = {
 type WorkspaceCase = {
   name: string;
   role: 'directors' | 'accounting' | 'inventory';
-  labels: string[];
 };
 
 const reportCases: ReportCase[] = [
@@ -23,8 +22,8 @@ const reportCases: ReportCase[] = [
 ];
 
 const workspaceCases: WorkspaceCase[] = [
-  { name: 'Dispatch - Task Queues', role: 'directors', labels: [] },
-  { name: 'Management - KPI Dashboard', role: 'directors', labels: [] }
+  { name: 'Dispatch - Task Queues', role: 'directors' },
+  { name: 'Management - KPI Dashboard', role: 'directors' }
 ];
 
 async function openPageAsRole(browser: Browser, role: ReportCase['role'], route: string): Promise<Page> {
@@ -56,17 +55,13 @@ test.describe('Reports and workspaces browser smoke @smoke', () => {
   }
 
   for (const workspaceCase of workspaceCases) {
-    test(`${workspaceCase.name} workspace opens and shows expected shortcuts`, async ({ browser }) => {
+    test(`${workspaceCase.name} workspace route opens without app-shell errors`, async ({ browser }) => {
       const page = await openPageAsRole(browser, workspaceCase.role, `/app/workspace/${encodeURIComponent(workspaceCase.name)}`);
       const consoleEntries = attachConsoleCapture(page);
       const networkEntries = attachNetworkCapture(page);
 
       await expect(page.locator('body')).toBeVisible({ timeout: 20000 });
       await expect(page).toHaveURL(/workspace/i);
-
-      for (const label of workspaceCase.labels) {
-        await expect(page.locator(`a:has-text("${label}"), .shortcut-widget-box:has-text("${label}"), .widget:has-text("${label}")`).first()).toBeVisible({ timeout: 20000 });
-      }
 
       await expectNoServerErrors(page, networkEntries);
       assertNoConsoleErrors(consoleEntries);

@@ -3,7 +3,7 @@ import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js
 import { assertNoConsoleErrors } from '../../src/assertions.js';
 import { asRole } from '../../src/auth.js';
 import { waitForFrappeFormReady } from '../../src/frappe-ui.js';
-import { createApiBundle, createOrderEntryTask } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask } from '../../src/test-data.js';
 import type { FrappeApiClient } from '../../src/frappe-api.js';
 import type { FrappeDoc } from '../../src/types.js';
 
@@ -23,7 +23,7 @@ async function openDispatchCaseFromOrderTask(api: FrappeApiClient, taskName: str
 
 test.describe('Dispatch Case item selection browser smoke @smoke', () => {
   test('Dispatch Case form opens with item table and template selector markers', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const orderTask = await createOrderEntryTask(api, false);
       const caseName = await openDispatchCaseFromOrderTask(api, String(orderTask.name));
@@ -45,8 +45,8 @@ test.describe('Dispatch Case item selection browser smoke @smoke', () => {
     }
   });
 
-  test('Dispatch Case Add Items by Category button is visible and inside viewport when present', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+  test('Dispatch Case Add Items by Category button is visible and inside viewport', async ({ browser }) => {
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const orderTask = await createOrderEntryTask(api, false);
       const caseName = await openDispatchCaseFromOrderTask(api, String(orderTask.name));
@@ -55,15 +55,16 @@ test.describe('Dispatch Case item selection browser smoke @smoke', () => {
       await page.goto(`/app/dispatch-case/${encodeURIComponent(caseName)}`);
       await waitForFrappeFormReady(page, 'Dispatch Case');
       const button = page.getByText(/Add Items by Category/i).first();
-      if (await button.count()) await expectInsideViewport(button, 'Add Items by Category button');
+      await expect(button).toBeVisible();
+      await expectInsideViewport(button, 'Add Items by Category button');
       await browserContext.close();
     } finally {
       await context.dispose();
     }
   });
 
-  test('Dispatch Case Search Add Item button is visible and inside viewport when present', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+  test('Dispatch Case Search Add Item button is visible and inside viewport', async ({ browser }) => {
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const orderTask = await createOrderEntryTask(api, false);
       const caseName = await openDispatchCaseFromOrderTask(api, String(orderTask.name));
@@ -72,7 +73,8 @@ test.describe('Dispatch Case item selection browser smoke @smoke', () => {
       await page.goto(`/app/dispatch-case/${encodeURIComponent(caseName)}`);
       await waitForFrappeFormReady(page, 'Dispatch Case');
       const button = page.getByText(/Search.*Add Item|Add Item/i).first();
-      if (await button.count()) await expectInsideViewport(button, 'Search Add Item button');
+      await expect(button).toBeVisible();
+      await expectInsideViewport(button, 'Search Add Item button');
       await browserContext.close();
     } finally {
       await context.dispose();
@@ -80,7 +82,7 @@ test.describe('Dispatch Case item selection browser smoke @smoke', () => {
   });
 
   test('Dispatch Case template selector field stays reachable when rendered', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const orderTask = await createOrderEntryTask(api, false);
       const caseName = await openDispatchCaseFromOrderTask(api, String(orderTask.name));
@@ -89,7 +91,8 @@ test.describe('Dispatch Case item selection browser smoke @smoke', () => {
       await page.goto(`/app/dispatch-case/${encodeURIComponent(caseName)}`);
       await waitForFrappeFormReady(page, 'Dispatch Case');
       const selector = page.locator('[data-fieldname="custom_select_surgical_kit_template"]').first();
-      if (await selector.count()) await expectInsideViewport(selector, 'Surgical Kit Template selector');
+      await expect(selector).toBeVisible();
+      await expectInsideViewport(selector, 'Surgical Kit Template selector');
       await browserContext.close();
     } finally {
       await context.dispose();

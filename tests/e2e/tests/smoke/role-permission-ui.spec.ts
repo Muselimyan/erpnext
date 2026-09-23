@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { assertButtonState, assertNoConsoleErrors, assertNoDuplicateButtons } from '../../src/assertions.js';
 import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js';
 import { isFieldReadOnly, isFieldVisible } from '../../src/frappe-ui.js';
-import { createApiBundle, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createTask, openTaskAsRole } from '../../src/test-data.js';
 import type { RoleName } from '../../src/types.js';
 
 type RolePermissionCase = {
@@ -40,7 +40,7 @@ test.describe('Role-based task permission UI @smoke', () => {
   for (const permissionCase of rolePermissionCases) {
     test(`${permissionCase.taskKind} shows role-appropriate fields and no edit controls before accept`, async ({ browser }) => {
       const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(permissionCase.role);
       try {
         const task = await createTask(api, permissionCase.taskKind);
         const page = await openTaskAsRole(browser, permissionCase.role, String(task.name));
@@ -57,7 +57,8 @@ test.describe('Role-based task permission UI @smoke', () => {
         }
 
         for (const field of permissionCase.visibleFields) {
-          if (await isFieldVisible(page, field)) expect(await isFieldReadOnly(page, field), `${permissionCase.taskKind}.${field} read-only before accept`).toBe(true);
+          expect(await isFieldVisible(page, field), `${permissionCase.taskKind}.${field} visible for ${permissionCase.role}`).toBe(true);
+          expect(await isFieldReadOnly(page, field), `${permissionCase.taskKind}.${field} read-only before accept`).toBe(true);
         }
 
         await expectNoServerErrors(page, networkEntries);
@@ -71,7 +72,7 @@ test.describe('Role-based task permission UI @smoke', () => {
 
   test('other role cannot see completion controls for an accepted Payment Received task', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const task = await createTask(api, 'Payment Received', { new_payment_amount: 100, payment_method: 'Cash' });
       await api.acceptTask(String(task.name));
@@ -81,8 +82,10 @@ test.describe('Role-based task permission UI @smoke', () => {
 
       await assertNoDuplicateButtons(page, viewportName);
       await assertButtonState(page, 'Complete', 'hidden', viewportName);
-      if (await isFieldVisible(page, 'new_payment_amount')) expect(await isFieldReadOnly(page, 'new_payment_amount'), 'payment amount read-only for other role').toBe(true);
-      if (await isFieldVisible(page, 'payment_method')) expect(await isFieldReadOnly(page, 'payment_method'), 'payment method read-only for other role').toBe(true);
+      expect(await isFieldVisible(page, 'new_payment_amount'), 'payment amount visible for other role').toBe(true);
+      expect(await isFieldReadOnly(page, 'new_payment_amount'), 'payment amount read-only for other role').toBe(true);
+      expect(await isFieldVisible(page, 'payment_method'), 'payment method visible for other role').toBe(true);
+      expect(await isFieldReadOnly(page, 'payment_method'), 'payment method read-only for other role').toBe(true);
 
       await expectNoServerErrors(page, networkEntries);
       assertNoConsoleErrors(consoleEntries);
@@ -94,7 +97,7 @@ test.describe('Role-based task permission UI @smoke', () => {
 
   test('other role cannot see approval controls for an accepted director approval task', async ({ browser }) => {
     const viewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const task = await createTask(api, 'Debt Closure Approval', { approval_outcome: 'Approved' });
       await api.acceptTask(String(task.name));
@@ -104,7 +107,8 @@ test.describe('Role-based task permission UI @smoke', () => {
 
       await assertNoDuplicateButtons(page, viewportName);
       await assertButtonState(page, 'Complete', 'hidden', viewportName);
-      if (await isFieldVisible(page, 'approval_outcome')) expect(await isFieldReadOnly(page, 'approval_outcome'), 'approval outcome read-only for other role').toBe(true);
+      expect(await isFieldVisible(page, 'approval_outcome'), 'approval outcome visible for other role').toBe(true);
+      expect(await isFieldReadOnly(page, 'approval_outcome'), 'approval outcome read-only for other role').toBe(true);
 
       await expectNoServerErrors(page, networkEntries);
       assertNoConsoleErrors(consoleEntries);

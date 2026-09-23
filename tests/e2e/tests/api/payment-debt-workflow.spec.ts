@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle, createTask, expectRejects, findTestCustomer } from '../../src/test-data.js';
+import { createRoleApiBundle, createTask, expectRejects, findTestCustomer } from '../../src/test-data.js';
 import type { FrappeApiClient } from '../../src/frappe-api.js';
 import type { FrappeDoc } from '../../src/types.js';
 
@@ -18,14 +18,14 @@ function childValues(doc: FrappeDoc, fieldname: string): Record<string, unknown>
 
 test.describe('Payment and debt workflow gates @api @audit', () => {
   test('Payment Received completion with amount and method keeps payment task structurally valid', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const customer = await findTestCustomer(api);
       const task = await createTask(api, 'Payment Received', { customer, new_payment_amount: 100, payment_method: 'Cash' });
       await api.acceptTask(String(task.name));
       const saved = await api.getDoc<FrappeDoc>('Task', String(task.name));
       expect(saved.task_kind).toBe('Payment Received');
-      expect(Number(saved.new_payment_amount || 0), 'new payment amount retained when current schema supports it').toBeGreaterThanOrEqual(0);
+      expect(Number(saved.new_payment_amount || 0), 'new payment amount retained').toBe(100);
       expect(String(saved.payment_method || ''), 'payment method value is readable').not.toBeUndefined();
       expect(String(saved.custom_accepted_by || ''), 'accepted by').not.toEqual('');
     } finally {
@@ -35,7 +35,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
 
   test('Payment Received rejects completion with missing customer when validation is active', async () => {
     test.skip(true, 'current deployed environment does not enforce this payment completion gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const task = await createTask(api, 'Payment Received', { new_payment_amount: 100, payment_method: 'Cash' });
       await api.acceptTask(String(task.name));
@@ -46,7 +46,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
   });
 
   test('Debt Collection accepted task keeps customer and lock ownership before completion', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('finance');
     try {
       const customer = await findTestCustomer(api);
       const task = await createTask(api, 'Debt Collection', { customer });
@@ -62,7 +62,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
 
   test('Debt Closure Approval cannot complete without explicit approval outcome', async () => {
     test.skip(true, 'current deployed environment does not enforce this debt closure gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const customer = await findTestCustomer(api);
       const task = await createTask(api, 'Debt Closure Approval', { customer });
@@ -75,7 +75,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
 
   test('Debt Closure Approval rejects unsupported approval outcome', async () => {
     test.skip(true, 'current deployed environment does not enforce this debt closure gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const customer = await findTestCustomer(api);
       const task = await createTask(api, 'Debt Closure Approval', { customer, approval_outcome: 'Maybe' });
@@ -87,7 +87,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
   });
 
   test('Debt Closure Approval policy is director-gated and not finance-only', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const policy = await api.getDoc<FrappeDoc>('Task Access Policy', 'Debt Closure Approval');
       const roles = childValues(policy, 'allowed_roles').map((row) => String(row.role || '')).filter(Boolean);
@@ -99,7 +99,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
   });
 
   test('Payment Entry metadata supports party, paid amount, and references for payment writeback', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const fields = await getMetaFields(api, 'Payment Entry');
       const fieldnames = fields.map((field) => String(field.fieldname || '')).filter(Boolean);
@@ -114,7 +114,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
   });
 
   test('Sales Invoice metadata supports outstanding amount and payment status inputs', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const fields = await getMetaFields(api, 'Sales Invoice');
       const fieldnames = fields.map((field) => String(field.fieldname || '')).filter(Boolean);
@@ -129,7 +129,7 @@ test.describe('Payment and debt workflow gates @api @audit', () => {
   });
 
   test('Dispatch Case supports payment pending and advance payment tracking fields', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('accounting');
     try {
       const fields = await getMetaFields(api, 'Dispatch Case');
       const fieldnames = fields.map((field) => String(field.fieldname || '')).filter(Boolean);

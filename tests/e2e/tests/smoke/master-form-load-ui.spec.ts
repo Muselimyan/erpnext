@@ -2,7 +2,7 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 import { asRole } from '../../src/auth.js';
 import { assertNoConsoleErrors } from '../../src/assertions.js';
 import { attachConsoleCapture, attachNetworkCapture } from '../../src/capture.js';
-import { createApiBundle } from '../../src/test-data.js';
+import { createRoleApiBundle } from '../../src/test-data.js';
 
 type FormLoadCase = {
   doctype: string;
@@ -46,7 +46,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 test.describe('Master and transaction form load smoke @smoke', () => {
   for (const formCase of formLoadCases) {
     test(`${formCase.doctype} existing record opens cleanly`, async ({ browser }) => {
-      const { context, api } = await createApiBundle();
+      const { context, api } = await createRoleApiBundle(formCase.role);
       try {
         const docs = await api.getList(formCase.doctype, { fields: formCase.fields, filters: formCase.filters, limit: 1, orderBy: 'modified desc' });
         if (!docs.length) test.skip(true, `${formCase.doctype} fixture is not present in current test data`);

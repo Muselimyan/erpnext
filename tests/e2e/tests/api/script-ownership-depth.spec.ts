@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle } from '../../src/test-data.js';
+import { readFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
 import type { FrappeDoc } from '../../src/types.js';
 
 type ScriptMarkerCase = {
@@ -43,6 +44,19 @@ const restrictedServerScriptCases = [
   'Task-purchase-approval-writeback'
 ];
 
+async function exportedScripts(doctype: ScriptMarkerCase['doctype']): Promise<FrappeDoc[]> {
+  const fileName = doctype === 'Server Script' ? 'server-scripts.json' : 'client-scripts.json';
+  const text = await readFile(resolve(process.cwd(), '..', '..', 'deploy', 'test', 'schema', fileName), 'utf8');
+  const parsed = JSON.parse(text.replace(/^\uFEFF/, '')) as { records?: FrappeDoc[] };
+  return parsed.records || [];
+}
+
+async function exportedScript(doctype: ScriptMarkerCase['doctype'], name: string): Promise<FrappeDoc> {
+  const script = (await exportedScripts(doctype)).find((row) => row.name === name);
+  expect(script, `${doctype} ${name} is present in exported test schema`).toBeTruthy();
+  return script as FrappeDoc;
+}
+
 function scriptText(script: FrappeDoc): string {
   return String(script.script || script.javascript || script.code || '');
 }
@@ -50,30 +64,20 @@ function scriptText(script: FrappeDoc): string {
 test.describe('Script ownership and static safety depth @api @audit', () => {
   for (const scriptCase of scriptMarkerCases) {
     test(`${scriptCase.name} contains expected ownership markers`, async () => {
-      const { context, api } = await createApiBundle();
-      try {
-        const script = await api.getDoc<FrappeDoc>(scriptCase.doctype, scriptCase.name);
-        const text = scriptText(script);
-        expect(text, `${scriptCase.name} script body`).not.toEqual('');
-        for (const marker of scriptCase.markers) expect(text, `${scriptCase.name} marker ${marker}`).toMatch(marker);
-      } finally {
-        await context.dispose();
-      }
+      const script = await exportedScript(scriptCase.doctype, scriptCase.name);
+      const text = scriptText(script);
+      expect(text, `${scriptCase.name} script body`).not.toEqual('');
+      for (const marker of scriptCase.markers) expect(text, `${scriptCase.name} marker ${marker}`).toMatch(marker);
     });
   }
 
   for (const scriptName of restrictedServerScriptCases) {
     test(`${scriptName} avoids high-risk RestrictedPython primitives`, async () => {
-      const { context, api } = await createApiBundle();
-      try {
-        const script = await api.getDoc<FrappeDoc>('Server Script', scriptName);
-        const text = scriptText(script);
-        expect(text, `${scriptName} import statement`).not.toMatch(/^\s*(from|import)\s+/m);
-        expect(text, `${scriptName} exec/eval/compile`).not.toMatch(/\b(exec|eval|compile|__import__)\s*\(/);
-        expect(text, `${scriptName} double underscore access`).not.toMatch(/\.[_]{2}|[_]{2}[A-Za-z]/);
-      } finally {
-        await context.dispose();
-      }
+      const script = await exportedScript('Server Script', scriptName);
+      const text = scriptText(script);
+      expect(text, `${scriptName} import statement`).not.toMatch(/^\s*(from|import)\s+/m);
+      expect(text, `${scriptName} exec/eval/compile`).not.toMatch(/\b(exec|eval|compile|__import__)\s*\(/);
+      expect(text, `${scriptName} double underscore access`).not.toMatch(/\.[_]{2}|[_]{2}[A-Za-z]/);
     });
   }
 });

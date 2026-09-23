@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createApiBundle, createTask, expectRejects, findFirstDoc } from '../../src/test-data.js';
+import { createRoleApiBundle, createTask, expectRejects, findFirstDoc } from '../../src/test-data.js';
 import type { FrappeApiClient } from '../../src/frappe-api.js';
 import type { FrappeDoc } from '../../src/types.js';
 
@@ -28,7 +28,7 @@ async function createDraftPurchaseOrder(api: FrappeApiClient): Promise<FrappeDoc
 test.describe('Purchase Approval workflow @api @audit', () => {
   test('draft Purchase Order starts with pending or empty director approval status', async () => {
     test.skip(true, 'current deployed environment does not consistently expose/enforce purchase approval fields');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const saved = await api.getDoc<FrappeDoc>('Purchase Order', String(po.name));
@@ -41,7 +41,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
 
   test('Purchase Order submit without director approval is rejected', async () => {
     test.skip(true, 'current deployed environment does not enforce this purchase approval gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const saved = await api.getDoc<FrappeDoc>('Purchase Order', String(po.name));
@@ -52,7 +52,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
   });
 
   test('Purchase Approval task cannot complete without linked Purchase Order', async () => {
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const task = await createTask(api, 'Purchase Approval', { approval_outcome: 'Approved' });
       await api.acceptTask(String(task.name));
@@ -64,7 +64,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
 
   test('Purchase Approval task cannot complete without approval outcome', async () => {
     test.skip(true, 'current deployed environment does not enforce this purchase approval gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const task = await createTask(api, 'Purchase Approval', { purchase_order: po.name });
@@ -77,7 +77,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
 
   test('Purchase Approval task rejects unsupported approval outcome', async () => {
     test.skip(true, 'current deployed environment does not enforce this purchase approval gate');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const task = await createTask(api, 'Purchase Approval', { purchase_order: po.name, approval_outcome: 'Maybe' });
@@ -90,7 +90,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
 
   test('approved Purchase Approval task writes director approval fields to Purchase Order', async () => {
     test.skip(true, 'current deployed environment does not enforce purchase approval writeback');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const task = await createTask(api, 'Purchase Approval', { purchase_order: po.name, approval_outcome: 'Approved', approval_note: 'AUTO approval test' });
@@ -106,7 +106,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
 
   test('rejected Purchase Approval task writes rejection status to Purchase Order', async () => {
     test.skip(true, 'current deployed environment does not enforce purchase approval writeback');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const task = await createTask(api, 'Purchase Approval', { purchase_order: po.name, approval_outcome: 'Rejected', approval_note: 'AUTO rejection test' });
@@ -122,7 +122,7 @@ test.describe('Purchase Approval workflow @api @audit', () => {
 
   test('editing approved draft Purchase Order resets director approval fields', async () => {
     test.skip(true, 'current deployed environment does not enforce purchase approval writeback/reset');
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('directors');
     try {
       const po = await createDraftPurchaseOrder(api);
       const task = await createTask(api, 'Purchase Approval', { purchase_order: po.name, approval_outcome: 'Approved' });

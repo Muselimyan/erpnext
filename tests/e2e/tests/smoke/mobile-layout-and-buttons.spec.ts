@@ -1,6 +1,6 @@
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { assertButtonFullyVisible, assertButtonState, assertNoDuplicateButtons } from '../../src/assertions.js';
-import { createApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
+import { createRoleApiBundle, createOrderEntryTask, createTask, openTaskAsRole } from '../../src/test-data.js';
 
 type ViewportName = 'desktop' | 'mobile';
 
@@ -40,7 +40,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
 test.describe('Mobile layout and button geometry @smoke', () => {
   test('mobile back button appears once on Task form and stays inside viewport', async ({ browser }) => {
     const isMobile = test.info().project.name === 'mobile';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       const page = await openTaskAsRole(browser, 'orderCreating', String(task.name));
@@ -65,7 +65,7 @@ test.describe('Mobile layout and button geometry @smoke', () => {
 
   test('unaccepted Order Entry primary buttons have exact visibility and geometry', async ({ browser }) => {
     const viewportName: ViewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createTask(api, 'Order entry');
       const page = await openTaskAsRole(browser, 'orderCreating', String(task.name));
@@ -84,7 +84,7 @@ test.describe('Mobile layout and button geometry @smoke', () => {
 
   test('Create Dispatch Case is replaced by Open or View DC after case creation', async ({ browser }) => {
     const viewportName: ViewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createOrderEntryTask(api, false);
       await api.createDispatchCase(String(task.name));
@@ -104,7 +104,7 @@ test.describe('Mobile layout and button geometry @smoke', () => {
 
   test('long subject task keeps title readable and actions inside viewport', async ({ browser }) => {
     const viewportName: ViewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('orderAccepting');
     try {
       const task = await createTask(api, 'Other: Entry', {
         subject: `AUTO LONG SUBJECT ${new Date().toISOString()} Hospital with very long name and operational details that should not overlap buttons`
@@ -122,14 +122,15 @@ test.describe('Mobile layout and button geometry @smoke', () => {
 
   test('Delivery task layout keeps delivery controls and action area usable', async ({ browser }) => {
     const viewportName: ViewportName = test.info().project.name === 'mobile' ? 'mobile' : 'desktop';
-    const { context, api } = await createApiBundle();
+    const { context, api } = await createRoleApiBundle('delivery');
     try {
       const task = await createTask(api, 'Delivery');
       const page = await openTaskAsRole(browser, 'delivery', String(task.name));
 
       await assertNoDuplicateButtons(page, viewportName);
       const deliveryStatus = page.locator('[data-fieldname="delivery_status"]').first();
-      if (await deliveryStatus.isVisible().catch(() => false)) await expectLocatorInsideViewport(deliveryStatus, 'delivery status field');
+      await expect(deliveryStatus).toBeVisible();
+      await expectLocatorInsideViewport(deliveryStatus, 'delivery status field');
       await expectLocatorInsideViewport(page.locator('.page-head, #task-bottom-actions, #task-subheader').first(), 'delivery action/header area');
       await expectNoHorizontalOverflow(page);
       await page.context().close();
@@ -138,8 +139,8 @@ test.describe('Mobile layout and button geometry @smoke', () => {
     }
   });
 
-  test('Pack task layout keeps product area reachable and pickup photo label exact when present', async ({ browser }) => {
-    const { context, api } = await createApiBundle();
+  test('Pack task layout keeps product area reachable and pickup photo label exact', async ({ browser }) => {
+    const { context, api } = await createRoleApiBundle('orderCreating');
     try {
       const task = await createOrderEntryTask(api, false);
       const result = await api.createDispatchCase<{ case_name?: string; dispatch_case?: string; name?: string }>(String(task.name));
@@ -158,15 +159,15 @@ test.describe('Mobile layout and button geometry @smoke', () => {
 
       const page = await openTaskAsRole(browser, 'inventory', packTaskName);
       const dispatchCaseField = page.locator('[data-fieldname="dispatch_case"]').first();
-      if (await dispatchCaseField.isVisible().catch(() => false)) await expectLocatorInsideViewport(dispatchCaseField, 'dispatch case field');
+      await expect(dispatchCaseField).toBeVisible();
+      await expectLocatorInsideViewport(dispatchCaseField, 'dispatch case field');
       const productArea = page.locator('[data-fieldname="products_html"], [data-fieldname="case_products_html"], [data-fieldname="dispatch_case_items"], .task-products, .task-pack-products').first();
-      if (await productArea.isVisible({ timeout: 15000 }).catch(() => false)) await expectLocatorInsideViewport(productArea, 'pack product area');
+      await expect(productArea).toBeVisible({ timeout: 15000 });
+      await expectLocatorInsideViewport(productArea, 'pack product area');
 
       const photoButton = page.locator('button:has-text("+ Add Pickup Photos"), .btn:has-text("+ Add Pickup Photos")').first();
-      if ((await photoButton.count()) > 0) {
-        await expect(photoButton).toBeVisible();
-        await expectLocatorInsideViewport(photoButton, '+ Add Pickup Photos button');
-      }
+      await expect(photoButton).toBeVisible();
+      await expectLocatorInsideViewport(photoButton, '+ Add Pickup Photos button');
 
       await expectNoHorizontalOverflow(page);
       await page.context().close();
