@@ -1,491 +1,228 @@
-# Group 1: Dispatch Case Lifecycle
+# Group 1 — Dispatch Case Lifecycle
 
-> **Scope:** Test server only. All deployed scripts, schema, and client code for the Dispatch Case operational flow.
-> **Evidence:** Code in `deploy/test/work/`, schema in `deploy/test/schema/`.
-> **Excludes:** Financial-tail items (invoicing, payments, pricing, profit, debt closure, outstanding calculation, `allow_on_submit` gaps, stock validation bypass, acceptance-rule conflicts) — those are in **Group 11**.
+> **Scope.** Test server only. Dispatch Case operational flow: task chain, packing, scanning, returns, stock movement, access control.
 >
-> **Partly addressed by Group 11.** Several findings here were fixed as a
-> side-effect of the financial-tail rebuild, because they lived in the same
-> scripts:
+> **Excludes.** Financial tail — invoicing, payments, pricing basis, debt episodes, closure. See **Group 11**.
 >
-> - **ACT-03** — the six product/packing/scan APIs selected the task to
->   authorise against with `limit_page_length=1` and no `order_by`, so
->   authorisation depended on whatever row order MariaDB returned. They now
->   filter by the caller and assert the acting task kind server-side. (W1)
-> - **ACT-06 / ACT-07** — `task_add_dispatch_product` and `task_apply_template`
->   had no Dispatch Case status guard, so an Order entry task left open beside an
->   already-packed case could still mutate its contents. Both now refuse once the
->   case leaves Draft / Awaiting Approval. (W1)
-> - `task_create_dispatch_case` had **no acceptance check at all** — the only
->   guard was the client hiding the button. (W1)
-> - The **zombie Invoice Preparation task**: a case where the client returned
->   everything unused produced a task that nobody, not even an Administrator,
->   could complete. There is now an explicit close path with a recorded reason.
->   (W6, tracked as Group 11 G1)
-> - A **client-supplied `task_kind`** in `task_mark_items_packed_batch` decided
->   whether to write `returned_qty`, so a user holding only a Pack task could
->   overwrite return quantities on the case. Derived server-side now. (W1)
-> - The Dispatch Case access-control gate was found to cover only **draft** cases
->   — `Before Save` never fires for submitted documents — so most of the
->   operational lifecycle was unguarded. Fixed with a submitted-document twin.
->   (W9)
->
-> **Still open, with a new dependency:** the Phase 3 cancel flow (ACT-05). When
-> it is built it will need to cancel tasks in bulk, and `status` cannot be added
-> to the access-control gates' `SYSTEM_FIELDS` because it is the primary
-> user-editable transition. Bulk cancellation will therefore need a sanctioned
-> mechanism that does not exist yet — see `AGENTS.md`, "One gate per doctype".
+> **State.** D1–D6 deployed and verified 2026-09-22/23, against a schema export taken after the work (`export.ps1`). This document covers **what is still open**. Implementation, deploy and verification scripts are in `deploy/test/deploy/group-1-dispatch-operational/`.
 
 ---
 
-## 0. Summary
+## 1. Open work
 
-| # | Finding | Severity |
-|---|---------|----------|
-| ACT-01 | `create_se()` no idempotency — duplicate Stock Entries on retry | Medium |
-| ACT-02 | `create_invoice()` no idempotency — duplicate Sales Invoices on retry | Medium |
-| ACT-03 | Packing/returns/scan APIs match ANY active task on the DC, not the specific task kind | Medium |
-| ACT-04 | No completion gate for Returns Restocking | Medium |
-| ACT-05 | Cancel flow not implemented (Phase 3 — 0%) | Medium |
-| ACT-06 | Product APIs don't validate DC status — items can be added to a Packed/Delivered DC via API | Medium |
-| ACT-07 | `task_apply_template` unguarded at API level — can replace items on a submitted/packed DC | Medium |
-| ACT-08 | `tab_can_act()` admin exemption contradicts TFE and AGENTS.md invariant | Medium |
-| ACT-09 | Packing/returns APIs lack operational role checks (only acceptance check) | Medium |
-| ACT-10 | Return quantity updates use array index, not row name — wrong item updated if rows reorder | Medium |
-| ACT-11 | Corrupted UTF-8 in Discount Approval task subject | Low |
-| ACT-12 | `pwa_pending_item_code` never cleared after successful scan — stale item reuse risk | Low |
-| ACT-13 | Direct DC submission without Order Entry task creates no Pack task | Low |
-| ACT-14 | Stale deleted files in `deploy/test/work/` | Low |
-| ACT-15 | Dead `task_kind` options in schema | Low |
-| ACT-16 | Legacy attach fields still in DC schema | Low |
-| ACT-17 | Stale property setter for removed field `surgery_set_type` | Low |
-| ACT-18 | `Task-Account Details UI Cleanup.js` enabled/disabled discrepancy between work file and server | Low |
-| VERIFY-01 | `Return Call` Task Access Policy has correct `allowed_roles` | Needs Check |
-| VERIFY-02 | `Surgical Kit Template` records exist; `Collection Set` loading is fully dead | Needs Check |
-| VERIFY-03 | No orphan Stock Entries from duplicate SE creation | Needs Check |
+### D7 — Two dead Dispatch Case fields — **DONE, VERIFIED**
 
----
+`delivery_photo` and `return_dropoff_photo` deleted. DocType went from 34 fields to 32; surviving field order asserted identical before the write, and re-read afterwards to confirm. Full prior definition snapshotted to `snapshots/d7-dispatch-case-doctype-before-*.json` for rollback.
 
-## 1. Script Inventory
+**`photo_section` was deliberately kept.** It looks equally dead once the two fields go, but it is the mount point `Dispatch Case-Photo-Galleries.js` inserts the galleries into, and `Dispatch Case-Simplify for Order Creation.js` hides it during order entry. The gallery script copes with the section being empty — it falls back to appending to the section wrapper — so an empty section is fine; deleting it would have moved the galleries somewhere uncontrolled.
 
-### Server Scripts (Dispatch Case lifecycle — 16 active)
+### D8 — the `_assign` sync in `Task-before-save-policy` cannot work
 
-| # | File | Type | DocType | Event |
-|---|------|------|---------|-------|
-| S1 | `Dispatch-Case-before-save.py` | DocType Event | Dispatch Case | Before Save |
-| S2 | `Dispatch-Case-before-save-lock-submitted.py` | DocType Event | Dispatch Case | Before Save |
-| S3 | `Dispatch-Case-before-submit.py` | DocType Event | Dispatch Case | Before Submit |
-| S4 | `Dispatch-Case-after-save.py` | DocType Event | Dispatch Case | After Save |
-| S5 | `Task-after-save-dispatch-flow.py` | DocType Event | Task | After Save |
-| S6 | `Task-before-save-dispatch-gates.py` | DocType Event | Task | Before Save |
-| S7 | `dispatch_task_accept.py` | API | — | — |
-| S8 | `dispatch_case_packing_scan.py` | API | — | — |
-| S9 | `task_create_dispatch_case.py` | API | — | — |
-| S10 | `task_add_dispatch_product.py` | API | — | — |
-| S11 | `task_update_dispatch_product.py` | API | — | — |
-| S12 | `task_remove_dispatch_product.py` | API | — | — |
-| S13 | `task_apply_template.py` | API | — | — |
-| S14 | `task_mark_item_packed.py` | API | — | — |
-| S15 | `task_mark_items_packed_batch.py` | API | — | — |
-| S16 | `task_update_return_item_quantities.py` | API | — | — |
+**Established from Frappe's own source and field definitions, not from the state of existing records.** An earlier version of this entry cited "3,232 tasks with an empty column" as though it were evidence; it is not — the test data is junk and proves nothing about the code. That number has been removed.
 
-### Client Scripts (Dispatch Case lifecycle — 12 active)
+What the framework says (`d8-assign-mechanism.py`):
 
-| # | File | DocType | Enabled |
-|---|------|---------|---------|
-| C1 | `Dispatch Case-Form.js` | Dispatch Case | Yes |
-| C2 | `Dispatch Case-Price Visibility.js` | Dispatch Case | Yes |
-| C3 | `Dispatch Case-Products Button.js` | Dispatch Case | Yes |
-| C4 | `Dispatch Case-Simplify for Order Creation.js` | Dispatch Case | Yes |
-| C5 | `Dispatch Case-Template Auto Fill.js` | Dispatch Case | Yes |
-| C6 | `Dispatch Case Item-Auto Fill Item Name.js` | Dispatch Case Item | Yes |
-| C7 | `Dispatch Case-Item Code String Guard.js` | Dispatch Case | Yes |
-| C8 | `Dispatch Case-Photo-Galleries.js` | Dispatch Case | Yes |
-| C9 | `Task-Action Buttons.js` | Task | Yes |
-| C10 | `Task-Product Work Area.js` | Task | Yes |
-| C11 | `Task-Field-Visibility.js` | Task | Yes |
-| C12 | `Task-Field-Editability.js` | Task | Yes |
+| Probe | Result |
+|---|---|
+| `_assign` is a defined DocField on Task | **No** — it is a framework column |
+| `_assign` in `frappe.model.optional_fields` | **Yes** |
+| `_assign` in `Document.get_valid_columns()` | **No** |
+| Fresh task with `custom_assigned_to` set → `_assign` in DB | `null` |
+| Same task, `custom_assigned_to` in DB | persisted correctly |
+| After `frappe.desk.form.assign_to.add()` → `_assign` in DB | `["e2e.returns@test.erpnext.am"]` |
 
-### Disabled / Deleted (no longer in the flow)
+`get_valid_columns()` is the set of columns a document write emits. `_assign` is excluded from it, so **`doc.set("_assign", ...)` can never reach the database** — not a bug in the sync, a category error about what that field is. Frappe treats `_assign` as framework-managed and expects `assign_to.add()` to maintain it, which the probe confirms works.
 
-All legacy parallel flows removed from test — Surgery Case, Sales Order, Collection Set, Stock Entry gate, Delivery Note gate.
+Two consequences:
 
-Disabled client scripts absorbed into active ones: `Task-Product Lines Display.js`, `Task-Create Dispatch Case Items.js`, `Task-Dispatch Packing Usability.js`, `Task-Packing Checkboxes.js`, `Task-Lock Completed.js`, `Task-Lock Unaccepted.js`, `Dispatch Case-Lock Submitted.js`.
+- The sync line in `Task-before-save-policy` is **dead as far as the database is concerned**. `make_task` works only because it uses `frappe.db.set_value` *after* insert, which bypasses the document layer.
+- **It is not dead in memory, and that matters.** `doc.set()` still attaches the value to the in-memory object, and D3's role check reads it there — proven by `d3-verify`, where check 2 refused a wrong-role task, which it can only do when it sees exactly one assignee. **Deleting the line would silently disable the role check.** It looks like dead code and is load-bearing.
 
----
+#### Why the sync exists, and what actually breaks
 
-## 2. Lifecycle Model
+`_assign` is what the **Task list view** filters on. `Global-Mobile Back Button List.js` builds its toggles from it:
 
-### 2.1 State Machine
-
-```
-Draft ──(OE complete, discount detected)──→ Awaiting Approval
-  │                                              │
-  │                                    ┌─────────┴─────────┐
-  │                               [Approved]          [Rejected]
-  │                                    │                   │
-  │                                    ▼                   ▼
-  └──(OE complete, no discount)──→ Confirmed          Draft (new OE task)
-                                      │
-                               [Pack completed]
-                                      │
-                                      ▼
-                                   Packed
-                                      │
-                              [Delivery Picked Up]
-                                      │
-                                      ▼
-                                 In Transit
-                                      │
-                              [Delivery Delivered]
-                                      │
-                        ┌─────────────┴─────────────┐
-                  [no return]                  [return expected]
-                        │                           │
-                        ▼                           ▼
-                Invoice Pending          Awaiting Return Pickup
-                        │                           │
-                        │                    [Return Call done]
-                        │                           │
-                        │                           ▼
-                        │                 Return Pickup Scheduled
-                        │                           │
-                        │                    [Pickup Picked Up]
-                        │                           │
-                        │                           ▼
-                        │                   Return In Transit
-                        │                           │
-                        │                 [Returned to Warehouse]
-                        │                           │
-                        │                           ▼
-                        │                    Returns Received
-                        │                           │
-                        │                  [Inspection done]
-                        │                           │
-                        │                           ▼
-                        │                    Invoice Pending
-                        │                           │
-                        └───────────┬───────────────┘
-                                    │
-                           [Invoice task done]
-                                    │
-                        ┌───────────┴───────────┐
-                  [outstanding≤0]        [outstanding>0]
-                        │                       │
-                        ▼                       ▼
-                      Closed            Payment Pending
-                                                │
-                                         [fully paid]
-                                                │
-                                                ▼
-                                              Closed
+```js
+if (ts.my_tasks)  orFilters.push(["Task", "_assign", "like", "%" + safeUser + "%"]);
+// team view:
+orFilters.push(["Task", "_assign", "is", "not set"]);
+orFilters.push(["Task", "_assign", "like", "%" + teamPlaceholder + "%"]);
 ```
 
-### 2.2 Task Chain (`Task-after-save-dispatch-flow.py`)
+So `_assign` is how a person **finds** their work — and therefore how they reach a task in order to accept it. That is what the sync was for.
 
-| Trigger | Task Created | Default Assignee (from policy) | DC Link Field |
-|---------|-------------|-------------------------------|---------------|
-| Order Entry completed | `Pack / prepare items` | `inventory.team` | `pack_task` |
-| Pack completed | `Delivery` | `delivery.team` | `delivery_task` |
-| Delivery Delivered (return expected) | `Return Call` | `office.team` | `return_waiting_task` |
-| Return Call completed | `Pickup Returns` | Named driver or `delivery.team` | `return_pickup_task` |
-| Pickup → Returned to WH | `Returns processing / verification` | `returns.team` | `returns_inspection_task` |
-| Returns Inspection completed (returned items) | `Returns restocking` | `returns.team` | `restock_task` |
-| Delivered (no return) OR Inspection completed | `Invoice preparation / create invoice` | `accounting.team` | `invoice_task` |
-| Invoice task done (outstanding > 0) | `Debt Collection` | `finance.team` | customer-level |
-| Discount detected on OE completion | `Discount Approval` | from Task Access Policy | `discount_approval_task` |
-| Discount rejected | `Order entry` (revision) | `order.creation.team` | — |
+**The user-visible consequence is real, not cosmetic.** A task assigned to a person but created outside the dispatch flow has an empty `_assign`, so it does **not** appear under "My Tasks". It falls into the team pool instead, looking unassigned when it is not. The main flow escapes this only because `make_task` writes the field separately with `frappe.db.set_value` after insert — tasks created any other way do not get that.
 
-All team assignments read from `Task Access Policy` at runtime. `custom_next_task_assign_to` on the source task can override the default.
+**Start at:** decide whether the Task form should use Frappe's own mechanism (`assign_to.add()`, which also creates the ToDo that drives notifications) or keep `custom_assigned_to` as the single source of truth and have the list view filter on that instead of `_assign`. Either is defensible; the present state — a sync that cannot work, a list view depending on it, and a permission gate quietly depending on its in-memory side effect — is not.
 
-### 2.3 Stock Entry Map
+If the sync line is removed, **both** the role check and the list-view filter must be rewritten in the same change.
 
-| Trigger | Source WH | Target WH | Type | Items |
-|---------|-----------|-----------|------|-------|
-| Pack completed | `Main - Inmed` | `Delivery In-Transit - Inmed` | Material Transfer | All dispatched |
-| Delivery → Delivered | `Delivery In-Transit - Inmed` | `client_location_warehouse` | Material Transfer | All dispatched |
-| Delivered (no return) | `client_location_warehouse` | *(out)* | Material Issue | All dispatched |
-| Return Pickup → Picked Up | `client_location_warehouse` | `Return Pickup In-Transit - Inmed` | Material Transfer | All dispatched |
-| Return Pickup → Returned to WH | `Return Pickup In-Transit - Inmed` | `Returns - Inmed` | Material Transfer | All dispatched |
-| Returns Inspection completed | `Returns - Inmed` | *(out)* | Material Issue | Used items only |
-| Restock completed | `Returns - Inmed` | `Main - Inmed` | Material Transfer | Returned items only |
+### D9 — Negative stock — **DONE, VERIFIED**
 
-Lost/damaged items intentionally NOT auto-invoiced or auto-consumed. They remain in `Returns - Inmed` for manual review.
+`Stock Settings.allow_negative_stock` set to **0**. D1 had restored ERPNext's own check, but a check cannot overrule a setting declaring the thing it checks for permitted — so an overdraw still posted. Now refused.
 
-### 2.4 Gate Enforcement (`Task-before-save-dispatch-gates.py`)
-
-| Task Kind | Gate | Enforcement |
-|-----------|------|-------------|
-| All dispatch tasks | Must be accepted before edit/complete | `custom_accepted_by` required |
-| All dispatch tasks | Only accepted user can complete | `accepted_by == session.user` |
-| All dispatch tasks | Cannot reassign and complete simultaneously | Blocks if `custom_assigned_to` changed |
-| Order entry | Must have items and customer | Throws if `case_items` empty or `customer` blank |
-| Order entry | Return expected requires client location WH | Throws if `order_client_location_warehouse` blank |
-| Order entry (with discounts) | DC set to `Awaiting Approval` | Discount detection at completion |
-| Pack / prepare items | Requires attached photo | `task_has_image()` check |
-| Pack / prepare items | All items must be fully scanned | `custom_scanned_qty >= dispatched_qty` per row |
-| Delivery | Status: Todo → Picked Up → Delivered | Sequence enforced; auto-completes on Delivered |
-| Pickup Returns | Status: Todo → Picked Up → Returned to WH | Sequence enforced; requires dropoff photo; auto-completes |
-| Returns processing / verification | All rows must have `returned_qty` filled | `returned_qty is None` check |
-| Invoice preparation | Submitted Sales Invoice required | `docstatus == 1` check |
-| Discount Approval | `approval_outcome` required | Must be set |
-| Debt Closure Approval | Role check from Task Access Policy | Only allowed roles can complete |
-
-**Missing gates** (no completion validation exists):
-- `Returns restocking` — see ACT-04
-- `Debt Collection` — see Group 11 G4
-
----
-
-## 3. Open Issues
-
-### ACT-01: `create_se()` Has No Idempotency Protection
-**Severity: Medium**
-
-`make_task()` checks for an existing active task before creating. `create_se()` does not. If the after-save fires twice (retry, race condition), duplicate Stock Entries are created and submitted. The DC link field gets overwritten, orphaning the first SE.
-
-**Location:** `Task-after-save-dispatch-flow.py` `create_se()` function (lines 33-68), called at lines 187, 191, 202, 207, 223, 244, 260.
-
-**Fix:** Check if the relevant DC SE link field already has a value before creating.
-
-### ACT-02: `create_invoice()` Has No Idempotency Protection
-**Severity: Medium**
-
-Same pattern as ACT-01. If the after-save fires twice, two Draft Sales Invoices are created. The second overwrites `case.sales_invoice`, orphaning the first.
-
-**Location:** `Task-after-save-dispatch-flow.py` `create_invoice()` function (lines 127-146), called at lines 193 and 246.
-
-**Fix:** Check if `case.sales_invoice` already has a value before creating.
-
-### ACT-03: Packing/Returns/Scan APIs Match Wrong Task Scope
-**Severity: Medium**
-
-`task_mark_item_packed.py`, `task_mark_items_packed_batch.py`, `task_update_return_item_quantities.py`, and `dispatch_case_packing_scan.py` all use this acceptance check:
-
-```python
-tfe_tasks = frappe.get_all("Task", filters={
-    "dispatch_case": case_name,
-    "status": ["not in", ["Completed", "Cancelled"]]
-}, fields=["custom_accepted_by"], limit_page_length=1)
+```
+SETTING allow_negative_stock is off    PASS   value=0
+NORMAL pack still succeeds             PASS   2 SLE, in-rate 6.0
+NORMAL pack still carries valuation    PASS   rate 6.0
+OVERDRAW is refused                    PASS   999949 units of Item 3146-60300...
 ```
 
-This matches ANY active task on the DC, not the specific task kind. A user who accepted the Delivery task could mark items as packed (because the Delivery task is linked to the same DC). The `limit_page_length=1` means it picks whichever task the DB returns first.
+Existing records deliberately not repaired. The 13 already-negative items in `Main - Inmed` will now **fail** any operation drawing on them. That is the intended behaviour.
 
-**Location:** All four files, acceptance check around lines 17-19.
+### D9b — Batch, serial and expiry tracking are off — **DEFERRED, own workstream**
 
-**Fix:** Filter by `task_kind` as well (e.g. `Pack / prepare items` for packing APIs, `Returns processing / verification` for return APIs).
+Tracked separately, like the cancel flow. Too large and too consequential to carry as a Group 1 line item. Recorded here so the reasoning is not lost.
 
-### ACT-04: No Completion Gate for Returns Restocking
-**Severity: Medium**
+Two API utilities switched tracking off across every Item, and both are still deployed and callable:
 
-`Task-before-save-dispatch-gates.py` has specific completion gates for Pack, Delivery, Pickup Returns, Returns Inspection, Invoice Prep, Discount Approval, and Debt Closure Approval. There is NO gate for `Returns restocking`. A user can complete the Restock task without any verification, and the SE is created from `Returns - Inmed` → `Main - Inmed` using whatever `returned_items(case)` returns. No data integrity risk, but no process enforcement.
+- `disable_all_item_batch_serial_for_now` — clears `has_batch_no` / `has_serial_no` / `has_expiry_date` on **all** items
+- `perm_disable_batch_expiry_dbset` — the same for a named list
 
-**Location:** `Task-before-save-dispatch-gates.py` — no block for `Returns restocking`.
+For a medical device distributor this is the most consequential override of the set: **batch and expiry are the recall traceability mechanism.**
 
-### ACT-05: Cancel Flow Not Implemented (Phase 3)
-**Severity: Medium**
+**It cannot simply be switched back on.** With batch tracking enabled, the now-strict `create_se` requires `batch_no` on every Stock Entry row, and `dispatch_case_packing_scan` only captures a batch when GS1 parsing succeeds. Any item scanned by a plain barcode, or keyed in by hand, would produce a row with no batch and the movement would be refused — packing would break.
 
-No way to cancel a Dispatch Case mid-lifecycle. Design exists in `deploy/test/work/phase3-cancel-flow-plan.md`, implementation at 0%. Missing:
-- `Cancelled` not in DC status options
-- No cancel API
-- No cancel button on forms
-- No `Dispatch Cancel Restock` task kind
-- No cancellation fields (`cancellation_reason`, `cancelled_by`, `cancelled_at`)
-- No stock reversal logic
+**Needs a plan, not a toggle:** what proportion of stock carries GS1 barcodes, what the fallback is for items that do not, and whether tracking is enabled per-item or globally. Leaving the two utilities callable also means the override can be silently re-applied; they should be retired as part of the same change.
 
-**Blocked on:** Design review and approval.
+### D10 — 372 pre-existing malformed Stock Entries
 
-### ACT-06: Product APIs Don't Validate DC Status
-**Severity: Medium**
+Submitted, with warehouse-less rows. Two populations, and the second is worse than the audit originally described:
 
-`task_add_dispatch_product.py`, `task_update_dispatch_product.py`, `task_remove_dispatch_product.py` modify DC items regardless of DC status. They check acceptance on the linked task but not the DC lifecycle state. A direct API call could add/modify/remove items on a DC in `Packed`, `In Transit`, or `Delivered` status.
+| Count | Shape | Effect |
+|---|---|---|
+| 172 | Material Issue, blank source | Posted **nothing** — inert. Exactly matches the 172 SEs with no ledger entry |
+| 200 | Material Transfer, one side blank | **Did post.** Stock created or destroyed rather than moved |
 
-The UI naturally limits this (Product Work Area only renders the editable view for `Order entry` tasks), but the API is unguarded.
+D1 stops new ones being created. It does not repair these. Test data is synthetic and deliberately unreconciled, so this is cleanup scope, not a blocker.
 
-**Location:** All three files — no DC status check.
+### D11 — Cancel flow
 
-**Fix:** Reject modifications when DC status is not `Draft` or `Awaiting Approval`.
+Not implemented. `Cancelled` is not a Dispatch Case status, there is no cancel handler (confirmed: the only DC server scripts are before-save, the two access-control twins, before-submit and after-save), and native ERPNext cancel reverses no stock.
 
-### ACT-07: `task_apply_template` Unguarded at API Level
-**Severity: Medium**
+Deferred by decision. Two things wait on it:
 
-`task_apply_template.py` line 22 clears ALL `case_items` (`dc.set("case_items", [])`) and replaces them with template items. It requires an accepted task but does not check DC status, task kind, or whether items have already been operationally moved (packed, dispatched).
+- 77 cases hold stock in transit warehouses and cannot move — 61 have a blank client warehouse, 15 point at `Main - Inmed`. They were stuck before D1 and remain stuck; there is no in-system way to dispose of them.
+- `Return to warehouse (aborted delivery / cancelled order)` was deliberately **kept** in the `task_kind` options as its most likely consumer.
 
-The UI has a `frappe.confirm` guard when items exist, but the API does not.
+Group 11's trap table notes the mechanism gap: bulk-cancelling tasks needs to write `status` on tasks the user does not own, and `status` cannot go on `SYSTEM_FIELDS` because it is the primary user-editable transition.
 
-**Location:** `task_apply_template.py` — no DC status or task kind validation.
+### D12 — `task_mark_items_packed_batch` has no caller — **RESOLVED: kept, documented**
 
-**Fix:** Reject when DC is submitted or has any SE linked.
+No enabled client script calls it. **Decision: keep it.** A "tick every item at once" control on the packing screen is still a reasonable thing to want — packing a 40-line surgical kit one checkbox at a time is slow — and the back end is ready for it.
 
-### ACT-08: `tab_can_act()` Admin Exemption Contradicts AGENTS/TFE
-**Severity: Medium**
+A block comment at the top of the script now records that nothing calls it, why it is retained, how to use it (`mode` plus a JSON list of row names), and that it should be deleted outright if a decision is taken that the bulk control will never be built. It is hardened to the same standard as the endpoints in use, since an entry point with no screen is still reachable by name.
 
-`Task-Action Buttons.js` `tab_can_act()` (line 133-136) returns true for `System Manager` / `Administrator`, allowing them to click Complete, Picked Up, Delivered, etc. But `Task-Field-Editability.js` `tfe_can_edit()` (lines 16-22) has NO admin exemption — `accepted_by === session.user` is the only check.
+### D13 — `Task-Packing Checkboxes.js` would break if re-enabled
 
-AGENTS.md explicitly states: *"There is no admin exemption — `accepted_by === session.user` is the only check."*
+Disabled, and still sends `item_idx` / `packed_indices`. D2 made the server refuse both. If it is ever re-enabled it must be updated first.
 
-An admin can click action buttons but cannot edit fields. The buttons call `savedocs` directly bypassing the field editability layer, so the action goes through — but it violates the stated invariant.
+**A third caller was missed and has been fixed.** `deploy/test/deploy/group-11-financial-tail/w12-verify-lost-damaged.py` also sent `item_idx`, so D2 broke W12's verification harness. The caller inventory taken for D2 grepped `work/client` and `work/server` but not `deploy/` — a contract change has to be searched for across the whole repository, not just the runtime tree. Fixed to send `row_name`, re-run, 14/14 PASS. Its closing notes also claimed A2 was still open and have been corrected.
 
-**Location:** `Task-Action Buttons.js` lines 124-136.
+---
 
-**Fix:** Remove `tab_is_admin()` from `tab_can_act()`.
+## 2. What was done
 
-### ACT-09: Packing/Returns APIs Lack Operational Role Checks
-**Severity: Medium**
+| ID | Change | Verification |
+|---|---|---|
+| **D1** | `create_se` lost the `strict` parameter and all three bypasses — `ignore_validate`, `ignore_stock_validation`, `allow_zero_valuation_rate`. `client_location_warehouse` now required on **every** order, not only when returns are expected | 7/7 + regression re-run after D3 |
+| **D2** | Packing/scan/returns endpoints assert the **task kind**, not just "any accepted task". Rows addressed by `row_name`, not array position. `task_remove_dispatch_product` gained the lifecycle guard its two siblings had | 16/16 |
+| **D3** | Assignment invariant re-enabled (all three checks). `office.team@example.com` granted `Ops - Order Accepting` | 8/8 |
+| **D4** | Retired `Order accepting` and `Dispatch picking / hand-off`; field default moved to `Order entry` | 3/3 |
+| **D5** | Deleted `Dispatch Case.profit` and its allow-list entry in both access-control twins | 2/2 |
+| **D6** | `Returns restocking` now requires a photo. Deleted the `surgery_set_type` property setter and the unused `tab_is_admin()`. Corrected a comment that promised a safety net in a disabled script | 7/7 |
 
-`task_mark_item_packed.py`, `task_mark_items_packed_batch.py`, `task_update_return_item_quantities.py`, and `dispatch_case_packing_scan.py` check that the caller accepted a related task but do not verify the user has the appropriate operational role (e.g. `Ops - Inventory` for packing, `Ops - Returns` for returns). Any user who accepted any DC-linked task can call these APIs. Overlaps with ACT-03 (wrong task scope).
+### End-to-end — one case through the whole chain, **45/45**
 
-**Location:** All four files, acceptance check around lines 17-19.
+Every workstream above verified its own hop with a seeded fixture — a case placed directly into the state that hop begins from. That proves each hop and says nothing about the joins between them. `e2e-full-chain.py` drives the real sequence in one run, each step performed by the role that performs it, with nothing short-circuited: tasks accepted through `dispatch_task_accept`, products added through `task_add_dispatch_product`, quantities set through `task_update_return_item_quantities`, the invoice raised through `task_commit_invoice`.
 
-### ACT-10: Return Quantity Updates Use Array Index, Not Row Name
-**Severity: Medium**
+Order entry → Pack → Delivery → Return Call → Pickup → Inspection → Restocking → Invoice, with a 10-unit order resolving to 6 used, 3 returned, 1 damaged.
 
-`task_update_return_item_quantities.py` (and `task_mark_item_packed.py`) use `item_idx` (the array position from the client-side renderer) to identify the row in `case_items`. If server-side rows are reordered (e.g. by another save, template re-application, or item addition), the index addresses the wrong item.
+Every seam asserted — each hop must create the next task, and each must move stock to the right warehouse:
 
-By contrast, `task_update_dispatch_product.py` and `task_remove_dispatch_product.py` use `row_name` (the stable DB identifier).
-
-**Location:** `task_update_return_item_quantities.py` line 9, `task_mark_item_packed.py` line 9.
-
-**Fix:** Use `row.name` instead of array index.
-
-### ACT-11: Corrupted UTF-8 in Discount Approval Subject
-**Severity: Low**
-
-`Dispatch-Case-after-save.py` line 17 contains `â€"` (mojibake) instead of `—` (em-dash):
-```python
-"subject": f"Discount Approval: {doc.name} â€" {doc.customer}",
+```
+1 accept auto-creates a Draft Dispatch Case      PASS
+1 completing Order entry SUBMITS the case        PASS
+2 transfer preserved valuation                   PASS   out 6.0 -> in 6.0
+3 stock reached the client warehouse             PASS
+5 return transit emptied                         PASS
+6 used computed as dispatched - returned - lost  PASS   used=6.0
+6 lost/damaged segregated to Lost & Damaged      PASS   0.0 -> 1.0
+6 SEAM: Write-off Approval raised for the loss   PASS
+7 returned goods went back to Main               PASS   45.0
+8 invoice bills the USED quantity only           PASS   invoiced qty=6.0
+8 case reached a terminal state                  PASS   Payment Pending
+9 CONSERVATION: Main fell by used + lost = 7     PASS   6 used + 1 lost
 ```
 
-**Location:** `Dispatch-Case-after-save.py` line 17.
+The closing assertion is the one worth keeping: **stock conservation.** Both transit warehouses and the client warehouse return to their starting balances, Lost & Damaged retains exactly the damaged unit, and Main falls by precisely used + lost. A chain that moves stock correctly at every individual hop but loses a unit between two of them passes every other test in this directory and fails that one.
 
-### ACT-12: `pwa_pending_item_code` Never Cleared After Scan
-**Severity: Low**
+### The two assertions that mattered
 
-In `Task-Product Work Area.js`, the global variable `pwa_pending_item_code` is set when a REF barcode is scanned (line 166) but never cleared after a successful GS1 packing scan. If the user scans a GS1 barcode without first scanning a new REF, the stale item code is reused.
+```
+PACK valuation PRESERVED across transfer    PASS   out 6.0 -> in 6.0
+RESTOCK leaves Main valuation unchanged     PASS   6.0 -> 6.0
+```
 
-**Location:** `Task-Product Work Area.js` line 15, 166.
+`ignore_validate` skipped `set_basic_rate`, so every Material Transfer arrived valued at **zero** regardless of source value. `Main → Delivery In-Transit` destroyed valuation on the first hop, every later hop inherited zero, consumption posted zero COGS, and the restock pushed zero-valued stock back into Main — dragging its moving average down on every returns cycle, compounding indefinitely. The second assertion is the proof that this is gone.
 
-**Fix:** Clear `pwa_pending_item_code = ""` after a successful packing scan call.
+### Verified confirmed on the current export
 
-### ACT-13: Direct DC Submission Creates No Pack Task
-**Severity: Low**
-
-If a privileged user submits a Dispatch Case directly (bypassing the Order Entry task), no Pack task is created. The DC sits in `Confirmed` indefinitely. In normal operation this path is not reachable — `dispatch_task_accept.py` auto-creates DCs from Order Entry tasks. But the code path exists.
-
-**Location:** `Dispatch-Case-before-submit.py` line 14 (intentional comment).
-
-### ACT-14: Stale Deleted Files in `deploy/test/work/`
-**Severity: Low**
-
-These files exist locally but were deleted from the test server:
-- `deploy/test/work/client/Dispatch Case-Packing Scan.js`
-- `deploy/test/work/client/Dispatch Case-Packing Problem Alerts.js`
-- `deploy/test/work/server/Dispatch Case-packing-problem-alerts.py`
-
-Remove from local directory to avoid confusion.
-
-### ACT-15: Dead `task_kind` Options in Schema
-**Severity: Low**
-
-Several `task_kind` select options have no dispatch flow integration:
-- `Order accepting` — schema default, overridden to `Order entry` by client scripts. No script logic handles it.
-- `Dispatch picking / hand-off` — not referenced by any script.
-
-These create confusion in dropdowns and Quick Entry.
-
-**Location:** `custom-fields.json`, `Task-task_kind` options.
-
-### ACT-16: Legacy Attach Fields in DC Schema
-**Severity: Low**
-
-`delivery_photo` and `return_dropoff_photo` (Attach, `read_only: 1`) still exist in the DC DocType definition. Hidden by `Dispatch Case-Photo-Galleries.js` but functionally dead — photos are now attached to Tasks, not DCs.
-
-**Location:** `custom-doctypes.json`, Dispatch Case fields.
-
-### ACT-17: Stale Property Setter for Removed Field
-**Severity: Low**
-
-`Dispatch Case-surgery_set_type-allow_on_submit` exists in `property-setters.json` but the field `surgery_set_type` is not in the current DC field list. Leftover from Collection Set removal.
-
-**Location:** `property-setters.json`.
-
-### ACT-18: `Task-Account Details UI Cleanup.js` Discrepancy
-**Severity: Low**
-
-The local work file header says `Enabled: 0`. The test server schema export (`client-scripts.json`) shows `enabled: 1`. If the old version (before Phase 2d fix) is still running on the server, it could be toggling TFV-owned fields, causing race conditions.
-
-**Location:** `deploy/test/work/client/Task-Account Details UI Cleanup.js` vs `deploy/test/schema/client-scripts.json`.
-
-**Action:** Verify which version is on the server. If the pre-Phase-2d version, deploy the fixed version. If already fixed, update the work file header to `Enabled: 1`.
+| Fact | Value |
+|---|---|
+| `task_kind` default | `Order entry` |
+| Retired kinds present | none |
+| Held-back kinds present | both, intentionally |
+| Dispatch Case custom fields | `custom_select_surgical_kit_template` only |
+| `surgery_set_type` property setters | none |
+| Bypasses in deployed flow code | none |
+| D3's three checks live | yes |
 
 ---
 
-## 4. Verification Items
+## 3. Traps specific to this area
 
-| # | Item | How to verify |
-|---|------|---------------|
-| VERIFY-01 | `Return Call` Task Access Policy has correct `allowed_roles` | Check `Task Access Policy` "Return Call" record on test |
-| VERIFY-02 | `Surgical Kit Template` has records; `surgery_set_type` field on DC is dead | Check record count; confirm field is unused |
-| VERIFY-03 | No orphan Stock Entries from duplicate SE creation (ACT-01) | Query SEs linked to DCs where DC link fields point to different SEs |
-
----
-
-## 5. Verified Correct
-
-| Area | Detail |
-|------|--------|
-| State machine transitions | All 12 used states flow correctly |
-| Task chain creation | `make_task()` has idempotency guard |
-| Stock entry warehouses | Correct warehouse pairs for all 7 SE types |
-| `used_qty` calculation | `dispatched - returned - lost_damaged`, throws on negative |
-| Pack photo gate | Required before completion |
-| Packing scan completeness | `scanned_qty >= dispatched_qty` for every row |
-| Delivery status sequence | `Todo → Picked Up → Delivered` enforced, auto-complete on Delivered |
-| Pickup Returns sequence | `Todo → Picked Up → Returned to WH` enforced, dropoff photo required |
-| Returns inspection gate | `returned_qty` required for every row |
-| Invoice submission gate | `docstatus == 1` required |
-| Discount detection | Moved to OE completion gate (correct) |
-| Discount Approval flow | Approved → submit DC + create Pack; Rejected → Draft + new OE |
-| Template auto-fill | Replaces `case_items` from `Surgical Kit Template` |
-| Dynamic policy lookup | All role and team assignments read from `Task Access Policy` at runtime |
-| Order Entry field sync | `return_expected`, `client_location_warehouse`, `surgery_date`, `customer` synced to DC |
-| Acceptance model | Server-side enforcement in dispatch-gates, lock-unaccepted, and all API scripts |
-| Submitted DC lock | `Dispatch-Case-before-save-lock-submitted.py` blocks non-privileged edits; scripts bypass via `flags.ignore_permissions` |
-| FEFO warning | Advisory only (non-blocking), as designed |
-| Lost/damaged exclusion | Intentionally excluded from auto-invoice and auto-consumption |
+| | |
+|---|---|
+| **The Dispatch Case gate is coarse on purpose** | `Dispatch-Case-before-save-submitted-access-control` asks only whether the user holds *any* accepted task on the case. Order entry, packing and returns all legitimately write `case_items`, so the document cannot know which is valid. Kind-specific authority belongs in the endpoint. **Do not "tighten" the DC gate** — D2 fixed this at the right layer |
+| **The gates self-heal, which hides assignment problems** | `Task-before-save-policy` (~line 70) auto-assigns the kind's `default_team_user` when `custom_assigned_to` is blank, then re-syncs `_assign`. 23 of 25 policies have a default team, so a task cannot reach the completion check with zero owners. Tests that clear `_assign` and expect a refusal will pass for the wrong reason |
+| **A policy's `default_team_user` must hold one of that policy's own `allowed_roles`** | Otherwise every task the flow creates of that kind throws on its first save — the D3 role check has no status guard. `office.team` held **no roles at all** while being default for `Return Call`, which would have broken the returns branch for all new cases. `d3-verify` checks all 25 policies; keep that check |
+| **Batch and serial tracking are globally disabled** | `disable_all_item_batch_serial_for_now` clears `has_batch_no` / `has_serial_no` / `has_expiry_date` on every Item. This is why D1's strict mode does not demand batch numbers. If tracking is ever re-enabled — and for implant recall traceability it must be — strict mode will require `batch_no` on every row, and the packing scan only captures it when GS1 parsing succeeds. **That interaction needs designing before batch tracking returns** |
+| **Manual packing tick is intended behaviour** | `task_mark_item_packed` sets `custom_scanned_qty` to the full dispatched quantity, so ticking every box satisfies the completion gate with no barcode read. Accepted: the gate's message says "packed", not "scanned". The scan path additionally records `custom_last_scanned_barcode` / `_at` / `_by`, so the two are distinguishable if that is ever wanted |
+| **Verification must not run as Administrator** | Privileged users are exempt from the access-control gates, so the Administrator-only e2e API suite is structurally incapable of catching this defect class (Group 11 A5). Every `d*-verify-*.py` here runs as `e2e.*` role users via `bench console` and rolls back |
+| **An assertion must read code, not comments** | D1's deploy guard initially refused a correct change because the file mentioned `ignore_validate` in the prose explaining its removal. Strip comments before asserting. The same trap caught a D6 test that matched a misleading sentence quoted verbatim inside its own correction |
 
 ---
 
-## 6. Cross-Script Interaction
+## 4. Finding-ID map
 
-### Multiple Scripts on Same DocType/Event
-
-| DocType | Event | Scripts | Conflict? |
-|---------|-------|---------|-----------|
-| Dispatch Case | Before Save | S1 (used_qty calc), S2 (lock submitted) | No — independent |
-| Dispatch Case | After Save | S4 (discount approval task) | Single script |
-| Task | Before Save | S6 (dispatch gates) + policy + lock scripts | See Group 11 C1 for conflict analysis |
-| Task | After Save | S5 (orchestrator) + advance payment + debt closure + telegrams | Each filters by `task_kind` early |
-
-### Idempotency
-
-| Function | Protected? |
-|----------|-----------|
-| `make_task()` | Yes — checks for existing active task |
-| `create_se()` | **No** — ACT-01 |
-| `create_invoice()` | **No** — ACT-02 |
-
----
-
-## 7. Cross-Group Dependencies
-
-| Dependency | Target Group | Notes |
-|-----------|-------------|-------|
-| Task system gates (policy, lock, acceptance rule conflicts) | Group 2, Group 11 C1 | Group 11 C1 is the critical cross-script conflict |
-| Financial tail (invoicing, payments, pricing, outstanding, closure) | Group 11 | 17 gap items + redesign proposals |
-| Packing scan and barcode handling | Group 5 | FEFO warnings, scan API |
-| Reporting on DC states | Group 10 | Dead status options may affect reports |
+| Old ID | Outcome |
+|---|---|
+| ACT-01, ACT-02 | Fixed D2 — kind assertion; explicit `mode` replaces `mytasks[0]` inference |
+| ACT-03 | Fixed D2 — lifecycle guard on `task_remove_dispatch_product` |
+| ACT-04 | Fixed D6 — `Returns restocking` photo gate |
+| ACT-05 | Fixed D1 — client warehouse required on every order |
+| ACT-06 | Fixed D1 — all three bypasses removed. Residual: **D9** (`allow_negative_stock`) |
+| ACT-07 | Fixed D3 — all three checks enforcing |
+| ACT-08 | Fixed D5 — field and both allow-list entries deleted. Report deferred to Group 11 A1 |
+| ACT-09 | Fixed D2 — rows addressed by name |
+| ACT-10 | Fixed D2 — client sends `row_name`; the stale-scan path is gone with it |
+| ACT-11 | **Open — D11** (cancel flow) |
+| ACT-12 | Fixed D4 — two retired, two held back on purpose |
+| ACT-13 | Partly fixed D6 — property setter deleted. Two DocFields remain: **D7** |
+| ACT-14 | Fixed D6 — header corrected to `Enabled: 1`, matching the server |
+| ACT-15 | Fixed D6 — `tab_is_admin()` deleted, comment corrected. `user_has_allowed_role()` **kept**: D3 re-enabled its caller |
+| ACT-16 | Group 11 **A1** |
+| V-01 | Closed — W12 schema confirmed present |
 
 ---
 
-*End of Group 1 audit.*
+## 5. Where the implementation lives
+
+| | |
+|---|---|
+| Deploy + verify scripts | `deploy/test/deploy/group-1-dispatch-operational/` — `d0*` are read-only audits; `d1`–`d9` are `.ps1` + paired `-verify-*.py`; `e2e-full-chain.py` is the whole-chain walkthrough |
+| Lint the console scripts | `python deploy/test/deploy/group-1-dispatch-operational/_lint.py` — these are piped into IPython, which treats a blank line as end-of-block. A blank line inside the function body **silently truncates the script** and it appears to do nothing. Run this before piping anything |
+| Architectural rules | `AGENTS.md` |
+| Flow specification | `docs/16-unified-dispatch-flow.md` |
+| Task-kind matrix | `docs/21-task-kind-field-visibility-matrix.md` — **needs updating**: its Group A still lists the kinds retired in D4, and its §422 discrepancy list predates TFV/TFE ownership |

@@ -15,8 +15,12 @@ if not case_name:
 if not barcode:
     frappe.throw("Barcode is required.")
 
-# Deterministic ownership check — filter by the caller rather than taking an
-# arbitrary open task via limit_page_length=1 with no order_by.
+# Ownership AND kind. Filtering by the caller makes it deterministic; asserting
+# the kind makes it correct. Holding ANY open task on the case used to be enough,
+# and multiple open tasks per case is normal by design -- returns inspection fans
+# out to Write-off Approval, Invoice preparation and Returns restocking at once.
+# So the driver on the Delivery task could scan barcodes against the packing
+# record, which is the evidence that the right lot and expiry went into the box.
 mytasks = frappe.get_all(
     "Task",
     filters={"dispatch_case": case_name, "custom_accepted_by": frappe.session.user,
@@ -24,8 +28,12 @@ mytasks = frappe.get_all(
     fields=["name", "task_kind"],
     limit_page_length=0,
 )
-if not mytasks:
-    frappe.throw("You must accept a task for this Dispatch Case before making changes.")
+acting_kind = ""
+for t in mytasks:
+    if t.task_kind == "Pack / prepare items":
+        acting_kind = t.task_kind
+if not acting_kind:
+    frappe.throw("Barcodes can only be scanned from an accepted Pack / prepare items task.")
 if qty <= 0:
     frappe.throw("Scan quantity must be greater than zero.")
 

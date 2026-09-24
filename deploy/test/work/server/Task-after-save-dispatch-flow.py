@@ -47,20 +47,28 @@ else:
     # the lost/damaged resolution needs it as an idempotency key -- an already
     # resolved approval is recognised by the Stock Entry carrying its name.
     #
-    # strict=1 runs the movement with ERPNext's own validation intact: no
-    # ignore_validate, no ignore_stock_validation, no allow_zero_valuation_rate.
+    # EVERY movement runs with ERPNext's own validation intact. There is no
+    # bypass parameter and no lenient path -- item A2 is closed here.
     #
-    # It exists because the lost/damaged path cannot work without it. Verification
-    # proved the point: ignore_validate skips set_basic_rate, so a transfer
-    # arrives valued at ZERO regardless of what the source was worth. The units
-    # therefore reached Lost & Damaged with no value and the write-off had nothing
-    # to write off. Item A2 does not merely make these amounts untrustworthy --
-    # on this path it makes a real write-off impossible.
+    # What ignore_validate actually did, proven while building the lost/damaged
+    # path rather than inferred: it skips Stock Entry.validate() wholesale, and
+    # that includes set_basic_rate. A Material Transfer therefore arrived at its
+    # destination valued at ZERO regardless of what the source stock was worth.
+    # The first hop (Main -> Delivery In-Transit) destroyed valuation, every
+    # later hop inherited zero, consumption posted zero COGS, and the restock
+    # pushed zero-valued stock back into Main where it dragged the moving
+    # average down on every returns cycle. It also let missing warehouses,
+    # missing quantities and insufficient stock through silently, so entries
+    # submitted successfully having posted nothing at all.
     #
-    # Used by the three lost/damaged movements only. Every other call site keeps
-    # the old lenient behaviour until A2 is done properly, because those have
-    # legacy data behind them and this does not.
-    def create_se(src_wh, tgt_wh, items, purpose="Material Transfer", expense_account="Cost of Goods Sold - Inmed", source_task="", strict=0):
+    # Removing it is only safe because this function supplies the fields
+    # validate() would otherwise have filled in -- transfer_qty, uom,
+    # stock_uom and conversion_factor are all set explicitly below. That is what
+    # made ignore_validate look load-bearing; it was not.
+    #
+    # allow_zero_valuation_rate is likewise gone. Consuming or moving un-valued
+    # stock now fails loudly instead of booking a zero and reporting success.
+    def create_se(src_wh, tgt_wh, items, purpose="Material Transfer", expense_account="Cost of Goods Sold - Inmed", source_task=""):
         se_items = []
         for ic, q, sn, bn in items:
             if (q or 0) <= 0:
@@ -76,8 +84,7 @@ else:
                 "conversion_factor": 1,
                 "s_warehouse": src_wh,
                 "expense_account": expense_account,
-                "cost_center": "Main - Inmed",
-                "allow_zero_valuation_rate": 0 if strict else 1
+                "cost_center": "Main - Inmed"
             }
             if sn:
                 row["serial_no"] = sn
@@ -93,13 +100,8 @@ else:
             se_doc["source_task"] = source_task
         se = frappe.get_doc(se_doc)
         se.flags.ignore_permissions = True
-        if not strict:
-            se.flags.ignore_validate = True
-            frappe.flags.ignore_stock_validation = True
         se.insert()
         se.submit()
-        if not strict:
-            frappe.flags.ignore_stock_validation = False
         return se
 
     def all_items(c):
@@ -284,7 +286,7 @@ else:
         # not wait for a signature, which is the mistake prepaid_amount made.
         lost = lost_items(case)
         if lost:
-            ld_se = create_se(RETURNS_WH, LOST_DAMAGED_WH, lost, "Material Transfer", "Cost of Goods Sold - Inmed", doc.name, 1)
+            ld_se = create_se(RETURNS_WH, LOST_DAMAGED_WH, lost, "Material Transfer", "Cost of Goods Sold - Inmed", doc.name)
             lost_lines = []
             for row in (case.case_items or []):
                 if (row.lost_damaged_qty or 0) > 0:
@@ -493,21 +495,19 @@ else:
                 ld_si.flags.ignore_permissions = True
                 ld_si.submit()
                 # Billed, therefore sold: the stock leaves at COGS like any sale.
-                out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", "Cost of Goods Sold - Inmed", doc.name, 1)
+                out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", "Cost of Goods Sold - Inmed", doc.name)
                 print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={case.name} BILLED invoice={ld_si.name} total={ld_si.grand_total} se={out_se.name if out_se else None}")
         elif writeoff_outcome == "Write Off":
             # Absorbed by the company. Posted to Stock Adjustment rather than
             # COGS: these units were never sold, and routing them through cost of
             # goods sold would silently worsen gross margin on real sales.
             #
-            # Refuse un-valued stock. This is the one operation whose entire
-            # purpose IS the GL amount: everywhere else item A2's
-            # allow_zero_valuation_rate makes a number wrong, but here it would
-            # book a zero-value loss and report success, recognising nothing.
-            # Checked explicitly against the bin as well as running strict, because
-            # a zero here means the segregation transfer lost the valuation on the
-            # way in and the loss would silently book nothing. Better to refuse and
-            # say why than to record a loss of zero.
+            # Refuse un-valued stock. ERPNext now refuses this by itself -- A2 is
+            # closed and allow_zero_valuation_rate is gone from create_se -- so
+            # this check is belt-and-braces. It is kept for the error message:
+            # ERPNext's own refusal names neither the warehouse nor the remedy,
+            # and this is the one operation whose entire purpose IS the GL amount,
+            # so an operator who hits it needs to be told exactly what to fix.
             unvalued = []
             for ic, q, sn, bn in lost:
                 vrate = frappe.db.get_value("Bin", {"item_code": ic, "warehouse": LOST_DAMAGED_WH}, "valuation_rate")
@@ -517,7 +517,7 @@ else:
                 frappe.throw("These products have no stock valuation, so writing them off would "
                              "record a loss of zero: " + ", ".join(unvalued)
                              + ". Fix the item valuation first, or choose Bill Client instead.")
-            out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", WRITEOFF_EXPENSE_ACCOUNT, doc.name, 1)
+            out_se = create_se(LOST_DAMAGED_WH, "", lost, "Material Issue", WRITEOFF_EXPENSE_ACCOUNT, doc.name)
             print(f"[Dispatch] {frappe.utils.now()} writeoff {doc.name} case={case.name} WRITTEN OFF se={out_se.name if out_se else None} expense={WRITEOFF_EXPENSE_ACCOUNT}")
         else:
             # No silent third path. Without this the task would complete, nothing

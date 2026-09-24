@@ -18,6 +18,10 @@ Ordered by consequence. Each entry names the file to start in.
 actually valued, and reports built on a wrong profit basis only present the
 error more convincingly.
 
+**A2 is now closed** (Group 1 D1), so **A1 is unblocked** — transfers carry
+valuation and consumption posts real COGS, which is the precondition
+`incoming_rate` needed. A1 is the next thing to do here.
+
 ### A1 — Profit is computed from a list price, not from cost
 
 `Payment Entry-after-submit-debt-closure-check.py` values cost as `Item Price`
@@ -37,7 +41,27 @@ Swap the `Item Price` lookup for `incoming_rate`, drop the silent zero-cost
 fallback in favour of refusing, and compare the result against ERPNext's own
 Gross Profit report for the same invoice before trusting it.
 
-### A2 — Stock validation is bypassed, so consumption can post nothing
+### A2 — Stock validation is bypassed — **CLOSED by Group 1 D1 (2026-09-22)**
+
+> **Done.** `create_se` lost the `strict` parameter and all three bypasses; all ten
+> call sites are validated. `client_location_warehouse` is now required on every
+> order, not only when returns are expected. Verified — `PACK valuation PRESERVED
+> across transfer: out 6.0 -> in 6.0` and `RESTOCK leaves Main valuation
+> unchanged: 6.0 -> 6.0`. W12's own harness re-run afterwards, 14/14.
+>
+> **No data migration was done** — test data is synthetic and disposable by
+> decision. The 18 inert entries described below turned out to be **372**: 172
+> Material Issues that posted nothing, plus 200 one-sided Material Transfers that
+> *did* post, creating or destroying stock rather than moving it. Not repaired;
+> tracked as **Group 1 D10**.
+>
+> **Residual, and not something validation can fix:**
+> `Stock Settings.allow_negative_stock = 1`, so an overdraw still posts —
+> removing the bypass restores ERPNext's check but does not overrule a global
+> setting. Tracked as **Group 1 D9**. It governs every stock operation in the
+> system and would fail immediately on the 13 bins already negative in Main.
+>
+> The analysis below is retained because it explains *why* this mattered.
 
 `create_se` in `Task-after-save-dispatch-flow.py` (lines 50, 63–64) submits every
 Stock Entry with:
@@ -153,7 +177,7 @@ All are also in `AGENTS.md`.
 | **Augmented assignment to a subscript is forbidden** | `d[k] += 1` and `d[k]["x"] += 1` both fail under RestrictedPython. Read into a local, modify, write back. |
 | **Two `before_save` scripts have no defined order** | Do not let one set a field another gates on. Payment recording and the collection-outcome gate collided exactly this way; the fix was to make each correct independently. |
 | **Deploy scripts must handle UTF-8 both ways** | PowerShell 5.1 reads BOM-less files as ANSI and mis-decodes responses as Latin-1 — corrupting script bodies on upload and producing false `DIFFERS` in Check mode. `group-11-financial-tail/*.ps1` are correct; **everything under `deploy/test/scripts/` still has both bugs.** |
-| **The Phase 3 cancel flow has no mechanism yet** | Bulk-cancelling tasks needs to write `status` on tasks the user does not own, and `status` cannot go on `SYSTEM_FIELDS` because it is the primary user-editable transition. That mechanism does not exist. Group 1 ACT-05. |
+| **The Phase 3 cancel flow has no mechanism yet** | Bulk-cancelling tasks needs to write `status` on tasks the user does not own, and `status` cannot go on `SYSTEM_FIELDS` because it is the primary user-editable transition. That mechanism does not exist. **Group 1 D11** (was ACT-05 before Group 1 renumbered to the D-series). |
 | **Order entry refuses unpriced items** | Correct, but missing `Item Price` rows now block work rather than silently producing a zero-value invoice. Test coverage is ~86% of enabled items. |
 
 ### Symptoms a user can still report
@@ -200,7 +224,7 @@ history (`git show 07645d6`).
 | **G4** | Fixed W4 — `collection_outcome` completion gate |
 | **G5** | Fixed W9 — financial writes via `doc.save()`, producing version history |
 | **G6** | Fixed W2/W8 — outstanding read from the invoice; nine stored fields deleted |
-| **G7** | **Open — A2** |
+| **G7** | Fixed — Group 1 D1 closed A2; client warehouse now required on every order |
 | **G8** | Fixed W7 — server-side price resolution |
 | **G9** | **Open — A1** |
 | **G10** | Fixed W5 — one open approval per customer; profit computed once at creation |

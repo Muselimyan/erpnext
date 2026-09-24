@@ -45,7 +45,7 @@ SYSTEM_FIELDS = [
     "sales_invoice",
     "total_invoice_amount",
     "outstanding_amount",
-    "profit",
+    # "profit" removed along with the field -- see the draft twin for why.
     "dispatch_stock_entry",
     "delivery_stock_entry",
     "consumption_stock_entry",

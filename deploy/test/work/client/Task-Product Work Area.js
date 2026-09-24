@@ -318,6 +318,12 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
     let compact_html = `<div class="task-return-mobile-compact ${mobile_mode === 'detail' ? 'task-return-hidden' : ''}"><table class="table table-bordered table-condensed task-return-compact-table"><thead><tr><th>Ret?</th><th>Item</th><th>Returned</th><th>Lost</th></tr></thead><tbody>`;
     let detail_html = `<div class="task-return-mobile-detail ${mobile_mode === 'detail' ? 'task-return-active' : ''}">`;
     rows.forEach(function(row, idx) {
+        // rn is the row's permanent identity and is what every server call
+        // sends. idx survives only for DOM ids and the data-return-row selector,
+        // which need to be unique within this render and nothing more. A
+        // position stops being correct the moment case_items is reordered, and
+        // on this screen that would mis-bill a hospital.
+        const rn = row.name;
         const dispatched = flt(row.dispatched_qty || 0);
         const returned = flt(row.returned_qty || 0);
         const lost = flt(row.lost_damaged_qty || 0);
@@ -340,34 +346,34 @@ function task_product_work_area_render_returns(frm, doc, rows, show_alert) {
         const presence = row.lost_damaged_presence || "";
         const pdis = (lost > 0 && returns_editable) ? "" : " disabled";
         const presence_select = `<select class="form-control input-xs task-lost-presence" data-idx="${idx}"${pdis}`
-            + ` onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})">`
+            + ` onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')">`
             + `<option value=""${presence === "" ? " selected" : ""}>-- select --</option>`
             + `<option value="Damaged - in hand"${presence === "Damaged - in hand" ? " selected" : ""}>Damaged - in hand</option>`
             + `<option value="Lost - not recoverable"${presence === "Lost - not recoverable" ? " selected" : ""}>Lost - not recoverable</option>`
             + `</select>`;
         html += `<tr data-return-row="${idx}">
-            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
+            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', '${rn}')"></td>
             <td>${item_label}</td>
             <td class="text-right" data-dispatched="${dispatched}">${dispatched}</td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')"></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}" style="min-width:82px"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')"></td>
             <td>${presence_select}</td>
             <td class="text-right task-used-qty">${used}</td>
             <td>${frappe.utils.escape_html(row.batch_no || "")}</td>
             <td>${frappe.utils.escape_html(row.expiry_date || row.custom_expiry_date || "")}</td>
         </tr>`;
         compact_html += `<tr data-return-row="${idx}">
-            <td data-dispatched="${dispatched}"><input type="checkbox" id="${compact_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"></td>
+            <td data-dispatched="${dispatched}"><input type="checkbox" id="${compact_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', '${rn}')"></td>
             <td class="task-return-compact-item">${item_label}</td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></td>
-            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})">${presence_select}<span class="hidden task-used-qty">${used}</span></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')"></td>
+            <td><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')">${presence_select}<span class="hidden task-used-qty">${used}</span></td>
         </tr>`;
         detail_html += `<div class="task-return-card" data-return-row="${idx}">
             <div class="task-return-card-title">${item_label}</div>
             <div class="task-return-card-grid">
-                <div class="task-return-card-full" data-dispatched="${dispatched}"><label><input type="checkbox" id="${detail_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', ${idx})"> Returned?</label></div>
-                <div><label>Returned Qty</label><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
-                <div><label>Lost/Damaged</label><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', ${idx})"></div>
+                <div class="task-return-card-full" data-dispatched="${dispatched}"><label><input type="checkbox" id="${detail_checkbox_id}" data-idx="${idx}" ${checked ? 'checked' : ''}${rdis} onchange="task_product_work_area_toggle_returned(this, '${escaped_case}', '${rn}')"> Returned?</label></div>
+                <div><label>Returned Qty</label><input type="number" min="0" step="0.001" class="form-control input-xs task-returned-qty" data-idx="${idx}" value="${returned}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')"></div>
+                <div><label>Lost/Damaged</label><input type="number" min="0" step="0.001" class="form-control input-xs task-lost-qty" data-idx="${idx}" value="${lost}"${rdis} onchange="task_product_work_area_update_return_qty(this, '${escaped_case}', '${rn}')"></div>
                 <div class="task-return-card-full"><label>Lost or damaged?</label>${presence_select}</div>
                 <div><label>Used</label><div class="form-control input-xs task-used-qty" style="background:#f8f8f8">${used}</div></div>
                 <div><label>Sent</label><div class="form-control input-xs" style="background:#f8f8f8">${dispatched}</div></div>
@@ -800,6 +806,7 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
         <th style="width:60px">Packed?</th><th>Name</th><th>Required</th><th>Scanned</th><th>Missing</th><th>Batch/LOT</th><th>Expiry</th><th>Status</th><th>Warning / Problem</th>
     </tr></thead><tbody>`;
     rows.forEach(function(row, idx) {
+        const rn = row.name;
         const required = flt(row.dispatched_qty || 0);
         const scanned = flt(row.custom_scanned_qty || 0);
         const remaining = Math.max(required - scanned, 0);
@@ -808,7 +815,7 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
         const is_packed = (status === "Complete" || status === "Over Scanned");
         const checkbox_id = `pack_checkbox_${idx}`;
         html += `<tr>
-            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${is_packed ? 'checked' : ''}${disabled_attr} onchange="task_product_work_area_toggle_packed(this, '${frappe.utils.escape_html(frm.doc.dispatch_case)}', ${idx})"></td>
+            <td class="text-center"><input type="checkbox" id="${checkbox_id}" data-idx="${idx}" ${is_packed ? 'checked' : ''}${disabled_attr} onchange="task_product_work_area_toggle_packed(this, '${frappe.utils.escape_html(frm.doc.dispatch_case)}', '${rn}')"></td>
             <td>${frappe.utils.escape_html(row.item_name || "")}</td>
             <td class="text-right">${required}</td>
             <td class="text-right">${scanned}</td>
@@ -837,7 +844,7 @@ function task_product_work_area_render_packing(frm, doc, rows, show_alert) {
 // Section D: Interactive Handlers (window.* for inline onclick)
 // ═══════════════════════════════════════════════════════════════
 
-window.task_product_work_area_toggle_returned = function(checkbox, case_name, idx) {
+window.task_product_work_area_toggle_returned = function(checkbox, case_name, row_name) {
     // TFE gate
     if (cur_frm && !tfe_can_edit(cur_frm)) { checkbox.checked = !checkbox.checked; return; }
     const row = $(checkbox).closest('[data-return-row]');
@@ -852,7 +859,7 @@ window.task_product_work_area_toggle_returned = function(checkbox, case_name, id
     task_product_work_area_save_return_row(case_name, idx, returned, 0, "", checkbox);
 };
 
-window.task_product_work_area_update_return_qty = function(input, case_name, idx) {
+window.task_product_work_area_update_return_qty = function(input, case_name, row_name) {
     // TFE gate
     if (cur_frm && !tfe_can_edit(cur_frm)) return;
     const row = $(input).closest('[data-return-row]');
@@ -865,12 +872,12 @@ window.task_product_work_area_update_return_qty = function(input, case_name, idx
     task_product_work_area_save_return_row(case_name, idx, returned, lost, presence, input);
 };
 
-function task_product_work_area_save_return_row(case_name, idx, returned, lost, presence, control) {
+function task_product_work_area_save_return_row(case_name, row_name, returned, lost, presence, control) {
     frappe.call({
         method: "task_update_return_item_quantities",
         args: {
             case_name: case_name,
-            item_idx: idx,
+            row_name: row_name,
             returned_qty: returned,
             lost_damaged_qty: lost,
             lost_damaged_presence: presence
@@ -908,7 +915,7 @@ function task_product_work_area_save_return_row(case_name, idx, returned, lost, 
     });
 }
 
-window.task_product_work_area_toggle_packed = function(checkbox, case_name, idx) {
+window.task_product_work_area_toggle_packed = function(checkbox, case_name, row_name) {
     // TFE gate
     if (cur_frm && !tfe_can_edit(cur_frm)) { checkbox.checked = !checkbox.checked; return; }
     const packed = checkbox.checked;
@@ -916,7 +923,7 @@ window.task_product_work_area_toggle_packed = function(checkbox, case_name, idx)
         method: "task_mark_item_packed",
         args: {
             case_name: case_name,
-            item_idx: idx,
+            row_name: row_name,
             packed: packed ? 1 : 0
         },
         freeze: true,

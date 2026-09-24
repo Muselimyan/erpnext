@@ -26,6 +26,14 @@ def run_script():
     if not acting_kind:
         frappe.throw("Products can only be removed from an accepted Order entry task.")
     case = frappe.get_doc("Dispatch Case", case_name)
+    # Same lifecycle guard task_add_dispatch_product and
+    # task_update_dispatch_product already carry. Its absence here was an
+    # asymmetry, not a decision: three sibling endpoints mutate the same child
+    # table and only two of them refused to do it after the goods had moved.
+    if (case.docstatus or 0) != 0:
+        frappe.throw("This Dispatch Case is already submitted and its products cannot be changed.")
+    if case.status not in ("Draft", "Awaiting Approval"):
+        frappe.throw("Products can only be changed while the Dispatch Case is in Draft or Awaiting Approval. Current status: " + str(case.status))
     original_count = len(case.case_items)
     case.case_items = [r for r in case.case_items if r.name != row_name]
     if len(case.case_items) == original_count:

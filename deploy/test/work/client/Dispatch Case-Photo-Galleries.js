@@ -89,10 +89,10 @@
 
     frappe.ui.form.on('Dispatch Case', {
         refresh: function(frm) {
-            // Hide legacy Attach fields
-            ['delivery_photo', 'return_dropoff_photo'].forEach(function(f) {
-                if (frm.fields_dict[f]) frm.set_df_property(f, 'hidden', 1);
-            });
+            // The legacy delivery_photo / return_dropoff_photo Attach fields used
+            // to be hidden here. They have been deleted from the doctype, so
+            // there is nothing left to hide -- photos live on the Task and are
+            // read from File records below.
 
             // Ensure gallery containers exist
             if (!frm._dc_pickup_gallery_el) {

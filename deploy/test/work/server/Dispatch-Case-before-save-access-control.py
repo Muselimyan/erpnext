@@ -58,7 +58,12 @@ SYSTEM_FIELDS = [
     "sales_invoice",
     "total_invoice_amount",
     "outstanding_amount",
-    "profit",
+    # "profit" removed along with the field itself. Nothing wrote it -- a grep
+    # across every server script returned only these two allow-list entries.
+    # Profit is computed into Task.custom_case_profit by
+    # Payment Entry-after-submit-debt-closure-check instead. Per the rule stated
+    # above, an allowance for a field with no legitimate system writer is a hole,
+    # so it goes when the field does.
     # Stock movement audit links
     "dispatch_stock_entry",
     "delivery_stock_entry",

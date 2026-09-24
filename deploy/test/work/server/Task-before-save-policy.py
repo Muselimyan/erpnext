@@ -99,17 +99,44 @@ if not doc.dispatch_case:
 
 assigned_users = get_assigned_users(doc)
 is_becoming_working = (doc.status == "Working" and before_status != "Working")
-# TEMPORARILY DISABLED FOR LAUNCH - assignment validation causes issues with accept workflow
-# Will re-enable after launch when workflow is stable
-# if doc.task_kind and doc.status not in ("Cancelled", "Open", "Working") and not is_becoming_working:
-#     if len(assigned_users) != 1:
-#         frappe.throw("Each operational task must be assigned to exactly 1 user. Current count: " + str(len(assigned_users)) + ".")
-# if doc.task_kind and len(assigned_users) == 1 and allowed_roles:
-#     owner = assigned_users[0]
-#     if not user_has_allowed_role(owner, allowed_roles):
-#         frappe.throw("Task Kind '" + doc.task_kind + "' must be assigned to a user in: " + ", ".join(allowed_roles) + ".")
-# if is_becoming_completed:
-#     if len(assigned_users) != 1:
-#         frappe.throw("Assign exactly 1 owner before completing this task.")
+
+# ── Assignment invariant: exactly one accountable owner ──────────────────
+#
+# Re-enabled. These three checks were commented out "TEMPORARILY ... FOR LAUNCH"
+# and stayed off. The rest of the access model assumes them: completion is
+# reserved to the accepter with no exemption precisely so the record of who did
+# the work stays truthful, and that guarantee rests on assignment being
+# single-valued and role-appropriate.
+#
+# The three have DIFFERENT trigger conditions, which is what makes enabling them
+# survivable on an instance with legacy data:
+#
+#   check 1  skipped for Open / Working, so a task in progress is never blocked
+#   check 2  no status guard -- fires on every save of a task with one assignee
+#   check 3  completion only
+#
+# Measured before enabling: of 4,696 open tasks, check 1 blocks 0 (all 3,233
+# with an empty _assign sit in Open/Working), check 2 blocks 701 (691 of them
+# Administrator-owned seed data), check 3 blocks completion for 3,233. The test
+# data is synthetic and deliberately not reconciled, so those refusals are
+# accepted rather than repaired.
+#
+# One live configuration defect had to be fixed first: office.team@example.com
+# held NO roles at all while being default_team_user for Return Call, Other,
+# Other: Entry and Other: Processing. Check 2 has no status guard, so every NEW
+# Return Call task -- created by the flow whenever a delivery with returns
+# expected completes -- would have thrown on its first save and broken the
+# returns branch outright. It was granted Ops - Order Accepting, which is in the
+# allowed_roles of all four.
+if doc.task_kind and doc.status not in ("Cancelled", "Open", "Working") and not is_becoming_working:
+    if len(assigned_users) != 1:
+        frappe.throw("Each operational task must be assigned to exactly 1 user. Current count: " + str(len(assigned_users)) + ".")
+if doc.task_kind and len(assigned_users) == 1 and allowed_roles:
+    owner = assigned_users[0]
+    if not user_has_allowed_role(owner, allowed_roles):
+        frappe.throw("Task Kind '" + doc.task_kind + "' must be assigned to a user in: " + ", ".join(allowed_roles) + ".")
+if is_becoming_completed:
+    if len(assigned_users) != 1:
+        frappe.throw("Assign exactly 1 owner before completing this task.")
 if is_becoming_completed and not doc.completed_at:
     doc.completed_at = frappe.utils.now_datetime()

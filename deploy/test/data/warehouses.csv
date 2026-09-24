@@ -1,5 +1,5 @@
 ﻿"name","owner","creation","modified","modified_by","docstatus","idx","disabled","warehouse_name","company","is_rejected_warehouse","is_group","lft","rgt","old_parent","doctype"
-"All Warehouses - Inmed","Administrator","2026-04-19 23:12:16.740065","2026-04-19 23:12:16.740065","Administrator","0","0","0","All Warehouses","InMED","0","1","1","408","","Warehouse"
+"All Warehouses - Inmed","Administrator","2026-04-19 23:12:16.740065","2026-04-19 23:12:16.740065","Administrator","0","0","0","All Warehouses","InMED","0","1","1","410","","Warehouse"
 "Stores - Inmed","Administrator","2026-04-19 23:12:16.772865","2026-04-19 23:12:16.772865","Administrator","0","0","0","Stores","InMED","0","0","404","405","All Warehouses - Inmed","Warehouse"
 "Work In Progress - Inmed","Administrator","2026-04-19 23:12:16.786577","2026-04-19 23:12:16.786577","Administrator","0","0","0","Work In Progress","InMED","0","0","406","407","All Warehouses - Inmed","Warehouse"
 "Finished Goods - Inmed","Administrator","2026-04-19 23:12:16.798578","2026-05-07 01:32:15.116451","vahe.muselimyan@gmail.com","0","0","1","Finished Goods","InMED","0","0","394","395","All Warehouses - Inmed","Warehouse"
@@ -202,3 +202,4 @@
 "D150 — Կարապետ — Ֆանարջյան ՈւԱԿ - Inmed","Administrator","2026-05-10 16:47:50.094736","2026-05-10 16:47:50.094736","Administrator","0","0","0","D150 — Կարապետ — Ֆանարջյան ՈւԱԿ","InMED","0","0","386","387","H045 — Ֆանարջյան ՈւԱԿ - Inmed","Warehouse"
 "D151 — Մամիկոն — Ֆանարջյան ՈւԱԿ - Inmed","Administrator","2026-05-10 16:47:50.140662","2026-05-10 16:47:50.140662","Administrator","0","0","0","D151 — Մամիկոն — Ֆանարջյան ՈւԱԿ","InMED","0","0","388","389","H045 — Ֆանարջյան ՈւԱԿ - Inmed","Warehouse"
 "D145 — Սերոբ — Օրթոպետիկ ԲԿ - Inmed","vahe.muselimyan@gmail.com","2026-05-10 17:05:47.771416","2026-05-10 17:05:47.771416","vahe.muselimyan@gmail.com","0","0","0","D145 — Սերոբ — Օրթոպետիկ ԲԿ","InMED","0","0","380","381","H044 — Օրթոպետիկ ԲԿ - Inmed","Warehouse"
+"Lost & Damaged - Inmed","Administrator","2026-09-22 11:24:00.069625","2026-09-22 11:24:00.069625","Administrator","0","0","0","Lost & Damaged","InMED","0","0","408","409","All Warehouses - Inmed","Warehouse"

@@ -1,6 +1,6 @@
 ﻿// Name: Task-Account Details UI Cleanup
 // DocType: Task
-// Enabled: 0
+// Enabled: 1
 // ---
 
 frappe.ui.form.on("Task", {

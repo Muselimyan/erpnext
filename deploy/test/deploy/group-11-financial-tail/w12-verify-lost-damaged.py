@@ -65,6 +65,12 @@ def w12_verify(RETURNS_USER, DIRECTOR_USER, ACCOUNTING_USER):
         case.submit()
         frappe.db.set_value("Dispatch Case", case.name, "status", "Returns Received")
         case.reload()
+        # Group 1 D2 changed task_update_return_item_quantities to address rows by
+        # NAME rather than array position, and it now REFUSES item_idx outright
+        # rather than quietly serving it. This script was a caller nobody found
+        # when that inventory was taken -- the grep covered work/client and
+        # work/server but not deploy/. Resolve the row name once and use it below.
+        ld_row = frappe.get_all("Dispatch Case Item", filters={"parent": case.name}, fields=["name"], limit_page_length=1)[0].name
         # Put the dispatched stock into Returns, as the pickup flow would.
         # basic_rate is explicit and allow_zero_valuation_rate is NOT set: the
         # write-off branch now refuses un-valued stock, so a zero-valued fixture
@@ -82,7 +88,7 @@ def w12_verify(RETURNS_USER, DIRECTOR_USER, ACCOUNTING_USER):
         frappe.set_user(RETURNS_USER)
         frappe.form_dict.clear()
         frappe.form_dict["case_name"] = case.name
-        frappe.form_dict["item_idx"] = 0
+        frappe.form_dict["row_name"] = ld_row
         frappe.form_dict["returned_qty"] = 10
         frappe.form_dict["lost_damaged_qty"] = 0
         frappe.form_dict["lost_damaged_presence"] = "Damaged - in hand"
@@ -101,7 +107,7 @@ def w12_verify(RETURNS_USER, DIRECTOR_USER, ACCOUNTING_USER):
         frappe.set_user(RETURNS_USER)
         frappe.form_dict.clear()
         frappe.form_dict["case_name"] = case.name
-        frappe.form_dict["item_idx"] = 0
+        frappe.form_dict["row_name"] = ld_row
         frappe.form_dict["returned_qty"] = 3
         frappe.form_dict["lost_damaged_qty"] = 1
         try:
@@ -128,7 +134,7 @@ def w12_verify(RETURNS_USER, DIRECTOR_USER, ACCOUNTING_USER):
         frappe.set_user(RETURNS_USER)
         frappe.form_dict.clear()
         frappe.form_dict["case_name"] = case.name
-        frappe.form_dict["item_idx"] = 0
+        frappe.form_dict["row_name"] = ld_row
         frappe.form_dict["returned_qty"] = 3
         frappe.form_dict["lost_damaged_qty"] = 1
         frappe.form_dict["lost_damaged_presence"] = "Eaten by the dog"
@@ -142,7 +148,7 @@ def w12_verify(RETURNS_USER, DIRECTOR_USER, ACCOUNTING_USER):
         frappe.set_user(RETURNS_USER)
         frappe.form_dict.clear()
         frappe.form_dict["case_name"] = case.name
-        frappe.form_dict["item_idx"] = 0
+        frappe.form_dict["row_name"] = ld_row
         frappe.form_dict["returned_qty"] = 3
         frappe.form_dict["lost_damaged_qty"] = 1
         frappe.form_dict["lost_damaged_presence"] = "Damaged - in hand"
@@ -401,11 +407,16 @@ def w12_verify(RETURNS_USER, DIRECTOR_USER, ACCOUNTING_USER):
     for name, verdict, detail in results:
         print("W12VERIFY | {0:<44} | {1:<4} | {2}".format(name, verdict, detail))
     print("W12VERIFY_RESULTS_END")
-    print("W12VERIFY NOTE: all three lost/damaged movements run strict -- ERPNext validation intact,")
-    print("W12VERIFY NOTE: no ignore_validate, no allow_zero_valuation_rate. This was not optional:")
-    print("W12VERIFY NOTE: ignore_validate skips set_basic_rate, so the segregation transfer arrived")
-    print("W12VERIFY NOTE: at ZERO value and the write-off had nothing to write off. Item A2 does not")
-    print("W12VERIFY NOTE: just make these amounts wrong on this path -- it makes the feature impossible.")
-    print("W12VERIFY NOTE: A2 is still open for the other seven create_se call sites, which keep the")
-    print("W12VERIFY NOTE: lenient flags because they have legacy data behind them and this path does not.")
+    print("W12VERIFY NOTE: every create_se movement now runs with ERPNext validation intact -- no")
+    print("W12VERIFY NOTE: ignore_validate, no ignore_stock_validation, no allow_zero_valuation_rate.")
+    print("W12VERIFY NOTE: This path proved why it mattered: ignore_validate skips set_basic_rate, so")
+    print("W12VERIFY NOTE: the segregation transfer arrived at ZERO value and the write-off had nothing")
+    print("W12VERIFY NOTE: to write off. A2 did not merely make amounts wrong here -- it made the")
+    print("W12VERIFY NOTE: feature impossible.")
+    print("W12VERIFY NOTE:")
+    print("W12VERIFY NOTE: A2 is CLOSED as of Group 1 D1: the strict parameter is gone and all ten call")
+    print("W12VERIFY NOTE: sites are validated. The earlier note here said the other seven kept lenient")
+    print("W12VERIFY NOTE: flags -- no longer true. Remaining residue is tracked as Group 1 D9")
+    print("W12VERIFY NOTE: (Stock Settings.allow_negative_stock = 1, which validation cannot overrule)")
+    print("W12VERIFY NOTE: and D10 (372 pre-existing malformed Stock Entries, not repaired).")
 w12_verify("e2e.returns@test.erpnext.am", "e2e.directors@test.erpnext.am", "e2e.accounting@test.erpnext.am")

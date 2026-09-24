@@ -8,15 +8,23 @@
 PRESENCE_OPTIONS = ["Damaged - in hand", "Lost - not recoverable"]
 
 case_name = frappe.form_dict.get("case_name")
-item_idx = frappe.form_dict.get("item_idx")
+row_name = (frappe.form_dict.get("row_name") or "").strip()
 returned_qty = frappe.form_dict.get("returned_qty")
 lost_damaged_qty = frappe.form_dict.get("lost_damaged_qty")
 lost_damaged_presence = frappe.form_dict.get("lost_damaged_presence")
 
 if not case_name:
     frappe.throw("Dispatch Case is required.")
-if item_idx is None:
-    frappe.throw("Item index is required.")
+
+# Rows are addressed by NAME, not by position -- see task_mark_item_packed for
+# the reasoning. It matters more here than anywhere else in the flow: these
+# quantities decide what the hospital is billed for and what returns to
+# sellable stock, so an index landing on the wrong row is a billing error.
+if not row_name:
+    if frappe.form_dict.get("item_idx") is not None:
+        frappe.throw("This endpoint now takes row_name, not item_idx. A row's position is not its identity: "
+                     "if case_items is reordered between reading and writing, an index updates the wrong product.")
+    frappe.throw("row_name is required.")
 
 # Deterministic ownership check plus an explicit kind assertion: return and
 # lost/damaged quantities may only be set from a Returns inspection task.
@@ -36,12 +44,13 @@ if not acting_kind:
     frappe.throw("Return quantities can only be changed from an accepted Returns processing / verification task.")
 
 case = frappe.get_doc("Dispatch Case", case_name)
-idx = int(item_idx)
 
-if idx < 0 or idx >= len(case.case_items):
-    frappe.throw("Invalid item index.")
-
-row = case.case_items[idx]
+row = None
+for r in (case.case_items or []):
+    if r.name == row_name:
+        row = r
+if row is None:
+    frappe.throw("Row " + row_name + " is not on Dispatch Case " + case_name + ".")
 dispatched_qty = float(row.dispatched_qty or 0)
 returned = float(returned_qty or 0)
 lost_damaged = float(lost_damaged_qty or 0)

@@ -161,8 +161,12 @@ function tfv_is_scan_product_task(frm) {
 }
 
 // ── Dispatch flow kinds (description collapsible for these) ───
+// "Dispatch picking / hand-off" removed: retired from the task_kind options.
+// The unified flow folded picking into "Pack / prepare items" and no server
+// script ever orchestrated it. Doc 16 never mentioned it; doc 21 listed it under
+// "Dispatch flow", which was stale.
 var TFV_DISPATCH_FLOW_KINDS = [
-    "Order entry", "Pack / prepare items", "Dispatch picking / hand-off",
+    "Order entry", "Pack / prepare items",
     "Delivery", "Return Call",
     "Return to warehouse (aborted delivery / cancelled order)",
     "Pickup Returns", "Return drop-off at warehouse",

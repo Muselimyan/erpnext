@@ -107,13 +107,15 @@ function tab_mobile_scroll_to_top(frm) {
 }
 
 // ── constants ──────────────────────────────────────────────────
+// "Dispatch picking / hand-off" removed from both lists: retired from the
+// task_kind options, folded into "Pack / prepare items" by the unified flow.
 var TAB_DISPATCH_KINDS = [
-    "Pack / prepare items", "Dispatch picking / hand-off", "Delivery",
+    "Pack / prepare items", "Delivery",
     "Pickup Returns", "Return drop-off at warehouse", "Returns processing / verification",
     "Returns restocking", "Invoice preparation / create invoice", "Debt Collection", "Discount Approval"
 ];
 var TAB_OPERATIONAL_KINDS = [
-    "Order entry", "Pack / prepare items", "Dispatch picking / hand-off", "Delivery", "Return Call",
+    "Order entry", "Pack / prepare items", "Delivery", "Return Call",
     "Pickup Returns", "Return drop-off at warehouse", "Returns processing / verification",
     "Returns restocking", "Invoice preparation / create invoice", "Debt Collection", "Debt Closure Approval",
     "Discount Approval", "Purchase Approval", "Write-off Approval"
@@ -121,10 +123,10 @@ var TAB_OPERATIONAL_KINDS = [
 // ── helpers ────────────────────────────────────────────────────
 function tab_is_mobile() { return window.innerWidth <= 768; }
 
-function tab_is_admin() {
-    var roles = frappe.user_roles || [];
-    return roles.indexOf("System Manager") !== -1 || roles.indexOf("Administrator") !== -1 || frappe.session.user === "Administrator";
-}
+// tab_is_admin() removed. It was the last remnant of this file's own admin
+// exemption and had no callers once the buttons began delegating to TFE. Leaving
+// a privileged-check helper lying around in a file whose whole point is that
+// completion has no exemption is an invitation to use it again.
 
 function tab_is_accepted(frm) {
     return !!frm.doc.custom_accepted_by;

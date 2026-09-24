@@ -118,7 +118,13 @@ if is_completing and doc.task_kind == "Debt Collection":
 # been removed: dispatch_task_accept validates the accepter against the Task
 # Access Policy, and Task-before-save-access-control reserves completion to the
 # accepter, so only a policy-allowed user can ever complete the task.
-# Task-after-save-debt-closure.py retains its own equivalent check.
+#
+# This note used to end by pointing at Task-after-save-debt-closure as a second
+# line of defence. That script is disabled = 1, so the note was promising a
+# safety net that does not exist -- which is precisely how a careful reader comes
+# to delete the real one. Debt Closure Approval tasks are now raised by
+# Payment Entry-after-submit-debt-closure-check, and the only protections are the
+# two named above.
 
 # ═══════════════════════════════════════════════════════════════════════
 # SECTION B — gates that require a Dispatch Case
@@ -163,8 +169,21 @@ else:
                 frappe.throw("Add at least one product before completing.")
             if not doc.customer:
                 frappe.throw("Select a Customer before completing the order.")
-            if doc.order_return_expected and not doc.order_client_location_warehouse:
-                frappe.throw("Client Location Warehouse is required when Return Expected is checked.")
+            # Required on EVERY order, not only when returns are expected.
+            #
+            # The field is not a returns field. It is the destination warehouse
+            # the delivery transfers INTO, and on the no-return path it is also
+            # the source the consumption issues OUT OF. Gating it on
+            # return_expected meant a no-return order could carry a blank
+            # warehouse, and the two movements then posted with an empty
+            # warehouse -- which passed only because create_se was suppressing
+            # Stock Entry validation. That suppression is gone, so a blank here
+            # now fails at delivery instead, by which point the goods have
+            # shipped and the case cannot move. Refuse it at order entry, where
+            # the user can still fix it.
+            if not doc.order_client_location_warehouse:
+                frappe.throw("Client Location Warehouse is required. It is where the delivery is transferred to, "
+                             "and on orders with no return it is also where the goods are consumed from.")
 
             dc_doc.customer = doc.customer
             dc_doc.return_expected = doc.order_return_expected or 0
@@ -282,6 +301,26 @@ else:
         if missing_presence:
             frappe.throw("Say whether each lost/damaged item is damaged (in hand) or lost (not recoverable): "
                          + ", ".join(missing_presence))
+
+    # Returns restocking completion: require a photo.
+    #
+    # Completing this task is what moves returned units from Returns back into
+    # Main as sellable stock. Until now it was the ONLY operationally significant
+    # task in the flow with no completion gate at all -- clicking Complete was
+    # the sole assertion that anything had physically been shelved, and the
+    # consequence is stock Main says it has and a shelf that does not.
+    #
+    # A photo proves a photo was taken, not that every line was put away. That is
+    # the same assurance Pack and Pickup Returns give, which is the reason to
+    # match them rather than invent a stricter rule here. A per-row "shelved"
+    # confirmation would be stronger and the returns renderer already has the
+    # machinery for it; deliberately not done in this change.
+    if is_completing and doc.task_kind == "Returns restocking":
+        has_restock_photo = task_has_image(doc.name)
+        print(f"[Photo] {frappe.utils.now()} task={doc.name} Returns restocking gate: has_image={has_restock_photo}, result={'PASS' if has_restock_photo else 'BLOCKED'}")
+        if not has_restock_photo:
+            frappe.throw("At least one photo is required before completing Returns restocking. "
+                         "It is the record that these units were physically put back on the shelf.")
 
     # Invoice Preparation completion: require a submitted invoice for the case.
     #

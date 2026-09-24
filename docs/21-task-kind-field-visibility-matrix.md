@@ -22,21 +22,29 @@
 
 ## 1. Task Kind Groups
 
-24 task kinds exist in the `task_kind` Select field. Grouped by functional similarity:
+**22** task kinds exist in the `task_kind` Select field. Grouped by functional similarity:
 
 | Group | Task Kinds | Count |
 |---|---|---|
-| **A. Dispatch flow** | Order entry, Pack / prepare items, Dispatch picking / hand-off, Delivery, Pickup Returns, Return drop-off at warehouse, Returns processing / verification, Returns restocking, Invoice preparation / create invoice, Discount Approval | 10 |
+| **A. Dispatch flow** | Order entry, Pack / prepare items, Delivery, Pickup Returns, Returns processing / verification, Returns restocking, Invoice preparation / create invoice, Discount Approval | 8 |
 | **B. Returns initiation** | Return Call | 1 |
-| **C. Debt / payment** | Debt Collection, Distribute Payment, Payment Received, Debt Closure Approval | 4 |
+| **C. Debt / payment** | Debt Collection, Payment Received, Debt Closure Approval | 3 |
 | **D. Approvals** | Purchase Approval, Write-off Approval | 2 |
 | **E. Account details** | Account Details: Entry, Account Details: Processing | 2 |
 | **F. Other** | Other, Other: Entry, Other: Processing | 3 |
-| **G. Legacy / unused** | Order accepting, Return to warehouse (aborted delivery / cancelled order) | 2 |
+| **G. Legacy, retained deliberately** | Return drop-off at warehouse, Return to warehouse (aborted delivery / cancelled order) | 2 |
 
-**Notes on Group G:**
-- `Order accepting` is immediately replaced with `Order entry` on new task creation (client script `Task-Accept Start.js` line 161). No code path handles it as a distinct kind.
-- `Return to warehouse (aborted delivery / cancelled order)` is not referenced in any client or server script.
+**The field default is `Order entry`.** It used to be `Order accepting`, which no code path handled — a Task created outside the UI landed in a kind nothing orchestrated and simply sat there. Changed by Group 1 D4.
+
+**Retired from the options by Group 1 D4** (0 Tasks existed in either, verified before removal):
+- `Order accepting` — immediately overwritten with `Order entry` by `Task-Accept Start.js`; no server script handled it. `Task-Accept Start.js` still performs that override, harmlessly, for any pre-existing draft.
+- `Dispatch picking / hand-off` — no server reference at all, and absent from `docs/16-unified-dispatch-flow.md`. The unified flow folded picking into `Pack / prepare items`. This document previously listed it under Group A, which was stale.
+
+**Notes on Group G** — both are unused but were deliberately **kept**:
+- `Return drop-off at warehouse` is still gated by `Task-before-save-policy` for legacy tasks with no Dispatch Case.
+- `Return to warehouse (aborted delivery / cancelled order)` is literally the aborted-delivery return kind and is the most likely consumer of the deferred cancel flow (Group 1 D11). Retiring it now and re-adding it later is avoidable churn.
+
+> `Distribute Payment` was retired earlier by Group 11 W10 and has been removed from group C.
 
 ---
 
@@ -240,7 +248,6 @@ These standard Task fields are permanently hidden via property setters:
 |---|---|---|---|---|---|---|
 | Order entry | V | V | V (if no DC) | V (if DC) | H | V |
 | Pack / prepare items | V | V | H | V | V | V |
-| Dispatch picking / hand-off | V | V | H | V | V | V |
 | Delivery | V | V | H | V | V | V |
 | Return Call | V | V | H | H | H | H |
 | Pickup Returns | V | V | H | V | V | V |
@@ -251,7 +258,6 @@ These standard Task fields are permanently hidden via property setters:
 | Discount Approval | V | V | H | V | V | V |
 | Debt Collection | V | V | H | V | V | V |
 | Debt Closure Approval | V | V | H | H | H | H |
-| Distribute Payment | V | V | H | H | H | H |
 | Payment Received | V | V | H | H | H | H |
 | Purchase Approval | V | V | H | H | H | H |
 | Write-off Approval | V | V | H | H | H | H |
@@ -260,12 +266,11 @@ These standard Task fields are permanently hidden via property setters:
 | Other | V | V | H | H | H | H |
 | Other: Entry | V | V | H | H | H | H |
 | Other: Processing | V | V | H | H | H | H |
-| Order accepting | V | V | H | H | H | H |
 | Return to warehouse | V | V | H | H | H | H |
 
 **Notes:**
 - Accept button requires status Open/Working and not accepted by current user.
-- Complete button requires accepted by current user (or admin) and not Completed/Cancelled.
+- Complete button requires **the accepter, with no exemption at all** — not System Manager, not Ops - Directors, not Administrator — and not Completed/Cancelled. The earlier "(or admin)" in this line was wrong and contradicted both `Task-Field-Editability.js` and AGENTS.md. `Task-Action Buttons.js` gates on `tab_can_complete` → `tfe_can_complete`; its own `tab_is_admin()` helper was deleted by Group 1 D6. Privileged users may **edit** a task they do not own (there is a banner), but may never assert that someone else's work was done. Cancellation is the escape hatch for a stuck task.
 - Create DC shown for Order entry + all TAB_DISPATCH_KINDS when no DC linked.
 - Products dropdown shown for TAB_PRODUCT_KINDS when accepted. Mobile sub-header only.
 - Debt Collection IS in TAB_DISPATCH_KINDS (gets DC banner/button) but NOT in TAB_PRODUCT_KINDS (no Products dropdown).
@@ -289,7 +294,7 @@ These standard Task fields are permanently hidden via property setters:
 | Hide mobile clutter | Mobile only | `custom_accepted_at`, `custom_task_add_batch_no`, `custom_task_add_unit_price`, help boxes, timeline |
 | Hide Account Details scanning | Acct Details: Entry | 6 scan/product fields, 9 section labels |
 | Show Account Details photos | Acct Details: Entry | `custom_account_photos`, `status`, `priority` |
-| Default Order accepting to Order entry | New task, task_kind === "Order accepting" | `task_kind` |
+| Default Order accepting to Order entry | New task, task_kind === "Order accepting" | `task_kind` — still in `Task-Accept Start.js`, but now near-dead: the field default is `Order entry` and `Order accepting` is no longer a valid option, so this can only fire on a pre-existing draft. Harmless; kept as a safety net |
 | Mobile CSS: hide header custom-actions | Mobile + Task form | Desktop custom button area |
 
 ### 5.2 Task-Account Details UI Cleanup.js (Account Details: Entry + Processing)
@@ -417,7 +422,15 @@ These are the actual requirements to complete a task. The UI does NOT currently 
 
 ## 8. Discrepancies and Inconsistencies
 
-### 8.1 Critical — Fields visible where irrelevant
+> **This section predates single-owner field visibility and is largely historical.**
+>
+> It was written when visibility was scattered across several client scripts that each toggled whatever they liked, which is exactly the condition it documents. `Task-Field-Visibility.js` (TFV) now owns visibility exclusively via `TFV_KIND_MAP`, and `Task-Field-Editability.js` (TFE) owns editability via `TFE_EDIT_MAP`; no other client script may toggle a field either of them lists. That change removes the root cause behind most of 8.1 and 8.2 — "field has no `depends_on`" stopped being the deciding factor once TFV took over.
+>
+> Two of the task kinds named below no longer exist: `Order accepting` and `Distribute Payment` were retired (Group 1 D4 and Group 11 W10).
+>
+> **Re-derive this section against `TFV_KIND_MAP` before acting on any row.** Do not treat the entries as open defects.
+
+### 8.1 Critical — Fields visible where irrelevant *(historical)*
 
 | # | Discrepancy | Affected task kinds | Root cause |
 |---|---|---|---|
