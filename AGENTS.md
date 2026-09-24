@@ -12,6 +12,34 @@ This applies to ALL changes — client scripts, server scripts, deploy scripts, 
 
 ---
 
+## Use ERPNext's own features. Do not diverge without a stated reason
+
+**If a standard ERPNext or Frappe feature satisfies the requirement, use it. Do not write a custom implementation of something the platform already does.**
+
+Before building anything in this area — a document, a calculation, a status flow, a report, an allocation rule — check whether ERPNext already provides it. Credit notes, advance allocation, payment references, aging reports, gross profit, stock valuation, return flows and approval workflows all exist natively.
+
+Custom code costs more than it looks. It has to be maintained, it does not benefit from upstream fixes, it breaks on upgrade, and it will not match what an accountant or a new developer expects to find. A custom reimplementation is also usually *worse* than the native one, because the native one has had years of edge cases beaten out of it.
+
+### When divergence IS justified
+
+Only two reasons:
+
+1. **The native behaviour is wrong for this domain.** Example: `task_commit_invoice` does not use ERPNext's `set_advances()`, because that pulls *every* unallocated advance a customer holds and would spend money earmarked for case A on case B's invoice. This project tags credit with intent, and the native helper cannot see that tag. Divergence justified, and the reason is written in the code.
+
+2. **The native feature cannot be reached from where the data is.** Example: dispatch invoices carry `update_stock = 0` and no Delivery Note, so ERPNext has no stock transaction to derive a cost from and `Sales Invoice Item.incoming_rate` is empty. This does not license a hand-rolled cost lookup — it means the *linkage* is the problem to fix.
+
+### The rule when you do diverge
+
+- State the reason in a comment at the divergence point, naming the native feature you rejected and why.
+- Record it in the relevant group document, so the next person knows it was a decision and not an oversight.
+- Prefer using native **documents** with custom **orchestration** over inventing new documents. Creating a standard `Sales Invoice` from a task is not divergence; inventing an "Invoice Record" doctype would be.
+
+### Counter-example from this project
+
+Profit on the Debt Closure Approval task is computed by hand from a buying price list. ERPNext already has a Gross Profit report built on valuation. That is divergence with no stated reason, it produces a *worse* number than the native one (a missing price silently becomes 100% margin), and it now has to be unwound. Do not add more of these.
+
+---
+
 ## No Client-Side Patching of Layout
 
 **NEVER use client-side JavaScript to patch, override, or fix layout issues after page load.** This includes:
@@ -122,6 +150,31 @@ Rules:
 Current twin pair:
 `Dispatch-Case-before-save-access-control` (draft) and
 `Dispatch-Case-before-save-submitted-access-control` (submitted).
+
+---
+
+## `bench console` has no request boundary — use a savepoint when testing failure paths
+
+A real HTTP request rolls the whole transaction back when an exception escapes. `bench console` does not: partial writes stay visible for the rest of the session, until you roll back explicitly.
+
+This matters most when testing that something **fails correctly**. `doc.submit()` writes `docstatus = 1` and *then* runs `on_submit` and the GL posting. If the GL posting throws, the console still shows a submitted document — one that could never exist in production, because the request would have rolled it back.
+
+A harness that does not account for this reports a submitted invoice, a posted stock entry or a completed task that the code correctly refused to create, and **working code looks broken**.
+
+Emulate the request boundary:
+
+```python
+frappe.db.savepoint("mytest")
+try:
+    frappe.get_doc("Server Script", "some_api").execute_method()
+except Exception as e:
+    err = str(e)
+    frappe.db.rollback(save_point="mytest")
+```
+
+Reference: `deploy/test/deploy/group-11-financial-tail/a2-verify-allocation-abort.py`.
+
+The inverse also holds: a test asserting that something *succeeded* proves nothing about whether it would survive a real request, because the console never commits either. Assert on the documents, not on the absence of an exception.
 
 ---
 

@@ -178,51 +178,54 @@ if si_doc.get("taxes_and_charges") and not si.taxes:
 # Credit tagged to a DIFFERENT case is deliberately left alone. It is earmarked,
 # and reassigning it is a human decision, not something an invoice should do
 # quietly.
+#
+# A FAILURE HERE ABORTS THE COMMIT. This block used to swallow its exception and
+# carry on, which submitted the invoice at full value while the client's money
+# sat unallocated -- the client is then chased for an amount they have already
+# paid, and the only trace is a log line nobody reads. The idempotency guard
+# stops us billing twice; nothing stopped us billing too much. An invoice that
+# ignores a payment is worse than no invoice, because it looks finished.
 advance_applied = 0
-try:
-    open_credit = frappe.get_all(
-        "Payment Entry",
-        filters={"party_type": "Customer", "party": case.customer, "docstatus": 1,
-                 "payment_type": "Receive", "unallocated_amount": [">", 0]},
-        fields=["name", "posting_date", "unallocated_amount", "dispatch_case"],
-        order_by="posting_date asc, creation asc",
-        limit_page_length=0,
-    )
-    this_case_credit = []
-    general_credit = []
-    for pe in (open_credit or []):
-        tagged = pe.dispatch_case or ""
-        if tagged == case.name:
-            this_case_credit.append(pe)
-        elif not tagged:
-            general_credit.append(pe)
+open_credit = frappe.get_all(
+    "Payment Entry",
+    filters={"party_type": "Customer", "party": case.customer, "docstatus": 1,
+             "payment_type": "Receive", "unallocated_amount": [">", 0]},
+    fields=["name", "posting_date", "unallocated_amount", "dispatch_case"],
+    order_by="posting_date asc, creation asc",
+    limit_page_length=0,
+)
+this_case_credit = []
+general_credit = []
+for pe in (open_credit or []):
+    tagged = pe.dispatch_case or ""
+    if tagged == case.name:
+        this_case_credit.append(pe)
+    elif not tagged:
+        general_credit.append(pe)
 
-    allocatable = float(si.grand_total or 0)
-    for pe in (this_case_credit + general_credit):
-        if allocatable <= 0:
-            continue
-        available = float(pe.unallocated_amount or 0)
-        to_apply = allocatable
-        if available < to_apply:
-            to_apply = available
-        if to_apply <= 0:
-            continue
-        si.append("advances", {
-            "reference_type": "Payment Entry",
-            "reference_name": pe.name,
-            "advance_amount": available,
-            "allocated_amount": to_apply,
-        })
-        advance_applied += to_apply
-        allocatable = allocatable - to_apply
+allocatable = float(si.grand_total or 0)
+for pe in (this_case_credit + general_credit):
+    if allocatable <= 0:
+        continue
+    available = float(pe.unallocated_amount or 0)
+    to_apply = allocatable
+    if available < to_apply:
+        to_apply = available
+    if to_apply <= 0:
+        continue
+    si.append("advances", {
+        "reference_type": "Payment Entry",
+        "reference_name": pe.name,
+        "advance_amount": available,
+        "allocated_amount": to_apply,
+    })
+    advance_applied += to_apply
+    allocatable = allocatable - to_apply
 
-    if advance_applied > 0:
-        si.flags.ignore_permissions = True
-        si.save()
-        print(f"[Invoice] {frappe.utils.now()} case={case.name} allocated {advance_applied} from {len(si.advances or [])} advance(s), case-tagged first")
-except Exception as e:
-    print(f"[Invoice] {frappe.utils.now()} case={case.name} advance allocation skipped: {str(e)[:120]}")
-    advance_applied = 0
+if advance_applied > 0:
+    si.flags.ignore_permissions = True
+    si.save()
+    print(f"[Invoice] {frappe.utils.now()} case={case.name} allocated {advance_applied} from {len(si.advances or [])} advance(s), case-tagged first")
 
 si.flags.ignore_permissions = True
 si.submit()

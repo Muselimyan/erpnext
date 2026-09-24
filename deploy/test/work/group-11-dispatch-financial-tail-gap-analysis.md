@@ -105,29 +105,45 @@ Priced at order entry (§1.2), enforced at invoice submit, consumed after submit
 
 Ordered by consequence.
 
-### A1 — Profit is costed from a price list, not from what the goods cost
+### A1 — Profit is costed from a price list — **moved to `deferred-workstreams.md`**
 
-`Payment Entry-after-submit-debt-closure-check` values cost as `Item Price` on the `Standard Buying` list.
+Not a swap, and not doable inside this group. Measured on test:
 
-Doc 17 §2.1 is explicit that this is the wrong number: *"(purchase price + all landed charges) / received quantity. **This is the authoritative cost price.** Do not maintain a separate 'cost price' field elsewhere."* ERPNext already exposes it per line as `Sales Invoice Item.incoming_rate`.
+| | |
+|---|---|
+| Invoice lines with `incoming_rate` populated | **0 of 55** |
+| Invoices with `update_stock = 1` | 0 of 8 |
+| Invoice lines linked to a Delivery Note | 0 |
+| Submitted Purchase Receipts | **0** |
+| Submitted Landed Cost Vouchers | **0** |
 
-Three problems:
+The intended fix — cost from `Sales Invoice Item.incoming_rate` — **cannot work as stated.** Dispatch invoices carry `update_stock = 0` and no Delivery Note, so ERPNext has no stock transaction to derive a cost from and never populates the field.
 
-- Freight, duty and import tax are absent, so every profit figure is wrong by whatever landed cost adds.
-- A line with **no** buying price contributes **zero cost** — 100% margin. The approval task carries a warning line; nothing blocks the write.
-- Nothing reports on profit at all, so the figure is only ever seen on one task.
+The number it would supply is not landed cost anyway. With zero Purchase Receipts and zero Landed Cost Vouchers, valuation is simply whatever stock was received at. Doc 17's premise — cost = `(purchase price + all landed charges) / received quantity` — **describes a process that is not running.** Valuation and the Standard Buying price currently agree to a median of 0.0% precisely because neither carries any landed cost.
 
-**Unblocked.** This depended on stock being correctly valued, which it now is (Group 1 D1).
+So the prerequisite is the purchasing side: Purchase Receipts and Landed Cost Vouchers actually being raised. That is doc 17's subject and a separate workstream.
 
-**Start at:** the profit block in `Payment Entry-after-submit-debt-closure-check.py`. Swap the `Item Price` lookup for `incoming_rate`, refuse rather than assume zero cost, and reconcile against ERPNext's own Gross Profit report before trusting the output.
+**What remains worth doing here, and is small:** the current figure treats a missing buying price as **zero cost — 100% margin** — and only warns. Refusing to produce a figure it cannot compute beats publishing a confident wrong one.
 
-### A2 — An advance-allocation failure is swallowed
+Probe: `deploy/test/deploy/group-11-financial-tail/a1-probe-cost-basis.py` (read-only, re-runnable).
 
-In `task_commit_invoice`, the entire advance-allocation block is wrapped in `try/except` that prints and continues with `advance_applied = 0`.
+### A2 — Advance-allocation failure aborts the commit — **CLOSED, 9/9**
 
-If allocation throws for any reason, the invoice **submits at full value** while the customer's credit stays unallocated. The only trace is a log line. Double-billing is prevented by the idempotency guard; under-collection is not prevented by anything.
+The allocation block no longer swallows its exception. If allocation fails, the commit fails, nothing is submitted, and the case stays retryable. Previously the invoice submitted at full value while the client's money sat unallocated, and the only trace was a log line.
 
-**Start at:** decide whether a failure to allocate should abort the commit. It probably should — the customer has already paid, and an invoice that ignores that is worse than no invoice.
+Verified as a real accounting user, failure induced by a stale `unallocated_amount` causing a genuine ERPNext refusal:
+
+```
+1 commit succeeded                        PASS   ACC-SINV-2026-00166
+2 case-tagged credit consumed first       PASS   this-case PE left 0.0
+3 OTHER case's credit untouched           PASS   other-case PE left 5000.0
+1 outstanding reduced by the advance      PASS   grand=12000 applied=5123 outstanding=6877
+4 allocation failure raised an error      PASS   Debit and Credit not equal...
+4 NO submitted invoice left behind        PASS   0 submitted invoice(s) found
+5 case has no full-value invoice to chase PASS   submitted=[]
+```
+
+> **Writing a test in this area? Read the savepoint comment in `a2-verify-allocation-abort.py` first.** `bench console` has no request boundary, so a `submit()` that sets `docstatus = 1` and then fails its GL posting leaves that row visible for the rest of the session. A real HTTP request rolls it back. Without an explicit savepoint the harness reports a submitted invoice that cannot exist in production, and correct code looks broken.
 
 ### A3 — A consumed item priced at zero can be written off silently
 

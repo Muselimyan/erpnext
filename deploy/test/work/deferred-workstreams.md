@@ -115,7 +115,40 @@ Either is defensible. The present state — a sync that cannot work, a list view
 
 ---
 
-## 4. Stock data cleanup
+## 4. Purchasing and landed cost — and therefore profit
+
+**Deferred. Group 11 A1 depends entirely on this.**
+
+### What it is
+
+No purchasing process is running. Measured on test: **zero submitted Purchase Receipts, zero Landed Cost Vouchers.** Stock arrived some other way, so its valuation is whatever it was received at, with no freight, duty or import tax in it.
+
+Doc 17 is the specification for this and §2.1 is unambiguous: cost = `(purchase price + all landed charges) / received quantity`, and *"This is the authoritative cost price. Do not maintain a separate 'cost price' field elsewhere."* That process is not running.
+
+### Why it blocks profit
+
+Group 11 A1 — profit costed from the `Standard Buying` price list instead of actual cost — looks like a one-line swap to `Sales Invoice Item.incoming_rate`. It is not, for two independent reasons:
+
+1. **The field is empty.** 0 of 55 invoice lines have it. Dispatch invoices carry `update_stock = 0` and no Delivery Note, so ERPNext has no stock transaction to derive a cost from.
+2. **The number would be wrong anyway.** Without landed cost vouchers, valuation is just the purchase price. On test it agrees with the Standard Buying price to a median of **0.0%** — the two "different" bases are currently the same number, because neither includes any landed cost.
+
+So fixing A1 first would mean building a custom cost lookup to produce a figure that is still wrong. Under the ERPNext-native rule in `AGENTS.md`, the answer is not a better custom calculation — it is to make the standard mechanism reachable.
+
+### What is needed to start
+
+- Are imports actually being received through Purchase Receipts, or entered some other way?
+- Is anyone capturing freight, duty and import tax per shipment today, even on paper?
+- Should dispatch invoices be linked to a stock document so ERPNext can cost them natively, or is a valuation lookup at invoice time acceptable?
+
+The third question is the design decision. Everything else follows from it.
+
+### Worth doing before then, cheaply
+
+The current profit figure treats a missing buying price as **zero cost — a 100% margin** — and only prints a warning. It should refuse to produce a number it cannot compute. That is independent of all of the above.
+
+---
+
+## 5. Stock data cleanup
 
 **Deferred. Test cleanup is routine; the production question is not.**
 
@@ -144,7 +177,7 @@ Production code is described as very old and is out of scope for now, but this q
 
 ---
 
-## 5. Test coverage — the paths not yet driven end to end
+## 6. Test coverage — the paths not yet driven end to end
 
 **Known gap, lower risk than it was.**
 
@@ -164,7 +197,7 @@ Each hop is proven; what is unproven is the joins between them on those particul
 
 ---
 
-## 6. `Task-Packing Checkboxes.js`
+## 7. `Task-Packing Checkboxes.js`
 
 **Note only, no work unless someone acts.**
 
@@ -178,7 +211,7 @@ Not repeated here. See `group-11-dispatch-financial-tail-gap-analysis.md`.
 
 | | |
 |---|---|
-| **A1** | Profit is costed from a buying price list instead of landed cost. **Now unblocked** — its stated dependency was A2, which Group 1 D1 closed |
+| **A1** | Profit costed from a buying price list. **Now item 4 above** — it depends on purchasing/landed cost, not on anything in Group 11 |
 | **A4** | A paid invoice cannot be corrected in-system. No credit note, no refund path. Interacts with the cancel flow above |
 | **A5** | The e2e API suite runs entirely as Administrator, and privileged users are exempt from the access-control gates — so it is structurally incapable of catching that class of defect. Three have shipped through that blind spot |
 | **A6** | Reporting and Telegram money notifications, deferred until the figures underneath were trustworthy |
@@ -189,7 +222,7 @@ Not repeated here. See `group-11-dispatch-financial-tail-gap-analysis.md`.
 
 1. **Batch/expiry** — the only item here with a regulatory edge, and the one that gets worse the longer it runs untracked.
 2. **Cancel flow** — unblocks 77 stuck cases and gives the acceptance model the escape hatch it was designed around.
-3. **Group 11 A1** — newly unblocked, and profit figures are wrong until it lands.
+3. **Purchasing and landed cost** — every profit and margin figure in the system is wrong until this exists, and no amount of work on the reporting side can fix that.
 4. **Assignment model** — low urgency, but the trap should be written into any handover before someone trips it.
 5. **Remaining end-to-end paths** — cheap now the pattern exists.
 6. **Stock cleanup** — test whenever; the production question deserves its own answer sooner.
