@@ -97,9 +97,20 @@ advance_rows = frappe.get_all(
 
 advances = []
 total_credit = 0
+# Credit split by intent. KEEP IN SYNC WITH the shared definition in
+# Scheduled-debt-collection.py -- only UNTAGGED credit reduces what the client
+# owes, because task_commit_invoice will not spend case-tagged credit on any
+# other case. Showing a single blended figure made an earmarked advance look
+# like it had settled an unrelated invoice.
+available_credit = 0
+earmarked_credit = 0
 for pe in (advance_rows or []):
     unallocated = float(pe.unallocated_amount or 0)
     total_credit += unallocated
+    if pe.dispatch_case:
+        earmarked_credit += unallocated
+    else:
+        available_credit += unallocated
     advances.append({
         "payment_entry": pe.name,
         "posting_date": str(pe.posting_date or ""),
@@ -147,7 +158,7 @@ for pe in (payment_rows or []):
         "against": against,
     })
 
-print(f"[DebtPanel] {frappe.utils.now()} customer={customer} invoices={len(invoices)} outstanding={total_outstanding} credit={total_credit}")
+print(f"[DebtPanel] {frappe.utils.now()} customer={customer} invoices={len(invoices)} outstanding={total_outstanding} credit={total_credit} available={available_credit} earmarked={earmarked_credit}")
 
 frappe.response["message"] = {
     "ok": True,
@@ -157,7 +168,13 @@ frappe.response["message"] = {
     "payments": payments,
     "totals": {
         "outstanding": total_outstanding,
+        # Total credit held, kept so the figure on screen still matches the sum
+        # of the advances table below it.
         "unallocated_credit": total_credit,
-        "net_receivable": total_outstanding - total_credit,
+        # The part that can actually be set against these invoices.
+        "available_credit": available_credit,
+        # Held for a specific case, and not available to this one.
+        "earmarked_credit": earmarked_credit,
+        "net_receivable": total_outstanding - available_credit,
     },
 }

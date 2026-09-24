@@ -42,9 +42,21 @@ function tdp_render(frm, data) {
     html += '<div style="flex:1;min-width:140px;border:1px solid var(--border-color,#d1d8dd);border-radius:8px;padding:10px;">'
         + '<div style="font-size:11px;color:var(--text-muted,#6c7680);text-transform:uppercase;">Outstanding</div>'
         + '<div style="font-size:19px;font-weight:600;">' + tdp_money(t.outstanding) + '</div></div>';
+    // Credit is shown split, because only the untagged part reduces what this
+    // client owes -- task_commit_invoice will not spend case-tagged credit on
+    // another case. A single blended figure made Net Receivable impossible to
+    // reconcile against the tiles beside it: the credit appeared to have
+    // settled an invoice it is not allowed to touch.
+    var tdpEarmarked = t.earmarked_credit || 0;
+    var tdpAvailable = (t.available_credit === undefined) ? t.unallocated_credit : t.available_credit;
     html += '<div style="flex:1;min-width:140px;border:1px solid var(--border-color,#d1d8dd);border-radius:8px;padding:10px;">'
-        + '<div style="font-size:11px;color:var(--text-muted,#6c7680);text-transform:uppercase;">Unallocated Credit</div>'
-        + '<div style="font-size:19px;font-weight:600;">' + tdp_money(t.unallocated_credit) + '</div></div>';
+        + '<div style="font-size:11px;color:var(--text-muted,#6c7680);text-transform:uppercase;">Available Credit</div>'
+        + '<div style="font-size:19px;font-weight:600;">' + tdp_money(tdpAvailable) + '</div>'
+        + (tdpEarmarked > 0
+            ? '<div style="font-size:11px;color:var(--text-muted,#6c7680);margin-top:2px;">+ '
+              + tdp_money(tdpEarmarked) + ' held for specific cases</div>'
+            : '')
+        + '</div>';
     html += '<div style="flex:1;min-width:140px;border:1px solid var(--border-color,#d1d8dd);border-radius:8px;padding:10px;background:var(--fg-color,#fff);">'
         + '<div style="font-size:11px;color:var(--text-muted,#6c7680);text-transform:uppercase;">Net Receivable</div>'
         + '<div style="font-size:19px;font-weight:700;">' + tdp_money(t.net_receivable) + '</div></div>';

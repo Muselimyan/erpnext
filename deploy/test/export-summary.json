@@ -1,6 +1,6 @@
 ﻿{
     "env":  "Test",
-    "exported_at":  "2026-09-24T13:04:15Z",
+    "exported_at":  "2026-09-25T00:32:43Z",
     "base_url":  "https://test.erpnext.am",
     "schema":  {
                    "custom-fields":  102,
@@ -12,7 +12,7 @@
                    "role-profiles":  6,
                    "workspaces":  22,
                    "print-formats":  1,
-                   "reports":  46,
+                   "reports":  45,
                    "custom-doctypes":  13
                },
     "data":  {

@@ -8,7 +8,15 @@
 
 ---
 
-## 1. Cancel flow — there is no way to cancel an order
+## 1. Undoing things — cancel flow, and credit notes / refunds
+
+**Deferred by decision, own workstream. Two halves of one problem, bundled deliberately.**
+
+"Undo before the invoice" and "undo after the invoice" are the same user need at two stages. They share the approval pattern, the stock-return question and the tender-reversal question. Doing them apart risks two different answers to *who may undo what*, so they are one item.
+
+---
+
+### 1a. Cancel flow — there is no way to cancel an order
 
 **Deferred by decision, own workstream.**
 
@@ -36,7 +44,55 @@ The task kind `Return to warehouse (aborted delivery / cancelled order)` was **d
 
 ### To start
 
-Design doc exists: `deploy/test/work/phase3-cancel-flow-plan.md`. The open questions are what happens to stock already in transit, and what happens when an invoice has already been submitted (that becomes a credit note, not a reversal — Group 11 A4).
+Design doc exists: `deploy/test/work/phase3-cancel-flow-plan.md`. The open question is what happens to stock already in transit. The "invoice already submitted" case is 1b below.
+
+---
+
+### 1b. Credit notes and refunds — a paid invoice cannot be corrected
+
+Cancel + Amend works while an invoice is unpaid. Once a payment is allocated it does not: ERPNext will not cancel an invoice with submitted payment references without unwinding them first. There is no credit note path and no refund path.
+
+**The design is already decided and recorded — only the mechanism is missing.**
+
+- `docs/15a` §6.6 marks "Function — Return/Refund Money" as satisfied by *"`RPT — Returns — Refund Queue` + **standard ERPNext return/refund documents**"*.
+- `RPT - Returns - Refund Queue` is **deployed and already queries native credit notes** — `where si.docstatus = 1 and si.is_return = 1`, selecting `si.return_against`. It has nothing to show because nothing creates them.
+- `docs/manual/debt-collection-and-payment.md` already instructs staff that a disputed invoice is resolved by "a **Credit Note** … or an explicit write-off (requires Director approval)".
+
+So the reporting layer and the staff manual both assume native credit notes exist. This aligns with the ERPNext-native rule in `AGENTS.md` with no tension: native documents (`Sales Invoice` with `is_return = 1`; a `Pay` Payment Entry for cash back), custom orchestration.
+
+#### Decisions already taken
+
+| | |
+|---|---|
+| Authority | **Directors**, mirroring Write-off Approval — same class of decision, and the manual already says Directors are involved. `docs/implementation-questions.md` (~L877) had left the approval owner open |
+| Shape | A `Refund / Credit Approval` task kind + Task Access Policy, outcome Select, idempotency on `source_task` — the Write-off Approval skeleton, which is proven |
+| Scope of credit | **Per-line partial**, because the driver is usually a disputed subset. Whole-invoice-only would push people back to manual edits |
+| Cash vs credit | **Credit note first**, cash refund as an explicit second outcome on the same approval. Most cases resolve by offsetting the next invoice |
+
+#### THE BLOCKER — read this before writing any code
+
+**The tender scripts are blind to credit notes, and shipping A4 without fixing them silently destroys tender entitlement.**
+
+No server script anywhere references `is_return` or `return_against` — verified across all of `deploy/test/work`. All three tender scripts skip non-positive quantities:
+
+| Script | Line | Guard |
+|---|---|---|
+| `Sales-Invoice-before-submit-tender-validation.py` | 22 | `if not item_code or qty <= 0: continue` |
+| `Sales-Invoice-after-submit-tender-update.py` | 24 | `if not item_code or qty <= 0: continue` |
+| `Sales-Invoice-on-cancel-tender-reversal.py` | 14 | `if … or qty <= 0: continue` |
+
+A credit note carries **negative** quantities. So on crediting a tender invoice: validation passes trivially, `supplied_quantity` is **not** given back, and `tender_fulfillments` stays empty so the on-cancel path has nothing to reverse either.
+
+Because the validator refuses `qty > won − supplied`, **the hospital's remaining tender entitlement shrinks with every credit note and cannot be recovered except by editing the tender by hand.** Not a live bug today — nothing creates credit notes. It becomes one on the day this ships.
+
+#### Two behaviours to verify on test, not reason about
+
+1. **Does a credit note reduce the original invoice's `outstanding_amount`?** ERPNext reduces the *party* balance, but whether it nets against the specific `return_against` invoice without an explicit Payment Reconciliation is version-dependent. This decides whether a credited case can ever reach `outstanding <= 0`.
+2. **Nothing re-evaluates closure after a credit note.** `Payment Entry-after-submit-debt-closure-check` fires only on a Payment Entry submit with `payment_type = "Receive"`. A credit note is a Sales Invoice; a refund is a `Pay` entry. Neither triggers it, so a case resolved entirely by credit note plausibly sits in `Payment Pending` forever.
+
+#### One report bug to fix at the same time
+
+`RPT - Returns - Refund Queue` joins `dc.sales_invoice = si.return_against OR dc.sales_invoice = si.name`. `Dispatch Case.sales_invoice` is the stale convenience pointer — by definition wrong after Cancel + Amend. It should join `si.dispatch_case`. This work will be its first real consumer, so fix it before it has rows.
 
 ---
 
@@ -197,7 +253,37 @@ Each hop is proven; what is unproven is the joins between them on those particul
 
 ---
 
-## 7. `Task-Packing Checkboxes.js`
+## 7. "Apply the credit" as a collection outcome
+
+**Small, deferred by decision.**
+
+A7 made every debt figure net of *untagged* credit, and made the episode description say so. But when a client has an overdue invoice **and** untagged credit, the right action is neither "chase" nor "ignore" — it is to **apply the credit**, and there is no way to record that as an outcome.
+
+Today the collector reads the warning in the episode description and has to go allocate manually. That works, but the outcome they then record (`Paid`? `Disputed`?) misrepresents what happened.
+
+**To start:** add an `Applied Credit` option to `Task.collection_outcome`, and an action on the task that allocates available credit against the oldest unpaid invoices — the same FIFO the payment-recording path already uses, minus the new-money step.
+
+Measured on test when A7 landed: 3 of 6 customers with a financial position had gross and net disagreeing, one by **2,340,000 against a net of zero** — a client who would have been telephoned for money already in hand.
+
+---
+
+## 8. Housekeeping — orphan Task Access Policy records
+
+**Trivial, no urgency, recorded so it is not rediscovered.**
+
+Three `Task Access Policy` records survive for task kinds that were retired from the `task_kind` Select:
+
+| Policy | State |
+|---|---|
+| `Dispatch picking / hand-off` | has a team user and a role |
+| `Order accepting` | **no `default_team_user`, no roles** |
+| `Account details` | **no `default_team_user`, no roles** |
+
+The last two are the exact shape that broke Return Call before D3: a policy with no allowed roles makes the assignment role-check throw on every save of a task using it. Unreachable today because the kinds no longer exist in the Select, so this is tidy-up, not a defect — but if any of those three kinds is ever reintroduced, the policy must be repopulated first.
+
+---
+
+## 9. `Task-Packing Checkboxes.js`
 
 **Note only, no work unless someone acts.**
 
@@ -212,9 +298,10 @@ Not repeated here. See `group-11-dispatch-financial-tail-gap-analysis.md`.
 | | |
 |---|---|
 | **A1** | Profit costed from a buying price list. **Now item 4 above** — it depends on purchasing/landed cost, not on anything in Group 11 |
-| **A4** | A paid invoice cannot be corrected in-system. No credit note, no refund path. Interacts with the cancel flow above |
+| **A4** | **Now item 1b above**, bundled with cancel flow |
 | **A5** | The e2e API suite runs entirely as Administrator, and privileged users are exempt from the access-control gates — so it is structurally incapable of catching that class of defect. Three have shipped through that blind spot |
-| **A6** | Reporting and Telegram money notifications, deferred until the figures underneath were trustworthy |
+| **A6** | Reporting and Telegram money notifications, deferred until the figures underneath were trustworthy. A7 already took the two debt reports and repaired the workspace's dead links |
+| **A7** | **CLOSED** — one debt definition across all four consumers, verified 14/14. Item 7 above is its optional follow-on |
 
 ---
 

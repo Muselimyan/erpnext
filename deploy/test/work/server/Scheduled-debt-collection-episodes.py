@@ -113,10 +113,35 @@ else:
         if overdue_days > GRACE_DAYS:
             reason = "overdue by " + str(overdue_days) + " days (since " + str(info["oldest_due"]) + ")"
 
+        # ── Untagged credit this customer is sitting on ────────────────
+        # KEEP IN SYNC WITH the shared definition in
+        # Scheduled-debt-collection.py (see the long comment on
+        # get_net_receivable_amd there for why only UNTAGGED credit counts).
+        #
+        # Credit carrying a dispatch_case is earmarked for that case and
+        # task_commit_invoice will not spend it elsewhere, so it must not make
+        # an unrelated unpaid invoice look settled.
+        credit_rows = frappe.get_all(
+            "Payment Entry",
+            filters={"party_type": "Customer", "party": cust, "docstatus": 1,
+                     "payment_type": "Receive", "unallocated_amount": [">", 0]},
+            fields=["unallocated_amount", "dispatch_case"],
+            limit_page_length=0,
+        )
+        available_credit = 0
+        for pe in (credit_rows or []):
+            if not (pe.dispatch_case or ""):
+                available_credit = available_credit + float(pe.unallocated_amount or 0)
+        net_owed = info["outstanding"] - available_credit
+
+        # The THRESHOLD test uses net, so a client holding enough general credit
+        # to cover their invoices is not treated as over-exposed. This was the
+        # only gross measure in the system and therefore the one most likely to
+        # start a chase against someone who is square.
         if not reason:
             threshold = float(frappe.db.get_value("Customer", cust, "debt_threshold_amd") or 0)
-            if threshold > 0 and info["outstanding"] > threshold:
-                reason = "outstanding " + str(info["outstanding"]) + " exceeds threshold " + str(threshold)
+            if threshold > 0 and net_owed > threshold:
+                reason = "net owed " + str(net_owed) + " exceeds threshold " + str(threshold)
 
         # A previous episode's own decision takes precedence over the clock.
         last_closed = frappe.get_all(
@@ -159,8 +184,24 @@ else:
         # exp_end_date drives the existing doc15_task_auto_escalation job, so an
         # ignored episode escalates without any new machinery.
         task.exp_end_date = frappe.utils.add_days(today, DEFAULT_FOLLOW_UP_DAYS)
+        # The overdue trigger is deliberately still GROSS: an invoice 40 days
+        # past due deserves attention even if credit elsewhere covers it. But if
+        # that credit exists, phoning the client is the WRONG first action --
+        # the money is already in hand and wants allocating. Surface it here so
+        # the collector sees it before dialling, rather than discovering it
+        # mid-call. Measured on test: 3 of 6 customers with a position have
+        # gross and net disagreeing, one of them by 2,340,000 against a net of
+        # zero.
+        credit_note_txt = ""
+        if available_credit > 0:
+            credit_note_txt = ("\n\nBEFORE YOU CALL: this client is holding "
+                               + str(available_credit) + " of unallocated general credit, "
+                               + "against " + str(info["outstanding"]) + " of unpaid invoices "
+                               + "(net " + str(net_owed) + "). Applying that credit may settle "
+                               + "this wholly or in part. Check the Unallocated Credit panel first.")
         task.description = ("Chase the outstanding balance for " + str(subject_name) + ".\n\n"
-                            + "Raised because: " + reason + ".\n\n"
+                            + "Raised because: " + reason + "."
+                            + credit_note_txt + "\n\n"
                             + "The live balance and unpaid invoices are shown on this task. "
                             + "Record any payment here, then set an outcome and a follow-up date before completing.")
         task.insert(ignore_permissions=True)

@@ -199,6 +199,34 @@ Without the first, uploaded content is corrupted — this is the origin of the m
 
 Reference implementation: `deploy/test/deploy/group-11-financial-tail/*.ps1`. Older deploy scripts under `deploy/test/scripts/` have not all been audited for this.
 
+### Corollary: never put a non-ASCII character inside a double-quoted string in a `.ps1`
+
+The same ANSI misread applies to the deploy script's **own source**. A mangled character inside a double-quoted string is not merely corrupt text — it is a **PowerShell syntax error**, and the script dies before its first line runs.
+
+Non-ASCII in *comments* is harmless. In a string it is fatal. Build the character from its code point:
+
+```powershell
+$EmDash = [char]0x2014
+$DupReport = "RPT $EmDash Risk $EmDash Debt Threshold Exceeded"
+```
+
+Many doctype names on this instance (reports, workspaces) contain em-dashes, so this comes up whenever one is referenced by name. Check before running:
+
+```powershell
+$t = [System.IO.File]::ReadAllText($path, [System.Text.Encoding]::UTF8)
+([regex]::Matches($t, '"[^"\r\n]*[^\x00-\x7F][^"\r\n]*"')).Count   # must be 0
+```
+
+### A Workspace cannot be saved while any of its Links is dead
+
+Frappe validates **every** Link row on save, so one shortcut pointing at a deleted report makes the whole workspace unsaveable — including edits that have nothing to do with the broken row. `Ops — Reporting Pack` had two such shortcuts and they blocked an unrelated repoint.
+
+This reclassifies dangling shortcuts from cosmetic to blocking. When touching a workspace, validate every `type = "Report"` shortcut against existing Reports first, then repoint what can be repaired and drop what cannot. Reference: section 3 of `deploy/test/deploy/group-11-financial-tail/a7-one-debt-definition.ps1`.
+
+### Back-dating a Sales Invoice requires `set_posting_time = 1`
+
+Without it ERPNext **silently overwrites** the supplied `posting_date` with today. A back-dated `due_date` then fails validation with *"Due Date cannot be before Posting Date"* — an error that points at the due date when the fault is the posting date. Any fixture building an overdue invoice needs the flag.
+
 ---
 
 ## Task System Architecture (do NOT break these invariants)

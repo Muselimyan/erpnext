@@ -43,16 +43,47 @@ def assign_single_owner(task_name, user):
         todo.insert(ignore_permissions=True)
 
 def get_net_receivable_amd(customer, company):
+    # ── THE SINGLE DEFINITION OF DEBT (A7) ────────────────────────────────
+    # KEEP IN SYNC WITH:
+    #   Scheduled-debt-collection-episodes.py   (threshold test)
+    #   task_debt_panel.py                      (net_receivable)
+    #   RPT - Clients Exceeding Debt Threshold  (SQL)
+    # RestrictedPython has no module system, so this formula is duplicated
+    # rather than shared. A verification script asserts all four agree on the
+    # same fixtures -- drift is caught by test, not by discipline.
+    #
+    #   net = unpaid submitted invoices - UNTAGGED unallocated credit
+    #
+    # Two deliberate choices.
+    #
+    # Invoice-based, not GL-based. This was sum(debit - credit) over GL Entry,
+    # which sweeps in every customer-party ledger movement regardless of origin.
+    # docs/implementation-questions.md specifies outstanding from submitted
+    # Sales Invoices, and it is what the collector's own panel displays.
+    #
+    # ONLY UNTAGGED CREDIT OFFSETS. A Payment Entry carrying a dispatch_case is
+    # earmarked for that case, and task_commit_invoice already refuses to spend
+    # it on any other -- so counting it as an offset here contradicts a rule the
+    # system enforces elsewhere, and it under-reports risk: a client sitting on
+    # a large advance for next month's surgery would appear to owe nothing on
+    # this month's unpaid invoice.
     rows = frappe.db.sql(
         """
-        select coalesce(sum(debit - credit), 0)
-        from `tabGL Entry`
-        where is_cancelled = 0
-          and company = %s
-          and party_type = 'Customer'
-          and party = %s
+        select
+            coalesce((
+                select sum(outstanding_amount) from `tabSales Invoice`
+                where docstatus = 1 and outstanding_amount > 0
+                  and customer = %(cust)s and company = %(co)s
+            ), 0)
+          - coalesce((
+                select sum(unallocated_amount) from `tabPayment Entry`
+                where docstatus = 1 and payment_type = 'Receive'
+                  and party_type = 'Customer' and party = %(cust)s
+                  and company = %(co)s and unallocated_amount > 0
+                  and (dispatch_case is null or dispatch_case = '')
+            ), 0)
         """,
-        (company, customer),
+        {"cust": customer, "co": company},
     )
     return float(rows[0][0] or 0)
 

@@ -160,13 +160,26 @@ Server-side pricing makes new zero-price rows hard to create, which is what keep
 
 **Start at:** make both use the same definition of billable, and have the nothing-to-invoice path refuse a consumed row at any price.
 
-### A4 — A paid invoice cannot be corrected
+### A4 — A paid invoice cannot be corrected — **moved to `deferred-workstreams.md` item 1b**
+
+Bundled with the cancel flow, because "undo before the invoice" and "undo after the invoice" are one user need at two stages and must not get two different answers about who may undo what.
+
+Decisions taken and recorded there: native documents (`Sales Invoice` with `is_return = 1`, plus a `Pay` Payment Entry for cash back), Director approval mirroring Write-off Approval, per-line partial credit, credit-note-first with cash refund as a second outcome.
+
+**The blocker found while scoping it, which belongs with the work:** no server script anywhere references `is_return`, and all three tender scripts skip `qty <= 0`. Credit notes carry negative quantities, so crediting a tender invoice never returns `supplied_quantity` — **permanently destroying that much tender entitlement.** Not a live bug today; a live bug the day credit notes ship.
+
+<details>
+<summary>Original A4 analysis, retained</summary>
+
+### A4 detail
 
 Cancel + Amend works while an invoice is unpaid. Once a payment is allocated it does not: ERPNext will not cancel an invoice with submitted payment references without unwinding them first. There is no credit note path and no refund path.
 
 Low volume so far. VAT treatment may make a credit note legally required rather than merely convenient.
 
-**Start at:** a credit note (`Sales Invoice` with `is_return = 1`) plus a refund Payment Entry, behind Director approval. Decide whether it is task-driven like the rest of the flow or an Accounting-only action on the native form. Interacts with the cancel flow (Group 1 D11).
+VAT treatment may make a credit note legally required rather than merely convenient.
+
+</details>
 
 ### A5 — The test harness cannot see permission defects
 
@@ -199,33 +212,65 @@ The `Management - KPI Dashboard` workspace exists and contains **no KPI reports*
 |---|---|
 | `RPT - Dispatch Case Aging` | `RPT — Dispatch Cases — Aging (Open)` |
 | `RPT - Unallocated Customer Advances` | `RPT — Receivables — Unallocated Advances` |
-| `RPT - Clients Exceeding Debt Threshold` | `RPT — Risk — Debt Threshold Exceeded` |
+| ~~`RPT - Clients Exceeding Debt Threshold`~~ | ~~`RPT — Risk — Debt Threshold Exceeded`~~ — **resolved by A7**, the GL-based duplicate retired |
 | `RPT — Stock — Delivery In-Transit` | `RPT — Stock — Delivery In-Transit - Inmed` |
 | `RPT — Stock — Return Pickup In-Transit` | `RPT — Stock — Return Pickup In-Transit - Inmed` |
 | `RPT — Stock — Returns` | `RPT — Stock — Returns - Inmed` |
 
-**Dangling and stale shortcuts** in `Ops — Reporting Pack`:
+**Stale shortcut:** "VIEW: Distribute Payment Tasks" — in **both** `Ops — Reporting Pack` and `Dispatch - Task Queues`. That task kind is retired.
 
-- "Prepaid Orders Awaiting Delivery" → `RPT — Ops — Prepaid Orders Awaiting Delivery`. The report is named `RPT - Prepaid Orders Awaiting Delivery`. Broken.
-- "Manual Rate Edits" → a report that does not exist.
-- "VIEW: Distribute Payment Tasks" — in **both** `Ops — Reporting Pack` and `Dispatch - Task Queues`. That task kind is retired.
+**Dangling shortcuts in `Ops — Reporting Pack` are fixed**, and they turned out to be worse than cosmetic. Frappe validates every Link row on save, so the two dead shortcuts made the **entire workspace unsaveable** — they blocked an unrelated repoint until they were repaired. `RPT — Ops — Prepaid Orders Awaiting Delivery` was repointed to the report that actually exists; `RPT — Pricing — Sales Orders With Manual Rate Edits` was removed, since no such report exists (it remains listed above as a required-but-missing report).
 
 **Telegram money notifications are disabled.** Both scripts. Invoice submitted, payment received, threshold breached — none of them notify.
 
-**Do A1 before any of this.**
+**Do A1 before the profit/KPI parts.** The rest is independent.
 
-### A7 — The two debt schedulers measure debt differently
+### A7 — One definition of debt — **CLOSED, 14/14**
 
-| | Basis | Raises |
-|---|---|---|
-| `Scheduled-debt-collection` (hourly) | **GL net receivable** — `sum(debit − credit)` on GL Entry | `Debt Alert` |
-| `Scheduled-debt-collection-episodes` (daily) | **Sum of invoice `outstanding_amount`** | `Debt Collection` |
+There were **five** consumers of "what this customer owes" and no two agreed. They diverged on two independent axes — gross vs net, and which ledger they read.
 
-GL net receivable is reduced by unallocated credit; summed invoice outstanding is not. So a customer holding a large advance against unpaid invoices is "not in debt" to one scheduler and "in debt" to the other, and can receive a collection episode while the Director sees no alert, or the reverse.
+All consumers now compute:
 
-Both readings are defensible. Having two is not.
+```
+net = unpaid submitted invoices − UNTAGGED unallocated credit
+```
 
-**Start at:** decide which question each task kind is answering, and make both use that basis. The debt panel already computes `net_receivable = outstanding − unallocated_credit`, which is the third definition in play.
+**Why only untagged credit offsets.** A Payment Entry carrying a `dispatch_case` is earmarked, and `task_commit_invoice` already refuses to spend it on another case (§1.4). Subtracting it contradicted a rule the system enforces elsewhere, and it under-reported risk: a client holding a large advance for next month appeared to owe nothing on this month's unpaid invoice.
+
+**Why invoice-based, not GL-based.** `docs/implementation-questions.md` specifies outstanding from submitted Sales Invoices, and it is what the collector's own panel displays. The GL form swept in every customer-party movement regardless of origin.
+
+Verified by asserting all four surviving consumers return the **same number** on shared fixtures — agreement is the point, not any one site in isolation:
+
+```
+A invoice only: all four agree         PASS  [5000, 5000, 5000, 5000]
+B untagged credit DOES offset          PASS  3000
+C earmarked credit does NOT offset     PASS  5000
+D only untagged offsets                PASS  8500 (10000 - 1500)
+D panel splits available vs earmarked  PASS  avail=1500 earmarked=4000
+E net zero but invoice still overdue   PASS  overdue path still fires
+duplicate Risk report retired          PASS
+workspace has no dead report shortcuts PASS
+```
+
+**What was measured before changing anything** (`a7-probe-debt-bases.py`, re-runnable):
+
+- **1 Company**, so the company-filter divergence between the two GL consumers was theoretical — identical for every customer.
+- **gross and net disagreed for 3 of 6** customers with a position. One showed gross **2,340,000** against a net of **0** — a client who would have been telephoned for money already in hand.
+- **0 customers changed threshold verdict** from the untagged-credit rule. That half is **preventive, not remedial** — worth stating plainly rather than overselling.
+- Payment Entry Reference rows **are** written when an advance is consumed (5 of 5), so `RPT — Receivables — Unallocated Advances` already agreed with `PE.unallocated_amount` and needed no change.
+
+**Three deliberate non-changes.**
+
+1. **The overdue trigger stays gross.** An invoice 40 days past due deserves attention even if credit covers it. But since chasing is then the wrong first action, the episode description now says so: *"BEFORE YOU CALL: this client is holding N of unallocated general credit…"*. Recording it as an outcome is the deferred follow-on (`deferred-workstreams.md` item 7).
+2. **The debt panel still shows total credit**, so the figure reconciles against the advances table beneath it — plus new Available and Earmarked figures, because changing Net Receivable without showing why would have made the panel unreadable.
+3. **`RPT — Risk — Debt Threshold Exceeded` retired** rather than converged. Two Director-facing reports answering one question with two formulas is worse than one.
+
+### A8 — Debt Alert has two defects the other schedulers do not
+
+1. **Cancelled alerts are resurrected.** The dedupe filter is `status != "Completed"`, so a **Cancelled** Debt Alert counts as existing: the scheduler updates its figures and reassigns it rather than raising a fresh one. Everything else in the flow uses `not in ["Completed", "Cancelled"]`.
+2. **`custom_assigned_to` is never set.** It writes `_assign` and creates a ToDo, but not the field AGENTS.md designates the single source of truth for assignment. Anything reading `custom_assigned_to` sees these tasks as unassigned.
+
+Both are one-line fixes in `Scheduled-debt-collection.py`. A7 touched that file but deliberately left these alone — they are independent of the debt basis and deserve their own verification.
 
 ### A8 — Debt Alert has two defects the other schedulers do not
 
