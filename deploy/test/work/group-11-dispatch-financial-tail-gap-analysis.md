@@ -6,6 +6,8 @@
 >
 > **State.** The rebuild is done and deployed to test (W1–W11 plus A3, 80 automated checks). This document now covers only **what is still open** and **what will bite you**.
 >
+> **A2 was closed by Group 1** (D1 + D9, 2026-09-22/23), not by work in this group — stock validation is restored and negative stock is blocked. That unblocks **A1**, which is now the next item here. See `group-1-dispatch-case-lifecycle.md` and `deferred-workstreams.md`.
+>
 > The original analysis — 18 findings with evidence, the R1–R14 recommendations, the priority bands — has been removed rather than annotated, because a document that is nine-tenths closed work is not readable. It is in git history: `git show 07645d6 -- deploy/test/work/group-11-dispatch-financial-tail-gap-analysis.md`. §4 keeps the finding-ID map, since other audits cite those IDs.
 
 ---
@@ -14,13 +16,14 @@
 
 Ordered by consequence. Each entry names the file to start in.
 
-**Dependency:** A2 → A1 → A6. `incoming_rate` is meaningless until stock is
+**Dependency was A2 → A1 → A6.** `incoming_rate` is meaningless until stock is
 actually valued, and reports built on a wrong profit basis only present the
 error more convincingly.
 
-**A2 is now closed** (Group 1 D1), so **A1 is unblocked** — transfers carry
-valuation and consumption posts real COGS, which is the precondition
-`incoming_rate` needed. A1 is the next thing to do here.
+**A2 closed on 2026-09-22 (Group 1 D1 + D9), so A1 is now unblocked** — transfers
+carry valuation and consumption posts real COGS, which is exactly the
+precondition `incoming_rate` needed. **A1 is the next thing to do in this
+group.** A6 still waits on A1.
 
 ### A1 — Profit is computed from a list price, not from cost
 
@@ -41,83 +44,49 @@ Swap the `Item Price` lookup for `incoming_rate`, drop the silent zero-cost
 fallback in favour of refusing, and compare the result against ERPNext's own
 Gross Profit report for the same invoice before trusting it.
 
-### A2 — Stock validation is bypassed — **CLOSED by Group 1 D1 (2026-09-22)**
+### A2 — Stock validation bypassed — **CLOSED, Group 1 D1 + D9 (2026-09-22/23)**
 
-> **Done.** `create_se` lost the `strict` parameter and all three bypasses; all ten
-> call sites are validated. `client_location_warehouse` is now required on every
-> order, not only when returns are expected. Verified — `PACK valuation PRESERVED
-> across transfer: out 6.0 -> in 6.0` and `RESTOCK leaves Main valuation
-> unchanged: 6.0 -> 6.0`. W12's own harness re-run afterwards, 14/14.
->
-> **No data migration was done** — test data is synthetic and disposable by
-> decision. The 18 inert entries described below turned out to be **372**: 172
-> Material Issues that posted nothing, plus 200 one-sided Material Transfers that
-> *did* post, creating or destroying stock rather than moving it. Not repaired;
-> tracked as **Group 1 D10**.
->
-> **Residual, and not something validation can fix:**
-> `Stock Settings.allow_negative_stock = 1`, so an overdraw still posts —
-> removing the bypass restores ERPNext's check but does not overrule a global
-> setting. Tracked as **Group 1 D9**. It governs every stock operation in the
-> system and would fail immediately on the 13 bins already negative in Main.
->
-> The analysis below is retained because it explains *why* this mattered.
+Cut rather than annotated, per this document's own rule. Full analysis in git
+history: `git show 07645d6` and `git show e253226`.
 
-`create_se` in `Task-after-save-dispatch-flow.py` (lines 50, 63–64) submits every
-Stock Entry with:
+**What was wrong.** `create_se` submitted every Stock Entry with
+`ignore_validate`, `ignore_stock_validation` and `allow_zero_valuation_rate`.
+`ignore_validate` skips `Stock Entry.validate()` wholesale — including
+`set_basic_rate` — so every Material Transfer arrived valued at **zero**.
+Valuation died at the first hop (`Main → Delivery In-Transit`), consumption
+posted zero COGS, and the restock pushed zero-valued stock back into Main,
+dragging its moving average down on every returns cycle. That is why A2 was the
+root cause of A1: nothing ever forced the valuation data to become correct.
 
-```python
-se.flags.ignore_validate = True            # skips Stock Entry.validate() wholesale
-frappe.flags.ignore_stock_validation = True
-"allow_zero_valuation_rate": 1             # per item row
-```
+**What was done.** The `strict` parameter and all three bypasses are gone; all
+ten call sites are validated. `client_location_warehouse` is now required on
+every order rather than only when returns are expected — it was never a returns
+field, it is the delivery destination and the consumption source.
+`Stock Settings.allow_negative_stock` is off (D9), which was the remaining
+residue: removing the bypass restored ERPNext's check but could not overrule a
+setting declaring the thing it checks for permitted.
 
-`ignore_validate` is the serious one: missing warehouses, missing quantities and
-insufficient stock all pass, and the entry submits **having posted nothing** —
-no stock ledger entries, no GL.
+**Verified.** A full returns cycle now leaves Main's valuation untouched
+(`6.0 → 6.0`), transfers preserve value (`out 6.0 → in 6.0`), overdraws are
+refused, and the end-to-end chain conserves stock exactly: `Main` falls by
+`used + lost` and every transit warehouse returns to its starting balance.
 
-**It also destroys valuation on transfers, which is worse than it sounds.**
-Proven while building A3, not inferred: `ignore_validate` skips
-`Stock Entry.set_basic_rate()`, so a Material Transfer arrives at the
-destination valued at **zero** no matter what the source stock was worth. The
-lost/damaged units reached their warehouse valued at nothing, and the write-off
-— whose entire purpose is the GL amount — had nothing to write off. So A2 does
-not merely make amounts inaccurate; on any path that depends on the value of
-transferred stock it makes the feature *impossible*, while every entry still
-submits and looks successful.
+**Deliberately not done — read this before trusting historical numbers.** No
+data migration. Test data is disposable by decision, so the pre-existing damage
+was left in place:
 
-It also means `ignore_validate` cannot simply be removed: it is currently
-load-bearing. It suppresses the mandatory-field check on `transfer_qty`, `uom`
-and `conversion_factor`, which `validate()` would otherwise have populated. Any
-call site that loses the flag must supply those explicitly — `create_se` already
-does, which is why the strict path below works.
+- **372** submitted Stock Entries carry warehouse-less rows, not the 18 this
+  document originally estimated. 172 are inert Material Issues that posted
+  nothing; **200 are one-sided Material Transfers that did post** — stock created
+  out of nowhere or destroyed into it. That second group is real ledger damage,
+  not dead paperwork.
+- 13 items remain at negative stock in `Main - Inmed` (−415). With
+  `allow_negative_stock` now off, **any operation touching those 13 will fail.**
+  That is intended: it is how they get noticed.
 
-**There is now a working reference.** The three lost/damaged movements in
-`create_se` run with `strict=1`: no `ignore_validate`, no
-`ignore_stock_validation`, no `allow_zero_valuation_rate`, and they post correct
-valuation. The remaining seven call sites keep the lenient flags only because
-they have legacy data behind them. `strict=1` is the target state for all of
-them, and the migration below is what stands in the way.
-
-Compounding it, `client_location_warehouse` is required only when
-`return_expected` is checked, yet the **no-return** path also routes stock
-through it — as `t_warehouse` on delivery and `s_warehouse` on consumption. A
-no-return case with a blank warehouse therefore posts warehouse-less rows
-instead of being refused.
-
-This is the root cause of A1. With `allow_zero_valuation_rate`, consuming
-un-valued stock succeeds instead of failing loudly, so nothing ever forces the
-valuation data to become correct.
-
-**Start at:** `create_se`. Remove the bypasses, require the warehouse at Order
-Entry whenever any client-location movement occurs, and raise a blocker task on
-failure rather than submitting an empty entry.
-
-**Needs a data migration first.** On test: 18 submitted Material Issues with 29
-warehouse-less rows and zero SLE/GL each, 13 items at negative stock in
-`Main - Inmed` (−218 units), and 3 legacy cases with `client_location_warehouse`
-set to `Main - Inmed`. Removing the bypasses before reconciling these makes
-submissions fail on historical data.
+Tracked as Group 1 D10. The open question that matters more than the cleanup:
+the defect that produced those 200 one-sided transfers ran everywhere, not only
+on test, and **production has not been examined.**
 
 ### A4 — A paid invoice cannot be corrected in-system
 
@@ -201,7 +170,7 @@ Existing test data was deliberately **not** reconciled — it is synthetic, and
 3. **Submit or cancel draft customer Payment Entries** (9 on test). A draft produces no GL entries, so the money is invisible to the ledger the new code reads.
 4. **Triage cases stuck in `Invoice Pending`** (151 on test). Each needs an invoice committed or an explicit nothing-to-invoice close.
 5. **Populate `Item Price` on `Standard Selling` for every orderable item.** Order entry now refuses an unpriced item rather than pricing it at zero.
-6. **Reconcile the stock data in A2** if A2 is being done — it is a prerequisite to removing the validation bypasses, not a consequence.
+6. **Reconcile the stock data that A2 left behind.** This was written as a prerequisite to removing the validation bypasses. It did not happen that way — the bypasses were removed first and the data was deliberately left, because test data is disposable. So it is now a **consequence**, and a live one: 13 items sit at negative stock in `Main - Inmed` and, with `allow_negative_stock` off, any operation touching them fails. 372 Stock Entries carry warehouse-less rows, 200 of which actually moved stock one-sidedly. Group 1 D10. **Whether production carries equivalents has not been looked at** — the defect that produced them was not test-specific.
 
 One number worth carrying over: across every Dispatch Case ever created on test,
 **`Closed` had never once been reached.** That was the defect, not the data.
