@@ -349,7 +349,19 @@ else:
                 limit_page_length=1,
             )
             if any_invoice:
-                frappe.throw("Invoice " + any_invoice[0].name + " for this case is still a draft. Submit it before completing this task.")
+                # Do NOT tell the user to submit it by hand. A draft here is
+                # debris from a commit that inserted the invoice and then failed
+                # before submitting; task_commit_invoice now deletes such a
+                # draft and rebuilds it, so the fix is to run the action again.
+                # The old wording sent the user to the Sales Invoice form to
+                # submit a document that would fail submission for whatever
+                # reason it failed the first time -- and while it existed, the
+                # commit action refused too, so the two errors pointed at each
+                # other. KEEP IN SYNC WITH the draft handling in
+                # task_commit_invoice.py.
+                frappe.throw("Invoice " + any_invoice[0].name + " for this case is an unsubmitted draft "
+                             + "left by a failed attempt. Use 'Create & Submit Invoice' on this task again -- "
+                             + "it will clear the draft and rebuild it. Do not submit it by hand.")
             # An invoice is only REQUIRED when there is something to bill.
             # Demanding one unconditionally is what made a fully-returned case
             # unfinishable, and it would also have blocked

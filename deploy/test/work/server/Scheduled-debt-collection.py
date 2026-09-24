@@ -114,12 +114,21 @@ if company and debt_alert_assignee:
         if debt <= threshold:
             continue
 
+        # A CANCELLED ALERT IS NOT AN OPEN ALERT. This filter was
+        # status != "Completed", which counts Cancelled as still existing -- so a
+        # Director who cancelled an alert got the same task silently refilled
+        # with new figures and reassigned to them, instead of a fresh alert. The
+        # cancellation was undone by the next hourly run and there was no trace
+        # of it having happened.
+        #
+        # Every other scheduler and handler in this flow already excludes both
+        # terminal statuses; this was the only one that did not.
         existing = frappe.get_all(
             "Task",
             filters={
                 "task_kind": DEBT_ALERT_KIND,
                 "customer": c.name,
-                "status": ["!=", "Completed"],
+                "status": ["not in", ["Completed", "Cancelled"]],
             },
             pluck="name",
         )
@@ -130,6 +139,10 @@ if company and debt_alert_assignee:
             frappe.db.set_value("Task", task_name, "current_debt_amd", debt)
             frappe.db.set_value("Task", task_name, "debt_threshold_amd", threshold)
             frappe.db.set_value("Task", task_name, "description", description)
+            # Set here as well as on creation: assign_single_owner may move the
+            # alert to a different owner, and if only _assign moved, the two
+            # branches would produce documents in different states.
+            frappe.db.set_value("Task", task_name, "custom_assigned_to", debt_alert_assignee)
             assign_single_owner(task_name, debt_alert_assignee)
         else:
             task = frappe.new_doc("Task")
@@ -138,6 +151,13 @@ if company and debt_alert_assignee:
             task.task_kind = DEBT_ALERT_KIND
             task.task_access_policy = DEBT_ALERT_KIND
             task.customer = c.name
+            # custom_assigned_to is the application's single source of truth for
+            # assignment (AGENTS.md). assign_single_owner below sets _assign and
+            # the ToDo, which drive the list view and notifications, but NOT this
+            # field -- so every Debt Alert ever raised read as unassigned to
+            # anything that asks the application who owns it, including the
+            # assignment validation added in Group 1 D3.
+            task.custom_assigned_to = debt_alert_assignee
             task.current_debt_amd = debt
             task.debt_threshold_amd = threshold
             task.description = description

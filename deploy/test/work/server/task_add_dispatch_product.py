@@ -51,15 +51,44 @@ def run_script():
     price_source = ""
     tender_name = ""
 
+    # TWO ACTIVE TENDERS ON ONE ITEM IS REFUSED HERE, NOT AT INVOICING.
+    #
+    # This loop used to have no break and no order_by, so when two active
+    # tenders covered the same item the LAST one scanned won -- from an
+    # unordered query, so which price a client got was not deterministic. The
+    # collision was caught much later, by the Sales Invoice validator, which
+    # throws on submit. By then the order had been picked, delivered and
+    # returned, and the throw left a stranded draft invoice that blocked every
+    # retry (A9-2). The failure surfaced at the far end of the flow from the
+    # thing that caused it.
+    #
+    # Refusing at order entry means the person who can actually fix it -- close
+    # or expire the duplicate tender -- is told at the moment they are choosing
+    # the item, and the message matches the validator's wording so the two read
+    # as one rule.
+    #
+    # order_by makes the surviving single-match case deterministic too.
+    tender_matches = []
     for t in (frappe.get_all("Tender Agreement",
                              filters={"hospital": case.customer, "status": "Active"},
-                             fields=["name"], limit_page_length=0) or []):
+                             fields=["name"], order_by="valid_to asc, valid_from asc, name asc",
+                             limit_page_length=0) or []):
         tender = frappe.get_doc("Tender Agreement", t.name)
         for ti in (tender.items or []):
             if ti.item_code == item_code and (ti.tender_price or 0) > 0:
-                resolved_price = float(ti.tender_price)
-                price_source = "Tender Agreement " + tender.name
-                tender_name = tender.name
+                tender_matches.append({"name": tender.name, "price": float(ti.tender_price)})
+
+    if len(tender_matches) > 1:
+        frappe.throw("Multiple active Tender Agreements cover " + str(item_code)
+                     + " for " + str(case.customer) + ": "
+                     + ", ".join([m["name"] for m in tender_matches])
+                     + ". Only one active tender per hospital and item is allowed. "
+                     + "Close or expire the duplicate before adding this item to an order.")
+
+    if len(tender_matches) == 1:
+        resolved_price = tender_matches[0]["price"]
+        tender_name = tender_matches[0]["name"]
+        price_source = "Tender Agreement " + tender_name
 
     if not resolved_price and case.customer:
         cust_price = frappe.db.get_value(

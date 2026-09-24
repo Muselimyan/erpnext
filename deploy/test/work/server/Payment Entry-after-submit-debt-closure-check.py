@@ -106,10 +106,21 @@ else:
             limit_page_length=1,
         )
 
+        # A SETTLEMENT ALWAYS GETS DIRECTOR REVIEW, even when it closed no case.
+        #
+        # This used to raise the approval only when the payment itself moved at
+        # least one case to Closed. Two ordinary situations produced no approval
+        # and no notification -- only a log line nobody reads:
+        #   - the account settles but every case was already Closed
+        #   - a case sits in a status outside Payment Pending / Invoice Pending
+        #     (Delivered, say), so it is not a closure candidate at all
+        # In both the customer's balance reached zero with no Director ever
+        # seeing it, and the approval is where profit is recorded, so nothing
+        # recorded the profit either.
+        #
+        # The dedupe above still applies: one open approval per customer.
         if existing_approval:
             print(f"[Settled] {frappe.utils.now()} approval {existing_approval[0].name} already open for {customer}")
-        elif not closed_cases:
-            print(f"[Settled] {frappe.utils.now()} customer={customer} settled but no case closed by this payment, no approval raised")
         else:
             # ── Profit over exactly the cases closed here ──────────────
             total_profit = 0
@@ -137,9 +148,22 @@ else:
             )
 
             desc = ["Customer " + str(customer) + " has settled their account.", ""]
-            desc.append("Cases closed by this settlement: " + ", ".join(closed_cases))
-            desc.append("Invoices covered: " + (", ".join(covered_invoices) if covered_invoices else "none"))
-            desc.append("Profit on the covered cases: " + str(total_profit) + " AMD")
+            if closed_cases:
+                desc.append("Cases closed by this settlement: " + ", ".join(closed_cases))
+                desc.append("Invoices covered: " + (", ".join(covered_invoices) if covered_invoices else "none"))
+                desc.append("Profit on the covered cases: " + str(total_profit) + " AMD")
+            else:
+                # Do NOT print "Profit: 0" here. A zero reads as a computed
+                # figure, and the truth is that there was nothing to compute it
+                # over. Say so.
+                desc.append("This payment closed NO Dispatch Case.")
+                desc.append("")
+                desc.append("The account balance is now zero, but either every case was")
+                desc.append("already Closed, or the remaining cases are in a status that is not")
+                desc.append("a closure candidate (only Payment Pending and Invoice Pending are).")
+                desc.append("")
+                desc.append("No profit figure is computed, because no case was closed by this")
+                desc.append("settlement. Check the customer's open cases before approving.")
             if missing_prices:
                 unique_missing = []
                 for mp in missing_prices:
@@ -162,10 +186,19 @@ else:
                 "task_kind": DEBT_CLOSURE_APPROVAL_KIND,
                 "task_access_policy": DEBT_CLOSURE_APPROVAL_KIND,
                 "customer": customer,
-                "dispatch_case": closed_cases[0],
+                # Both guarded: closed_cases is empty whenever the settlement
+                # closed nothing, and indexing it unguarded was an IndexError
+                # waiting for that branch to become reachable.
+                "dispatch_case": closed_cases[0] if closed_cases else "",
                 "sales_invoice": covered_invoices[0] if covered_invoices else "",
                 "payment_entry": doc.name,
-                "custom_case_profit": total_profit,
+                # Not set when nothing was closed. Be aware this reads back as
+                # 0 either way -- it is a Currency field, so Frappe stores 0 for
+                # None and the stored number cannot express "not computed". The
+                # DESCRIPTION is what distinguishes the two cases, which is why
+                # it states it in words rather than leaving the reader to
+                # interpret a zero.
+                "custom_case_profit": total_profit if closed_cases else None,
                 "description": "\n".join(desc),
             })
             if approval_assignee:

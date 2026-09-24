@@ -135,18 +135,29 @@ payment_rows = frappe.get_all(
     limit_page_length=50,
 )
 
+# Allocations for ALL payments in one query, then bucketed, rather than one
+# query per payment row. This panel renders on every Debt Collection and Debt
+# Closure Approval task open, and the old shape cost up to 51 queries (1 + 50)
+# for a screen that shows at most 50 rows.
+alloc_by_parent = {}
+pe_names = [pe.name for pe in (payment_rows or [])]
+if pe_names:
+    for a in (frappe.get_all(
+        "Payment Entry Reference",
+        filters={"parent": ["in", pe_names], "reference_doctype": "Sales Invoice"},
+        fields=["parent", "reference_name", "allocated_amount"],
+        limit_page_length=0,
+    ) or []):
+        # Read-modify-write: RestrictedPython forbids augmented assignment to a
+        # subscript, so `alloc_by_parent[k] += [...]` is a compile error here.
+        bucket = alloc_by_parent.get(a.parent) or []
+        bucket.append({"sales_invoice": a.reference_name,
+                       "allocated_amount": float(a.allocated_amount or 0)})
+        alloc_by_parent[a.parent] = bucket
+
 payments = []
 for pe in (payment_rows or []):
-    allocated = frappe.get_all(
-        "Payment Entry Reference",
-        filters={"parent": pe.name, "reference_doctype": "Sales Invoice"},
-        fields=["reference_name", "allocated_amount"],
-        limit_page_length=0,
-    )
-    against = []
-    for a in (allocated or []):
-        against.append({"sales_invoice": a.reference_name,
-                        "allocated_amount": float(a.allocated_amount or 0)})
+    against = alloc_by_parent.get(pe.name) or []
     payments.append({
         "payment_entry": pe.name,
         "posting_date": str(pe.posting_date or ""),

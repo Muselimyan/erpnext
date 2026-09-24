@@ -57,15 +57,32 @@ def run_script():
     price_source = ""
     tender_name = ""
 
+    # Duplicate active tenders refused here too. KEEP IN SYNC WITH
+    # task_add_dispatch_product.py -- the long explanation is there. Fixing only
+    # the add path would move the hole rather than close it: this endpoint
+    # re-resolves the price on every quantity or discount change, so it would
+    # have gone on silently picking whichever tender came last.
+    tender_matches = []
     for t in (frappe.get_all("Tender Agreement",
                              filters={"hospital": case.customer, "status": "Active"},
-                             fields=["name"], limit_page_length=0) or []):
+                             fields=["name"], order_by="valid_to asc, valid_from asc, name asc",
+                             limit_page_length=0) or []):
         tender = frappe.get_doc("Tender Agreement", t.name)
         for ti in (tender.items or []):
             if ti.item_code == target_item and (ti.tender_price or 0) > 0:
-                resolved_price = float(ti.tender_price)
-                price_source = "Tender Agreement " + tender.name
-                tender_name = tender.name
+                tender_matches.append({"name": tender.name, "price": float(ti.tender_price)})
+
+    if len(tender_matches) > 1:
+        frappe.throw("Multiple active Tender Agreements cover " + str(target_item)
+                     + " for " + str(case.customer) + ": "
+                     + ", ".join([m["name"] for m in tender_matches])
+                     + ". Only one active tender per hospital and item is allowed. "
+                     + "Close or expire the duplicate before changing this line.")
+
+    if len(tender_matches) == 1:
+        resolved_price = tender_matches[0]["price"]
+        tender_name = tender_matches[0]["name"]
+        price_source = "Tender Agreement " + tender_name
 
     if not resolved_price and case.customer:
         cust_price = frappe.db.get_value(

@@ -71,14 +71,39 @@ case = frappe.get_doc("Dispatch Case", task.dispatch_case)
 # tell the kinds apart. If this invoice stamped its own task, the filter below
 # would stop matching its own previous output and idempotency would break.
 # The task audit path for a used-items invoice is `Dispatch Case.invoice_task`.
+#
+# A DRAFT AND A SUBMITTED INVOICE ARE DIFFERENT SITUATIONS, so they no longer
+# get the same message. Both match `docstatus != 2`, and the old single message
+# said "Cancel it first" for either -- but a draft cannot be cancelled, only
+# deleted, so a user who hit this was told to do something impossible.
+#
+# A draft only exists here because a previous attempt inserted it and then
+# failed before submitting (the tender validator is the usual cause). It is
+# debris from a failed run, not a real invoice: nothing has been billed and no
+# GL entry exists. So it is deleted and the commit proceeds, which is what the
+# user was trying to do. The alternative -- telling them to go and delete it by
+# hand -- makes them clean up after a failure that was not theirs, and
+# `Task-before-save-dispatch-gates` separately refuses to let the task complete
+# while the draft exists, so they would be stuck between two errors.
 existing = frappe.get_all(
     "Sales Invoice",
     filters={"dispatch_case": case.name, "docstatus": ["!=", 2], "source_task": ["in", ["", None]]},
     fields=["name", "docstatus"],
+    order_by="creation asc",
     limit_page_length=0,
 )
-if existing:
-    frappe.throw("Dispatch Case " + case.name + " already has invoice " + existing[0].name + ". Cancel it first if it needs replacing.")
+submitted_existing = [e for e in existing if int(e.docstatus or 0) == 1]
+draft_existing = [e for e in existing if int(e.docstatus or 0) == 0]
+
+if submitted_existing:
+    frappe.throw("Dispatch Case " + case.name + " already has submitted invoice "
+                 + submitted_existing[0].name + ". Cancel it first if it needs replacing.")
+
+for d in draft_existing:
+    # Deleted, not submitted: its contents are from the earlier failed attempt
+    # and the lines are rebuilt below from the case as it stands now.
+    frappe.delete_doc("Sales Invoice", d.name, force=True, ignore_permissions=True)
+    print(f"[Invoice] {frappe.utils.now()} case={case.name} removed stranded draft {d.name} from a previous failed attempt")
 
 # ── Lines: what was actually consumed ─────────────────────────────────
 # used_qty is computed on every case save as dispatched - returned - lost, so on

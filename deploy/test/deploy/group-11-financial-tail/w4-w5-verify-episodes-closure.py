@@ -138,6 +138,15 @@ def w45_verify(FINANCE_USER, ACCOUNTING_USER):
         # Clear the customer's slate so "settled" is reachable in this test.
         for old in frappe.get_all("Sales Invoice", filters={"customer": cust, "docstatus": 1, "outstanding_amount": [">", 0]}, fields=["name"], limit_page_length=0):
             frappe.db.set_value("Sales Invoice", old.name, "outstanding_amount", 0, update_modified=False)
+        # AND clear open approvals, which A9 C.4 made necessary. A settlement now
+        # raises a Debt Closure Approval even when it closes no case, so the W4
+        # settling payment above legitimately leaves one open for this customer.
+        # The dedupe is one open approval per customer, so without this the W5
+        # payment correctly raises nothing and the "+1" assertions below fail
+        # against working code. The assertions measure whether THIS payment
+        # raises an approval, so the customer must start from none.
+        for oldappr in frappe.get_all("Task", filters={"task_kind": "Debt Closure Approval", "customer": cust, "status": ["not in", ["Completed", "Cancelled"]]}, fields=["name"], limit_page_length=0):
+            frappe.db.set_value("Task", oldappr.name, "status", "Cancelled", update_modified=False)
         case = frappe.new_doc("Dispatch Case")
         case.status = "Payment Pending"
         case.customer = cust
