@@ -14,7 +14,15 @@
 
 The Dispatch Case holds operational state and two convenience figures (`total_invoice_amount`, `outstanding_amount`). It does **not** hold a private copy of the receivables position. There is no stored prepaid amount, no advance-payments table, no running paid total.
 
-Outstanding is read from `Sales Invoice.outstanding_amount`. An advance is a submitted, unallocated Payment Entry. A customer's debt is the GL, or the sum of unpaid invoices, depending on the question — see the caveat in §2.4.
+Outstanding is read from `Sales Invoice.outstanding_amount`. An advance is a submitted, unallocated Payment Entry.
+
+**A customer's debt has exactly one definition**, used by every consumer — the two schedulers, the collector's panel and the Director's threshold report:
+
+```
+net receivable = unpaid submitted invoices − UNTAGGED unallocated credit
+```
+
+Credit carrying a `dispatch_case` is earmarked and does **not** offset anything else, because `task_commit_invoice` will not spend it elsewhere either (§1.4). If you add a sixth consumer, use this formula — RestrictedPython forces it to be copied, so each copy carries a `keep in sync` header and the verification asserts they agree.
 
 `Dispatch Case.sales_invoice` exists but is a **pointer for humans only**. Every piece of logic resolves the invoice by querying `Sales Invoice.dispatch_case`, because that link survives Cancel + Amend and the pointer does not.
 
@@ -56,6 +64,10 @@ Payment Entries carry `dispatch_case` (what the money was for) and `source_task`
 
 Credit tagged to a **different** case is deliberately left alone. ERPNext's own `set_advances()` is not used, because it pulls every unallocated advance the customer holds and would silently spend case A's money on case B's invoice.
 
+**If allocation fails, the whole commit fails.** No invoice is submitted and the case stays retryable. The alternative — carrying on and billing the full amount — leaves a client who has already paid being chased for the money, which is worse than no invoice because it looks finished.
+
+This earmarking rule is also what the debt definition in §1.1 follows. The two must not diverge: allocation refusing to spend tagged credit while debt measurement counts it as an offset is how risk gets under-reported.
+
 ### 1.5 Payments
 
 Two routes, both producing **submitted** Payment Entries:
@@ -71,14 +83,16 @@ The collection route refuses an amount larger than the total outstanding, and re
 
 A `Debt Collection` task is **one attempt at collecting**, not a standing record of what is owed. `Scheduled-debt-collection-episodes` (daily) raises one when:
 
-- an invoice is overdue by more than 3 days, or
-- summed invoice outstanding exceeds `Customer.debt_threshold_amd`, or
+- an invoice is overdue by more than 3 days — **gross**, see below, or
+- **net** receivable (§1.1) exceeds `Customer.debt_threshold_amd`, or
 - a previous episode's `collection_follow_up_date` has arrived, or
 - a previous episode closed with no follow-up date and 7 days have passed.
 
+**The overdue trigger is deliberately gross.** An invoice 40 days past due deserves attention even when credit elsewhere covers it. But in that case telephoning is the wrong first action — the money is already in hand and wants allocating — so the episode description leads with how much untagged credit the client is holding. There is no "applied the credit" outcome yet; that is `deferred-workstreams.md` item 7.
+
 **One open episode per customer.** Completing one requires `collection_outcome`; choosing `Promised` requires a future follow-up date, which is what schedules the next episode.
 
-`Debt Alert` is a separate, Director-facing tripwire raised hourly against the GL. It must not record payments.
+`Debt Alert` is a separate, Director-facing tripwire raised hourly on the same net figure. It must not record payments.
 
 The `custom_debt_panel` field renders live data from the `task_debt_panel` API — unpaid invoices, unallocated credit, payment history. Nothing is stored on the task.
 
@@ -103,47 +117,7 @@ Priced at order entry (§1.2), enforced at invoice submit, consumed after submit
 
 ## 2. Open work
 
-Ordered by consequence.
-
-### A1 — Profit is costed from a price list — **moved to `deferred-workstreams.md`**
-
-Not a swap, and not doable inside this group. Measured on test:
-
-| | |
-|---|---|
-| Invoice lines with `incoming_rate` populated | **0 of 55** |
-| Invoices with `update_stock = 1` | 0 of 8 |
-| Invoice lines linked to a Delivery Note | 0 |
-| Submitted Purchase Receipts | **0** |
-| Submitted Landed Cost Vouchers | **0** |
-
-The intended fix — cost from `Sales Invoice Item.incoming_rate` — **cannot work as stated.** Dispatch invoices carry `update_stock = 0` and no Delivery Note, so ERPNext has no stock transaction to derive a cost from and never populates the field.
-
-The number it would supply is not landed cost anyway. With zero Purchase Receipts and zero Landed Cost Vouchers, valuation is simply whatever stock was received at. Doc 17's premise — cost = `(purchase price + all landed charges) / received quantity` — **describes a process that is not running.** Valuation and the Standard Buying price currently agree to a median of 0.0% precisely because neither carries any landed cost.
-
-So the prerequisite is the purchasing side: Purchase Receipts and Landed Cost Vouchers actually being raised. That is doc 17's subject and a separate workstream.
-
-**What remains worth doing here, and is small:** the current figure treats a missing buying price as **zero cost — 100% margin** — and only warns. Refusing to produce a figure it cannot compute beats publishing a confident wrong one.
-
-Probe: `deploy/test/deploy/group-11-financial-tail/a1-probe-cost-basis.py` (read-only, re-runnable).
-
-### A2 — Advance-allocation failure aborts the commit — **CLOSED, 9/9**
-
-The allocation block no longer swallows its exception. If allocation fails, the commit fails, nothing is submitted, and the case stays retryable. Previously the invoice submitted at full value while the client's money sat unallocated, and the only trace was a log line.
-
-Verified as a real accounting user, failure induced by a stale `unallocated_amount` causing a genuine ERPNext refusal:
-
-```
-1 commit succeeded                        PASS   ACC-SINV-2026-00166
-2 case-tagged credit consumed first       PASS   this-case PE left 0.0
-3 OTHER case's credit untouched           PASS   other-case PE left 5000.0
-1 outstanding reduced by the advance      PASS   grand=12000 applied=5123 outstanding=6877
-4 allocation failure raised an error      PASS   Debit and Credit not equal...
-4 NO submitted invoice left behind        PASS   0 submitted invoice(s) found
-5 case has no full-value invoice to chase PASS   submitted=[]
-```
-
-> **Writing a test in this area? Read the savepoint comment in `a2-verify-allocation-abort.py` first.** `bench console` has no request boundary, so a `submit()` that sets `docstatus = 1` and then fails its GL posting leaves that row visible for the rest of the session. A real HTTP request rolls it back. Without an explicit savepoint the harness reports a submitted invoice that cannot exist in production, and correct code looks broken.
+**Still open in this group, ordered by consequence: A3, A5, A6, A8, A9.** Four other IDs are no longer work for this group; they are kept at the end of the section, compressed, so that citations from other audits do not lead nowhere.
 
 ### A3 — A consumed item priced at zero can be written off silently
 
@@ -159,27 +133,6 @@ A row with `used_qty > 0` and `unit_price = 0` therefore cannot be invoiced — 
 Server-side pricing makes new zero-price rows hard to create, which is what keeps this narrow. It is still an inconsistency between two guards that are meant to be complementary.
 
 **Start at:** make both use the same definition of billable, and have the nothing-to-invoice path refuse a consumed row at any price.
-
-### A4 — A paid invoice cannot be corrected — **moved to `deferred-workstreams.md` item 1b**
-
-Bundled with the cancel flow, because "undo before the invoice" and "undo after the invoice" are one user need at two stages and must not get two different answers about who may undo what.
-
-Decisions taken and recorded there: native documents (`Sales Invoice` with `is_return = 1`, plus a `Pay` Payment Entry for cash back), Director approval mirroring Write-off Approval, per-line partial credit, credit-note-first with cash refund as a second outcome.
-
-**The blocker found while scoping it, which belongs with the work:** no server script anywhere references `is_return`, and all three tender scripts skip `qty <= 0`. Credit notes carry negative quantities, so crediting a tender invoice never returns `supplied_quantity` — **permanently destroying that much tender entitlement.** Not a live bug today; a live bug the day credit notes ship.
-
-<details>
-<summary>Original A4 analysis, retained</summary>
-
-### A4 detail
-
-Cancel + Amend works while an invoice is unpaid. Once a payment is allocated it does not: ERPNext will not cancel an invoice with submitted payment references without unwinding them first. There is no credit note path and no refund path.
-
-Low volume so far. VAT treatment may make a credit note legally required rather than merely convenient.
-
-VAT treatment may make a credit note legally required rather than merely convenient.
-
-</details>
 
 ### A5 — The test harness cannot see permission defects
 
@@ -225,59 +178,12 @@ The `Management - KPI Dashboard` workspace exists and contains **no KPI reports*
 
 **Do A1 before the profit/KPI parts.** The rest is independent.
 
-### A7 — One definition of debt — **CLOSED, 14/14**
-
-There were **five** consumers of "what this customer owes" and no two agreed. They diverged on two independent axes — gross vs net, and which ledger they read.
-
-All consumers now compute:
-
-```
-net = unpaid submitted invoices − UNTAGGED unallocated credit
-```
-
-**Why only untagged credit offsets.** A Payment Entry carrying a `dispatch_case` is earmarked, and `task_commit_invoice` already refuses to spend it on another case (§1.4). Subtracting it contradicted a rule the system enforces elsewhere, and it under-reported risk: a client holding a large advance for next month appeared to owe nothing on this month's unpaid invoice.
-
-**Why invoice-based, not GL-based.** `docs/implementation-questions.md` specifies outstanding from submitted Sales Invoices, and it is what the collector's own panel displays. The GL form swept in every customer-party movement regardless of origin.
-
-Verified by asserting all four surviving consumers return the **same number** on shared fixtures — agreement is the point, not any one site in isolation:
-
-```
-A invoice only: all four agree         PASS  [5000, 5000, 5000, 5000]
-B untagged credit DOES offset          PASS  3000
-C earmarked credit does NOT offset     PASS  5000
-D only untagged offsets                PASS  8500 (10000 - 1500)
-D panel splits available vs earmarked  PASS  avail=1500 earmarked=4000
-E net zero but invoice still overdue   PASS  overdue path still fires
-duplicate Risk report retired          PASS
-workspace has no dead report shortcuts PASS
-```
-
-**What was measured before changing anything** (`a7-probe-debt-bases.py`, re-runnable):
-
-- **1 Company**, so the company-filter divergence between the two GL consumers was theoretical — identical for every customer.
-- **gross and net disagreed for 3 of 6** customers with a position. One showed gross **2,340,000** against a net of **0** — a client who would have been telephoned for money already in hand.
-- **0 customers changed threshold verdict** from the untagged-credit rule. That half is **preventive, not remedial** — worth stating plainly rather than overselling.
-- Payment Entry Reference rows **are** written when an advance is consumed (5 of 5), so `RPT — Receivables — Unallocated Advances` already agreed with `PE.unallocated_amount` and needed no change.
-
-**Three deliberate non-changes.**
-
-1. **The overdue trigger stays gross.** An invoice 40 days past due deserves attention even if credit covers it. But since chasing is then the wrong first action, the episode description now says so: *"BEFORE YOU CALL: this client is holding N of unallocated general credit…"*. Recording it as an outcome is the deferred follow-on (`deferred-workstreams.md` item 7).
-2. **The debt panel still shows total credit**, so the figure reconciles against the advances table beneath it — plus new Available and Earmarked figures, because changing Net Receivable without showing why would have made the panel unreadable.
-3. **`RPT — Risk — Debt Threshold Exceeded` retired** rather than converged. Two Director-facing reports answering one question with two formulas is worse than one.
-
 ### A8 — Debt Alert has two defects the other schedulers do not
 
 1. **Cancelled alerts are resurrected.** The dedupe filter is `status != "Completed"`, so a **Cancelled** Debt Alert counts as existing: the scheduler updates its figures and reassigns it rather than raising a fresh one. Everything else in the flow uses `not in ["Completed", "Cancelled"]`.
 2. **`custom_assigned_to` is never set.** It writes `_assign` and creates a ToDo, but not the field AGENTS.md designates the single source of truth for assignment. Anything reading `custom_assigned_to` sees these tasks as unassigned.
 
 Both are one-line fixes in `Scheduled-debt-collection.py`. A7 touched that file but deliberately left these alone — they are independent of the debt basis and deserve their own verification.
-
-### A8 — Debt Alert has two defects the other schedulers do not
-
-1. **Cancelled alerts are resurrected.** The dedupe filter is `status != "Completed"`, so a **Cancelled** Debt Alert counts as existing: the scheduler updates its figures and reassigns it rather than raising a fresh one. Everything else in the flow uses `not in ["Completed", "Cancelled"]`.
-2. **`custom_assigned_to` is never set.** It writes `_assign` and creates a ToDo, but not the field AGENTS.md designates the single source of truth for assignment. Anything reading `custom_assigned_to` sees these tasks as unassigned.
-
-Both are one-line fixes in `Scheduled-debt-collection.py`.
 
 ### A9 — Smaller items
 
@@ -290,6 +196,24 @@ Both are one-line fixes in `Scheduled-debt-collection.py`.
 | **N+1 in the debt panel** | `task_debt_panel` issues one `Payment Entry Reference` query per payment row, up to 50 per call |
 
 ---
+
+### Closed, and moved out of this group
+
+Compressed deliberately: the behaviour that resulted is described in §1, which is where you should read it. Full analysis in git history.
+
+**A1 — profit costed from a price list → `deferred-workstreams.md` item 4.** Not the one-line swap to `Sales Invoice Item.incoming_rate` it looked like. That field is populated on **0 of 55** invoice lines, because dispatch invoices carry `update_stock = 0` and no Delivery Note, so ERPNext has no stock transaction to cost from. And the number would be wrong anyway: **zero Purchase Receipts, zero Landed Cost Vouchers** on test, so valuation is bare purchase price — it agrees with the Standard Buying price to a median of 0.0% precisely because neither contains any landed cost. The prerequisite is the purchasing side, which is its own workstream. Probe: `a1-probe-cost-basis.py`.
+
+> Still worth doing here and independent of all that: the current figure treats a **missing** buying price as **zero cost — a 100% margin** — and only warns. It should refuse to produce a number it cannot compute.
+
+**A2 — advance-allocation failure aborts the commit. CLOSED, 9/9.** The block used to swallow its exception, so an allocation failure submitted the invoice at full value while the client's money sat unallocated — a client who had already paid, chased for the full amount, with a log line as the only trace. Behaviour now in §1.4. Verification also pins the allocation *order*. `a2-verify-allocation-abort.py`.
+
+**A4 — a paid invoice cannot be corrected → `deferred-workstreams.md` item 1b**, bundled with cancel flow, because undo-before-invoice and undo-after-invoice must not get two different answers about who may undo what. Decisions recorded there: native documents, Director approval, per-line partial credit, credit-note-first.
+
+> The blocker found while scoping it, which travels with the work: **no server script anywhere references `is_return`**, and all three tender scripts skip `qty <= 0`. Credit notes carry negative quantities, so crediting a tender invoice never returns `supplied_quantity` — and since the validator refuses `qty > won − supplied`, that **permanently destroys tender entitlement**. Not a live bug today; a live bug the day credit notes ship.
+
+**A7 — one definition of debt. CLOSED, 14/14.** Five consumers computed it five ways, disagreeing on gross-vs-net and on which ledger. All now use the formula in §1.1. The GL-based duplicate report was retired rather than converged.
+
+> Two things measured rather than assumed. Gross and net disagreed for **3 of 6** customers with a position, one showing gross **2,340,000** against a net of **zero** — a client who would have been telephoned for money already in hand. But the earmarked-credit rule changes **zero** threshold verdicts today, so that half is **preventive, not remedial**. Probe: `a7-probe-debt-bases.py`.
 
 ## 3. Traps — read before changing this area
 
@@ -308,18 +232,31 @@ Not bugs. Properties that cost a day each if you do not know them.
 | **`Dispatch Case.sales_invoice` is not authoritative** | It goes stale on Cancel + Amend, because the amendment is a new document. Resolve invoices by querying `Sales Invoice.dispatch_case` |
 | **Order entry refuses unpriced items** | Correct, but a missing `Item Price` now blocks work rather than silently producing a zero-value invoice |
 | **The cancel flow has no mechanism yet** | Bulk-cancelling tasks needs to write `status` on tasks the user does not own, and `status` cannot go on `SYSTEM_FIELDS` because it is the primary user-editable transition. Group 1 D11 |
+| **The debt formula exists in four places** | RestrictedPython has no module system. Each copy carries a `keep in sync` header; `a7-verify-one-debt-definition.py` asserts they agree. Change one, change all four |
+| **A workspace cannot be saved while any Link is dead** | Frappe validates every row, so one shortcut pointing at a deleted report blocks *unrelated* edits to that workspace. This is why dangling shortcuts are blocking rather than cosmetic |
+| **`bench console` has no request boundary** | A `submit()` that sets `docstatus = 1` then fails its GL posting leaves the row visible for the rest of the session; a real request rolls it back. Use a savepoint when testing failure paths, or correct code looks broken |
+| **Non-ASCII in a double-quoted string in a `.ps1` is a syntax error** | PowerShell 5.1 reads BOM-less files as ANSI. Several report and workspace names here contain em-dashes; build them with `[char]0x2014` |
+
+The last three are general and are written up in full in `AGENTS.md`.
 
 ### Symptoms a user can report
 
 | Symptom | Item |
 |---|---|
-| "Profit on this case looks far too high" | A1 |
-| "The client paid in advance but the invoice shows the full amount" | A2 |
+| "Profit on this case looks far too high" | A1 — deferred, item 4 |
 | "I cannot create the invoice and I cannot close the case either" | A9, stranded draft |
 | "This order went through but now the invoice is refused" | A9, arbitrary tender pick |
-| "We over-billed a client who has already paid and I cannot fix it" | A4 |
-| "The Director sees no alert but Finance is chasing this customer" | A7 |
-| "Which of these two debt reports is the right one?" | A6 |
+| "We over-billed a client who has already paid and I cannot fix it" | A4 — deferred, item 1b |
+| "A cancelled Debt Alert keeps coming back" | A8 |
+| "This Debt Alert looks assigned to nobody" | A8 |
+| "The client returned goods but we consumed them and billed nothing" | A3 |
+
+Two symptoms that **should no longer occur**, listed so a recurrence is recognised as a regression rather than a known issue:
+
+| Symptom | Was |
+|---|---|
+| "The client paid in advance but the invoice shows the full amount" | A2 — allocation failure is now fatal to the commit |
+| "The Director sees no alert but Finance is chasing this customer" | A7 — one definition, asserted to agree across all consumers |
 
 ---
 
@@ -346,9 +283,9 @@ Other audits cite these. Current position only.
 | C1, C2, G1, G2, G3, G4, G5, G6, G8, G10, G11, G12, G13, G14, G15, G16 | Closed |
 | C3, C4 | Group 2 — split Delivery photo rule, module-level `get_doc_before_save()` |
 | G7 | Closed by Group 1 D1 |
-| G9 | Open — **A1** |
+| G9 | **A1** — deferred, `deferred-workstreams.md` item 4 |
 | G17 | Open — **A6** |
-| R13 | Open — **A4** |
+| R13 | **A4** — deferred, `deferred-workstreams.md` item 1b |
 
 ---
 
@@ -363,8 +300,9 @@ Other audits cite these. Current position only.
 | Debt scheduling | `Scheduled-debt-collection-episodes.py` (daily), `Scheduled-debt-collection.py` (hourly) |
 | Debt panel | `task_debt_panel.py`, `Task-Debt-Panel.js` |
 | Tenders | `Sales-Invoice-before-submit-tender-validation.py`, `-after-submit-tender-update.py`, `-on-cancel-tender-reversal.py`, `Tender-Agreement-before-save.py` |
-| Deploy and verification | `deploy/test/deploy/group-11-financial-tail/` — one `wN-*.ps1` per workstream, each with a `wN-verify-*.py` |
-| Architectural rules | `AGENTS.md` |
+| The one debt definition | Duplicated in `Scheduled-debt-collection.py` (canonical, with the long comment), `Scheduled-debt-collection-episodes.py`, `task_debt_panel.py`, and the `RPT - Clients Exceeding Debt Threshold` SQL. **Change one, change all four**, then re-run `a7-verify-one-debt-definition.py`, which asserts they agree |
+| Deploy and verification | `deploy/test/deploy/group-11-financial-tail/` — one `wN-*.ps1` per workstream with a paired `wN-verify-*.py`, plus `a2-*` and `a7-*`. The `a1-probe-*` and `a7-probe-*` scripts are read-only and re-runnable |
+| Architectural rules | `AGENTS.md` — including the console-savepoint, `.ps1` non-ASCII and workspace dead-link traps this group discovered |
 | Flow specification | `docs/16-unified-dispatch-flow.md` §4.3, §6.9–6.12 |
 | Cost and valuation | `docs/17-purchase-cost-and-valuation.md` — the authority A1 must satisfy |
 | Pricing architecture | `docs/09-standard-selling-flow.md` §6.1, §7 |
