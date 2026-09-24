@@ -60,7 +60,13 @@ required_qty = float(row.dispatched_qty or 0)
 row.custom_scanned_qty = required_qty if packed else 0
 
 case.flags.ignore_permissions = True
-case.flags.ignore_validate_update_after_submit = True
+# The ignore_validate_update_after_submit bypass that used to sit here is gone.
+# It skipped Frappe's check that a save on a SUBMITTED document touched only
+# allow_on_submit fields -- so it suppressed that check for every field, not
+# just the ones this endpoint writes, on the central doctype of the dispatch
+# flow. The fields written here are all allow_on_submit in their own right, so
+# the bypass was never needed; it was covering for one field
+# (lost_damaged_presence) that was not, and which has been corrected instead.
 case.save()
 
 frappe.response["message"] = {

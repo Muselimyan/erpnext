@@ -48,9 +48,24 @@ case = frappe.get_doc("Dispatch Case", task.dispatch_case)
 
 # Refuse if there IS something to bill -- this path must not become a way to
 # skip invoicing a real sale.
+# "Billable" MUST mean the same thing here as it does in task_commit_invoice.
+#
+# This tested raw unit_price while commit tested the effective rate, and the two
+# disagreed in both directions. A row at unit_price 0 with used_qty > 0 was not
+# "billable" here, so the case closed with no invoice -- goods consumed by the
+# client, nothing billed, no record of a loss. A row at unit_price 1000 with a
+# 100% discount WAS "billable" here so close refused, while commit priced it at
+# zero and refused too, leaving a task that could not be finished by either
+# route.
+#
+# Both now use the effective rate. Zero-priced rows can no longer be created or
+# submitted (see Dispatch-Case-before-submit), so this is the last line of
+# defence rather than the first, but the two definitions must not drift apart
+# again. KEEP IN SYNC WITH task_commit_invoice.py.
 billable = []
 for r in (case.case_items or []):
-    if float(r.used_qty or 0) > 0 and float(r.unit_price or 0) > 0:
+    r_rate = float(r.unit_price or 0) * (1 - float(r.discount_pct or 0) / 100)
+    if float(r.used_qty or 0) > 0 and r_rate > 0:
         billable.append(r.item_code or "Unknown")
 if billable:
     frappe.throw("This case has billable items (" + ", ".join(billable)

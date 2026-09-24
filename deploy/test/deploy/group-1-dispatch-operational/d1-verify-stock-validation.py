@@ -222,6 +222,14 @@ def d1_verify(INV_USER, ORDER_USER, RETURNS_USER):
         rt = frappe.get_doc({"doctype": "Task", "subject": "D1VERIFY restock", "task_kind": "Returns restocking", "task_access_policy": "Returns restocking", "customer": cust, "dispatch_case": rcase.name, "status": "Working", "custom_assigned_to": RETURNS_USER, "custom_accepted_by": RETURNS_USER})
         rt.flags.ignore_permissions = True
         rt.insert()
+        # Returns restocking requires a photo before it can be completed (added
+        # by Group 1 D6, after this harness was written -- so this step failed
+        # on the D6 gate, not on anything D1 tests). Same db_insert() trick as
+        # the photos above: it skips the File controller, which would otherwise
+        # stat a file that does not exist on disk.
+        rphoto = frappe.get_doc({"doctype": "File", "file_name": "d1restock.png", "file_url": "/files/d1restock.png", "attached_to_doctype": "Task", "attached_to_name": rt.name, "is_private": 0})
+        rphoto.name = "d1v-" + frappe.generate_hash("", 8)
+        rphoto.db_insert()
         frappe.set_user(RETURNS_USER)
         rerr = ""
         try:

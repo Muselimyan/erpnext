@@ -31,6 +31,18 @@ def run_script():
     else:
         case.notes = 'Created from Task ' + task.name
     case.flags.ignore_permissions = True
+    # ignore_mandatory is KEPT, deliberately, and this is the reason.
+    #
+    # This creates the empty shell a new order is built into: no products yet,
+    # and often no customer yet, because the person taking the order opens the
+    # case first and fills it in as the client talks. Mandatory fields are
+    # enforced where the order becomes real -- Dispatch-Case-before-submit
+    # requires items and a priced line, the order-entry gate requires a customer
+    # and a client warehouse. Requiring them at creation would mean the case
+    # could not exist until it was already complete.
+    #
+    # Reviewed as part of the bypass-flag removal: this one is not covering for
+    # a missing rule, it is the absence of a rule that should not apply yet.
     case.flags.ignore_mandatory = True
     case.insert()
     frappe.db.set_value('Task', task_name, 'dispatch_case', case.name)

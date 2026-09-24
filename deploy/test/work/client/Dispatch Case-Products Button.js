@@ -1,7 +1,27 @@
 ﻿// Name: Dispatch Case-Products Button
 // DocType: Dispatch Case
-// Enabled: 1
+// Enabled: 0
 // ---
+//
+// DISABLED. This wrote `row.unit_price = item.price || 0`, where `price` came
+// from `Item.standard_rate` -- a field populated on NO items on this instance.
+// So the fallback was not a fallback: it was the outcome every time, and this
+// button produced a zero-priced row on every use. It is the pre-W7 pricing path
+// that server-side resolution was introduced to replace, and it survived
+// because nothing pointed at it.
+//
+// Not fixed in place, deliberately. Making it correct would mean reproducing
+// the price chain -- active tender, then customer-specific Item Price, then
+// Standard Selling, then refuse -- in JavaScript, which is exactly the
+// duplication of business logic AGENTS.md forbids, and a second implementation
+// of pricing is how the two definitions of "billable" drifted apart.
+//
+// The supported path is the Task Product Work Area, which calls
+// task_add_dispatch_product and gets the price resolved on the server.
+//
+// Kept rather than deleted: the item search, the multi-select dialog and the
+// grid rendering are all reusable if a properly-priced version is wanted. Any
+// such version must obtain its price from the server.
 
 function dc_products_escape(value) {
     return frappe.utils.escape_html(String(value === undefined || value === null ? "" : value));

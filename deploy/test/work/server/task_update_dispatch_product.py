@@ -108,6 +108,17 @@ def run_script():
     new_discount = None
     if discount_pct is not None:
         new_discount = float(discount_pct)
+        # Bounds as on the add path. KEEP IN SYNC WITH
+        # task_add_dispatch_product.py -- the reasoning is there. Enforcing on
+        # add alone would be pointless: this endpoint is how a discount is
+        # normally applied, since the product is added first and discounted
+        # afterwards.
+        if new_discount < 0:
+            frappe.throw("Discount cannot be negative. To charge more than the list price, change the price list or the tender, not the discount.")
+        if new_discount >= 100:
+            frappe.throw("A discount of " + str(new_discount) + "% is not allowed: it prices the item at zero. "
+                         + "The maximum discount is just under 100%. If these goods are genuinely free of charge, "
+                         + "they must not be added to a priced order.")
     if tender_name and new_discount and new_discount > 0:
         frappe.throw("Item " + str(target_item) + " is covered by " + tender_name + " at " + str(resolved_price) + ". A tender price cannot be discounted.")
 

@@ -13,6 +13,24 @@ def run_script():
     # NOTE: any `unit_price` sent by the client is deliberately ignored. The
     # price is resolved server-side below. Deviations go through discount_pct.
     discount_pct = float(frappe.form_dict.get("discount_pct") or 0)
+    # A DISCOUNT MAY NOT REACH 100. Nothing bounded this before, so 100 (and 150,
+    # and negatives) were all accepted -- and 100 produces an effective rate of
+    # zero, which is not a discounted sale but a giveaway wearing one's clothes.
+    # It then flowed through billing as though it were a priced line: the invoice
+    # refused it, the nothing-to-invoice path counted it as billable, and the
+    # task could be finished by neither route.
+    #
+    # Free-of-charge supply, if it is ever wanted, needs its own mechanism and
+    # its own approval -- not a price of zero moving through the sales ledger.
+    # A negative discount is a price increase by the back door; prices come from
+    # the price list or a tender, so that is refused too.
+    # KEEP IN SYNC WITH task_update_dispatch_product.py.
+    if discount_pct < 0:
+        frappe.throw("Discount cannot be negative. To charge more than the list price, change the price list or the tender, not the discount.")
+    if discount_pct >= 100:
+        frappe.throw("A discount of " + str(discount_pct) + "% is not allowed: it prices the item at zero. "
+                     + "The maximum discount is just under 100%. If these goods are genuinely free of charge, "
+                     + "they must not be added to a priced order.")
     if not task_name:
         frappe.throw("Task is required.")
     if not item_code:

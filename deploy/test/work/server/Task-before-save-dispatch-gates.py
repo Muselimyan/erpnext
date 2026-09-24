@@ -195,13 +195,23 @@ else:
             # rows on test had unit_price = 0, because the price was whatever
             # the browser sent, pre-filled from Item.standard_rate which is
             # populated on no items at all.
+            # Tests the EFFECTIVE rate, not unit_price. Checking unit_price
+            # alone let a line priced at 1000 with a 100% discount through --
+            # a zero-value line with a healthy-looking unit price, which then
+            # could be neither invoiced nor written off. The submit gate in
+            # Dispatch-Case-before-submit applies the same test and is the
+            # authoritative one; this exists to fail earlier and more kindly.
+            # KEEP THE TWO IN SYNC.
             unpriced = []
             for row in dc_doc.case_items:
-                if float(row.unit_price or 0) <= 0:
-                    unpriced.append(row.item_code or row.item_name or "Unknown")
+                row_rate = float(row.unit_price or 0) * (1 - float(row.discount_pct or 0) / 100)
+                if row_rate <= 0:
+                    unpriced.append(str(row.item_code or row.item_name or "Unknown")
+                                    + " (price " + str(row.unit_price or 0)
+                                    + ", discount " + str(row.discount_pct or 0) + "%)")
             if unpriced:
-                frappe.throw("These products have no selling price: " + ", ".join(unpriced)
-                             + ". Set an Item Price on the Standard Selling price list (or a Tender Agreement price for this hospital), then re-add them.")
+                frappe.throw("These products would be dispatched at a price of zero: " + ", ".join(unpriced)
+                             + ". Set an Item Price on the Standard Selling price list (or a Tender Agreement price for this hospital), or reduce the discount below 100%.")
 
             # Tender remaining-quantity check, applied HERE rather than at
             # invoice submission. Sales-Invoice-before-submit-tender-validation
