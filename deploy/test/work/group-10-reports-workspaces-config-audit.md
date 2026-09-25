@@ -12,13 +12,15 @@
 
 ## Executive Summary
 
+> **Partially revised 2026-09-25 by Group 11 A6/A7.** The report counts below were taken at audit time and have moved. Current figures are in the revised rows; §1.2, §1.3, §1.4 and findings F-004, F-030, F-031 carry the detail. Everything outside reports and workspaces — property setters, workflow, role profiles, notifications, print formats — has **not** been re-checked and still reflects the original audit.
+
 | Metric | Value |
 |---|---|
-| Reports analyzed | 49 |
-| Reports documented and matching | 38 |
-| Reports duplicated (same purpose, two copies) | 8 (4 duplicate pairs) |
+| Reports analyzed | ~~49~~ → **45** (2026-09-25) |
+| Reports documented and matching | 38 (as at audit date) |
+| Reports duplicated (same purpose, two copies) | ~~8 (4 pairs)~~ → **10 (5 pairs)** — one pair resolved, one was never a pair, three added from §1.4 |
 | Reports referencing superseded DocTypes | 1 |
-| Reports documented but missing from prod | 3 (KPI dashboards) |
+| Reports documented but missing from prod | ~~3 (KPI dashboards)~~ → **4** (+ Pricing / Manual Rate Edits) |
 | Workspaces analyzed | 22 (3 custom, 19 standard) |
 | Workspace shortcuts vs doc spec mismatches | 8 |
 | Property setters analyzed | 209 (156 system-generated, 53 custom/intentional) |
@@ -27,10 +29,10 @@
 | Role profiles for InMED custom roles | 0 (all 6 are ERPNext defaults) |
 | Notifications for InMED operations | 0 (all 5 are system/ERPNext defaults) |
 | Print formats relevant to InMED | 0 (IRS 1099 is US tax form) |
-| Findings total | 29 |
+| Findings total | ~~29~~ → **31** (F-030, F-031 added 2026-09-25) |
 | Critical | 0 |
-| High | 5 |
-| Medium | 14 |
+| High | ~~5~~ → **6** (F-030) |
+| Medium | ~~14~~ → **15** (F-031) |
 | Low | 10 |
 
 ---
@@ -132,24 +134,25 @@ Every report deployed in production, mapped to its documentation source. Confide
 
 ### 1.2 Duplicate Report Pairs
 
-Four pairs of reports serve the same purpose. In each case, one was created during the Doc 13A deployment (2026-05-08 to 2026-05-18), and the other during the Doc 15A/expanded deployment (2026-06-16). The newer version typically has broader role access and sometimes references a different DocType.
+> **Revised 2026-09-25 (Group 11 A6 / A7).** The instance now holds **45** reports, not the 49 this audit counted. One pair has been resolved, one never existed as described, and three more pairs are added that this section originally judged not to be duplicates — see §1.4, where the reasoning was wrong.
 
-| Pair | Report A (older) | Report B (newer) | Difference |
+| Pair | Report A (older) | Report B (newer) | Status |
 |---|---|---|---|
-| 1 | RPT - Risk - Debt Threshold Exceeded (2026-05-08) | RPT - Clients Exceeding Debt Threshold (2026-06-16) | B has a more detailed SQL (includes Net Debt and Excess Amount calculations); B has broader roles. Both active. |
-| 2 | RPT - Receivables - Unallocated Advances (2026-05-08) | RPT - Unallocated Customer Advances (2026-06-16) | B appears to be a re-deployment with expanded roles. Both active. |
-| 3 | RPT - Dispatch Cases - Aging (Open) (2026-05-12) | RPT - Dispatch Case Aging (2026-06-16) | B has a longer query (1248 chars vs 326 chars) suggesting richer columns. Both active. |
-| 4 | RPT - Ops - Prepaid Orders Awaiting Delivery (2026-05-08, ref: Sales Order) | RPT - Prepaid Orders Awaiting Delivery (2026-06-16, ref: Dispatch Case) | B references Dispatch Case instead of Sales Order — reflecting the architectural shift from SO to DC. The older one may be stale. |
+| 1 | RPT - Risk - Debt Threshold Exceeded (2026-05-08) | RPT - Clients Exceeding Debt Threshold (2026-06-16) | **RESOLVED.** A was retired by Group 11 A7. The two did not merely overlap — they used **different formulas**, A on GL `sum(debit − credit)` and B on invoice outstanding minus advances, so two Director-facing reports could give two answers to one question. B survives, now on the single agreed debt definition |
+| 2 | RPT - Receivables - Unallocated Advances (2026-05-08) | RPT - Unallocated Customer Advances (2026-06-16) | Open. Both active. Note they also compute differently: A derives unallocated as `paid_amount − SUM(allocated)`, B reads `PE.unallocated_amount`. Verified on test that the two agree, because a consumed advance does get a Payment Entry Reference row — but that is a coincidence of implementation, not a shared definition |
+| 3 | RPT - Dispatch Cases - Aging (Open) (2026-05-12) | RPT - Dispatch Case Aging (2026-06-16) | Open. Both active |
+| 4 | ~~RPT - Ops - Prepaid Orders Awaiting Delivery~~ | RPT - Prepaid Orders Awaiting Delivery | **NOT A PAIR — A does not exist.** It was deleted at some point after this audit, and nothing updated the workspace that pointed at it. That dead shortcut is the one Group 11 A7 had to repair, and it had been making the whole `Ops — Reporting Pack` workspace unsaveable (see §2.1). This audit's own data explains the origin of a defect found independently a quarter later |
 
 ### 1.3 Reports Documented But Missing from Production
 
-Doc 15A claims these exist, but they are **not present** in the 49 deployed reports:
+Doc 15A claims these exist. They are **not present** in the 45 deployed reports:
 
 | Report | Doc Source | Status | Confidence |
 |---|---|---|---|
-| RPT - KPI - Daily Dashboard | Doc 15 §8.4, Doc 15A | **MISSING** | 95% — searched all 49 report names, no match |
-| RPT - KPI - Weekly Dashboard | Doc 15 §8.4, Doc 15A | **MISSING** | 95% |
-| RPT - KPI - Monthly Income and Profit | Doc 15 §8.4, Doc 15A | **MISSING** | 95% |
+| RPT - KPI - Daily Dashboard | Doc 15 §8.4, Doc 15A | **MISSING** | Confirmed 2026-09-25 against the 45-report export |
+| RPT - KPI - Weekly Dashboard | Doc 15 §8.4, Doc 15A | **MISSING** | Confirmed |
+| RPT - KPI - Monthly Income and Profit | Doc 15 §8.4, Doc 15A | **MISSING** | Confirmed |
+| RPT - Pricing - Sales Orders With Manual Rate Edits | Doc 15 §9.4, Doc 15A | **MISSING** | Added by Group 11 A6. `Ops — Reporting Pack` carried a shortcut to it, which is how it was noticed — the shortcut was removed, the requirement stands |
 
 These may have been implemented as dashboard charts or workspace number cards rather than Query Reports. However, the Management - KPI Dashboard workspace has **zero charts and zero number cards** — only 3 shortcut links to other reports. So these are genuinely missing or were removed after Doc 15A was written.
 
@@ -163,7 +166,15 @@ Three reports have company-specific variants with " - Inmed" appended. These are
 | RPT - Stock - Return Pickup In-Transit | RPT - Stock - Return Pickup In-Transit - Inmed | "Return Pickup In-Transit - Inmed" |
 | RPT - Stock - Returns | RPT - Stock - Returns - Inmed | "Returns - Inmed" |
 
-These are not duplicates — they serve different purposes (generic vs company-scoped). The generic versions use a warehouse parameter; the Inmed versions hardcode the warehouse. Both are valid. However, the Inmed variants are **not documented** in any numbered doc.
+> **CORRECTED 2026-09-25. The claim below was wrong, and it is worth saying why rather than just deleting it.**
+>
+> This section asserted that *"the generic versions use a warehouse parameter; the Inmed versions hardcode the warehouse"*, and concluded on that basis that the three pairs are not duplicates.
+>
+> All six queries were read. **Neither version takes a `%(warehouse)s` parameter, and both hardcode the Inmed warehouse.** The six texts are identical apart from SQL keyword casing (`select` vs `SELECT`). There is no generic version — there are two copies of the same report, one written in lower case.
+>
+> So these **are** three true duplicate pairs and belong in §1.2, bringing the real total to five open pairs. The original conclusion was reasonable from the names alone; it does not survive reading the SQL.
+
+~~These are not duplicates — they serve different purposes (generic vs company-scoped). The generic versions use a warehouse parameter; the Inmed versions hardcode the warehouse. Both are valid.~~ The Inmed variants are **not documented** in any numbered doc.
 
 ### 1.5 Report Role Access Summary
 
@@ -186,6 +197,16 @@ Two role names appear in report permissions that are **not in the requirements d
 ## 2. Workspaces — Complete Analysis
 
 ### 2.1 Custom Operational Workspaces (3)
+
+> **A DEAD LINK MAKES THE WHOLE WORKSPACE UNSAVEABLE — added 2026-09-25 (Group 11 A6/A7).**
+>
+> Frappe validates **every** Link row when a Workspace is saved, so a single shortcut pointing at a deleted report blocks *any* edit to that workspace, including edits that have nothing to do with the broken row. `Ops — Reporting Pack` had two such shortcuts and they blocked an unrelated repoint until they were repaired.
+>
+> That reclassifies dangling shortcuts from cosmetic to blocking, and it means they cannot be left for later: the next person to touch the workspace has to fix them first whether they meant to or not.
+>
+> Repaired in A7: `RPT — Ops — Prepaid Orders Awaiting Delivery` repointed to `RPT - Prepaid Orders Awaiting Delivery`, which is the report that exists (see §1.2 pair 4); `RPT — Pricing — Sales Orders With Manual Rate Edits` removed, as no such report exists under any name (§1.3). `Ops — Reporting Pack` went from 28 shortcuts to 27 and now has no dead report links.
+>
+> **`VIEW: Distribute Payment Tasks` is still live in both `Dispatch - Task Queues` (shortcut 9 below) and `Ops — Reporting Pack`.** That task kind was retired by Group 11 W10. It is a DocType view rather than a Report link, so it does not block saving — which is exactly why it has survived.
 
 #### Dispatch - Task Queues
 
@@ -572,12 +593,13 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 - **Recommendation**: If Surgery Case is truly superseded, either deactivate the workflow (`is_active=0`) or document that Surgery Case remains an active parallel system.
 - **Confidence**: 95%
 
-### F-004: Four duplicate report pairs exist
+### F-004: Five duplicate report pairs exist *(revised 2026-09-25)*
 - **Type**: RISK
 - **Severity**: HIGH
-- **Evidence**: See §1.2. Debt Threshold, Unallocated Advances, Dispatch Case Aging, and Prepaid Orders each have two reports. Users may see different data depending on which version they open. The Prepaid Orders pair references different DocTypes (Sales Order vs Dispatch Case).
-- **Recommendation**: For each pair, determine which version is current. Disable or delete the obsolete one. The Prepaid Orders pair is especially risky — the Sales Order version may show stale data since operations now use Dispatch Case.
-- **Confidence**: 95%
+- **Evidence**: See §1.2 and the correction in §1.4. Originally recorded as four pairs. The true position: **Debt Threshold is resolved** (Group 11 A7 retired the GL-based copy); **Prepaid Orders was never a pair** — the older report does not exist and its deletion is what left a dead workspace shortcut; and the **three "-Inmed" stock variants ARE duplicates**, contrary to §1.4's original reasoning, because all six queries are identical apart from keyword casing and both hardcode the warehouse. That leaves five open pairs: Unallocated Advances, Dispatch Case Aging, and the three stock variants.
+- **Why it matters more than "two reports doing one job"**: the Debt Threshold pair used **two different formulas**, so a Director could open either and get a different answer about the same customer. Duplicate names are untidy; duplicate *definitions* are a correctness problem. Check each surviving pair for the same thing before picking a winner — Unallocated Advances already computes two ways (§1.2 pair 2).
+- **Recommendation**: For each remaining pair, compare the SQL before deciding which is current, then delete the loser and repoint any workspace shortcut in the **same** change (see F-008).
+- **Confidence**: Verified against the 45-report export, 2026-09-25
 
 ### F-005: RPT - Surgery Cases - Aging (Open) references superseded DocType
 - **Type**: DEAD-CODE
@@ -753,6 +775,22 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 - **Evidence**: Property setter `Task subject reqd=0`. The `Task-before-save-auto-subject.py` script auto-generates a 5-digit numeric subject when missing. If that script is ever disabled, tasks could be created without subjects, making them hard to identify.
 - **Recommendation**: Document the dependency: "Task subject is auto-generated by server script. Do not disable `Task-before-save-auto-subject.py` without making subject required again."
 - **Confidence**: 85%
+
+### F-030: A dangling workspace shortcut blocks ALL edits to that workspace *(added 2026-09-25, Group 11 A6/A7)*
+- **Type**: DEFECT
+- **Severity**: HIGH — higher than it looks
+- **Evidence**: Frappe validates every Link row when a Workspace is saved, so one shortcut pointing at a deleted report makes the entire workspace unsaveable, including edits unrelated to the broken row. `Ops — Reporting Pack` carried two such shortcuts (`RPT — Ops — Prepaid Orders Awaiting Delivery`, `RPT — Pricing — Sales Orders With Manual Rate Edits`) and they blocked an unrelated repoint until repaired. Both fixed in A7; the workspace now has no dead report links.
+- **Why this is not cosmetic**: the cost is not a broken link, it is that nobody can change the workspace at all until someone diagnoses why the save is failing — and the error names the dead rows, not the reason.
+- **Recommendation**: **Deleting a report must include repointing or removing every shortcut to it, in the same change.** Both dead links here were created by report deletions that left their shortcuts behind (§1.2 pair 4, §1.3). Validate `type = "Report"` shortcuts against existing Reports before saving any workspace — see section 3 of `deploy/test/deploy/group-11-financial-tail/a3-no-zero-price.ps1`'s sibling, `a7-one-debt-definition.ps1`, for a working implementation.
+- **Confidence**: Reproduced and fixed on test
+
+### F-031: Nothing reports on profit *(added 2026-09-25, Group 11 A6)*
+- **Type**: GAP
+- **Severity**: MEDIUM — blocked, so not actionable yet
+- **Evidence**: No report reads `Task.custom_case_profit` or computes margin. The only place a profit figure appears is a single field on the Debt Closure Approval task. `Management - KPI Dashboard` — which is where such a report would belong — contains zero KPI reports (F-001).
+- **Do not fix this yet.** Profit is currently costed from a buying price list rather than actual cost, and the purchasing side that would make it correct is not running: zero Purchase Receipts and zero Landed Cost Vouchers on test. A report over a wrong number is worse than no report, because it gets believed. Tracked as `deferred-workstreams.md` item 4 (purchasing and landed cost).
+- **Recommendation**: Build this after the cost basis is trustworthy, not before.
+- **Confidence**: Verified against the 45-report export
 
 ---
 

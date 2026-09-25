@@ -4,7 +4,9 @@
 >
 > **Excludes.** Dispatch Case operational flow — task chain, packing, scanning, returns, stock movement, cancel flow. See `group-1-dispatch-case-lifecycle.md`.
 >
-> **How to read this.** §1 is how the system works now — the model you need in your head before changing anything. §2 is what is open. §3 is what will cost you a day if you do not know it. Nothing here describes how things used to be.
+> **How to read this.** §1 is how the system works now — the model you need in your head before changing anything. §2 records that **nothing in this group is open**, and where the items that moved have gone. §3 is what will cost you a day if you do not know it.
+>
+> **State.** A1–A9 are all closed or moved. 243 checks pass across 18 verification scripts covering this group and Group 1. The two things that would most change the picture are both deferred and both outside this group: profit has no trustworthy cost basis until purchasing runs (item 4), and a paid invoice still cannot be corrected (item 1b).
 
 ---
 
@@ -38,6 +40,21 @@ Credit carrying a `dispatch_case` is earmarked and does **not** offset anything 
 | 4 | Refuse — the item cannot be ordered |
 
 A tender-priced item **cannot be discounted**; the endpoint refuses. `discount_pct` on any other item is the sole deviation route and triggers Director approval.
+
+The same chain is used by `task_apply_template`, which **refuses the whole template** if any line is unpriced — a kit applied half-priced is worse than one refused.
+
+**No item priced at zero may participate in the flow.** The quantity that matters everywhere is the effective rate:
+
+```
+effective_rate = unit_price × (1 − discount_pct / 100)
+```
+
+- `0 ≤ discount_pct < 100`, enforced on add and on update. 100% is not a discount but a giveaway, and it produced a line that could be neither invoiced nor written off.
+- `Dispatch-Case-before-submit` refuses any line whose effective rate is zero. **This is the backstop and the only price gate that cannot be stepped around** — the order-entry gate is skipped once a case is submitted, and Discount Approval re-submits without re-checking.
+- `unit_price` and `discount_pct` are **not editable after submit**. Nothing in the flow writes them post-submit; both product endpoints are hard-gated to `docstatus = 0`.
+- Both invoice paths — commit and nothing-to-invoice — test the effective rate, so they cannot disagree about what is billable.
+
+Two client scripts that wrote prices in the browser (`Dispatch Case-Products Button`, `Dispatch Case-Template Auto Fill`) are **disabled**. They are not to be revived without routing through the server: resolving prices in JavaScript duplicates business logic, and a second implementation of pricing is how the two definitions of "billable" drifted apart in the first place.
 
 ### 1.3 Invoicing is one deliberate action
 
@@ -88,7 +105,7 @@ A `Debt Collection` task is **one attempt at collecting**, not a standing record
 - a previous episode's `collection_follow_up_date` has arrived, or
 - a previous episode closed with no follow-up date and 7 days have passed.
 
-**The overdue trigger is deliberately gross.** An invoice 40 days past due deserves attention even when credit elsewhere covers it. But in that case telephoning is the wrong first action — the money is already in hand and wants allocating — so the episode description leads with how much untagged credit the client is holding. There is no "applied the credit" outcome yet; that is `deferred-workstreams.md` item 7.
+**The overdue trigger is deliberately gross.** An invoice 40 days past due deserves attention even when credit elsewhere covers it. But in that case telephoning is the wrong first action — the money is already in hand and wants allocating — so the episode description leads with how much untagged credit the client is holding. There is no "applied the credit" outcome yet; that is `deferred-workstreams.md` item 8.
 
 **One open episode per customer.** Completing one requires `collection_outcome`; choosing `Promised` requires a future follow-up date, which is what schedules the next episode.
 
@@ -100,6 +117,8 @@ The `custom_debt_panel` field renders live data from the `task_debt_panel` API �
 
 Nothing in the task flow closes a Dispatch Case. `Payment Entry-after-submit-debt-closure-check` fires when any customer Receive payment is submitted: if that customer now has **no** submitted invoice with outstanding above zero, every case of theirs in `Payment Pending` or `Invoice Pending` whose invoices are all settled is set to `Closed`, and **one** `Debt Closure Approval` task is raised for the Director with the profit figure attached.
 
+**A settlement always raises the approval, even when it closes no case** — the account reaching zero is what warrants Director review, and the approval is also where profit is recorded. When nothing closed, the description says so in words rather than showing a profit figure; a stored zero cannot express "not computed", so the text has to.
+
 The only other route to `Closed` is `task_close_case_nothing_to_invoice`.
 
 ### 1.8 Tender agreements
@@ -108,112 +127,43 @@ Priced at order entry (§1.2), enforced at invoice submit, consumed after submit
 
 | Stage | Script | Behaviour |
 |---|---|---|
+| Order entry | `task_add_dispatch_product` / `task_update_dispatch_product` | **Refuses two active tenders on one item**, naming both, before the order exists. Previously the last one scanned won, non-deterministically, and the clash only surfaced at invoice submit |
 | Submit | `Sales-Invoice-before-submit-tender-validation` | Refuses if two active tenders match one item; refuses `qty > won − supplied`; refuses a rate that differs from `tender_price` to 2dp |
 | After submit | `Sales-Invoice-after-submit-tender-update` | Increments `supplied_quantity`, recomputes `remaining_quantity`, writes audit rows into the invoice's `tender_fulfillments` |
-| Cancel | `Sales-Invoice-on-cancel-tender-reversal` | Walks `tender_fulfillments` and gives the quantity back |
+| Cancel | `Sales-Invoice-on-cancel-tender-reversal` | Walks `tender_fulfillments` and gives the quantity back. **Never throws** — it runs in After Cancel, where a throw rolls back the cancellation, so a missing tender or deleted item row is logged and skipped rather than making the invoice uncancellable |
 | Any save | `Tender-Agreement-before-save` | Recomputes `remaining_quantity`; derives `status` from `valid_from`/`valid_to` against today. `Closed` is sticky |
 
 ---
 
 ## 2. Open work
 
-**Still open in this group, ordered by consequence: A3, A5, A6, A8, A9.** Four other IDs are no longer work for this group; they are kept at the end of the section, compressed, so that citations from other audits do not lead nowhere.
+**Nothing in this group is open.** A1–A9 are closed or have moved to the workstream that owns them. The IDs are kept because other audits cite them.
 
-### A3 — A consumed item priced at zero can be written off silently
-
-The two invoice paths disagree about what "billable" means:
-
-| Path | Test |
+| ID | Position |
 |---|---|
-| `task_commit_invoice` | `used_qty > 0` and computed rate `> 0`, else **throw** |
-| `task_close_case_nothing_to_invoice` | billable = `used_qty > 0` **and** `unit_price > 0` |
+| **A1** | Moved — `deferred-workstreams.md` item 4 (purchasing and landed cost) |
+| **A2** | **Closed**, 9/9 — allocation failure aborts the commit |
+| **A3** | **Closed**, 20/20 — no item priced at zero can enter the flow |
+| **A4** | Moved — `deferred-workstreams.md` item 1b (bundled with cancel flow) |
+| **A5** | Moved — `deferred-workstreams.md` item 6 (API harness runs as Administrator) |
+| **A6** | Moved — `group-10-reports-workspaces-config-audit.md` (reports and workspaces) |
+| **A7** | **Closed**, 14/14 — one definition of debt |
+| **A8** | **Closed**, 13/13 — Debt Alert dedupe and assignment |
+| **A9** | **Closed**, 19/19 — five smaller defects |
 
-A row with `used_qty > 0` and `unit_price = 0` therefore cannot be invoiced — and also does not count as billable, so the case **can** be closed as nothing-to-invoice. Goods consumed by the client, no invoice, no record of a loss.
+The behaviour that resulted is described in §1, which is where to read it. What follows is the short version of what changed and why, so the reasoning survives without having to read the commits.
 
-Server-side pricing makes new zero-price rows hard to create, which is what keeps this narrow. It is still an inconsistency between two guards that are meant to be complementary.
+**A2 — advance-allocation failure aborts the commit.** The block used to swallow its exception, so a failed allocation submitted the invoice at full value while the client's money sat unallocated — a client who had already paid, chased for the full amount, with a log line as the only trace. Verification also pins the allocation *order*.
 
-**Start at:** make both use the same definition of billable, and have the nothing-to-invoice path refuse a consumed row at any price.
+**A3 — no zero-priced item in the flow.** The original finding was a disagreement between two invoice paths; it turned out to be the last of **nine** ways a zero price got in or survived. Rows could be created with no price by a template applier and two client scripts — one of which read `Item.standard_rate`, a field populated on no items, so it produced a zero-priced row every time it was used. `discount_pct` was unbounded. Nothing checked price at submit, and the order-entry gate checked `unit_price` rather than the effective rate, so a line at 1000 with a 100% discount passed. Prices could be zeroed *after* submit. And the two consumers disagreed in both directions: a zero-priced consumed row closed with no invoice (silent revenue loss), while a 100%-discount row was refused by both paths (an unfinishable task).
 
-### A5 — The test harness cannot see permission defects
+> Also closed here: the last validation bypass. `ignore_validate_update_after_submit` suppressed Frappe's submitted-document check on **every** field at four endpoints. Checking what those endpoints actually write settled it — nine of ten fields were already `allow_on_submit` and exactly one was not, so the flag was covering for `lost_damaged_presence`, which was corrected instead. `ignore_mandatory` in `task_create_dispatch_case` was reviewed and **kept**: it creates the empty shell an order is built into, often before the customer is known.
 
-`tests/e2e/src/config.ts` supplies a single `API_KEY`/`API_SECRET` belonging to **Administrator**, and every Layer 1 API test uses it. Privileged users are exempt from the access-control gates, so that suite is **structurally incapable** of detecting this class of defect — and several have shipped through the blind spot.
+**A7 — one definition of debt.** Five consumers computed it five ways, disagreeing on gross-vs-net and on which ledger. All now use the formula in §1.1. Measured before changing anything: gross and net disagreed for 3 of 6 customers with a position, one showing gross **2,340,000** against a net of **zero**. The earmarked-credit half of the rule changes no verdict today and is **preventive, not remedial** — said plainly rather than oversold.
 
-Per-role browser sessions already exist (`auth.ts`, eight `e2e.*` users). Only the API layer is Administrator-only.
+**A8 — Debt Alert.** A cancelled alert was treated as open, so the next hourly run refilled and reassigned it, silently undoing the Director's cancellation. And `custom_assigned_to` was never set, so every alert read as unassigned to anything that asks the application who owns it.
 
-**Start at:** issue per-user API tokens for the eight role users and add a `createApiBundleAsRole(role)` helper, or drive API calls through the per-role session cookies `auth.ts` already produces.
-
-Working reference in the meantime: `deploy/test/deploy/group-11-financial-tail/w*-verify-*.py` and `deploy/test/deploy/group-1-dispatch-operational/*-verify-*.py` run as real non-privileged users via `bench console` and roll back. They are not in CI.
-
-### A6 — Reporting
-
-Three defects, all in deployed configuration rather than code.
-
-**Required reports that do not exist.** Doc 15a claims all 26 required reports exist. Four do not:
-
-- `RPT — KPI — Daily Dashboard`
-- `RPT — KPI — Weekly Dashboard`
-- `RPT — KPI — Monthly Income and Profit`
-- `RPT — Pricing — Sales Orders With Manual Rate Edits`
-
-The `Management - KPI Dashboard` workspace exists and contains **no KPI reports** — its three shortcuts are Item Sort and Classify, Item Nomenclature and Prices, and Returns Refund Queue.
-
-**Nothing reports on profit.** No report reads `Task.custom_case_profit` or computes margin. Fix A1 first; a report over a wrong number is worse than no report.
-
-**Duplicate pairs**, same subject under two naming conventions:
-
-| | |
-|---|---|
-| `RPT - Dispatch Case Aging` | `RPT — Dispatch Cases — Aging (Open)` |
-| `RPT - Unallocated Customer Advances` | `RPT — Receivables — Unallocated Advances` |
-| ~~`RPT - Clients Exceeding Debt Threshold`~~ | ~~`RPT — Risk — Debt Threshold Exceeded`~~ — **resolved by A7**, the GL-based duplicate retired |
-| `RPT — Stock — Delivery In-Transit` | `RPT — Stock — Delivery In-Transit - Inmed` |
-| `RPT — Stock — Return Pickup In-Transit` | `RPT — Stock — Return Pickup In-Transit - Inmed` |
-| `RPT — Stock — Returns` | `RPT — Stock — Returns - Inmed` |
-
-**Stale shortcut:** "VIEW: Distribute Payment Tasks" — in **both** `Ops — Reporting Pack` and `Dispatch - Task Queues`. That task kind is retired.
-
-**Dangling shortcuts in `Ops — Reporting Pack` are fixed**, and they turned out to be worse than cosmetic. Frappe validates every Link row on save, so the two dead shortcuts made the **entire workspace unsaveable** — they blocked an unrelated repoint until they were repaired. `RPT — Ops — Prepaid Orders Awaiting Delivery` was repointed to the report that actually exists; `RPT — Pricing — Sales Orders With Manual Rate Edits` was removed, since no such report exists (it remains listed above as a required-but-missing report).
-
-**Telegram money notifications are disabled.** Both scripts. Invoice submitted, payment received, threshold breached — none of them notify.
-
-**Do A1 before the profit/KPI parts.** The rest is independent.
-
-### A8 — Debt Alert has two defects the other schedulers do not
-
-1. **Cancelled alerts are resurrected.** The dedupe filter is `status != "Completed"`, so a **Cancelled** Debt Alert counts as existing: the scheduler updates its figures and reassigns it rather than raising a fresh one. Everything else in the flow uses `not in ["Completed", "Cancelled"]`.
-2. **`custom_assigned_to` is never set.** It writes `_assign` and creates a ToDo, but not the field AGENTS.md designates the single source of truth for assignment. Anything reading `custom_assigned_to` sees these tasks as unassigned.
-
-Both are one-line fixes in `Scheduled-debt-collection.py`. A7 touched that file but deliberately left these alone — they are independent of the debt basis and deserve their own verification.
-
-### A9 — Smaller items
-
-| | |
-|---|---|
-| **A failed submit strands a draft invoice** | If `si.submit()` throws — the tender validator is the likely cause — the inserted draft remains and still trips the idempotency guard. The user cannot retry until someone cancels or deletes it by hand |
-| **Add-product picks a tender arbitrarily** | `task_add_dispatch_product` loops all active tenders and the **last** match wins, silently. The invoice validator refuses when two match. So order entry succeeds and invoicing then deadlocks — the failure surfaces at the wrong end of the flow |
-| **Cancel can be blocked by tender data** | `Sales-Invoice-on-cancel-tender-reversal` throws if a tender item row has been deleted, making the invoice un-cancellable |
-| **Settlement with no matching case raises no approval** | If a payment clears the account but closes no case — all already closed, or none in a qualifying status — no Debt Closure Approval is raised. Deliberate, but it means some settlements get no Director review |
-| **N+1 in the debt panel** | `task_debt_panel` issues one `Payment Entry Reference` query per payment row, up to 50 per call |
-
----
-
-### Closed, and moved out of this group
-
-Compressed deliberately: the behaviour that resulted is described in §1, which is where you should read it. Full analysis in git history.
-
-**A1 — profit costed from a price list → `deferred-workstreams.md` item 4.** Not the one-line swap to `Sales Invoice Item.incoming_rate` it looked like. That field is populated on **0 of 55** invoice lines, because dispatch invoices carry `update_stock = 0` and no Delivery Note, so ERPNext has no stock transaction to cost from. And the number would be wrong anyway: **zero Purchase Receipts, zero Landed Cost Vouchers** on test, so valuation is bare purchase price — it agrees with the Standard Buying price to a median of 0.0% precisely because neither contains any landed cost. The prerequisite is the purchasing side, which is its own workstream. Probe: `a1-probe-cost-basis.py`.
-
-> Still worth doing here and independent of all that: the current figure treats a **missing** buying price as **zero cost — a 100% margin** — and only warns. It should refuse to produce a number it cannot compute.
-
-**A2 — advance-allocation failure aborts the commit. CLOSED, 9/9.** The block used to swallow its exception, so an allocation failure submitted the invoice at full value while the client's money sat unallocated — a client who had already paid, chased for the full amount, with a log line as the only trace. Behaviour now in §1.4. Verification also pins the allocation *order*. `a2-verify-allocation-abort.py`.
-
-**A4 — a paid invoice cannot be corrected → `deferred-workstreams.md` item 1b**, bundled with cancel flow, because undo-before-invoice and undo-after-invoice must not get two different answers about who may undo what. Decisions recorded there: native documents, Director approval, per-line partial credit, credit-note-first.
-
-> The blocker found while scoping it, which travels with the work: **no server script anywhere references `is_return`**, and all three tender scripts skip `qty <= 0`. Credit notes carry negative quantities, so crediting a tender invoice never returns `supplied_quantity` — and since the validator refuses `qty > won − supplied`, that **permanently destroys tender entitlement**. Not a live bug today; a live bug the day credit notes ship.
-
-**A7 — one definition of debt. CLOSED, 14/14.** Five consumers computed it five ways, disagreeing on gross-vs-net and on which ledger. All now use the formula in §1.1. The GL-based duplicate report was retired rather than converged.
-
-> Two things measured rather than assumed. Gross and net disagreed for **3 of 6** customers with a position, one showing gross **2,340,000** against a net of **zero** — a client who would have been telephoned for money already in hand. But the earmarked-credit rule changes **zero** threshold verdicts today, so that half is **preventive, not remedial**. Probe: `a7-probe-debt-bases.py`.
+**A9 — five smaller defects, two of which were one chain.** The tender loop had no `break` and no `order_by`, so with two active tenders the last scanned won, non-deterministically; the collision surfaced only at invoice submit, and that throw stranded a draft the idempotency guard then matched, telling the user to cancel something that cannot be cancelled. Also: the tender reversal could make an invoice permanently uncancellable by throwing inside After Cancel; a settlement that closed no case raised no Director review at all; and the debt panel issued up to 51 queries per load.
 
 ## 3. Traps — read before changing this area
 
@@ -241,22 +191,26 @@ The last three are general and are written up in full in `AGENTS.md`.
 
 ### Symptoms a user can report
 
+Only two symptoms in this area still have an open cause, and both are deferred:
+
 | Symptom | Item |
 |---|---|
-| "Profit on this case looks far too high" | A1 — deferred, item 4 |
-| "I cannot create the invoice and I cannot close the case either" | A9, stranded draft |
-| "This order went through but now the invoice is refused" | A9, arbitrary tender pick |
-| "We over-billed a client who has already paid and I cannot fix it" | A4 — deferred, item 1b |
-| "A cancelled Debt Alert keeps coming back" | A8 |
-| "This Debt Alert looks assigned to nobody" | A8 |
-| "The client returned goods but we consumed them and billed nothing" | A3 |
+| "Profit on this case looks far too high" | A1 — `deferred-workstreams.md` item 4. Cost comes from a buying price list, and a missing price counts as zero cost |
+| "We over-billed a client who has already paid and I cannot fix it" | A4 — `deferred-workstreams.md` item 1b. No credit note path exists |
 
-Two symptoms that **should no longer occur**, listed so a recurrence is recognised as a regression rather than a known issue:
+Everything below **should no longer occur.** Listed so that a recurrence is recognised as a regression rather than filed as a known issue:
 
 | Symptom | Was |
 |---|---|
 | "The client paid in advance but the invoice shows the full amount" | A2 — allocation failure is now fatal to the commit |
+| "The client returned goods, we consumed them, and billed nothing" | A3 — a zero-priced row cannot exist, and nothing-to-invoice tests the effective rate |
+| "This order went through but now the invoice is refused" | A9 — duplicate tenders are refused at order entry |
+| "I cannot create the invoice and I cannot close the case either" | A9 — a stranded draft is cleared and the commit retried |
 | "The Director sees no alert but Finance is chasing this customer" | A7 — one definition, asserted to agree across all consumers |
+| "A cancelled Debt Alert keeps coming back" | A8 — dedupe now excludes Cancelled |
+| "This Debt Alert looks assigned to nobody" | A8 — `custom_assigned_to` is set |
+| "I cannot cancel this invoice and the error is about a tender" | A9 — the reversal no longer throws |
+| "The client settled up and nobody reviewed it" | A9 — a settlement always raises the approval |
 
 ---
 
@@ -284,7 +238,7 @@ Other audits cite these. Current position only.
 | C3, C4 | Group 2 — split Delivery photo rule, module-level `get_doc_before_save()` |
 | G7 | Closed by Group 1 D1 |
 | G9 | **A1** — deferred, `deferred-workstreams.md` item 4 |
-| G17 | Open — **A6** |
+| G17 | **A6** — moved to `group-10-reports-workspaces-config-audit.md` |
 | R13 | **A4** — deferred, `deferred-workstreams.md` item 1b |
 
 ---

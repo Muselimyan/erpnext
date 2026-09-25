@@ -233,7 +233,31 @@ Production code is described as very old and is out of scope for now, but this q
 
 ---
 
-## 6. Test coverage — the paths not yet driven end to end
+## 6. The API test suite cannot see permission defects
+
+**Deferred. Structural rather than a bug — the suite is incapable of finding this class of defect, so its passing says nothing about it.**
+
+### What it is
+
+`tests/e2e/src/config.ts` supplies a single `API_KEY` / `API_SECRET` belonging to **Administrator**, and every Layer 1 API test uses it. Privileged users are exempt from the access-control gates, so a test driving an endpoint as Administrator **cannot fail on a permission defect** — the gate it should be exercising never runs.
+
+Several defects have shipped through that blind spot, and the pattern is always the same: a green suite, and a gate nothing touched.
+
+### Why it is not hard
+
+The hard part already exists. `tests/e2e/src/auth.ts` establishes per-role browser sessions for eight `e2e.*` users. Only the **API** layer is Administrator-only.
+
+**To start:** either issue per-user API tokens for those eight users and add a `createApiBundleAsRole(role)` helper, or drive API calls through the per-role session cookies `auth.ts` already produces — the second reuses what is there.
+
+### What covers the gap meanwhile, and what it does not
+
+`deploy/test/deploy/group-11-financial-tail/*-verify-*.py` and `deploy/test/deploy/group-1-dispatch-operational/*-verify-*.py` run as real non-privileged users through `bench console`, assert on documents, and roll back. As of the A3 work that is **243 checks across 18 scripts**.
+
+They are **not in CI**. They run when someone runs them, so they verify a deployment but do not protect against a later regression — and three times in this work an older harness was found encoding behaviour that had since changed, each time only because someone re-ran it by hand.
+
+---
+
+## 7. Test coverage — the paths not yet driven end to end
 
 **Known gap, lower risk than it was.**
 
@@ -253,7 +277,7 @@ Each hop is proven; what is unproven is the joins between them on those particul
 
 ---
 
-## 7. "Apply the credit" as a collection outcome
+## 8. "Apply the credit" as a collection outcome
 
 **Small, deferred by decision.**
 
@@ -267,7 +291,7 @@ Measured on test when A7 landed: 3 of 6 customers with a financial position had 
 
 ---
 
-## 8. Housekeeping — orphan Task Access Policy records
+## 9. Housekeeping — orphan Task Access Policy records
 
 **Trivial, no urgency, recorded so it is not rediscovered.**
 
@@ -283,7 +307,7 @@ The last two are the exact shape that broke Return Call before D3: a policy with
 
 ---
 
-## 9. `Task-Packing Checkboxes.js`
+## 10. `Task-Packing Checkboxes.js`
 
 **Note only, no work unless someone acts.**
 
