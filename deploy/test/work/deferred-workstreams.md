@@ -44,7 +44,9 @@ The task kind `Return to warehouse (aborted delivery / cancelled order)` was **d
 
 ### To start
 
-Design doc exists: `deploy/test/work/phase3-cancel-flow-plan.md`. The open question is what happens to stock already in transit. The "invoice already submitted" case is 1b below.
+**Design written: `deploy/test/work/cancel-flow-design.md`** (2026-09-25). Six decisions marked for review; everything else is a recommendation with its reasoning. `phase3-cancel-flow-plan.md` is superseded and carries a banner saying why.
+
+The shape it landed on: cancel is available until the goods reach a client, which means **no invoice can ever exist at cancel time** (verified, 0 of 1,104 in-band cases) — so cancellation never touches billing, payments, credit notes or tender consumption. `Packed` and `In Transit` hold stock in the same warehouse because `Picked Up` moves nothing, so one reversal rule covers both, using the `Return to warehouse (aborted delivery / cancelled order)` kind that was retained for it. The "invoice already submitted" case is 1b below.
 
 ---
 

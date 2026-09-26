@@ -1,7 +1,18 @@
 # Phase 3 — Dispatch Case Cancel Flow — Detailed Plan
 
+> ## SUPERSEDED by `cancel-flow-design.md` (2026-09-25)
+>
+> Kept for the Q1–Q7 framing, which was the right set of questions to ask. The rest is stale or has been overtaken:
+>
+> - **Stale schema.** Assumes 14 Dispatch Case statuses including `Invoiced`, which was removed by Group 11 W6. There are now 13.
+> - **`Dispatch Cancel Restock` is dropped.** It was never created as a `task_kind` and needs no policy — `Return to warehouse (aborted delivery / cancelled order)` already exists with a policy and was deliberately retained during the D4–D6 cleanup for exactly this purpose.
+> - **Two stock rules collapse to one.** §Q4 proposed auto-reversal for `Packed` and manual confirmation for `In Transit`. `Picked Up` moves no stock, so both states hold the goods in `Delivery In-Transit` — the same position, one rule.
+> - **The invoice question answers itself.** §Q5 worried about submitted invoices and payments. No invoice can exist before `Delivered`, verified as 0 of 1,104 in-band cases on test, so cancellation never meets billing at all.
+> - **It misses a hole that loses money.** Advance credit tagged to a cancelled case is stranded permanently — `task_commit_invoice` will not spend it elsewhere and A7 excludes tagged credit from the client's net position. See §4.4 of the new design.
+> - **Its proposed gate would break the flow.** "If a task's linked DC is Cancelled, block completion" would also block the return-to-warehouse task, leaving the goods unrecoverable. See §5 of the new design.
+
 **Created:** 2026-09-09
-**Status:** Design review needed — open questions marked with ❓
+**Status:** Superseded — see above. Original status was "Design review needed — open questions marked with ❓"
 **Prerequisite:** Phase 2 fully deployed (done 2026-09-09)
 **Related docs:**
 - `docs/16-unified-dispatch-flow.md` — no cancel section exists yet
