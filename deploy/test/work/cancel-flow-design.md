@@ -1,8 +1,8 @@
 # Dispatch Case — Cancellation Flow — Design
 
-> **Status.** Design for review. Nothing implemented. Supersedes `phase3-cancel-flow-plan.md` (2026-09-09), which is kept for its Q1–Q7 framing but is stale in several places — it assumes an `Invoiced` status that no longer exists, a `Dispatch Cancel Restock` task kind that was never created, and a pre-returns-rework stock model.
+> **Status.** Design agreed, nothing implemented. All six decisions settled — see §9. Supersedes `phase3-cancel-flow-plan.md` (2026-09-09), which is kept for its Q1–Q7 framing but is stale in several places: it assumes an `Invoiced` status that no longer exists, a `Dispatch Cancel Restock` task kind that was never created, and a pre-returns-rework stock model.
 >
-> **Open decisions are marked ❓ and collected in §9.** Everything else is a recommendation with its reasoning attached, so it can be argued with.
+> **The short version.** Cancel is available until the goods reach the client — which means no invoice can ever exist at cancel time, so cancellation never touches billing, credit notes or tender consumption. If the goods have left the building they come back through the **existing return chain**, reusing `Returns restocking` unchanged. New code is one API, one task handler, one status and four fields.
 
 ---
 
@@ -118,19 +118,48 @@ Measured on test: 0 such payments exist today, so this is **preventive** — but
 
 Cannot happen in the band. One line, and it prevents a stranded draft blocking anything later.
 
-### 4.6 Bring the goods back, if they left
+### 4.6 Bring the goods back, if they left — reusing the existing return chain
 
 If the status is `Packed` or `In Transit`, the goods are in `Delivery In-Transit` and a **physical action** is required. Stock moves when that action happens, not when the cancellation is recorded — the same principle the rest of the flow follows.
 
-Raise a **`Return to warehouse (aborted delivery / cancelled order)`** task.
+**Two tasks, because two different people do two different things**, which is exactly how the existing return chain already works:
 
-**That kind already exists and this is what it was kept for.** It has a `task_kind` option and a Task Access Policy (`delivery.team@example.com`; roles `Delivery Driver`, `Ops - Delivery`) and **no handler anywhere** — it was deliberately retained during the D4–D6 cleanup as "the most likely consumer of the deferred cancel flow". No new task kind is needed, and `Dispatch Cancel Restock` from the old plan should be dropped.
+| Step | Task | Who | Stock |
+|---|---|---|---|
+| 1 | `Return to warehouse (aborted delivery / cancelled order)` | Driver / Ops - Delivery | `Delivery In-Transit` → `Returns` |
+| 2 | `Returns restocking` | Ops - Returns | `Returns` → `Main` |
 
-On completion: **`Delivery In-Transit` → `Main`**, in one hop, with a photo required.
+**Step 2 needs no new code at all.** Checked against the deployed handler:
 
-❓**Q2 — one hop or two?** `docs/09-standard-selling-flow.md` §10.2 specifies routing via `Returns - Inmed` → `Main - Inmed`. I recommend **one hop straight to Main**, for a reason I think outweighs the spec: `Returns - Inmed` means *goods that came back from a client*. These goods were never delivered. Putting them through Returns conflates two different things and would make the returns reports overstate client returns. The photo on the return-to-warehouse task is the condition record; it does not need a separate inspection stage.
+```python
+if is_completing and doc.task_kind == "Returns restocking":
+    case.reload()
+    r = returned_items(case)
+    if r:
+        se = create_se(RETURNS_WH, MAIN_WH, r)
+        frappe.db.set_value("Dispatch Case", doc.dispatch_case, "restock_stock_entry", ...)
+```
 
-If goods do come back damaged, that is a stock adjustment on a cancelled case, not a returns inspection — rare enough to handle by hand rather than design a branch for.
+Three properties make it reusable as-is:
+
+- It **sets no status**, so completing it on a cancelled case does not un-cancel it.
+- It already **requires a photo** (`Task-before-save-dispatch-gates.py`) — the record that the units were physically shelved.
+- It moves whatever `returned_items()` returns, which is rows with `returned_qty > 0`.
+- Its valuation behaviour is already verified — the D1 check asserts a restock leaves Main's moving average unchanged.
+
+**The mechanic that connects them:** completing step 1 sets `returned_qty = dispatched_qty` on every row. That is not a fudge — for a cancelled order the whole dispatched quantity *is* coming back, and it makes `used_qty = dispatched − returned − lost = 0`, which is also true: nothing was used. Every downstream consumer then behaves correctly without being told about cancellation: nothing is billable, so no invoice is possible, and the restocking handler moves exactly the right quantity.
+
+**Only step 1 is new code**, and it is small — the existing `create_se`, the existing `make_task`, and a photo gate copied from the restocking pattern:
+
+```
+Delivery In-Transit → Returns
+set returned_qty = dispatched_qty (so used_qty becomes 0)
+raise Returns restocking
+```
+
+`Return to warehouse (aborted delivery / cancelled order)` already exists with a `task_kind` option and a Task Access Policy (`delivery.team@example.com`; `Delivery Driver`, `Ops - Delivery`) and **no handler anywhere** — retained during the D4–D6 cleanup as "the most likely consumer of the deferred cancel flow". `Dispatch Cancel Restock` from the old plan is dropped.
+
+> **I had recommended one hop straight to `Main`**, on the grounds that these goods never reached a client so routing them through `Returns` would overstate client returns. Reusing the chain is better, and the objection does not survive scrutiny: `RPT — Stock — Returns` reports a **warehouse balance**, and the goods genuinely are sitting in the returns area awaiting shelving. Anything that does need to tell the two apart can filter on the case being `Cancelled`. The two-hop route also matches what `docs/09` §10.2 and the go-live checklist already specify, so the design no longer deviates from either.
 
 ### 4.7 Set the status
 
@@ -167,7 +196,11 @@ Two tiers rather than the four the old plan proposed, because the extra granular
 
 > **This changes published procedure.** `docs/manual/cancellation-and-corrections.md` currently tells staff Dispatch Case cancellation is **System Manager only**, via native document cancel. That manual needs rewriting when this ships — it also still describes an auto-created draft invoice, which W6 removed. Flagged so it is not missed.
 
-**Where the button lives:** on the **Dispatch Case form**, one surface, one API. Directors work case-by-case, and the order-taker can open their own case. ❓**Q4** — a Task-form button is a convenience that can be added later without touching the API, if the order desk finds the case form awkward.
+**Where the button lives:** on the **Dispatch Case form** only — one surface, one API. Directors work case-by-case, and the order-taker can open their own case.
+
+**The button is shown only when the case is actually cancellable**: status in the band of §3, and the caller in the tier above. A button that is absent when it cannot be used is better than one that explains itself in an error dialog afterwards. The server still enforces both conditions — the hidden button is courtesy, not security.
+
+A Task-form button can be added later without touching the API, if the order desk finds the case form awkward.
 
 ---
 
@@ -179,7 +212,7 @@ Stated because each of these is a plausible misreading:
 - **Not a way to undo a delivery.** Goods at a client come back through the return flow.
 - **Not a way to fix a billed sale.** That is a credit note (`deferred-workstreams.md` item 1b).
 - **Not reversible.** No "uncancel". A client who changes their mind gets a new case. Adding a reopen path would mean deciding what happens to the tasks and stock a second time, for a rare event.
-- **Not a bulk tool.** One case at a time. ❓**Q5** — 1,104 cases currently sit in the band, so if the intent is to clear that backlog rather than only handle new mistakes, a bulk path is a separate question.
+- **Not a bulk tool.** One case at a time, with a reason each. A bulk path is a separate design if it is ever wanted; nothing here depends on one.
 
 ---
 
@@ -191,8 +224,10 @@ Stated because each of these is a plausible misreading:
 |---|---|
 | Cancel at `Confirmed` → related open tasks auto-cancelled, no Stock Entry exists | §4.3, §2 |
 | Cancel at `Packed` → return-to-warehouse task auto-created for the driver, drop-off photo required | §4.6 |
-| Nothing left in `Delivery In-Transit` | §4.6, on task completion |
-| Stock routed via `Returns - Inmed` → `Main - Inmed` | **Deviates** — one hop, see ❓Q2 |
+| Nothing left in `Delivery In-Transit` | §4.6, on step-1 completion |
+| Stock routed via `Returns - Inmed` → `Main - Inmed` on Restock task completion | §4.6 — **matches**, since the design reuses `Returns restocking` |
+
+The design satisfies the checklist without deviation, and it satisfies `docs/09` §10.2 stage (3) as well — driver returns the package, warehouse handover, photo, routed through `Returns` to `Main`. That spec was written for the Sales-Order era and describes exactly the two-role handover the reuse decision produces.
 
 Verification to write alongside the implementation:
 
@@ -210,14 +245,20 @@ Verification to write alongside the implementation:
 
 ---
 
-## 9. Decisions needed
+## 9. Decisions — all settled
 
-- ❓**Q1 — Is `In Transit` cancellable, or only up to `Packed`?** I recommend **yes, include it.** The stock position is identical to `Packed`, so it costs nothing in design, and "the driver is on the road and the surgery just got called off" is a real event. The alternative is telling the driver to complete a delivery everyone knows is wrong.
-- ❓**Q2 — Return route: one hop to `Main`, or via `Returns - Inmed` as doc 09 specifies?** I recommend **one hop**, because these goods never reached a client and routing them through Returns would overstate client returns in the reports.
-- ❓**Q3 — Notification on cancel?** I recommend **one message about the case**, naming the reason, rather than one per cancelled task. Using `frappe.db.set_value` means per-task messages do not fire by default, so this is an addition rather than a suppression.
-- ❓**Q4 — Cancel button on the Task form as well as the Dispatch Case form?** I recommend **Dispatch Case only** to start; the API is the same either way, so a Task button can follow if the order desk wants it.
-- ❓**Q5 — Anything for the existing 1,104 in-band cases?** Test data is disposable, so nothing is needed for test. The question is whether a bulk path is wanted as a real feature, which is a separate design.
-- ❓**Q6 — Should the reason list include `Surgery cancelled or postponed`?** I think yes and expect it to be the most-used value, but you know the business.
+| | Decision |
+|---|---|
+| **Q1** | **`In Transit` is cancellable.** Same stock position as `Packed`, so it costs nothing, and "the driver is on the road and the surgery was called off" is a real event. The alternative is telling a driver to complete a delivery everyone knows is wrong |
+| **Q2** | **Reuse the existing return chain** — `Return to warehouse` then `Returns restocking`, two hops. Only the first step is new code; the second is the deployed handler unchanged, photo gate and verified valuation behaviour included. §4.6 |
+| **Q3** | **One message** about the case being cancelled, naming the reason — not one per cancelled task |
+| **Q4** | **Dispatch Case form only**, and the button is **hidden unless the case is actually cancellable**. A disabled or absent button is a better answer than an error dialog after the fact |
+| **Q5** | Nothing for existing data. Test data is disposable; no migration, no backfill, no bulk tool |
+| **Q6** | **Reason is a required Select with the common causes plus `Other`.** When `Other` is chosen the free-text note becomes **required** — "Other" with no explanation records nothing |
+
+Reason list: `Customer cancelled` · `Surgery cancelled or postponed` · `Items unavailable` · `Duplicate order` · `Entered in error` · `Other`. Free-text notes are optional for the named reasons and required for `Other`.
+
+Nothing in this design is now open. It is ready to implement on approval.
 
 ---
 
@@ -225,8 +266,11 @@ Verification to write alongside the implementation:
 
 | | |
 |---|---|
-| New | `dispatch_case_cancel` API; `Cancelled` on Dispatch Case `status`; four cancellation fields; a handler for `Return to warehouse (aborted delivery / cancelled order)` completion; cancel button + dialog on the Dispatch Case form |
-| Changed | Nothing in the existing flow scripts — cancellation is additive. A photo requirement on the return-to-warehouse task follows the Returns-restocking pattern already in `Task-before-save-dispatch-gates.py` |
-| Not needed | `Dispatch Cancel Restock` task kind (the retained one covers it); a new Task Access Policy (the retained kind has one); any intermediate status; any change to `docstatus` handling |
+| New | `dispatch_case_cancel` API; `Cancelled` on Dispatch Case `status`; four cancellation fields; one handler for `Return to warehouse` completion; one photo gate for it; cancel button + dialog on the Dispatch Case form, shown only when the case is cancellable |
+| **Reused unchanged** | **`Returns restocking`** — its handler, its photo gate and its verified valuation behaviour all work on a cancelled case with no modification, because it sets no status and keys off `returned_qty`. The `Return to warehouse` task kind and its Task Access Policy already exist |
+| Changed | Nothing in the existing flow scripts. Cancellation is purely additive — which is what makes it safe to add to a system with 243 passing checks |
+| Not needed | `Dispatch Cancel Restock` task kind; a new Task Access Policy; an intermediate status; any `docstatus` change; any change to the returns, invoicing or payment code |
 | Must be rewritten when this ships | `docs/manual/cancellation-and-corrections.md` — currently says System Manager only, and still describes the auto-created draft invoice that W6 removed |
 | Out of scope | Credit notes, refunds, anything after `Delivered` — `deferred-workstreams.md` item 1b |
+
+**The shape of the change, in one line:** one new API, one new task handler, one new status, four new fields — and the entire physical return leg is existing, already-verified code.
