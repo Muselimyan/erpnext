@@ -2,7 +2,7 @@
 # Type: DocType Event
 # DocType: Task
 # Event: After Save
-# Disabled: 0
+# Disabled: 1
 # ---
 
 # Triggers on Task (After Save) — sends Telegram when custom_assigned_to changes

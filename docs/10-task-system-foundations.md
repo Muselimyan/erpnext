@@ -38,10 +38,9 @@ These are the minimum fields each operational Task must have, regardless of type
 
 Recommended additional fields (used across multiple processes):
 - **Task Kind**: a controlled classification of tasks (examples below).
-- **Dispatch Group ID**: used when one trip covers multiple documents.
-- **Surgery Case**: used for surgery-set operations.
+- **Dispatch Case**: links the task to the operational order record.
 - **Customer/Client**: used for debt collection and logistics.
-- **Driver Handover Note**: freeform text for delivery handover details (example: who the package was handed to).
+- **Driver handover**: recorded in the Task description (example: who the package was handed to).
 
 ---
 
@@ -66,7 +65,7 @@ Primary owner:
 
 Typical links:
 - Customer/Client
-- Related reference (free text) and/or the final `Sales Order` / `Surgery Case` once created
+- Related reference (free text) and the Dispatch Case, which is created automatically when the task is accepted
 
 Attachments:
 - Optional (example: screenshot of message)
@@ -82,33 +81,13 @@ Primary owner:
 - Inventory team
 
 Typical links:
-- `Surgery Case` (for surgery sets)
-- `Sales Order` (for normal orders)
+- `Dispatch Case` (the operational order record)
 
 Attachments:
 - **Warehouse Pickup Photo** (required) — photo taken at Main - Inmed after packing, before the driver leaves. See Doc 18.
 
 Completion definition:
-- Items are packed, photo is attached, and task is ready for dispatch picking.
-
-### 4.3 Dispatch picking / hand-off (serial/batch selection checkpoint)
-Purpose:
-- Assign the work of final dispatch verification and stock movement submission.
-- For traceable items, this is where serial numbers / batch numbers are selected on the dispatch Stock Entry.
-
-Primary owner:
-- Delivery team
-
-Typical links:
-- `Surgery Case`
-- Draft dispatch `Stock Entry`
-- Optional `Dispatch Group ID`
-
-Attachments:
-- Optional
-
-Completion definition:
-- Dispatch Stock Entry is submitted with correct serials/batches (where applicable).
+- Items are packed, a photo is attached, and the task is ready for delivery.
 
 ### 4.4 Delivery
 Purpose:
@@ -118,8 +97,7 @@ Primary owner:
 - Delivery team
 
 Typical links:
-- `Dispatch Group ID` (preferred when multiple documents are delivered together)
-- or the specific document (example: `Surgery Case`)
+- `Dispatch Case`
 
 Attachments:
 - None required. Photo evidence is captured at the Pack stage, not Delivery. See Doc 18.
@@ -131,20 +109,19 @@ Completion definition:
 
 ### 4.4A Return to warehouse (aborted delivery / cancelled order)
 Purpose:
-- When a standard delivery is cancelled after dispatch staging (package already with driver), track the safe return of the package back to the warehouse.
+- When a Dispatch Case is cancelled while `Packed` or `In Transit`, bring the goods back from `Delivery In-Transit` to the warehouse. Raised automatically by the Cancel Case action (`docs/16` §10A).
 
 Primary owner:
-- Delivery team
+- Delivery team. When the case was `In Transit`, the task goes to the driver who accepted the Delivery task, because that driver holds the box.
 
 Typical links:
-- `Dispatch Group ID` (preferred)
-- or the specific document (example: `Sales Order`)
+- `Dispatch Case`
 
-Attachments (recommended):
-- **Drop-off Photo** (photo taken before handing the package back to Inventory/Returns team)
+Attachments (mandatory):
+- **Photo** of the goods being handed back
 
 Completion definition:
-- Driver physically returned the package to the warehouse and attached the drop-off photo.
+- The goods are handed back and a photo is attached. Completion moves them `Delivery In-Transit` → `Returns` and raises Returns processing / verification.
 
 ### 4.5 Pickup Returns
 Purpose:
@@ -154,8 +131,7 @@ Primary owner:
 - Delivery team
 
 Typical links:
-- `Dispatch Group ID` (preferred)
-- and/or one or more `Surgery Case` references
+- `Dispatch Case`
 
 Attachments:
 - None required
@@ -172,7 +148,7 @@ Primary owner:
 - Delivery team
 
 Typical links:
-- `Dispatch Group ID`
+- `Dispatch Case`
 - Optional list of included documents in the description
 
 Attachments (mandatory):
@@ -189,8 +165,8 @@ Primary owner:
 - Inventory team
 
 Typical links:
-- `Surgery Case`
-- Draft return `Stock Entry` documents
+- `Dispatch Case`
+- The return `Stock Entry` documents
 
 Attachments:
 - Optional (example: photos of damaged tools)
@@ -206,49 +182,46 @@ Primary owner:
 - Accounting team
 
 Typical links:
-- `Surgery Case`
-- Draft `Sales Invoice`
+- `Dispatch Case`
+- `Sales Invoice` (created and submitted by **Create & Submit Invoice** on this task)
 
 Attachments:
 - Optional
 
 Completion definition:
-- Draft invoice is reviewed and submitted (or ready for approval, depending on your policy).
+- The invoice has been created and submitted with **Create & Submit Invoice** (`task_commit_invoice`), billing used quantities only; or the case was closed with **Nothing to Invoice**.
 
 ### 4.9 Debt Collection
 Purpose:
-- Alert directors that a client has exceeded its allowed outstanding debt.
+- One collection attempt for a customer with money owed: an episode. At most one is open per customer. Raised by a scheduler when an invoice is overdue, the debt threshold is breached, or a promised follow-up date arrives.
 
 Primary owner:
-- Directors
+- Finance team (Directors also have access)
 
 Typical links:
-- Customer/Client
-- Current outstanding debt amount (in the task description or a field)
+- Customer/Client. Balances are shown live from the ledger (debt panel), not stored on the task.
 
 Attachments:
 - None required
 
 Completion definition:
-- Director reviewed and resolved (according to your internal policy).
+- A `collection_outcome` is recorded. `Promised` requires a future follow-up date, which schedules the next episode.
 
-### 4.10 Distribute Payment
+### 4.9A Debt Alert
 Purpose:
-- After a client payment is received, trigger an internal director-controlled step to distribute/assign the received money according to your internal rules.
+- Tell Directors that a client's net debt has exceeded its threshold. Raised hourly; it records the debt at the moment it was raised.
 
 Primary owner:
 - Directors
 
 Typical links:
 - Customer/Client
-- `Payment Entry`
-- Optional: relevant `Sales Invoice` links (if helpful), but the canonical identifier is the payment receipt.
 
 Attachments:
-- Optional (policy-based)
+- None required
 
 Completion definition:
-- Director confirms payment distribution is done and records a short note.
+- Director reviewed it. Payments are never recorded on a Debt Alert.
 
 ### 4.11 Approval (optional grouping)
 If you later centralize approvals (discount approval, purchase approval, write-off approval), standardize them as Task kinds.
@@ -309,7 +282,7 @@ Operational rules:
 When a task is created by automation (dispatch flow, "Other: Entry" chain, etc.):
 - It is assigned to the **default team user** for that Task Kind (a placeholder email like `delivery.team@example.com`).
 - The task starts in status **Open**.
-- Telegram notifications are sent to all real users who share the team's operational role.
+- Telegram notifications to the team's users exist as server scripts but are currently disabled.
 
 ### 6.2 Acceptance (mandatory before editing/completing)
 Rules:
@@ -326,14 +299,15 @@ Rules:
 Rules:
 - Once a task is accepted, **only the user who accepted it** may edit or complete it.
 - Other users (including those with the correct role) see the task as read-only on the client.
-- Administrators and System Managers bypass the lock.
+- Privileged users (`System Manager`, `Ops - Directors`, the `Administrator` user) may **edit** another user's task to unstick it, but may **never complete** it: completion is reserved to the accepter, with no exemption.
+- Completed and Cancelled tasks cannot be edited at all.
 - If the task is reassigned, acceptance is reset (status reverts to Open, `custom_accepted_by` is cleared), and the new assignee must accept again.
 
 ### 6.4 Team ownership and role enforcement
 Rules:
 - Each Task Kind has a set of **allowed roles** (stored in the Task Access Policy record).
 - Only users with at least one allowed role may accept, edit, or complete that task kind.
-- Directors (`Ops - Directors`) and System Managers override all role checks.
+- At accept time, the `Administrator` user and `System Manager` bypass the role check. At save time, `System Manager`, `Ops - Directors` and `Administrator` bypass the edit role check. Nobody bypasses completion ownership.
 - Enforcement happens at both save time (Server Script) and accept time (API).
 
 ### 6.5 Visibility (task list filtering)
@@ -435,9 +409,6 @@ Required gates for your current model:
 - **Pack / prepare gate**
   - Do not allow dispatch/hand-off until the `Pack / prepare items` task is `Completed`.
 
-- **Dispatch picking / hand-off gate**
-  - Do not allow “dispatched” until the `Dispatch picking / hand-off` task is `Completed`.
-
 - **Delivery gate**
   - Do not confirm delivery until the `Delivery` task is `Completed`.
 
@@ -458,17 +429,15 @@ Note:
 ## 9) Task naming conventions (for clarity and search)
 Recommended `Subject` patterns:
 - **Order entry**: `Enter Order — <Client Name>`
-- **Pack / prepare**: `Pack — <Sales Order ID>` or `Pack — <Surgery Case ID>`
-- **Dispatch picking / hand-off**: `Dispatch Picking — <Dispatch Group ID>` or `Dispatch Picking — <Surgery Case ID>`
-- **Delivery**: `Deliver — <Dispatch Group ID>` or `Deliver — <Surgery Case ID>`
-- **Pickup Returns**: `Pickup Returns — <Dispatch Group ID>` or `Pickup Returns — <Surgery Case ID>`
-- **Returns processing / verification**: `Process Returns — <Surgery Case ID>`
-- **Invoice preparation / create invoice**: `Invoice — <Surgery Case ID>`
+- **Pack / prepare**: `Pack — <Dispatch Case ID>`
+- **Delivery**: `Deliver — <Dispatch Case ID>`
+- **Pickup Returns**: `Pickup Returns — <Dispatch Case ID>`
+- **Returns processing / verification**: `Process Returns — <Dispatch Case ID>`
+- **Invoice preparation / create invoice**: `Invoice — <Dispatch Case ID>`
 - **Debt Collection**: `Debt Collection — <Client Name>`
-- **Distribute Payment**: `Distribute Payment — <Payment Entry ID>`
 
 Rule:
-- Always include a searchable identifier (Case ID / Dispatch Group ID / Client name).
+- Always include a searchable identifier (Dispatch Case ID / Client name).
 
 ---
 

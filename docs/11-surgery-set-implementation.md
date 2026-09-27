@@ -1,5 +1,7 @@
 # Doc 11A — Surgery Set Setup (Implementation Guide)
 
+> **Status: superseded; do not follow.** This guide builds `Collection Set` / `Collection Set Item` doctypes and a readiness server script. None of them exist, and they must not be created as described. The implemented template is `Surgical Kit Template` (+ `Surgical Kit Template Item`), applied to a draft Dispatch Case by the `task_apply_template` endpoint, which resolves prices on the server and refuses a template with any unpriced line. There is no readiness automation. The case record and operational flow are the Dispatch Case flow: `docs/16-unified-dispatch-flow.md` (§5 Item Templates). The warehouse structure (§3–§4) still matches the live warehouses.
+
 ## 1) Purpose
 This document is a **step-by-step “click-by-click” setup guide** for a new ERPNext user to configure everything required by **Doc 11 — Surgery Set Model**.
 
@@ -312,7 +314,8 @@ Expected result:
 - `Collection Set Item` exists and is a child table
 - `Collection Set` exists and has an Items table
 
-### 9.3 Readiness warning automation
+### 9.3 Readiness warning automation (not implemented)
+- There is no readiness automation on `Surgical Kit Template`. `task_apply_template` refuses a template only when a line has no selling price.
 - Create a Collection Set where you know one item is out of stock in `Main - Inmed`
 - Save
 - Confirm `Readiness Status` becomes `Short` or `Critical Short`

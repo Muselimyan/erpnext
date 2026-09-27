@@ -8,7 +8,9 @@ Define how the ERPNext task system sends real-time notifications to team members
 - How the system resolves recipients (individual users vs team placeholders).
 - Configuration and credential management.
 
-This doc describes **requirements, rules, and current behavior**. Script-level implementation details are in `deploy/test/work/server/`.
+This doc describes **requirements, rules, and script behavior**. Script-level implementation details are in `deploy/test/work/server/`.
+
+> **Status:** both Telegram Server Scripts are **disabled** (`disabled = 1`), so no Telegram notifications are sent. The behavior below is what the scripts do when enabled.
 
 ---
 

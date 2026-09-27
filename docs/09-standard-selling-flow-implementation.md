@@ -1,5 +1,7 @@
 # Doc 09A — Selling: Standard Orders (No Return Expected) (Implementation / ERPNext Setup Guide)
 
+> **Status: superseded.** This guide implements the Sales-Order-based selling flow, which does not exist: the operational order record is the **Dispatch Case** (`docs/16-unified-dispatch-flow.md`). None of the Sales Order custom fields (§5), the Sales Order / Delivery Note / Stock Entry server scripts (§7–8), or the Distribute Payment design (§10) are deployed. Pricing is resolved on the server by `task_add_dispatch_product` (active tender → customer Item Price → Standard Selling → refuse; effective rate must be above zero; `discount_pct` below 100); invoicing happens only through `task_commit_invoice`; cancellation follows `docs/16` §10A.
+
 ## 1) Purpose
 This is a **step-by-step ERPNext setup guide** to implement the operational rules defined in:
 - **Doc 09 — Selling: Standard Orders (No Return Expected) (Operational)**
@@ -12,7 +14,7 @@ This guide implements:
 - Discount approvals (director hard gate before delivery)
 - Prepaid orders (payment confirmation gate before dispatch)
 - Debt threshold escalation (Debt Alert task for directors)
-- Distribute Payment is disabled/deferred pending final keep/delete decision
+- Distribute Payment is retired: its task kind, policy and script do not exist (see §10)
 
 ---
 
@@ -835,10 +837,9 @@ The old Doc 09 Distribute Payment implementation is not part of the active flow.
 
 Current Group 3 behavior:
 
-- `Payment Entry-after-submit-distribute-payment` remains disabled;
+- `Payment Entry-after-submit-distribute-payment` is retired and deleted from the server;
 - no Distribute Payment task is created after customer receipts;
 - Finance records payments from `Debt Collection` tasks;
-- keep/delete/re-enable decision is deferred until final colleague review.
 
 ---
 
@@ -965,6 +966,5 @@ Operational steps:
 - Wait for the scheduled script (or trigger it manually by running it once).
 - Confirm one open Director Debt Alert task exists for that customer and shows current debt.
 
-### 13.5 Distribute Payment disabled/deferred
-- Submit a Customer Payment Entry (Receive).
-- Confirm no new Distribute Payment task is created while the disabled/deferred script remains out of the active flow.
+### 13.5 Distribute Payment retired
+- The `Distribute Payment` task kind, Task Access Policy and script do not exist; there is nothing to test.

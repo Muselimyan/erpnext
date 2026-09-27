@@ -35,10 +35,14 @@ Doc 03 assumes you have a small set of stable roles.
 ### 3.1 Create the team ownership roles
 Create these roles:
 - `Ops - Order Accepting`
+- `Ops - Order Creating`
 - `Ops - Inventory`
 - `Ops - Returns`
 - `Ops - Delivery`
 - `Ops - Accounting`
+- `Ops - Finance`
+- `Ops - Purchasing`
+- `Ops - Purchasing Lead`
 - `Ops - Directors`
 
 Steps (repeat for each role):
@@ -74,8 +78,12 @@ Recommended baseline:
   - `Ops - Inventory`
 - A returns worker:
   - `Ops - Returns`
+- An order-entry clerk:
+  - `Ops - Order Creating`
 - An accountant:
   - `Ops - Accounting`
+- A finance worker:
+  - `Ops - Finance`
 - A director:
   - `Ops - Directors`
 
@@ -166,15 +174,15 @@ Steps:
 Practical note:
 - If a driver can open these DocTypes by URL or search, you have not restricted permissions correctly.
 
-### 5.3 Minimum permissions for Sales Orders (Order team)
+### 5.3 Minimum permissions for Dispatch Cases (Order team)
 Goal:
-- Order team can create/update Sales Orders.
-- Other teams may read Sales Orders if needed, but do not edit.
+- Order team can create/update Dispatch Cases. The Dispatch Case is the operational order record; there is no Sales Order step.
+- Other teams may read Dispatch Cases if needed, but do not edit. (Editing a Dispatch Case additionally requires holding an accepted task on it; that rule is enforced by the Dispatch Case access-control scripts, not by Role Permission.)
 
 Steps:
 1) Open `Role Permission Manager`.
-2) Select DocType: `Sales Order`.
-3) For `Ops - Order Accepting`:
+2) Select DocType: `Dispatch Case`.
+3) For `Ops - Order Accepting` and `Ops - Order Creating`:
    - Read: ON
    - Write: ON
    - Create: ON
@@ -226,6 +234,7 @@ Steps:
 
 Then repeat for DocType: `Payment Entry`:
 - `Ops - Accounting`: Read/Write/Create ON
+- `Ops - Finance`: Read/Write/Create ON (Finance also needs Read on `Account`, `Mode of Payment`, `Cost Center`, `Currency` and `Company`, or Payment Entry validation fails on the `paid_to` account link)
 - `Delivery Driver`: Read/Write/Create OFF
 
 ---
@@ -245,19 +254,29 @@ Steps:
    - Label: `Task Kind`
    - Fieldname: `task_kind`
    - Fieldtype: `Select`
-   - Options (one per line, exactly):
+   - Options (one per line, exactly; default `Order entry`):
      - Order entry
      - Pack / prepare items
-     - Dispatch picking / hand-off
      - Delivery
+     - Return Call
+     - Return to warehouse (aborted delivery / cancelled order)
      - Pickup Returns
      - Return drop-off at warehouse
      - Returns processing / verification
+     - Returns restocking
      - Invoice preparation / create invoice
      - Debt Collection
+     - Payment Received
      - Discount Approval
      - Purchase Approval
      - Write-off Approval
+     - Account Details: Entry
+     - Account Details: Processing
+     - Other
+     - Other: Entry
+     - Other: Processing
+     - Debt Closure Approval
+     - Debt Alert
 4) Add a custom field:
    - Label: `Completed At`
    - Fieldname: `completed_at`
@@ -276,6 +295,9 @@ Steps:
 4) Add fields:
    - `policy_name` (Data) → Req → Unique
    - `notes` (Small Text) → optional
+   - `default_team_user` (Link → User) → optional; new tasks of this kind are assigned to this team placeholder
+   - `allowed_roles` (Table → `Task Access Policy Role`) → the roles allowed to see and work tasks of this kind
+   - child DocType `Task Access Policy Role` (Is Child Table = ON) with one field: `role` (Link → Role), Req
 5) Save.
 
 ### 6.2 Add the `task_access_policy` field to `Task`
@@ -294,16 +316,8 @@ Practical note:
 - Your automation should set `task_access_policy` based on Task Kind.
 - For smoke tests (section 7), you will set it manually.
 
-### 6.3 Enable user-permission filtering on Task (required)
-Steps:
-1) Open `Role Permission Manager`.
-2) Select DocType: `Task`.
-3) For each operational role you want to restrict, enable:
-   - `Apply User Permissions`
-4) Save.
-
-Practical note:
-- If you enable this, tasks without `task_access_policy` may become invisible to some users.
+### 6.3 Task list visibility is role-based (no User Permissions)
+Visibility is controlled by each `Task Access Policy` record's `allowed_roles`: the `task_list_filtered` API returns each user the task kinds whose policy roles intersect the user's roles (System Manager and Administrator see all). A user gains visibility of a kind by holding the right Ops role, not through User Permission records.
 
 ### 6.4 Create Task Access Policy records
 Recommended: create one record per Task Kind (policy name matches the Task Kind exactly).
@@ -316,137 +330,33 @@ Steps:
 5) Repeat until all are created.
 
 Create these policies:
-- `Order entry`
-- `Pack / prepare items`
-- `Dispatch picking / hand-off`
-- `Delivery`
-- `Pickup Returns`
-- `Return drop-off at warehouse`
-- `Returns processing / verification`
-- `Invoice preparation / create invoice`
-- `Debt Collection`
-- `Discount Approval`
-- `Purchase Approval`
-- `Write-off Approval`
+- one record per `task_kind` option listed in section 6.0; the policy name must match the Task Kind exactly
+- on each record, set `default_team_user` (the team placeholder email) and `allowed_roles`
 
-### 6.5 Grant policy access to each user (User Permission)
-Steps:
-1) Open `User Permission`.
-2) Click `New`.
-3) Set:
-   - User: select the user
-   - Allow: `Task Access Policy`
-   - For Value: select the policy
-4) Save.
-5) Repeat for each policy the user must see.
+### 6.5 Grant policy access by role
+Set each policy's `allowed_roles` rows so the right Ops roles can see the kind, and give each user the appropriate Ops role(s) (section 4). Visibility follows the role.
 
 ### 6.6 Make `task_access_policy` auto-fill from Task Kind (required)
 Goal:
 - Do not rely on users to manually select `Task Access Policy`.
 - Ensure strict visibility does not create “invisible tasks”.
 
-Steps:
-1) Open `Server Script`.
-2) Click `New`.
-3) Set:
-   - `Script Type`: `DocType Event`
-   - `Reference DocType`: `Task`
-   - `DocType Event`: `Before Save`
-4) Paste this script:
+Enforcement is implemented by two live Server Scripts. Do not reimplement it in one script, and never with a hardcoded kind → role map: the mapping is read from the `Task Access Policy` records at runtime.
 
-```python
-import frappe
-from frappe.utils import now_datetime
+- `Task-before-save-access-control` (Task / Before Save): completed and cancelled tasks are immutable; a change of assignee resets acceptance; completion is reserved to the accepter with no exemption for any role; edits require the accepter or a privileged user (System Manager, Ops - Directors, Administrator); task-kind role access is read from the policy's `allowed_roles`.
+- `Task-before-save-policy` (Task / Before Save): assigns the policy's `default_team_user` when `custom_assigned_to` is empty, syncs `_assign` from `custom_assigned_to`, fills `task_access_policy` from `task_kind`, refuses a Task Kind with no policy record, and stamps `completed_at` on completion.
 
-before = doc.get_doc_before_save()
-before_status = before.status if before else None
-
-is_becoming_completed = (doc.status == "Completed" and before_status != "Completed")
-
-# 1) Always set Task Access Policy from Task Kind
-if doc.task_kind:
-    # This assumes Task Access Policy docname == policy_name (Autoname = field:policy_name)
-    if frappe.db.exists("Task Access Policy", doc.task_kind):
-        doc.task_access_policy = doc.task_kind
-    else:
-        frappe.throw(f"Missing Task Access Policy record for Task Kind '{doc.task_kind}'")
-
-# 2) Enforce that only owning team can complete each Task Kind
-#
-# ⚠️ DO NOT COPY THIS PATTERN. The hardcoded map below is how it was first
-# built and is kept here only to explain the history. AGENTS.md now forbids it:
-# task-kind role mappings and default team users live in `Task Access Policy`
-# records and must be read at runtime, because a hardcoded dict silently
-# diverges from the policy records the rest of the system trusts.
-#
-#     policy = frappe.get_doc("Task Access Policy", doc.task_kind)
-#     allowed_roles = [r.role for r in (policy.allowed_roles or [])]
-#     default_team = policy.default_team_user or ""
-#
-# Enforcement itself also no longer lives in a per-kind map. It is one gate per
-# doctype -- `Task-before-save-access-control` -- which reads the policy for the
-# task being saved. Spreading the same rule across several scripts is what
-# produced the C1 defect, where five overlapping checks disagreed about whether
-# server-side housekeeping was permitted.
-TASK_KIND_REQUIRED_ROLE = {
-    "Order entry": "Ops - Order Accepting",
-    "Pack / prepare items": "Ops - Inventory",
-    "Dispatch picking / hand-off": "Ops - Delivery",
-    "Delivery": ["Delivery Driver", "Ops - Delivery"],
-    "Pickup Returns": ["Delivery Driver", "Ops - Delivery"],
-    "Return drop-off at warehouse": ["Delivery Driver", "Ops - Delivery"],
-    "Returns processing / verification": ["Ops - Returns", "Ops - Inventory"],
-    "Invoice preparation / create invoice": "Ops - Accounting",
-    "Debt Collection": "Ops - Directors",
-    "Discount Approval": "Ops - Directors",
-    "Purchase Approval": "Ops - Directors",
-    "Write-off Approval": "Ops - Directors",
-}
-
-required_role = TASK_KIND_REQUIRED_ROLE.get(doc.task_kind)
-if is_becoming_completed and required_role:
-    user_roles = set(frappe.get_roles(frappe.session.user))
-
-    # Directors can override completion when needed.
-    if "Ops - Directors" not in user_roles:
-        allowed_roles = required_role if isinstance(required_role, list) else [required_role]
-        if not any(r in user_roles for r in allowed_roles):
-            if isinstance(required_role, list):
-                roles_text = ", ".join([f"'{r}'" for r in required_role])
-                frappe.throw(f"Only users with roles {roles_text} can complete Task Kind '{doc.task_kind}'")
-            else:
-                frappe.throw(f"Only users with role '{required_role}' can complete Task Kind '{doc.task_kind}'")
-
-# 3) Fill Completed At timestamp
-if is_becoming_completed and not doc.completed_at:
-    doc.completed_at = now_datetime()
-```
-
-5) Save the Server Script.
-
-Recommended baseline access (align with Doc 03):
-- Driver:
-  - Delivery
-  - Pickup Returns
-  - Return drop-off at warehouse
-- Inventory:
-  - Pack / prepare items
-  - Dispatch picking / hand-off
-  - Returns processing / verification
-- Delivery Coordinator:
-  - Dispatch picking / hand-off
-  - Delivery
-  - Pickup Returns
-  - Return drop-off at warehouse
-  - Pack / prepare items
-- Returns:
-  - Returns processing / verification
-  - Pickup Returns
-  - Return drop-off at warehouse
-- Accounting:
-  - Invoice preparation / create invoice
-- Directors:
-  - all policies
+Baseline access, as set in the `allowed_roles` of the live Task Access Policy records (`deploy/test/data/task-access-policies.csv`):
+- `Delivery Driver`: Delivery, Pickup Returns, Return drop-off at warehouse, Return to warehouse (aborted delivery / cancelled order)
+- `Ops - Delivery`: Delivery, Pickup Returns, Return drop-off at warehouse, Return to warehouse (aborted delivery / cancelled order)
+- `Ops - Inventory`: Pack / prepare items, Returns processing / verification
+- `Ops - Returns`: Returns processing / verification, Returns restocking, Return Call, Pickup Returns
+- `Ops - Order Accepting`: Order entry, Return Call
+- `Ops - Order Creating`: Order entry
+- `Ops - Accounting`: Invoice preparation / create invoice, Account Details: Entry, Account Details: Processing
+- `Ops - Finance`: Debt Collection, Payment Received, Account Details: Entry, Account Details: Processing
+- `Ops - Directors`: Discount Approval, Purchase Approval, Write-off Approval, Debt Closure Approval, Debt Alert, Debt Collection, Payment Received, Account Details: Entry, Account Details: Processing
+- Every Ops role except Purchasing, plus `Delivery Driver`: Other, Other: Entry, Other: Processing
 
 ---
 
@@ -487,4 +397,4 @@ Additional test (Returns team):
 When you add a new Task Kind:
 - add a new Task Access Policy (or decide which policy it belongs to)
 - update which users should see it (User Permissions)
-- update completion enforcement mapping (section 6.6)
+- set the new policy's `default_team_user` and `allowed_roles`; enforcement reads the policy record at runtime

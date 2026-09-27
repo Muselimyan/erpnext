@@ -18,16 +18,9 @@ Non-goals:
 
 ## 2) Replaces plain "Other" task kind
 
-The legacy **"Other"** task kind (with `other_items` checklist, `other_budget`, and `other_supplier` fields) is retired. All ad-hoc tasks should use the **Entry / Processing** pair instead.
+The **Entry / Processing** pair is the standard for ad-hoc work. A plain **"Other"** task kind also exists (one-step, same fields); new ad-hoc work should use the two-step pair.
 
-| Old | New |
-|---|---|
-| Other (plain) — one-step checklist | Other: Entry → Other: Processing (two-step with handoff) |
-| `other_items` child table (checklist) | Use standard `description` field |
-| `other_budget` currency field | Use `description` field to note budget |
-| `other_supplier` link field | Use `description` field to note supplier |
-
-Migration: any existing tasks with `task_kind == "Other"` should be completed or cancelled. After migration, "Other" is removed from the `task_kind` Select options, and its Task Access Policy, custom fields, and child DocType (`Task Other Item`) are deleted.
+The `other_items` checklist, `other_budget` and `other_supplier` fields are live custom fields on Task, shown and editable on `Other: Entry`, `Other: Processing` and `Other`. The `Task Other Item` child DocType and the `Other` Task Access Policy exist.
 
 ---
 
@@ -38,7 +31,7 @@ Migration: any existing tasks with `task_kind == "Other"` should be completed or
 | 1 | Create and complete Other: Entry | Any operational role |
 | 2 | Accept and complete Other: Processing | Any operational role (assigned by Entry creator) |
 
-All nine operational roles plus Delivery Driver can create, see, accept, and complete both kinds. Default team: `office.team@example.com`.
+Eight operational roles (every Ops role except Ops - Purchasing and Ops - Purchasing Lead) plus Delivery Driver can create, see, accept and complete both kinds. Default team: `office.team@example.com`.
 
 ---
 
@@ -80,7 +73,7 @@ All nine operational roles plus Delivery Driver can create, see, accept, and com
    - **Next Task: Assigned To:** the person who should handle the follow-up processing
    - **Photos** (optional): attach up to 5 photos using the Task Photos gallery
 3. Click **Save** to create the task.
-4. Click **Accept / Start Task** (or it is auto-accepted if assigned to you).
+4. Click **Accept / Start Task**.
 5. When done recording the request, click **Complete**.
 
 **What happens on completion:**
@@ -118,9 +111,11 @@ All nine operational roles plus Delivery Driver can create, see, accept, and com
 | **Customer** | Yes | Yes | Optional |
 | **Assigned To** | Yes | Yes (before acceptance) | Standard field |
 | **Next Task: Assigned To** | Yes | Yes | Who handles the Processing step |
-| **Status** | Yes | Yes | Open → Working → Completed |
-| **Priority** | Yes | Yes | Medium by default |
+| **Status** | Hidden | — | Hidden by TFV; driven by the Accept / Complete buttons (Open → Working → Completed) |
+| **Priority** | Hidden | — | Hidden by TFV; Medium by default |
 | **Photos** | Yes | Yes | Task Photos gallery, up to 5, optional |
+| `other_items` checklist | Yes | Yes | Shown on Other: Entry / Other: Processing |
+| `other_budget` / `other_supplier` | Yes | Yes | Shown on Other: Entry / Other: Processing |
 | Product work section | Hidden | — | Not relevant |
 | Barcode scanning | Hidden | — | Not relevant |
 | Dispatch Case | Hidden | — | Not relevant |
@@ -145,9 +140,9 @@ Same as Other: Entry, except:
 
 | Script | Event | What it does |
 |---|---|---|
-| `Task-after-save-other-processing.py` | After Save | On completion of Other: Entry, creates Other: Processing task. Copies customer, project, description, files. Sets assignment from `custom_next_task_assign_to`. Duplicate guard: checks if Processing already exists. |
+| `Task-after-save-other-processing.py` | After Save | On completion of Other: Entry, creates the Other: Processing task. Copies customer, project, priority, description and files. Assigns from `custom_next_task_assign_to` (otherwise the kind's default team, set by Task-before-save-policy). Links through `depends_on`. Will not create a second Processing task. |
 | `Task-Other Entry Default Subject.py` | Before Save | If subject is blank or generic ("New Task", "Other"), sets it to "Other: Entry" or "Other: Processing". |
-| `Task-before-save-policy.py` | Before Save | Generic: reads Task Access Policy, sets default team, enforces role checks. |
+| `Task-before-save-policy.py` | Before Save | Generic: reads the Task Access Policy, sets the default team, syncs `_assign`, single-owner checks. Role and access enforcement lives in `Task-before-save-access-control`. |
 
 ---
 
@@ -184,7 +179,7 @@ The Other pair follows the same Entry → Processing pattern as Account Details,
 |---|---|---|
 | **Purpose** | General ad-hoc work | Document/photo intake and processing |
 | **Photos** | Optional (Task Photos gallery) | Core feature (Account Detail Attachment table) |
-| **Specific fields** | None beyond standard | `custom_account_photos`, `custom_account_details_subject` |
+| **Specific fields** | `other_items`, `other_budget`, `other_supplier` | None beyond standard (files use the standard attachment) |
 | **Who creates** | Any operational role | Specific account-details workflow |
 | **Completion gate** | None — just click Complete | None currently (no server validation) |
 

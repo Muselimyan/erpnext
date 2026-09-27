@@ -20,8 +20,8 @@ Non-goals:
 
 ## 2) Why master data quality matters
 Clients are referenced everywhere:
-- Sales Orders and Sales Invoices
-- Surgery Cases (Doc 12)
+- Dispatch Cases and Sales Invoices
+- The Dispatch Case lifecycle (Doc 16)
 - Per-client stock tracking and “company-owned at client location” visibility (Doc 05)
 - Debt thresholds and director alerts (requirements)
 
@@ -41,8 +41,8 @@ Decision (requirements + Doc 11/12 alignment):
 
 Operational meaning:
 - The client is the billing and receivables identity.
-- Company-owned stock at the client location is tracked via a **client location warehouse** (Doc 05) and operational workflows (Doc 12).
-  - This includes surgery cases and permanent on-site surgery sets (Doc 11).
+- Company-owned stock at the client location is tracked via a **client location warehouse** (Doc 05) and operational workflows (Doc 16).
+  - This includes dispatch cases and permanent on-site sets (Doc 11).
 
 ### 3.2 No separate Doctor master
 Decision:
@@ -131,10 +131,8 @@ Additional data you may still want:
 - Doctor name (when the client is a hospital)
 
 Recommended approach:
-- Add optional fields on operational documents (Sales Order, Sales Invoice, Surgery Case):
-  - `Hospital` (Link → Customer)
-  - `Hospital Branch` (free text or controlled select)
-  - `Doctor Name` (free text)
+- `Hospital` (Link → Customer), `Hospital Branch` (free text) and `Doctor Name` (free text) are optional fields on `Sales Invoice`. `Hospital` and `Doctor Name` also exist on `Customer` as default context.
+- On `Dispatch Case`, location context comes from the required `Client Location Warehouse`, which already encodes doctor + hospital + branch (§3.3).
 
 Governance note:
 - Hospital records can be created only when needed.
@@ -143,21 +141,20 @@ Governance note:
 ---
 
 ## 6) Linking rules (where hospital/doctor context must be recorded)
-### 6.1 Surgery cases
-Doc 12 uses:
-- Client recorded on the Surgery Case
-- Hospital + branch context recorded (required when the client is a doctor and the location warehouse is derived from doctor + hospital + branch)
-- Optional doctor name recorded when the client is a hospital
+### 6.1 Dispatch cases
+Doc 16 uses:
+- Client recorded on the Dispatch Case
+- `Client Location Warehouse` required on every Dispatch Case; it carries the doctor + hospital + branch location
+- Optional doctor name when the client is a hospital (on the Customer record and the Sales Invoice)
 
 Operational intent:
-- The surgery case becomes the authoritative operational record for:
+- The Dispatch Case is the authoritative operational record for:
   - what was dispatched/returned/used
   - who/where it was for
 
 ### 6.2 Standard sales documents
 Requirements require:
--- Sales Order: hospital context optional.
--- Sales Invoice: hospital context optional.
+- Sales Invoice: `Hospital`, `Hospital Branch` and `Doctor Name` are optional.
 
 Operational rule:
 - Hospital is always optional. Record it when it adds operational/reporting value.

@@ -16,6 +16,8 @@ This guide covers:
 
 ## 2. Current Production State (Snapshot: 2026-05-11)
 
+The landed-cost flow in this guide is deployed but not in operational use: no submitted Purchase Receipts or Landed Cost Vouchers exist, and profit is costed from `Standard Buying` (deferred workstream 4).
+
 **Legend: ✅ EXISTS — ⚠️ NEEDS UPDATE — ❌ MISSING**
 
 ### 2.1 Company / Global Settings
@@ -48,7 +50,7 @@ This guide covers:
 |---|---|---|---|
 | `Purchase Order-before-submit-director-approval` | PO → Before Submit | Blocks submit without `Approved` director status | ✅ DEPLOYED 2026-05-11 |
 | `Purchase Order-before-save-clear-approval` | PO → Before Save | Resets approval if PO is edited after approval | ✅ DEPLOYED 2026-05-11 |
-| `Purchase Order-validate-one-supplier` | PO → Before Save | Prevents mixing suppliers on one PO | ✅ DEPLOYED 2026-05-11 |
+| `Purchase Order-validate-one-supplier` | PO → Before Save | Prevents mixing suppliers on one PO | ⚠️ DEPLOYED but DISABLED: not enforced |
 | `Purchase Receipt-before-submit-main-inmed-expiry` | PR → Before Submit | Enforces Main warehouse; enforces batch+expiry for expiry-tracked items | ✅ DEPLOYED 2026-05-11 |
 | `Purchase Invoice-before-submit-no-update-stock` | PI → Before Submit | Blocks PI from updating stock (stock must come from PR only) | ✅ DEPLOYED 2026-05-11 |
 | `Task-purchase-approval-writeback` | Task → Before Save | Writes approval outcome back to PO when Director completes Purchase Approval task | ✅ DEPLOYED 2026-05-11 |
@@ -237,7 +239,7 @@ function prefill_import_duty(frm) {
 
 When Accounting opens a new Landed Cost Voucher:
 1. Add the Purchase Receipt(s) → click **Get Items from Purchase Receipts**.
-2. Click the **Pre-fill Import Duty** button (top of form).
+2. Click the **Pre-fill Import Duty** button (under the **Tools** menu). The deployed script updates an existing `Import Duty` row in place, keeping its Expense Account, rather than removing and re-adding it as the reference code in §6.1 does.
 3. The script calculates `sum(item_amount × import_tax_rate / 100)` across all items.
 4. An `Import Duty` row is inserted in the Taxes/Charges table with the pre-calculated amount.
 5. User sets the **Expense Account** on that row (e.g., `Import Duty - Inmed`).

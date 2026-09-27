@@ -18,7 +18,7 @@
 |---|---|
 | Reports analyzed | ~~49~~ → **44** (45 on 2026-09-25; one duplicate retired by D11) |
 | Reports documented and matching | 38 (as at audit date) |
-| Reports duplicated (same purpose, two copies) | ~~8 (4 pairs)~~ → **8 (4 pairs)** — aging pair resolved by D11; originally — one pair resolved, one was never a pair, three added from §1.4 |
+| Reports duplicated (same purpose, two copies) | ~~8 (4 pairs)~~ → **8 (4 pairs)**: Unallocated Advances and the three `-Inmed` stock variants. Debt Threshold and Dispatch Case Aging are resolved; Prepaid Orders was never a pair (§1.2) |
 | Reports referencing superseded DocTypes | 1 |
 | Reports documented but missing from prod | ~~3 (KPI dashboards)~~ → **4** (+ Pricing / Manual Rate Edits) |
 | Workspaces analyzed | 22 (3 custom, 19 standard) |
@@ -596,7 +596,7 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 ### F-004: Four duplicate report pairs remain *(revised 2026-09-25; aging pair resolved 2026-09-28)*
 - **Type**: RISK
 - **Severity**: HIGH
-- **Evidence**: See §1.2 and the correction in §1.4. Originally recorded as four pairs. The true position: **Debt Threshold is resolved** (Group 11 A7 retired the GL-based copy); **Prepaid Orders was never a pair** — the older report does not exist and its deletion is what left a dead workspace shortcut; and the **three "-Inmed" stock variants ARE duplicates**, contrary to §1.4's original reasoning, because all six queries are identical apart from keyword casing and both hardcode the warehouse. That leaves five open pairs: Unallocated Advances, Dispatch Case Aging, and the three stock variants.
+- **Evidence**: See §1.2 and the correction in §1.4. Originally recorded as four pairs. The true position: **Debt Threshold is resolved** (Group 11 A7 retired the GL-based copy); **Prepaid Orders was never a pair** — the older report does not exist and its deletion is what left a dead workspace shortcut; and the **three "-Inmed" stock variants ARE duplicates**, contrary to §1.4's original reasoning, because all six queries are identical apart from keyword casing and both hardcode the warehouse. Dispatch Case Aging is also resolved (Group 1 D11). That leaves four open pairs: Unallocated Advances and the three stock variants.
 - **Why it matters more than "two reports doing one job"**: the Debt Threshold pair used **two different formulas**, so a Director could open either and get a different answer about the same customer. Duplicate names are untidy; duplicate *definitions* are a correctness problem. Check each surviving pair for the same thing before picking a winner — Unallocated Advances already computes two ways (§1.2 pair 2).
 - **Recommendation**: For each remaining pair, compare the SQL before deciding which is current, then delete the loser and repoint any workspace shortcut in the **same** change (see F-008).
 - **Confidence**: Verified against the 45-report export, 2026-09-25
@@ -799,7 +799,7 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 
   | Report | Corrupted references |
   |---|---|
-  | `RPT - Collection Set Readiness` | 4 (`tabItem` ×2, `tabCollection Set Item`, …) |
+  | `RPT - Collection Set Readiness` | 4 (`tabItem` ×2, `tabCollection Set Item`, …). **Repairing the backticks will not make this one run:** `Collection Set Item` is not a doctype on this instance, so its query refers to a table that does not exist. Retire or rewrite it; don't just repair it |
   | `RPT - Items by Delivery Person` | 3 (`tabTask`, `tabDispatch Case`, `tabDispatch Case Item`) |
   | `RPT - Price Override List` | 3 (`tabItem Price` ×2, `tabItem`) |
   | `RPT - Low Stock by Supplier` | 2 (`tabItem`, `tabBin`) |
@@ -807,7 +807,7 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 
   A sixth, `RPT - Dispatch Case Aging`, has been **repaired** (D11, see §1.2 pair 3).
 - **Note on F-004**: `RPT - Unallocated Customer Advances` is one half of duplicate pair 2, and it is the half that doesn't work. So pair 2 is not really two reports disagreeing: one of them has never produced an answer.
-- **Recommendation**: Repair each one by replacing TAB + `ab` with a backtick + `tab` in the query. Build both characters from their code points in the deploy script (`[char]96`, `[char]9`), because writing them literally in a double-quoted string is exactly the bug. Then **run each report through `frappe.desk.query_report.run`** as the verification. Saving it proves nothing.
+- **Recommendation**: For the four whose tables exist, repair by replacing TAB + `ab` with a backtick + `tab` in the query. Build both characters from their code points in the deploy script (`[char]96`, `[char]9`), because writing them literally in a double-quoted string is exactly the bug. Then **run each report through `frappe.desk.query_report.run`** as the verification. Saving it proves nothing.
 - **Detection**: in any query, a TAB immediately followed by `ab` is this corruption; real indentation is never followed by those letters. `d11-cancel-flow.ps1` §4a0 has a working repair.
 - **Confidence**: Verified against the export; the repaired report returns 679 rows through the real runner.
 

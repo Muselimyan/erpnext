@@ -56,7 +56,7 @@ These rules exist to prevent mistakes and protect auditability.
   - Drivers do not create/submit Stock Entries.
 
 - **Returns Team is the authoritative “counting” step**
-  - In the per-surgery case workflow (Doc 12), used vs returned is determined by warehouse counting on return.
+  - In the Dispatch Case returns workflow (Doc 16), used vs returned is determined by warehouse counting on return.
   - If a client does not provide usage quantities, operations still work correctly.
 
 Permanent on-site sets note:
@@ -181,12 +181,9 @@ Owning team means:
 
 Task Kind ownership (baseline):
 - `Order entry`
-  - Owner: Order Accepting team
+  - Owner: Order Accepting + Order Creating teams
 - `Pack / prepare items`
   - Owner: Inventory / Preparing team
-- `Dispatch picking / hand-off`
-  - Owner: Delivery team (coordinator)
-  - Operational note: the physical picking is done by Inventory; the dispatch checkpoint exists to ensure the dispatch Stock Entry is submitted with correct serials/batches before the delivery trip proceeds.
 - `Delivery`
   - Owner: Delivery team (driver completes)
 - `Pickup Returns`
@@ -200,8 +197,6 @@ Task Kind ownership (baseline):
 - `Returns restocking`
   - Owner: Returns / Inventory team
 - `Debt Collection`
-  - Owner: Finance Team (`Ops - Finance`)
-- `Distribute Payment`
   - Owner: Finance Team (`Ops - Finance`)
 - `Payment Received`
   - Owner: Finance Team (`Ops - Finance`)
@@ -220,10 +215,9 @@ Operational intent:
 - Edit/complete is controlled by owning team.
 
 ### 6.1 Recommended baseline policy set
-Recommended: create one Task Access Policy per Task Kind:
+Recommended: one Task Access Policy per Task Kind. The authoritative kind → team/roles mapping lives in the `Task Access Policy` records (see `deploy/test/data/task-access-policies.csv`). Baseline kinds include:
 - `Order entry`
 - `Pack / prepare items`
-- `Dispatch picking / hand-off`
 - `Delivery`
 - `Pickup Returns`
 - `Return drop-off at warehouse`
@@ -231,7 +225,6 @@ Recommended: create one Task Access Policy per Task Kind:
 - `Invoice preparation / create invoice`
 - `Returns restocking`
 - `Debt Collection`
-- `Distribute Payment`
 - `Payment Received`
 - `Discount Approval`
 - `Purchase Approval`
@@ -248,11 +241,10 @@ This is the default recommendation to match your examples:
 
 - **Delivery Coordinator** can see:
   - all Delivery-related policies
-  - `Pack / prepare items` and `Dispatch picking / hand-off` (to coordinate handoff)
+  - `Pack / prepare items` (to coordinate handoff)
 
 - **Inventory / Preparing Team** can see:
   - `Pack / prepare items`
-  - `Dispatch picking / hand-off`
   - `Returns processing / verification`
 
 - **Returns Team** can see:
@@ -265,7 +257,6 @@ This is the default recommendation to match your examples:
 
 - **Finance Team** can see:
   - `Debt Collection`
-  - `Distribute Payment`
   - `Payment Received`
   - `Invoice preparation / create invoice` (to understand invoice status for payment)
 
@@ -295,8 +286,8 @@ Summary of stage ownership:
 ## 8) Reassignment and override rules
 - Reassigning tasks across people is allowed, but it must be explicit and traceable.
 - Task owner reassignment must be possible (operational reality).
-- Who is allowed to reassign tasks is a policy decision (decide later).
-- Completed tasks should not be edited except for explicit corrections by Directors/Coordinators.
+- Reassigning a task resets acceptance (clears the accepter and reverts status to Open), and requires ownership or a privileged role (System Manager, Ops - Directors, Administrator).
+- Completed and Cancelled tasks are immutable on the server; nobody can edit them, Directors included.
 
 ---
 

@@ -6,23 +6,23 @@ Document the active task-notification behavior currently present in the ERPNext 
 
 ## Current implementation
 
-The active implementation uses two enabled ERPNext Server Scripts and one enabled ERPNext Notification record:
+The implementation consists of two Server Scripts and one Notification record. **All three are disabled:** both Telegram scripts have `disabled = 1`, and `DATUREX Task Push` has `enabled = 0`.
 
 | Channel | Artifact | Trigger | Recipient model | Purpose |
 |---|---|---|---|---|
-| Telegram | `Telegram Task Assignment Notification` | `ToDo` After Insert, only when linked to `Task` | ToDo assignee, or real users resolved from a team placeholder user | External phone alert when a task is assigned |
-| Telegram | `Telegram Task Status Update` | `Task` After Save, when status changes to `Working`, `Completed`, or `Cancelled` | Most recent task assigner, falling back to task owner | External phone alert that the assigned work started/finished/cancelled |
-| ERPNext System Notification | `DATUREX Task Push` | `Task` New | `custom_assigned_to` and `custom_team_queue_role` | In-app bell notification for newly created tasks |
+| Telegram | `Telegram Task Assignment Notification` (disabled) | `Task` After Save, when `custom_assigned_to` changes to a new value | The new assignee, or real users resolved from a team placeholder user | Phone alert when a task is assigned |
+| Telegram | `Telegram Task Status Update` (disabled) | `Task` After Save, when status changes to `Working`, `Completed` or `Cancelled` | The task owner (`doc.owner`) | Phone alert that the work started, finished or was cancelled |
+| ERPNext System Notification | `DATUREX Task Push` (disabled) | `Task` New | `custom_assigned_to` and `custom_team_queue_role` | In-app bell notification for newly created tasks |
 
 The Telegram scripts call the Telegram Bot API directly. The bot token is stored in the `Telegram Settings` singleton DocType as a Password field.
 
 ## Assignment notification behavior
 
-`Telegram Task Assignment Notification` fires when a `ToDo` is inserted for a Task.
+`Telegram Task Assignment Notification` fires on `Task` After Save when `custom_assigned_to` changes to a new, non-empty value.
 
 Behavior:
-1. Ignore non-Task ToDos.
-2. Skip duplicate ToDos for the same Task and allocated user.
+1. Skip saves where the assignee is empty or unchanged.
+2. Skip the notification when the change is the user accepting the task (`custom_accepted_by` changed in the same save).
 3. Load the bot token from `Telegram Settings.bot_token`.
 4. Load Task details for task kind and priority.
 5. Resolve recipients:
@@ -41,7 +41,7 @@ Team placeholder users currently recognized by the script are the operational pl
 Behavior:
 1. Ignore initial Task creation.
 2. Notify only when status changes to `Working`, `Completed`, or `Cancelled`.
-3. Determine the assigner from the most recent Task ToDo's `assigned_by`; if no ToDo exists, use the Task owner.
+3. The notification goes to the task owner (`doc.owner`).
 4. Skip self-notifications when the updater is the same as the assigner.
 5. Load the bot token from `Telegram Settings.bot_token`.
 6. Resolve the assigner's chat ID from the User `telegram_chat_id` field if it exists; otherwise use the script's hardcoded fallback map.
@@ -53,13 +53,11 @@ This intentionally notifies the assigner only. It does not notify every team mem
 
 Current state:
 - `Telegram Settings` is active and stores the bot token.
-- `Telegram Notification User` exists as a custom DocType with `erp_user` and `chat_id`, but the active scripts do not query it.
-- No exported custom field named `telegram_chat_id` exists on User.
-- Therefore, the scripts currently rely on hardcoded fallback maps for actual chat ID delivery.
+- The `telegram_chat_id` custom field on User holds each user's chat ID, and both scripts read it.
+- There are no hardcoded chat-ID maps; a user without `telegram_chat_id` is skipped.
 
 Operational implication:
-- Adding or changing a Telegram recipient currently requires a script change and deployment.
-- The cleaner future direction is to wire both scripts to `Telegram Notification User` and remove hardcoded chat IDs from the scripts.
+- Adding or changing a Telegram recipient means setting `telegram_chat_id` on that User; no script change is needed.
 
 ## Environment URL behavior
 

@@ -28,7 +28,7 @@ Do not start Doc 13A until these are done:
 - Doc 06A — item tracking flags are correct (serial/batch/expiry) + FEFO warning is implemented.
 - Doc 08A — reorder setup exists (reorder levels on Items + reorder list views).
 - Doc 10A — Task system exists (Task Kind, Task Access Policy, mandatory photo enforcement).
-- Doc 11A — Collection Set templates exist.
+- Surgical Kit Templates exist (Doc 16 §5).
 - Doc 16A — Dispatch Case workflow deployed (Dispatch Case DocType, all server scripts, roles, task kinds, task access policies).
 
 You should do Doc 13A as a user with:
@@ -50,7 +50,7 @@ Important: do not rename views created by earlier implementation docs.
 These names are already used elsewhere and must remain stable:
 - Doc 08A: `Stock Balance — Main - Inmed` (saved Stock Balance report)
 - `Price Overrides — by Client` (Item Price saved list view)
-- Doc 11A: `Collection Sets — Readiness` (Collection Set saved list view)
+- The `Surgical Kit Template` list (templates applied to Dispatch Cases)
 
 Examples:
 - `RPT — Stock — Delivery In-Transit`
@@ -92,18 +92,17 @@ Then add shortcuts (you will add these after creating the reports in section 5):
 - `RPT — Stock — Returns`
 - `RPT — Stock — Client Locations (All)`
 - `RPT — Ops — Driver Task Queue (Derived)`
-- `RPT — Dispatch Cases — Aging (Open)`
+- `RPT - Dispatch Case Aging`
 - `RPT — Receivables — Unpaid Invoices (Aging)`
 - `RPT — Receivables — Unallocated Advances`
-- `RPT — Risk — Debt Threshold Exceeded`
+- `RPT - Clients Exceeding Debt Threshold`
 - `VIEW — Tasks — Debt Collection (Open)`
-- `VIEW — Tasks — Distribute Payment (Open)`
 - `VIEW — Tasks — Return to warehouse (Open)`
 - `VIEW — Tasks — Discount Approval (Open)`
 - `VIEW — Tasks — Purchase Approval (Open)`
 - `VIEW — Tasks — Write-off Approval (Open)`
 - `Price Overrides — by Client`
-- `Collection Sets — Readiness`
+- `Surgical Kit Templates` (Surgical Kit Template list)
 - `VIEW — Dispatch Cases — Awaiting Return Pickup`
 - `VIEW — Dispatch Cases — Return In Transit`
 - `VIEW — Dispatch Cases — Returns Received`
@@ -355,14 +354,14 @@ For each view:
 
 ---
 
-### 5.8 RPT — Dispatch Cases — Aging (Open) (Doc 13 §4.6)
+### 5.8 RPT - Dispatch Case Aging (Doc 13 §4.6)
 Goal:
 - Show open Dispatch Cases with an explicit "age" number.
 
 Steps:
 1) Open `Report` → `New`.
 2) Set:
-   - Report Name: `RPT — Dispatch Cases — Aging (Open)`
+   - Report Name: `RPT - Dispatch Case Aging`
    - Report Type: `Query Report`
    - Ref DocType: `Dispatch Case`
 3) Query:
@@ -562,14 +561,16 @@ order by so.delivery_date asc, so.transaction_date asc;
 
 ---
 
-### 5.12 RPT — Risk — Debt Threshold Exceeded (Doc 13 §4.8)
+### 5.12 RPT - Clients Exceeding Debt Threshold (Doc 13 §4.8)
+
+> The deployed report is `RPT - Clients Exceeding Debt Threshold`. It uses the single debt definition: unpaid submitted invoice outstanding minus unallocated credit not earmarked for another case. The GL-based query below is **not** that definition and is not deployed; the live query is in `deploy/test/schema/reports.json`.
 Primary truth:
 - Net receivable from `GL Entry` (same logic as Doc 09A automation).
 
 Steps:
 1) Open `Report` → `New`.
 2) Set:
-   - Report Name: `RPT — Risk — Debt Threshold Exceeded`
+   - Report Name: `RPT - Clients Exceeding Debt Threshold` (deployed; its live query is in `deploy/test/schema/reports.json`)
    - Report Type: `Query Report`
    - Ref DocType: `Customer`
 3) Query:
@@ -620,13 +621,8 @@ Create these saved Task list views.
    - Modified
 4) Save as: `VIEW — Tasks — Debt Collection (Open)`
 
-#### 5.13.2 VIEW — Tasks — Distribute Payment (Open)
-Filters:
-- Task Kind = `Distribute Payment`
-- Status not in `Completed, Cancelled`
-
-Save as:
-- `VIEW — Tasks — Distribute Payment (Open)`
+#### 5.13.2 (none)
+The `Distribute Payment` task kind does not exist, so there is no view for it. The `Ops — Reporting Pack` workspace still carries a stale `VIEW: Distribute Payment Tasks` shortcut, which should be removed.
 
 #### 5.13.3 VIEW — Tasks — Return to warehouse (Open)
 Filters:
@@ -735,16 +731,16 @@ Daily use:
 
 ---
 
-### 5.17 Collection Set readiness (Doc 13 §4.12)
+### 5.17 Template readiness (Doc 13 §4.12)
 Doc 11A already implements readiness warning behavior.
 
 Required deliverable:
-- A `Collection Set` list view that shows the readiness signal fields used by your Doc 11A implementation.
+- The `Surgical Kit Template` list. It has no readiness fields, and there is no working readiness report (see step 3).
 
 Implementation steps:
-1) Open `Collection Set` list.
+1) Open the `Surgical Kit Template` list.
 2) Add the readiness columns you created in Doc 11A (example: readiness warning / readiness note).
-3) Save view as: `Collection Sets — Readiness`.
+3) Save view as: `Surgical Kit Templates`. (`RPT - Collection Set Readiness` does not run: it queries a `Collection Set Item` table that does not exist, Group 10 F-032.)
 
 ---
 
@@ -873,7 +869,9 @@ order by se.posting_date desc, se.name desc;
 
 ---
 
-### 6.3 RPT — Pricing — Sales Orders With Manual Rate Edits (Doc 13 §5.5)
+### 6.3 Manual rate edits (not deployed)
+
+> No such report exists, and there is nothing for it to detect: Dispatch Case prices are resolved on the server at order entry, any client-sent price is ignored, and `unit_price` / `discount_pct` cannot be edited after submit. The Sales Order query below is not applicable; do not deploy it.
 Goal:
 - Periodically review items where the final `rate` differs from `price_list_rate`.
 
@@ -912,7 +910,6 @@ This is a go-live check that the reporting pack exists and is usable.
 ### 7.1 Directors (daily)
 Confirm Directors can open:
 - `VIEW — Tasks — Debt Collection (Open)`
-- `VIEW — Tasks — Distribute Payment (Open)`
 - `VIEW — Tasks — Discount Approval (Open)`
 - `VIEW — Tasks — Purchase Approval (Open)`
 
@@ -923,7 +920,7 @@ Confirm Ops can open:
 - `RPT — Stock — Returns`
 - `RPT — Stock — Client Locations (All)`
 - `RPT — Ops — Driver Task Queue (Derived)`
-- `RPT — Dispatch Cases — Aging (Open)` and Dispatch Case state views (section 5.7 + 5.8)
+- `RPT - Dispatch Case Aging` and Dispatch Case state views (section 5.7 + 5.8)
 
 ### 7.3 Purchasing leads (daily/weekly)
 Confirm Purchasing can open:

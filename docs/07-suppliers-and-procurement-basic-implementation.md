@@ -432,6 +432,8 @@ if header_changed or rows_changed:
 
 5) Save.
 
+Deployment status: this script exists as `Purchase Order-validate-one-supplier` and is **disabled**. The one-supplier-per-PO rule is not enforced until it is enabled, and Item Supplier data must be populated first or the check will block every PO.
+
 ---
 
 ## 7) Purchasing operating procedure (Draft PO → Approval → Submit → Send)
@@ -462,12 +464,12 @@ Sample PO lines (for testing):
    - Task Kind: `Purchase Approval`
    - Task Access Policy: `Purchase Approval` (if it is not auto-filled)
    - Purchase Order: select your PO
-   - Assigned To: a Director user
+   - Assign To (`custom_assigned_to`): leave the policy default (`directors.team@example.com`); a Director accepts the task
    - Description: include the reason, urgency, and any context
 4) Save.
 
 ### 7.3 Director approves or rejects (Ops - Directors)
-1) Open the Task.
+1) Open the Task and click `Accept / Start Task` (only the accepter can complete it).
 2) Set `Approval Outcome`:
    - `Approved` or `Rejected`
 3) Fill `Approval Note` (required operationally; always explain the decision).
@@ -641,7 +643,7 @@ Later, when goods arrive, receiving still happens based on physical reality.
 - Edit an approved Draft PO: approval fields are cleared and require re-approval.
 
 ### 12.1.1 Supplier invariants
-- Create a PO for Supplier A, then add an item whose Item master Supplier is Supplier B: saving the PO is blocked.
+- Create a PO for Supplier A, then add an item whose Item master Supplier is Supplier B: saving the PO is blocked. (Requires `Purchase Order-validate-one-supplier` to be enabled; it is currently disabled, see §6.4.1.)
 
 ### 12.2 Three-way truth model
 - A submitted PO does not change stock balances.
@@ -652,6 +654,7 @@ Additional enforcement tests:
 - Try to submit a Purchase Invoice with `Update Stock` enabled: submission is blocked.
 
 ### 12.3 Tracking capture
+- Batch, serial and expiry tracking is currently switched off on every item (deferred workstream 2), so these checks cannot be run until tracking is re-enabled.
 - Receive a batch+expiry item and confirm expiry exists on the Batch.
 - Receive a serial-tracked item and confirm serials are captured.
 

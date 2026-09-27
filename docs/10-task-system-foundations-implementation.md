@@ -50,11 +50,9 @@ Doc 10 requires the same Task system to support multiple operational processes.
    - Label: `Task Kind`
    - Fieldname: `task_kind`
    - Fieldtype: `Select`
-   - Options (one per line, exactly):
-     - Order accepting *(legacy, do not use for new tasks)*
+   - Options (one per line, exactly; default `Order entry`):
      - Order entry
      - Pack / prepare items
-     - Dispatch picking / hand-off
      - Delivery
      - Return Call
      - Return to warehouse (aborted delivery / cancelled order)
@@ -64,7 +62,6 @@ Doc 10 requires the same Task system to support multiple operational processes.
      - Returns restocking
      - Invoice preparation / create invoice
      - Debt Collection
-     - Distribute Payment
      - Payment Received
      - Discount Approval
      - Purchase Approval
@@ -75,6 +72,7 @@ Doc 10 requires the same Task system to support multiple operational processes.
      - Other: Entry
      - Other: Processing
      - Debt Closure Approval
+     - Debt Alert
 4) Save.
 
 ### 3.2 Add standard “link back” fields (recommended)
@@ -83,10 +81,8 @@ These fields let one task represent a real operational unit of work and support 
 In `Customize Form` → `Task`, add custom fields (if missing):
 - `dispatch_group_id` (Data) — Label: `Dispatch Group ID`
 - `customer` (Link → `Customer`) — Label: `Customer / Hospital`
-- `surgery_case` (Link → `Surgery Case`) — Label: `Surgery Case`
-- `sales_order` (Link → `Sales Order`) — Label: `Sales Order`
+- `dispatch_case` (Link → `Dispatch Case`) — Label: `Dispatch Case`
 - `sales_invoice` (Link → `Sales Invoice`) — Label: `Sales Invoice`
-- `driver_handover_note` (Small Text) — Label: `Driver Handover Note`
 
 Notes:
 - Keep fields optional. Different task kinds will use different links.
@@ -125,7 +121,6 @@ For DocType: `Task`
 For DocTypes drivers must NOT touch:
 - `Stock Entry`
 - `Sales Invoice`
-- `Surgery Case` (optional: you can allow read-only later)
 
 Attachment permissions:
 - Confirm drivers can add attachments to Tasks (ERPNext typically allows this via File permissions + role settings).
@@ -165,6 +160,8 @@ Create roles that represent your teams:
 - `Ops - Delivery`
 - `Ops - Accounting`
 - `Ops - Finance`
+- `Ops - Purchasing`
+- `Ops - Purchasing Lead`
 - `Ops - Directors`
 - `Delivery Driver`
 
@@ -194,7 +191,6 @@ Doc 10 requires that each Task Kind is assigned a **Task Access Policy**, and ea
 Create records (one per Task Kind). Current list:
 - Order entry
 - Pack / prepare items
-- Dispatch picking / hand-off
 - Delivery
 - Return Call
 - Return to warehouse (aborted delivery / cancelled order)
@@ -204,7 +200,6 @@ Create records (one per Task Kind). Current list:
 - Returns restocking
 - Invoice preparation / create invoice
 - Debt Collection
-- Distribute Payment
 - Payment Received
 - Discount Approval
 - Purchase Approval
@@ -265,14 +260,17 @@ Notes:
 
 ## 6) Enforce mandatory attachments + single-owner + team ownership (required)
 This section enforces Doc 10’s critical governance rules at the system level:
-- `Delivery` cannot be completed without `Warehouse Pickup Photo`
-- `Return drop-off at warehouse` cannot be completed without `Warehouse Drop-off Photo`
+- `Pack / prepare items` cannot be completed without a photo (Dispatch Case tasks); non-Dispatch-Case `Delivery` and `Return drop-off at warehouse` tasks also require a photo
+- `Delivery` cannot be completed until `delivery_status` is `Delivered`; `Pickup Returns` cannot reach `Returned to Warehouse` without a photo
 - `completed_at` is filled when Task becomes `Completed`
 - A Task must have exactly 1 owner (assignment)
-- A Task may only be completed/edited by its owning team (except Directors/System Manager)
+- A Task may only be completed by the user who accepted it, with no exemption; privileged users (System Manager, Ops - Directors, Administrator) may edit but never complete
 - `task_access_policy` is auto-filled from `task_kind` (so tasks do not become invisible)
 
 ### 6.1 Create the Task governance `Server Script`
+
+> **Obsolete: do not deploy this script.** It hardcodes a kind → role map (forbidden: roles are read from the Task Access Policy records at runtime), lets Directors override completion (completion has no exemption), lists retired task kinds, and uses `import`, which RestrictedPython refuses. The live enforcement is described in section 6A.
+
 1) Open `Server Script`.
 2) Click `New`.
 3) Set:
@@ -421,22 +419,26 @@ if is_becoming_completed and not doc.completed_at:
 
 | Script name | Type | Purpose |
 |---|---|---|
-| `Task-before-save-policy` | Before Save | Reads allowed roles and default team from Task Access Policy. Enforces role checks, auto-assigns default team, syncs `_assign`, photo gates for non-DC tasks, sets `completed_at`. |
-| `Task-before-save-lock-unaccepted` | Before Save | Enforces acceptance lock: unaccepted tasks cannot be edited. Resets acceptance on reassignment. |
+| `Task-before-save-access-control` | Before Save | Single owner of Task access control: acceptance lock, reset of acceptance on reassignment, Completed/Cancelled immutability, task-kind role access, completion reserved to the accepter with no exemption. |
+| `Task-before-save-policy` | Before Save | Reads allowed roles and default team from Task Access Policy. Assigns the default team, syncs `_assign`, photo gates for non-Dispatch-Case tasks, single-owner checks, sets `completed_at`. Role access checks live in access-control. |
+| `Task-before-save-lock-unaccepted` | Before Save | **Disabled.** Absorbed by `Task-before-save-access-control`. |
 | `Task-before-save-dispatch-gates` | Before Save | Enforces dispatch-specific gates: acceptance required, photo requirements, delivery status sequencing, pack item verification, invoice submission check, etc. |
 | `dispatch_task_accept` | API | Accept endpoint: validates role, cancels old ToDos, sets accepted_by/at, updates assignment, creates new ToDo. |
 | `task_list_filtered` | API | Returns filtered task names based on user roles and toggle state (my/open/completed). Reads from policy records. |
-| `Task-after-save-dispatch-flow` | After Save | Dispatch Case automation: creates next-step tasks, stock entries, invoices, debt tasks. Uses `team_map` from policies. |
+| `Task-after-save-dispatch-flow` | After Save | Dispatch Case automation: creates next-step tasks (including Invoice preparation and Write-off Approval), stock entries and case status transitions. Uses `team_map` from policies. It does not create the customer invoice; that is `task_commit_invoice`. |
 | `Task-after-save-other-processing` | After Save | When "Other: Entry" completes, creates "Other: Processing" task with attachments. |
-| `Telegram Task Assignment Notification` | After Save | Sends Telegram messages when assignment changes. Expands team placeholders to real users. |
-| `Telegram Task Status Update` | After Save | Sends Telegram status updates to task owner on key status changes. |
+| `Telegram Task Assignment Notification` | After Save | **Disabled.** Sends Telegram messages when assignment changes. |
+| `Telegram Task Status Update` | After Save | **Disabled.** Sends Telegram status updates to the task owner on key status changes. |
 
 ### Overview of deployed Client Scripts
 
 | Script name | Purpose |
 |---|---|
-| `Task-Accept Start` | Renders Accept button and Complete button. Calls `dispatch_task_accept` API. |
-| `Task-Lock Unaccepted` | Locks/unlocks form fields based on acceptance status. |
+| `Task-Action Buttons` | Renders Accept, Complete, Create DC, View DC and the Delivery / Pickup Returns state buttons; completion is gated on `tfe_can_complete` (accepter only). |
+| `Task-Field-Visibility` | Single owner of field and section visibility (`TFV_KIND_MAP`). |
+| `Task-Field-Editability` | Single owner of editability (`tfe_can_edit` / `tfe_can_complete`, `TFE_EDIT_MAP`). Privileged users may edit, never complete. |
+| `Task-Accept Start` | Sidebar hiding, mobile CSS, menu cleanup, subject handling. No buttons and no field visibility. |
+| `Task-Lock Unaccepted` | **Disabled.** Absorbed by `Task-Field-Editability`. |
 | `Task-Dispatch Packing Usability` | Dispatch Case helper comments, packing-specific UI. |
 | `Global-Mobile Back Button List` | Mobile back button, toggle filter bar (My/Open/Completed), calls `task_list_filtered`. |
 | `Task-Auto Reload` | Auto-reloads task form when server has newer data. |
@@ -459,7 +461,6 @@ Child DocType: `Task Access Policy Role` (istable=1, module=Custom, custom=1)
 |---|---|---|
 | Order entry | order.creation.team@example.com | Ops - Order Accepting, Ops - Order Creating |
 | Pack / prepare items | inventory.team@example.com | Ops - Inventory |
-| Dispatch picking / hand-off | delivery.team@example.com | Ops - Delivery |
 | Delivery | delivery.team@example.com | Delivery Driver, Ops - Delivery |
 | Return Call | office.team@example.com | Ops - Returns, Ops - Order Accepting |
 | Return to warehouse... | delivery.team@example.com | Delivery Driver, Ops - Delivery |
@@ -469,7 +470,6 @@ Child DocType: `Task Access Policy Role` (istable=1, module=Custom, custom=1)
 | Returns restocking | returns.team@example.com | Ops - Returns |
 | Invoice preparation / create invoice | accounting.team@example.com | Ops - Accounting |
 | Debt Collection | finance.team@example.com | Ops - Finance, Ops - Directors |
-| Distribute Payment | finance.team@example.com | Ops - Finance, Ops - Directors |
 | Payment Received | finance.team@example.com | Ops - Finance, Ops - Directors |
 | Discount Approval | directors.team@example.com | Ops - Directors |
 | Purchase Approval | directors.team@example.com | Ops - Directors |
@@ -480,10 +480,12 @@ Child DocType: `Task Access Policy Role` (istable=1, module=Custom, custom=1)
 | Other: Entry | office.team@example.com | All Ops roles + Delivery Driver |
 | Other: Processing | office.team@example.com | All Ops roles + Delivery Driver |
 | Debt Closure Approval | directors.team@example.com | Ops - Directors |
+| Debt Alert | directors.team@example.com | Ops - Directors |
 
 ### Stale/legacy policy records (do NOT populate)
 - `Order accepting` — superseded by "Order entry"
 - `Account details` — superseded by "Account Details: Entry" / "Account Details: Processing"
+- `Dispatch picking / hand-off` — not a task kind; a stale policy record for it still exists
 
 ### Diagnostic logging
 
@@ -491,7 +493,7 @@ All scripts emit structured logs using `print()` (server) or `console.log()` (cl
 
 **Server tags:** `[Policy]`, `[Accept]`, `[List]`, `[Dispatch]`, `[Lock]`, `[Gates]`, `[OtherFlow]`, `[TgAssign]`, `[TgStatus]`, `[Photo]`
 
-**Client tags:** `[TaskAccept]`, `[TaskLock]`, `[TaskAuto]`, `[TaskPack]`, `[TaskToggle]`
+**Client tags:** `[TaskAccept]`, `[TaskButtons]`, `[TFE]`, `[TFV]`, `[TaskAuto]`, `[TaskToggle]`
 
 ### Deployment
 
@@ -510,7 +512,7 @@ Doc 10 requires “always tasks” and stage gates.
 This section describes step-by-step ways to enforce stage gates in ERPNext.
 
 ### 7.1 Implement stage gates in the upstream operational document (recommended)
-If your operational record is `Surgery Case`, `Sales Order`, or another custom DocType:
+If your operational record is `Dispatch Case` or another custom DocType:
 
 Steps:
 1) Identify the workflow transition that must be gated.
@@ -556,8 +558,9 @@ When implementing task creation (custom app or Server Script), follow these step
 - Drivers can:
   - open assigned Tasks
   - attach a photo
-  - complete a `Delivery` task only when Warehouse Pickup Photo is attached
-  - complete a `Return drop-off at warehouse` task only when Warehouse Drop-off Photo is attached
+  - complete a `Pack / prepare items` task only when a photo is attached and every item is packed
+  - complete a `Delivery` task only after `delivery_status` reaches `Delivered`
+  - mark `Pickup Returns` as `Returned to Warehouse` only when a photo is attached
 - Back-office users can:
   - create tasks for any kind
   - reassign tasks

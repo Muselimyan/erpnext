@@ -1,5 +1,7 @@
 # Doc 12 — Surgery Set Operational Workflow (End-to-End)
 
+> **Status: superseded; kept as the requirements record.** This document describes a `Surgery Case` doctype driven by a Frappe Workflow, with `Collection Set` templates. None of these exist. The implemented flow uses the `Dispatch Case` (status driven by server scripts and task completion; there is no Workflow), `Surgical Kit Template` applied through `task_apply_template`, and the task kinds Pack / prepare items, Delivery, Return Call, Pickup Returns, Returns processing / verification, Returns restocking and Invoice preparation / create invoice. Current specification: `docs/16-unified-dispatch-flow.md`. Still true: the warehouse topology (Main / Delivery In-Transit / per-client location / Return Pickup In-Transit / Returns, plus Lost & Damaged) and the rule `Delivered = Used + Returned + Lost/Damaged`. Batch, serial and expiry tracking is switched off (deferred), so the serial, batch and FEFO requirements here are not enforced.
+
 ## 1) Purpose
 Define the day-to-day operational workflow for **surgery set/box** cases from request → dispatch → usage → return pickup → returns receiving → invoicing.
 
@@ -550,12 +552,12 @@ Receivables / debt control:
 - The client’s unpaid balance increases.
 - Directors should be alerted if the threshold is exceeded.
 
-### Step 11A — Distribute Payment disabled/deferred
-Distribute Payment is currently disabled/out of the active flow pending final keep/delete decision.
+### Step 11A — Distribute Payment
+The `Distribute Payment` task kind is retired and does not exist.
 
 Current operational rule:
 - Payment recording happens through Finance `Debt Collection` tasks.
-- No separate `Distribute Payment` task is created after customer receipts while the script remains disabled.
+- No `Distribute Payment` task is created after customer receipts.
 
 Note:
 - This deferred financial-control step does not change stock.

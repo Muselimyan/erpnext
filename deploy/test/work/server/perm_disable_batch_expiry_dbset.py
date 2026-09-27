@@ -2,7 +2,7 @@
 # Type: API
 # DocType: 
 # Event: Before Insert
-# Disabled: 0
+# Disabled: 1
 # ---
 
 codes_text = frappe.form_dict.get("codes") or ""

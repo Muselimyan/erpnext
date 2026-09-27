@@ -62,14 +62,14 @@ Directors should be able to answer:
 - What work is stuck?
 - Which clients are risky (debt threshold exceeded)?
 - Which approvals are pending (discounts, purchasing)?
-- Which paid invoices still require payment distribution?
+- Which clients hold unallocated advance credit (payments received, not yet allocated)?
 
 ### 3.2 Operations leads (daily)
 Operations should be able to answer:
 - What is in transit right now?
 - What company-owned stock is sitting at client locations (Dispatch Case return-expected path and/or permanent sets)?
 - What is waiting in `Returns - Inmed` to be processed?
-- Which item templates (Collection Sets) are currently short on inventory?
+- Which item templates (Surgical Kit Templates) are currently short on inventory?
 
 ### 3.3 Purchasing leads (daily/weekly)
 Purchasing should be able to answer:
@@ -270,7 +270,7 @@ Primary truth:
 - Customer advance / unallocated payments from submitted Payment Entries not fully allocated to Sales Invoices
 
 Legacy/deferred report note:
-- `RPT - Unallocated Customer Advances` overlaps with this view and should be treated as legacy/deferred pending colleague review; do not delete it until reviewed.
+- `RPT - Unallocated Customer Advances` overlaps with this view, but it fails every time it is opened: its table name was corrupted on deployment (Group 10 F-032). Use `RPT - Receivables - Unallocated Advances`.
 
 Interpretation:
 - This is client credit that reduces net debt.
@@ -295,7 +295,7 @@ Primary truth (derived):
 - Payment Entries recorded as client advances
 
 Legacy/deferred report note:
-- Any Sales Order-based prepaid-awaiting-delivery report/field usage belongs to the legacy/deferred Sales Order prepayment design. Keep it for colleague review, but do not treat it as current Group 3 truth.
+- No Sales Order-based prepaid report exists; the Sales Order prepayment design is superseded by the Dispatch Case flow.
 
 Interpretation:
 - This is an operational queue, not a receivables queue.
@@ -319,11 +319,11 @@ What it answers:
 - “Which clients exceeded their allowed outstanding debt?”
 
 Primary truth:
-- Official report: `RPT — Risk — Debt Threshold Exceeded`
-- GL Entry net receivable compared to the client’s threshold value (Doc 04 / requirements), matching the scheduled Debt Alert logic
+- Official report: `RPT - Clients Exceeding Debt Threshold`
+- Net receivable (unpaid submitted invoice outstanding minus unallocated credit not earmarked for another case) compared to the client's threshold, the same definition the Debt Alert scheduler uses
 
 Legacy/deferred report note:
-- `RPT - Clients Exceeding Debt Threshold` overlaps with this view but uses older invoice-minus-advance logic. Treat it as legacy/deferred pending colleague review; do not delete it until reviewed.
+- `RPT - Clients Exceeding Debt Threshold` is the only debt-threshold report, and it implements the single debt definition shared by the Debt Alert scheduler, the debt panel and collection episodes.
 
 Interpretation:
 - Exceedance triggers director review.
@@ -355,19 +355,19 @@ Red flags:
 
 ---
 
-## 4.9A Distribute Payment disabled/deferred status
+## 4.9A Distribute Payment stays retired
 What it answers:
-- “Has the deferred Distribute Payment flow accidentally been re-enabled?”
+- “Has a Distribute Payment task kind or script reappeared?”
 
 Primary truth:
-- `Payment Entry-after-submit-distribute-payment` Server Script should remain disabled unless the business flow is explicitly re-enabled.
+- The `Distribute Payment` task kind is retired and the `Payment Entry-after-submit-distribute-payment` Server Script does not exist.
 
 Interpretation:
 - The active Group 3 payment flow does not create Distribute Payment tasks after customer receipts.
 
 Red flags:
 - New Distribute Payment tasks appear after customer receipts
-- The disabled/deferred script is re-enabled before the final keep/delete/re-enable decision
+- A `Distribute Payment` task kind or script reappears
 
 ---
 
@@ -415,8 +415,8 @@ Primary truth:
 Interpretation:
 - This list is used during order entry to quickly confirm whether a client has a special price.
 - Pricing truth rule:
-  - Sales Invoices inherit prices from Sales Orders.
-  - Therefore the operational control point is: ensure Sales Orders use correct base/override prices.
+  - Dispatch Case prices are resolved on the server at order entry (active tender → customer Item Price → Standard Selling); any client-sent price is ignored, and `unit_price` / `discount_pct` are not editable after submit.
+  - Therefore the operational control point is: keep Item Price overrides and tender agreements correct.
 - It should be easy to filter by:
   - Client (Customer)
   - Item
@@ -455,12 +455,12 @@ Red flags:
 
 ---
 
-## 4.12 Item template readiness (Collection Sets used as Dispatch Case templates)
+## 4.12 Item template readiness (Surgical Kit Templates used as Dispatch Case templates)
 What it answers:
-- “Which item templates (Collection Sets) can we currently fill for a Dispatch Case, and which are short?”
+- “Which item templates (Surgical Kit Templates) can we currently fill for a Dispatch Case, and which are short?”
 
 Primary truth:
-- Template definitions: `Collection Set` item rows (Doc 11 — template concept retained)
+- Template definitions: `Surgical Kit Template` item rows. `RPT - Collection Set Readiness` does not run: it queries a `Collection Set Item` table that does not exist (Group 10 F-032), so there is no working readiness report.
 - Stock availability signal: stock in `Main - Inmed` (Doc 05)
 
 Interpretation:

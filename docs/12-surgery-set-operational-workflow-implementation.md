@@ -1,6 +1,8 @@
 # Doc 12A — Surgery Set Workflow (Implementation / ERPNext Setup Guide)
 
 > **Photo rules update:** This doc references the original photo design where the Delivery task required a Warehouse Pickup Photo. This has been revised: the pickup photo requirement is now on the **Pack** task, and Delivery tasks have no photo requirement. See **Doc 18 — Photo System** for current rules.
+>
+> **Status: superseded; do not follow.** This guide builds `Surgery Case` (+ `Surgery Case Item`, `Surgery Case Serial Exception`), a Frappe Workflow with `workflow_state`, link fields named `surgery_case` / `surgery_set_type`, and a Before Save automation script on `Surgery Case`. None of these exist, and they must not be created as described. The implemented equivalents are `Dispatch Case` (+ `Dispatch Case Item`, carrying dispatched / returned / lost_damaged / used quantities, unit price and discount), `Surgical Kit Template` applied through `task_apply_template`, and the task-driven flow in `docs/16-unified-dispatch-flow.md`. These fields do exist: `Task.dispatch_case`, `Task.order_template`, `Sales Invoice.dispatch_case`, `Sales Invoice.hospital_branch`, `Sales Invoice.doctor_name`.
 
 ## 1) Purpose
 This is a **step-by-step setup guide** to implement the workflow described in **Doc 12 — Surgery Set Operational Workflow**.

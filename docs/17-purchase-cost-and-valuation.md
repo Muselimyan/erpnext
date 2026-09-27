@@ -16,6 +16,8 @@ This document defines how InMED tracks the **true cost** of purchased inventory 
 - Reorder thresholds or PO preparation rules (Doc 08)
 - Procurement status tracking during transit (Doc 07.1)
 
+**Status:** the landed-cost layer described here is specified and its pieces are deployed, but it is not in operational use: no submitted Purchase Receipts or Landed Cost Vouchers exist. Until it runs, profit is costed from the `Standard Buying` price list, not from Valuation Rate (deferred workstream 4).
+
 ---
 
 ## 2. Core Concepts
@@ -89,7 +91,7 @@ At this step:
   - Use the supplier's lot/batch number printed on packaging.
   - Use a system-generated naming series (e.g., `LOT-YYYY-#####`).
 - **Serial number(s)** must be assigned for serial-tracked items.
-- **Expiry date** must be entered for all batch-tracked items (expiry enforcement is already active — see `Purchase Receipt-before-submit-main-inmed-expiry` script).
+- **Expiry date** must be entered for all batch-tracked items. The `Purchase Receipt-before-submit-main-inmed-expiry` gate is deployed and enabled, but batch, serial and expiry tracking is currently switched off on every item (deferred workstream 2), so it has nothing to enforce until tracking is re-enabled.
 
 After submission, items are in stock at the **preliminary Valuation Rate** = supplier unit price from the receipt line. This rate will be revised upward by the LCV.
 

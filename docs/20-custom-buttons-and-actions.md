@@ -23,8 +23,9 @@ All Task action buttons are now owned by **one script**: `Task-Action Buttons.js
 
 | Layer | Script | Responsibility |
 |---|---|---|
-| **Task actions** | `Task-Action Buttons.js` | Accept, Complete, Create DC, Open DC, Products dropdown, mobile sub-header, mobile bottom floating buttons, desktop header buttons |
-| **Task UI cleanup** | `Task-Accept Start.js` | Field visibility, sidebar hiding, mobile CSS, menu cleanup. No buttons. |
+| **Task actions** | `Task-Action Buttons.js` | Accept, Complete (and the Delivery / Pickup Returns state buttons), Create DC, View DC, mobile sub-header, mobile bottom floating buttons, desktop header buttons |
+| **Task UI cleanup** | `Task-Accept Start.js` | Sidebar hiding, mobile CSS, menu cleanup, subject handling. No buttons, and no field visibility (owned by TFV). |
+| `Task-Field-Editability.js` | Enabled | No | Owns `tfe_can_edit` / `tfe_can_complete`, the gates every action button delegates to |
 | **Global mobile nav** | `Global-Mobile Back Button List.js` | Global mobile sub-header (Back + Refresh) on every non-Task page. Task list toggle filters. |
 | **Old global back** | `Global-Mobile Back Button.js` | **Disabled.** Replaced by the global sub-header above. |
 
@@ -61,7 +62,7 @@ Every render starts by removing stale controls (`$("#task-subheader").remove()`,
 | Property | Value |
 |---|---|
 | **Where** | Mobile: green floating button at bottom-right. Desktop: header custom button. |
-| **Condition** | Task is accepted by current user (or admin). Status is not Completed/Cancelled. Not a new task. |
+| **Condition** | Task is accepted by the current user (`tfe_can_complete`: the accepter only, no admin exemption). Status is not Completed/Cancelled. Not a new task. For `Delivery` and `Pickup Returns` the button is the status step (`Picked Up` / `Delivered` / `Returned to WH`), which completes the task on the server. |
 | **Behavior** | Sets `status = "Completed"` and `completed_on` on the local doc, then saves everything in one call. |
 | **Server call** | `frappe.call({ method: "frappe.desk.form.save.savedocs" })` — calls the save endpoint directly instead of `frm.save()`. |
 | **Why not `frm.save()`** | `frm.save()` has two problems: (1) its promise does not reliably reject on server validation errors (`frappe.throw`), leaving the button stuck on "Completing..."; (2) its argument signature varies across Frappe versions, causing `toTitle` crashes. |
@@ -86,7 +87,7 @@ Every render starts by removing stale controls (`$("#task-subheader").remove()`,
 
 | Property | Value |
 |---|---|
-| **Where** | Mobile: sub-header button ("Open DC"). Desktop: header custom button. |
+| **Where** | Mobile: sub-header button ("View DC"). Desktop: header custom button ("View DC"). |
 | **Condition** | `frm.doc.dispatch_case` exists (any status, any acceptance state). |
 | **Behavior** | Routes to `Form/Dispatch Case/{name}`. No server call. |
 
@@ -149,7 +150,7 @@ Is the task NOT accepted by the current user?
   └─ YES → Mobile: "Accept / Start Task" floating button.
            Desktop: "Accept / Start Task" primary button.
 
-Is the task accepted by current user (or admin)?
+Is the task accepted by the current user? (Completion is accepter-only, with no admin exemption. A privileged user who did not accept sees no Complete or state button, only View DC / Create DC.)
   └─ YES →
        Needs DC and no DC linked?
          └─ Show "Create Dispatch Case"
@@ -178,7 +179,7 @@ Is the task accepted by current user (or admin)?
 **Planned approach:** Extend `Task Access Policy` to define completion prerequisites per task kind. The client reads these on form load and only shows Complete when all are met. This keeps the policy DocType as the single source of truth (consistent with how roles and teams are already managed).
 
 Example policy additions:
-- Pack / prepare items → require `custom_packing_photos` attachment
+- Pack / prepare items → require at least one attached photo (File record)
 - Delivery → require `delivery_status == "Delivered"`
 - Returns processing → require all `returned_qty` filled
 
@@ -211,7 +212,7 @@ Accept and Create DC use `frappe.call` with dedicated server APIs (`dispatch_tas
 | Script | Status | Owns Buttons? | Notes |
 |---|---|---|---|
 | `Task-Action Buttons.js` | **Enabled** | **Yes — all Task action buttons** | Single source of truth |
-| `Task-Accept Start.js` | Enabled | No (stripped in redesign) | Retains UI cleanup, CSS, field visibility |
+| `Task-Accept Start.js` | Enabled | No (stripped in redesign) | Retains UI cleanup, CSS, subject handling (field visibility is owned by TFV) |
 | `Task-Account Details UI Cleanup.js` | Enabled | No | Account Details field visibility |
 | `Task-Other UI Cleanup.js` | Enabled | No | General cleanup |
 | `Global-Mobile Back Button List.js` | Enabled | Global Back + Refresh sub-header | Also owns Task list toggle filters |

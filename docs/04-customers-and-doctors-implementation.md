@@ -108,7 +108,7 @@ Operational rule:
 
 ### 3.5 Add optional default context fields on `Customer`
 Goal:
-- Store the usual hospital and doctor context once on the Customer so Sales Orders can auto-fill it for repeat orders.
+- Store the usual hospital and doctor context once on the Customer, as default context for repeat orders.
 
 Steps:
 1) In `Customize Form` → `Customer`, add custom fields:
@@ -124,19 +124,20 @@ Steps:
 2) Save.
 
 Usage rule:
-- For doctor-clients, `Hospital` can store the usual hospital Customer used for Sales Order auto-fill.
+- For doctor-clients, `Hospital` stores the usual hospital Customer for context.
 - For hospital-clients, `Doctor Name` can store a usual doctor-name value when helpful, but remains optional.
-- The Sales Order customer auto-fill script reads these Customer fields and copies them to the Sales Order context fields; users can still override the Sales Order fields when a specific order differs.
 
 ---
 
 ## 4) Add hospital + branch + doctor context fields to sales documents
 Doc 04 decision: do not maintain a separate Doctor master.
 
-### 4.1 Add fields to `Sales Order`
+### 4.1 Add fields to `Sales Invoice`
+The order flow runs on `Dispatch Case`, which captures location through the required `Client Location Warehouse`; `Sales Order` is not used and needs no context fields.
+
 Steps:
 1) Open `Customize Form`.
-2) Select DocType: `Sales Order`.
+2) Select DocType: `Sales Invoice`.
 3) Add custom fields:
    - Label: `Hospital`
      - Fieldname: `hospital`
@@ -156,9 +157,6 @@ Steps:
 Usage rule:
 - If Customer is a doctor: optionally fill `Hospital` + `Hospital Branch`.
 - If Customer is a hospital: optionally fill `Doctor Name` (free text).
-
-### 4.2 Add fields to `Sales Invoice`
-Repeat the same steps for DocType: `Sales Invoice`.
 
 ---
 
@@ -182,8 +180,6 @@ Steps:
 4) Paste this script:
 
 ```python
-import frappe
-
 before = doc.get_doc_before_save()
 if not before:
     before = None
@@ -270,6 +266,7 @@ Steps:
 2) Select DocType: `Customer`.
 3) Set:
    - `Ops - Order Accepting`: Read ON, Write ON, Create ON
+   - `Ops - Order Creating`: Read ON, Write ON, Create ON
    - `Ops - Accounting`: Read ON, Write ON, Create ON
    - `Ops - Directors`: Read ON, Write ON, Create ON
    - `Ops - Inventory`: Read ON
@@ -309,7 +306,7 @@ Then do a manual review pass for:
 - Confirm `client_code`, `client_kind`, and `debt_threshold_amd` are required.
 
 ### 9.2 Transaction context fields
-- Create a Sales Order for doctor-client `D001`.
+- Create a Sales Invoice for doctor-client `D001`.
   - Fill Hospital = `H001 — Erebuni MC`
   - Fill Hospital Branch = `Main`
   - Leave Doctor Name blank

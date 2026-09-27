@@ -2,7 +2,7 @@
 
 > ## ⚠️ HISTORICAL — this gap list predates Group 11
 >
-> The gaps tracked here were about getting the Dispatch Case flow *installed*.
+> The gaps tracked here were about getting the Dispatch Case flow *installed*. The ✅ EXISTS statuses below describe production as of 2026-05-11. Several of those items no longer exist: the `Dispatch picking / hand-off` and `Distribute Payment` task kinds, the Surgery Case doctypes, the `Debt Collection Invoice` / `Debt Collection Payment` child tables, and the Task fields `surgery_case`, `driver_handover_note`, `total_outstanding`, `available_advance_credit`, `open_invoices` and `payment_history`.
 > The financial tail of that flow was later found to have behavioural defects
 > this analysis does not cover, and has since been rebuilt: no draft invoice,
 > debt read live from the ledger rather than stored, server-side pricing,
@@ -235,7 +235,7 @@ Current custom DocTypes in prod (6 total, all Surgery Case family):
 | `Dispatch-Case-before-submit` | Dispatch Case → Before Submit | ✅ EXISTS — Validate items; create Pack task |
 | `Task-before-save-dispatch-gates` | Task → Before Save | ✅ EXISTS — Photo/serial/batch/qty/invoice gates for all dispatch task kinds |
 | `Task-after-save-dispatch-flow` | Task → After Save | ✅ EXISTS — Main orchestrator: SEs + next-task creation for all status transitions |
-| `Task-before-save-payment-recording` | Task → Before Save | ✅ EXISTS — FIFO payment allocation, Payment Entry, Distribute Payment task |
+| `Task-before-save-payment-recording` | Task → Before Save | ✅ EXISTS — FIFO payment allocation; creates and submits the Payment Entry. No Distribute Payment task |
 | `Task-after-save-advance-payment` | Task → After Save | ✅ EXISTS — Advance Payment Entry on Payment Received task completion |
 
 ---
@@ -262,7 +262,7 @@ Originally not audited in detail (workspaces.json is large). On 2026-06-01, the 
 | VIEW: Invoice Tasks | `task_kind = Invoice preparation / create invoice` |
 | VIEW: Debt Collection Tasks | `task_kind = Debt Collection` |
 | VIEW: Payment Received Tasks | `task_kind = Payment Received` |
-| VIEW: Distribute Payment Tasks | `task_kind = Distribute Payment` |
+| VIEW: Distribute Payment Tasks | The task kind does not exist; the shortcut should be removed |
 | VIEW: All Dispatch Cases | DocType: Dispatch Case |
 
 These shortcuts now exist in `Dispatch - Task Queues`; users should smoke test that each shortcut opens the expected filtered list.

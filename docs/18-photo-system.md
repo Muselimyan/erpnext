@@ -115,13 +115,9 @@ This is intentional behavior, not a photo leak. Showing Pack photos on the Retur
 Purpose: Attach photos or documents related to the client's account (e.g., ID documents, contracts, facility photos).
 
 Rules:
-- Users may attach up to 5 photos.
-- Users must see thumbnail previews of all attached photos.
-- Users must be able to delete photos (if they accepted the task).
 - Photos are NOT required for task completion (no server-side gate).
-- When an Account Details: Entry task is completed and an Account Details: Processing task is created, photos should be copied to the Processing task so the processing team can see them.
-
-Field: `custom_account_photos` (Photos) — Table field with `Account Detail Attachment` child rows
+- There is no dedicated photo field or gallery for these kinds; users attach files with the standard form attachment.
+- When an Account Details: Entry task completes and the Processing task is created, the attached File records are copied to the Processing task.
 
 ### 4.7 Other: Entry / Other: Processing
 **Photos: ALLOWED (not required)**
@@ -152,14 +148,14 @@ Photo upload and deletion are gated by task acceptance:
 | Logged in, task not accepted by anyone | No | No | Yes (previews) |
 | Logged in, task accepted by a different user | No | No | Yes (previews) |
 | Logged in, task accepted by this user | Yes | Yes | Yes |
-| System Manager / Administrator | Yes | Yes | Yes |
+| System Manager / Ops - Directors / Administrator | Yes | Yes | Yes |
 
 The acceptance check uses:
 - `custom_accepted_by` field on the Task.
 - A match against `frappe.session.user`.
-- Role check for `System Manager` or `Administrator`.
+- Delegated to `tfe_can_edit()` in `Task-Field-Editability.js`: the accepter, or a privileged user (`System Manager`, `Ops - Directors`, `Administrator`).
 
-The locking system (`Task-Lock Unaccepted`) provides a backup safety net by setting the gallery mode to `readonly` when the user has not accepted the task.
+The gallery mode is computed from `tfe_can_edit()`.
 
 ---
 
@@ -255,6 +251,10 @@ All photo galleries use a consistent visual pattern:
 | Delivery | (none) | — | — |
 | Order Entry | (none) | — | — |
 | Returns Processing | (none) | — | — |
+| Returns restocking | Status → Completed | `task_has_image(doc.name)` | `frappe.throw` in `Task-before-save-dispatch-gates` |
+| Return to warehouse (cancelled order) | Status → Completed | `task_has_image(doc.name)` | `frappe.throw` in `Task-before-save-dispatch-gates` |
+| Delivery (no Dispatch Case) | Status → Completed | `task_has_image(doc.name)` | `frappe.throw` in `Task-before-save-policy` |
+| Return drop-off at warehouse (no Dispatch Case) | Status → Completed | `task_has_image(doc.name)` | `frappe.throw` in `Task-before-save-policy` |
 | Account Details | (none) | — | — |
 | Other | (none) | — | — |
 
@@ -267,15 +267,12 @@ The `task_has_image()` helper queries File records with `attached_to_doctype="Ta
 ### 11.1 Task fields (photo-related)
 | Fieldname | Label | Type | Used by |
 |---|---|---|---|
-| `custom_account_photos` | Photos | Table → Account Detail Attachment | Account Details |
 
 Legacy fields removed: `warehouse_pickup_photo`, `warehouse_dropoff_photo`, `custom_delivery_photo`.
 
 ### 11.2 Dispatch Case fields
 | Fieldname | Label | Type | Status |
 |---|---|---|---|
-| `delivery_photo` | Delivery Photo | Attach | Hidden (legacy, no longer populated) |
-| `return_dropoff_photo` | Return Drop-off Photo | Attach | Hidden (legacy, no longer populated) |
 | `photo_section` | Photos | Section Break | Used as container for live gallery rendering |
 
 ### 11.3 Account Detail Attachment (child table)
@@ -293,14 +290,12 @@ Legacy fields removed: `warehouse_pickup_photo`, `warehouse_dropoff_photo`, `cus
 |---|---|---|
 | `Task-Photo-System` | Task | PhotoGallery, PhotoFullscreen, Task form handlers (refresh + after_save) |
 | `Dispatch Case-Photo-Galleries` | Dispatch Case | Read-only galleries with live Task File lookup |
-| `Task-Lock Unaccepted` | Task | Sets gallery mode based on acceptance state |
 
 ### 12.2 Server Scripts
 | Script | DocType | Event | Photo role |
 |---|---|---|---|
 | `Task-before-save-dispatch-gates` | Task | Before Save | Pack/Pickup Returns completion gates via `task_has_image()` |
 | `Task-before-save-policy` | Task | Before Save | Policy gates for tasks without Dispatch Case |
-| `Stock Entry-before-submit-dispatch-gate` | Stock Entry | Before Submit | Delivery task photo check |
 
 ### 12.3 Disabled/Obsolete
 | Script | Reason |

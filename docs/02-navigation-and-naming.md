@@ -89,6 +89,7 @@ Recommended top-level structure:
 - `Delivery In-Transit - Inmed`
 - `Return Pickup In-Transit - Inmed`
 - `Returns - Inmed`
+- `Lost & Damaged - Inmed`
 
 ### 6.2 Client location warehouses
 Rule:
@@ -96,8 +97,8 @@ Rule:
 
 Operational note:
 - Client location warehouses may contain company-owned stock for:
-  - surgery cases (pending return/usage reconciliation)
-  - permanent on-site surgery sets (consignment-like)
+  - dispatch cases (pending return/usage reconciliation)
+  - permanent on-site sets (consignment-like)
 
 Recommended naming pattern:
 - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed`
@@ -147,10 +148,10 @@ If you use variants:
 
 ---
 
-## 9) Surgery Set naming
+## 9) Surgical Kit Template naming
 This section defines names for surgery-set records so they are searchable.
 
-### 9.1 Collection Set
+### 9.1 Surgical Kit Template
 Recommended pattern:
 - `<Specialty> — <Set Name> — v<Version>`
 
@@ -161,8 +162,8 @@ Examples:
 Rule:
 - If you change the composition significantly, bump the version.
 
-### 9.2 Surgery Case
-Recommended pattern for the human-readable title/subject fields:
+### 9.2 Dispatch Case
+Dispatch Case IDs are generated automatically (`DC-.YYYY.-.#####`). Use this pattern for the human-readable title/subject fields on related Tasks:
 - `<Client Code> — <Client Name> — <Date>`
 
 Rule:
@@ -182,7 +183,7 @@ Use the Subject patterns from Doc 10.
 
 Rule:
 - Always include at least one searchable identifier:
-  - Surgery Case ID, Sales Order ID, Dispatch Group ID, or Hospital name.
+  - Dispatch Case ID, or Customer/Hospital name.
 
 ### 10.2 Saved Task views (filters)
 Recommended pattern:

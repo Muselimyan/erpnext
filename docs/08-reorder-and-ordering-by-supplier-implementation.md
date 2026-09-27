@@ -31,7 +31,7 @@ Do not start Doc 08A until these are done:
 - Doc 07A — Suppliers and purchasing controls exist.
   - Each item has exactly one Supplier.
   - PO approval gate exists.
-  - Do not mix suppliers on one PO (enforced).
+  - Do not mix suppliers on one PO (policy; the `Purchase Order-validate-one-supplier` script exists but is disabled).
 
 You should do Doc 08A as a user with:
 - `System Manager`
@@ -287,6 +287,8 @@ Operational rule:
 
 ## 8) Buyer operating routine (daily + weekly)
 ### 8.1 Daily quick check (10–20 minutes)
+A daily scheduler, `doc15_norm_reorder_daily_notifications`, also lists items at or below their `Main - Inmed` reorder level for `Ops - Purchasing` and `Ops - Directors`. It compares raw `actual_qty` (not availability net of committed demand), stops at 100 items, and delivers the list as a ToDo, which is not part of the task-based working model. Treat it as a nudge, not the source of truth.
+
 1) Open `Reorder — Main - Inmed` (or the `Stock Reorder` page).
 2) Sort by urgency (below threshold).
 3) Focus on:

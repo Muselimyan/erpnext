@@ -37,13 +37,13 @@ Operational rule:
 
 ## 3) Go / No-Go criteria (minimum)
 Go-live is allowed only if:
-- You can run **one complete Dispatch Case (no-return path)** end-to-end: Order entry task → Dispatch Case (`return_expected = No`) submit → Pack → Delivery (Picked Up → Delivered) → Invoice Preparation → Debt Collection → Closed, with correct stock movements and all Stock Entries auto-submitted.
-- You can run **one complete Dispatch Case (return-expected path)** end-to-end: Order entry task → Dispatch Case (`return_expected = Yes`) submit → Pack → Delivery → Return Call → Return Pickup → Returns Inspection → Invoice Preparation → Debt Collection → Closed, with batch/serial temporarily disabled and `dispatched = used + returned` reconciliation.
+- You can run **one complete Dispatch Case (no-return path)** end-to-end: Order entry task → Dispatch Case (`return_expected = No`) submit → Pack → Delivery (Picked Up → Delivered) → Invoice Preparation (Create & Submit Invoice) → Payment Pending → Closed when the customer's account settles, with correct stock movements and all Stock Entries auto-submitted.
+- You can run **one complete Dispatch Case (return-expected path)** end-to-end: Order entry task → Dispatch Case (`return_expected = Yes`) submit → Pack → Delivery → Return Call → Return Pickup → Returns Inspection → Invoice Preparation → Payment Pending → Closed when the customer's account settles, with batch/serial temporarily disabled and `dispatched = used + returned` reconciliation.
 - If any client location uses a permanent on-site set model, you can run **one complete permanent set replenishment cycle** end-to-end (usage posting → invoice used → replenish stock into the correct client location warehouse).
 - Directors can see:
   - open approvals (discounts, purchase approvals)
   - clients above debt threshold
-  - received payments pending payment distribution
+  - clients holding unallocated advance credit
 - Finance (`Ops - Finance`) can see open Debt Collection tasks per customer.
 - Purchasing can see a reorder list grouped by supplier (even if thresholds are basic initially).
 
@@ -129,7 +129,7 @@ Operational check:
 
 ### 7.3 Debt threshold escalation
 - Debt threshold exceedance triggers/updates a Director Debt Alert task (`Ops - Directors`) (Doc 16 §6.10B).
-- Policy confirmed: exceedance does not automatically block delivery; Finance team records payments only through separate Debt Collection tasks created by the invoice/dispatch payment workflow.
+- Policy confirmed: exceedance does not automatically block delivery. Finance records payments on Debt Collection episode tasks, raised by a scheduler when an invoice is overdue, the threshold is breached, or a promised follow-up date arrives.
 
 ---
 
@@ -138,7 +138,7 @@ Operational check:
 
 Confirm you can answer:
 - Stock at Main vs in transit vs in returns backlog
-- Items currently at each client location (surgery flow)
+- Items currently at each client location (Dispatch Case return-expected path)
 - Items currently assigned to each driver (derived from Tasks) while stock is in the in-transit warehouses
 - Unpaid invoices per client and aging
 - Unallocated customer advances (payments received but not yet allocated)
@@ -146,7 +146,7 @@ Confirm you can answer:
 - Clients exceeding debt threshold
 - Open Debt Collection tasks
 - Low stock list grouped by supplier
-- Collection Set readiness (templates that are short on inventory)
+- Surgical Kit Template readiness (templates short on inventory). `RPT - Collection Set Readiness` does not run and cannot be repaired as written (Group 10 F-032)
 
 Red-flag readiness:
 - You have at least one “stuck workflow” detector:
@@ -171,13 +171,12 @@ Pass criteria:
 - `Delivery Driver` fills Driver Handover Note, sets Delivery Status to `Delivered`.
   - Confirm Delivery Stock Entry auto-submitted (to internal consumption path since no-return).
   - Confirm Consumption Stock Entry auto-submitted.
-  - Confirm draft Sales Invoice auto-created (quantities = `dispatched_qty`).
-  - Confirm Invoice Preparation task auto-created. Case status → `Invoice Pending`.
-- `Ops - Accounting` opens the draft Sales Invoice: verify quantities, `Update Stock = No`, prices correct. Submit it. Complete Invoice Preparation task.
-  - Confirm Debt Collection task auto-created for Finance team (if outstanding > 0). Case status → `Payment Pending`.
-- `Ops - Finance` records payment on the Debt Collection task (amount, method, reference). Save.
-  - Confirm Payment Entry auto-created. Outstanding balance decreases.
-  - On full payment: Debt Collection task auto-completes. Case status → `Closed`.
+  - Confirm the Invoice Preparation task is auto-created. Case status → `Invoice Pending`. No invoice exists yet.
+- `Ops - Accounting` completes the Invoice Preparation task with **Create & Submit Invoice**: confirm the invoice is submitted for the used quantities, with `Update Stock = No` and correct prices.
+  - If anything is outstanding, case status → `Payment Pending`. No Debt Collection task is created at this point; one is raised later if the invoice becomes overdue (Doc 16, Task 6.10).
+- `Ops - Finance` records payment on a Debt Collection task (amount, method, reference). Save.
+  - Confirm the Payment Entry is created and submitted. Outstanding balance decreases.
+  - When the customer's account is fully settled: the case → `Closed`, and one `Debt Closure Approval` is raised for Directors.
 
 For expiry-tracked items: confirm earliest-expiry batch is selected at Pack step (FEFO).
 
@@ -237,7 +236,7 @@ Pass criteria:
   - Confirm related open tasks are cancelled.
   - Confirm no Stock Entry exists (Dispatch SE not yet created at this stage).
 - Complete Pack task (Dispatch SE created, case = `Packed`), then cancel the Dispatch Case before Delivery is completed.
-  - Confirm a return-to-warehouse task is auto-created for the driver, requiring a drop-off photo.
+  - Confirm a `Return to warehouse (aborted delivery / cancelled order)` task is auto-created (for the Delivery accepter when `In Transit`, otherwise for the delivery team), requiring a photo.
   - Confirm stock returns through `Returns - Inmed` and only then back to `Main - Inmed` after Restock task completion.
   - Confirm no stock is left stuck in `Delivery In-Transit - Inmed`.
 
@@ -245,7 +244,7 @@ Pass criteria:
 Pass criteria:
 - Set a client debt threshold.
 - Create unpaid invoices to exceed the threshold.
-- Confirm a director-owned Debt Collection task exists for the client and reflects current debt.
+- Confirm a `Debt Alert` task is raised for `Ops - Directors`, and that the client's debt shows live in the debt panel (balances are read from the ledger, not stored on tasks).
 
 ### 9.4 Scenario D — Basic procurement (PO → receipt → invoice)
 Pass criteria:
@@ -283,7 +282,7 @@ Driver evidence checks:
 - Pickup Returns task: drop-off photo required before `Returned to Warehouse` (see Doc 18).
 
 Template check:
-- If tested with a Collection Set template, confirm **Load from Template** on the Dispatch Case auto-fills Case Items from the template.
+- If tested with a Surgical Kit Template, confirm applying it from the Order entry task (`task_apply_template`) fills the case items with resolved prices, and refuses the whole template if any line is unpriced.
 
 ### 9.7 Scenario G — Permanent on-site set replenishment (if used)
 Pass criteria:

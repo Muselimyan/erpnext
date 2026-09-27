@@ -11,7 +11,7 @@ It covers:
 - A validation checklist to confirm the structure works
 
 Non-goals:
-- This doc does not implement the Surgery Case workflow automation (Doc 12).
+- This doc does not implement the Dispatch Case workflow automation (Doc 16).
 - This doc does not implement the standard selling flow (Doc 09).
 
 ---
@@ -117,6 +117,18 @@ Steps:
 Result:
 - `Returns - Inmed` (possibly with an additional company suffix)
 
+### 4.6 Create `Lost & Damaged - Inmed`
+Steps:
+1) Open `Warehouse`.
+2) Click `New`.
+3) Set:
+   - Warehouse Name: `Lost & Damaged - Inmed`
+   - Is Group: OFF
+4) Save.
+
+Result:
+- `Lost & Damaged - Inmed`: holds units ruled lost or damaged at returns inspection until a Write-off Approval decides them.
+
 ---
 
 ## 5) Create client location warehouses (doctor + hospital + branch)
@@ -124,9 +136,8 @@ You must create one leaf warehouse per distinct physical client location group u
 
 Important:
 - These warehouses are used for:
-  - surgery set workflows (Doc 11/12)
+  - Dispatch Case deliveries (Doc 16): `client_location_warehouse` is required on every order; delivered stock moves here, and is consumed immediately when no return is expected
   - permanent on-site sets (consignment-like)
-- Standard sales must not move stock into these warehouses.
 
 ### 5.1 Create one doctor-client location warehouse (sample)
 Sample data used below (matches Doc 04A examples):

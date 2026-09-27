@@ -55,6 +55,8 @@ Fields that should arguably appear on most/all task kinds. These are the ones wh
 
 Legend: **V** = Visible, **H** = Hidden, **M-H** = Hidden on mobile only, **CS** = Client script override, **PS** = Property setter, **CF** = Custom field depends_on, **--** = N/A
 
+> Field visibility is owned by `Task-Field-Visibility.js` (TFV). Under TFV, `status` and `priority` are always hidden, `completed_at` shows only on completed tasks, and `dispatch_case`, `dispatch_case_status`, `delivery_status` and `pickup_status` are never shown (Delivery and Pickup Returns use action buttons). The `Dispatch pick` and `Distrib. Pay.` columns below refer to kinds that do not exist. Where a cell below disagrees with TFV, TFV is correct.
+
 | Field | Order entry | Pack | Dispatch pick | Delivery | Return Call | Pickup Ret. | Ret. drop-off | Returns proc. | Ret. restock | Invoice prep | Discount Appr. |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | **subject** | H (CS) | M-H (CS) | V | V | V | V | V | V | V | V | V |
@@ -207,22 +209,12 @@ belongs on the task — unlike the balance, which does not.
 
 ### 3.8 Account Details Fields
 
-| Field | Acct Det. Entry | Acct Det. Processing | All others |
-|---|---|---|---|
-| custom_account_photos | V (CS) | V (CS) | H (CF) |
-| custom_account_details_section | H (always) | H (always) | H (always) |
-| custom_account_details_entry_task | H (always) | H (always) | H (always) |
-| custom_account_details_subject | V | V | V |
-
-**Discrepancy:** `custom_account_photos` has `depends_on: doc.task_kind === "Account details"` (lowercase, no colon). This never matches any real task_kind. It only appears because client scripts (`Task-Accept Start.js:37`, `Task-Account Details UI Cleanup.js:50`) force it visible for Account Details: Entry/Processing.
-
-**Discrepancy:** `custom_account_details_subject` has NO depends_on — it is visible on ALL task kinds. It should probably be restricted to Account Details kinds.
+The Account Details kinds have no kind-specific fields on Task: `custom_account_photos`, `custom_account_details_section`, `custom_account_details_entry_task` and `custom_account_details_subject` do not exist. Files are attached with the standard form attachment.
 
 ### 3.9 Miscellaneous Fields
 
 | Field | All task kinds | Order entry | Notes |
 |---|---|---|---|
-| driver_handover_note | H (hidden=1) | H | hidden=1 in custom field definition + depends_on excludes Order entry. Effectively always hidden. |
 | dispatch_group_id | H (hidden=1) | H | Internal field, always hidden. |
 | task_access_policy | H (hidden=1) | H | Internal field, always hidden. |
 
@@ -279,6 +271,8 @@ These standard Task fields are permanently hidden via property setters:
 ---
 
 ## 5. Client Script Overrides Detail
+
+> Visibility is owned by `Task-Field-Visibility.js` (`TFV_KIND_MAP`) and editability by `Task-Field-Editability.js` (`TFE_EDIT_MAP`); no other script may toggle fields those maps list. `Task-Mobile Form Layout Fix`, `Task-Header Long Subject Fix`, `Task-Delivery UI Fix`, `Task-Inspect Returns Next Assign Visible`, `Task-Lock Unaccepted` and `Task-Lock Completed` are disabled, so rows below for those scripts have no effect. Rows naming `custom_account_photos` concern a field that does not exist.
 
 ### 5.1 Task-Accept Start.js (all task kinds)
 
@@ -368,6 +362,8 @@ These standard Task fields are permanently hidden via property setters:
 
 ## 6. Mobile-Specific Differences
 
+> The Pack mobile hiding in the first table was done by `Task-Mobile Form Layout Fix.js`, which is disabled; the Pack form follows TFV on both mobile and desktop. Only the `Task-Accept Start.js` items in the second table can still apply.
+
 ### Pack / prepare items — Mobile vs Desktop
 
 | Field | Desktop | Mobile |
@@ -415,9 +411,13 @@ These are the actual requirements to complete a task. The UI does NOT currently 
 | **Delivery** (no DC) | Photo required | File attachments | "Attach at least one photo" |
 | **Return drop-off** (no DC) | Photo required | File attachments | "Attach at least one photo" |
 | **Returns proc. / verification** | returned_qty on all items | DC case_items.returned_qty | "Set returned qty on all items" |
-| **Invoice prep** | Sales Invoice submitted | `sales_invoice` → SI.docstatus | "Sales Invoice must be submitted" |
+| **Returns restocking** | Photo required | File attachments | "At least one photo is required" |
+| **Return to warehouse (cancelled order)** | Photo required | File attachments | "At least one photo is required" |
+| **Write-off Approval** | `writeoff_outcome` set (Bill Client / Write Off); Bill Client needs a price on every line and is refused on a cancelled case | `writeoff_outcome` | gate error |
+| **Debt Collection** | `collection_outcome` set; a future follow-up date when the outcome is Promised | collection fields | gate error |
+| **Invoice prep** | A submitted Sales Invoice exists for the case, created by **Create & Submit Invoice** (`task_commit_invoice`), or the case was closed with **Nothing to Invoice** | `Sales Invoice.dispatch_case` | "This case has items to bill but no submitted Sales Invoice yet. Use 'Create & Submit Invoice' on this task." (a leftover draft, or nothing billable, get their own messages) |
 | **Discount Approval** | approval_outcome set | `approval_outcome` | "Set approval outcome" |
-| **Debt Closure Approval** | Whitelisted users only | frappe.session.user | "Only authorized users may complete" |
+| **Debt Closure Approval** | No special gate: accepter-only completion, like every kind. Raised by `Payment Entry-after-submit-debt-closure-check` | — | — |
 
 ---
 
@@ -427,7 +427,7 @@ These are the actual requirements to complete a task. The UI does NOT currently 
 >
 > It was written when visibility was scattered across several client scripts that each toggled whatever they liked, which is exactly the condition it documents. `Task-Field-Visibility.js` (TFV) now owns visibility exclusively via `TFV_KIND_MAP`, and `Task-Field-Editability.js` (TFE) owns editability via `TFE_EDIT_MAP`; no other client script may toggle a field either of them lists. That change removes the root cause behind most of 8.1 and 8.2 — "field has no `depends_on`" stopped being the deciding factor once TFV took over.
 >
-> Two of the task kinds named below no longer exist: `Order accepting` and `Distribute Payment` were retired (Group 1 D4 and Group 11 W10).
+> Two of the task kinds named below no longer exist: `Order accepting` and `Distribute Payment` were retired (Group 1 D4 and Group 11 W10). Issues 8 and 9 concern fields that do not exist (`custom_account_photos`, `driver_handover_note`).
 >
 > **Re-derive this section against `TFV_KIND_MAP` before acting on any row.** Do not treat the entries as open defects.
 
@@ -499,9 +499,6 @@ The "Next Task: Assign To" field has the most complex visibility logic. Here is 
 |---|---|
 | task_access_policy | Internal, hidden=1 |
 | dispatch_group_id | Internal, hidden=1 |
-| custom_account_details_entry_task | Internal, hidden=1 |
-| custom_account_details_section | Intentionally hidden, fake depends_on |
-| driver_handover_note | hidden=1 (likely needs review) |
 | project, issue, type, color, is_group, task_weight, parent_task, is_template | Standard Frappe fields, hidden by property setters |
 
 ### Field order (from property setter field_order)
@@ -522,7 +519,7 @@ The canonical field order on the form is:
 13. sales_invoice
 14. approval_outcome, approval_note
 15. warehouse_pickup_photo, custom_delivery_photo, warehouse_dropoff_photo
-16. driver_handover_note (hidden)
+16. driver_handover_note: still named in the Task `field_order` property setter, but the field does not exist
 17. payment_entry
 18. current_debt_amd, debt_threshold_amd
 19. dispatch_group_id (hidden)

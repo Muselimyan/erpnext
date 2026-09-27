@@ -111,7 +111,7 @@ Two new task kinds must be added that do not exist yet.
    ```
 5) Save.
 
-Full options list after update (order matters for display):
+Full options list after update (order matters for display). `Dispatch picking / hand-off` and `Distribute Payment` below are no longer task kinds; the current 22 kinds are listed in `docs/21-task-kind-field-visibility-matrix.md` §1:
 ```
 Order entry
 Pack / prepare items
@@ -214,7 +214,7 @@ Add a **Section Break** with label `Record Payment`, then:
 - Fieldtype: `Currency`
 
 - Label: `Payment Method`
-- Fieldname: `payment_method`
+- Fieldname: `payment_method_dc`
 - Fieldtype: `Select`
 - Options:
   ```
@@ -225,10 +225,11 @@ Add a **Section Break** with label `Record Payment`, then:
   ```
 
 - Label: `Payment Reference`
-- Fieldname: `payment_reference`
+- Fieldname: `payment_reference_dc`
 - Fieldtype: `Data`
 
-### 5.10 Payment summary fields (read-only, on Debt Collection task)
+### 5.10 Payment summary fields: not used
+`total_outstanding` and `available_advance_credit` do not exist. Debt is shown live in `custom_debt_panel` through the `task_debt_panel` API; nothing is stored on the task.
 
 - Label: `Total Outstanding`
 - Fieldname: `total_outstanding`
@@ -269,7 +270,8 @@ Add a **Section Break** with label `Record Payment`, then:
 
 4) Save.
 
-### 6.2 Create `Debt Collection Invoice` child table (open invoices list on task)
+### 6.2 `Debt Collection Invoice` child table: not used
+This child DocType and the `open_invoices` field do not exist; unpaid invoices are read live from the ledger when a payment is recorded.
 
 1) Open `DocType` → `New`.
 2) Set:
@@ -288,7 +290,8 @@ Add a **Section Break** with label `Record Payment`, then:
 
 4) Save.
 
-### 6.3 Create `Debt Collection Payment` child table (payment history log)
+### 6.3 `Debt Collection Payment` child table: not used
+This child DocType and the `payment_history` field do not exist; payment history is read live from Payment Entries.
 
 1) Open `DocType` → `New`.
 2) Set:
@@ -403,7 +406,7 @@ Closed
 | Fieldname | Label | Fieldtype | Notes |
 |---|---|---|---|
 | `sales_invoice` | Sales Invoice | Link → `Sales Invoice` | Read Only |
-| `prepaid_amount` | Prepaid Amount | Currency | Default 0 |
+| `prepaid_amount` | — | — | Does not exist. Advances are submitted Receive Payment Entries tagged with the case; nothing is copied to the Dispatch Case |
 | `prepaid_payment_entry` | Prepaid Payment Entry | Link → `Payment Entry` | Read Only |
 | `total_invoice_amount` | Invoice Amount | Currency | Read Only — auto-filled from Sales Invoice |
 | `total_paid_amount` | Total Paid | Currency | Read Only — tracked from Payment Entries |
@@ -413,7 +416,7 @@ Closed
 
 | Fieldname | Label | Fieldtype | Notes |
 |---|---|---|---|
-| `delivery_photo` | Delivery Photo | Attach | **Hidden (legacy)** — no longer populated; DC uses live gallery from Pack task |
+| `delivery_photo` | — | — | Does not exist. The Dispatch Case shows a live gallery from the Pack task |
 | `return_dropoff_photo` | Return Drop-off Photo | Attach | **Hidden (legacy)** — no longer populated; DC uses live gallery from Pickup Returns task |
 
 4) Save.

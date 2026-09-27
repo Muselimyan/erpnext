@@ -23,7 +23,7 @@ Non-goals:
   - Users must be able to find the correct item quickly during:
     - purchasing
     - picking
-    - surgery case preparation (Doc 11/12)
+    - Dispatch Case preparation (Doc 16)
     - invoicing
 
 - **Barcode-first where possible**
@@ -271,6 +271,9 @@ Surgery-set reporting:
 ---
 
 ## 11) Current decisions and remaining clarifications
+
+Tracking:
+- Batch, serial and expiry tracking is currently switched off on every item (deferred workstream 2). Re-enabling it is its own workstream; until then the §7 tracking rules and the FEFO alert are policy, not enforced behaviour.
 Packaging / pack-breaking:
 - Pack-breaking happens sometimes.
 - For accuracy, pack-breaking must be defined per item/category (either “never break” or “pack-breakable with a controlled conversion policy”).

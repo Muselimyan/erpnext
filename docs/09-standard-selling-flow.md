@@ -1,5 +1,7 @@
 # Doc 09 — Selling: Standard Orders (No Return Expected) (Operational)
 
+> **Status: superseded.** This document describes the Sales-Order-based selling flow (Sales Order → staged Stock Entry → Delivery Note → Sales Invoice). The operational order record is the **Dispatch Case** (`DC-.YYYY.-.#####`), and the live flow specification is `docs/16-unified-dispatch-flow.md`. No Sales Order or Delivery Note server or client scripts exist, and none of the Sales Order custom fields described here exist. Sales Invoice, Payment Entry, debt thresholds and Discount Approval remain live concepts and are corrected below; the Sales Order mechanics, prepaid fields and gates do not match the implementation.
+
 ## 1) Purpose
 This document defines the operational rules for the **standard sales flow** (normal selling):
 - client places an order
@@ -89,7 +91,7 @@ Rules (alignment with Doc 05):
 - Outgoing staging is allowed:
   - `Main - Inmed` → `Delivery In-Transit - Inmed`
 - Standard delivery completion must remove stock from company-owned warehouses.
-- Client location warehouses must not be used for standard sales.
+- Delivery moves stock into the order's required `client_location_warehouse`, where it is consumed immediately when no return is expected (Doc 16).
 
 Clarification:
 - For client locations with permanent on-site sets (Doc 11), replenishment deliveries may move stock into the client location warehouse while remaining company-owned.
@@ -155,7 +157,7 @@ Purpose:
 Operational rules:
 - Stock must be staged into `Delivery In-Transit - Inmed` before the driver leaves (so in-transit reporting is correct).
 - Driver does not post stock.
-- Driver must attach a Warehouse Pickup Photo on the `Delivery` Task before leaving `Main - Inmed`.
+- A photo is required to complete the Pack task before dispatch; Delivery tasks have no photo requirement.
 
 Prepaid gate (only for prepaid orders):
 - Do not stage/dispatch a prepaid order until Accounting confirms the required upfront amount was recorded.
@@ -184,7 +186,7 @@ Operational rules:
 - Standard policy: deliver first, invoice after delivery.
 - Invoice must match what was actually delivered.
 - Pricing rule:
-  - Sales Invoice takes prices from the Sales Order (order is the operational pricing truth).
+  - The Sales Invoice is created only by `task_commit_invoice` (Create & Submit Invoice on the Invoice Preparation task), from the Dispatch Case's server-resolved prices, billing `used_qty` only. Saving a Dispatch Case never creates an invoice.
   - Invoicing must not silently re-price based on the item master.
 
 Prepaid variant (minimal-change approach):
@@ -249,12 +251,12 @@ Practical interpretation (why allocation discipline matters):
 Outcome:
 - Receivable is reduced/cleared
 
-### 6.7 Step 6 — Distribute Payment disabled/deferred
-Distribute Payment is currently disabled/out of the active flow pending final keep/delete decision.
+### 6.7 Step 6 — Distribute Payment retired
+The `Distribute Payment` task kind and its script are retired. Allocation happens when payments are recorded on Debt Collection tasks, and inside `task_commit_invoice` (credit tagged to the case first).
 
 Current operational rule:
 - Payment recording happens through Finance `Debt Collection` tasks.
-- No separate `Distribute Payment` task is created after customer receipts while the script remains disabled.
+- No `Distribute Payment` task is ever created.
 
 Outcome:
 - Directors do not receive Distribute Payment tasks in the current flow.
@@ -285,7 +287,7 @@ Recommended operational pattern:
 Confirmed requirement:
 - Each client has a debt threshold.
 - Directors must be alerted when outstanding debt exceeds the threshold.
-- The alert is implemented operationally as a Director-owned **Debt Collection** task.
+- The alert is implemented as a Director-owned **Debt Alert** task, raised hourly. Finance `Debt Collection` tasks are separate collection episodes.
 
 Operational intent:
 - Debt threshold is an escalation and visibility control.
@@ -320,10 +322,10 @@ Rules:
 - If an order was already staged for delivery, edits must be handled explicitly (not silently).
 
 Confirmed policy (who can cancel):
-- Directors and Order Team can cancel at all stages.
+- Before the Dispatch Case is submitted: the Order entry accepter or `Ops - Directors`. After submit: `Ops - Directors` only. Cancellation uses the **Cancel Case** button (`dispatch_case_cancel`, reason required). Full rules: `docs/16` §10A.
 
 Cancellation redirect rule (critical):
-- Cancellation is allowed at any moment, but the correct handling depends on **where the physical goods are**.
+- Cancellation is allowed until the goods reach the client (statuses `Draft` to `In Transit`); after delivery, a correction is a credit note. The handling depends on **where the physical goods are**.
 - The goal is to redirect the flow safely without losing stock or leaving “ghost work” (open tasks for a cancelled order).
 
 Stage-based handling (recommended baseline):
@@ -418,7 +420,7 @@ Optional analytics (when filled):
 ---
 
 ## 13) Acceptance criteria
-- Standard sales never moves stock into client location warehouses.
+- Delivery moves stock into the case's `client_location_warehouse`; nothing remains in `Delivery In-Transit - Inmed` after delivery.
 - In-transit visibility is reliable (what left `Main - Inmed` is visible in `Delivery In-Transit - Inmed` until delivered).
 - Tracked items (batch/serial) are issued with correct identifiers recorded.
 - Discounts follow a director approval checkpoint.

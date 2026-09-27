@@ -2,7 +2,7 @@
 # Type: API
 # DocType: 
 # Event: Before Insert
-# Disabled: 0
+# Disabled: 1
 # ---
 
 items = frappe.get_all("Item", fields=["name", "has_batch_no", "has_serial_no", "has_expiry_date"], limit_page_length=0)

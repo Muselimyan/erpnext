@@ -127,7 +127,7 @@
 - **Profit reports:** Show total for period (per-item optional but not priority)
 
 ### Debt and Payment Rules
-- **Debt calculation:** GL net receivable (includes invoices, payments, credits, advances)
+- **Debt calculation:** net receivable = unpaid submitted invoice outstanding minus unallocated credit not earmarked for another case (the single definition used by every debt consumer)
 - **Unallocated advances:** Reduce debt automatically (net debt approach)
 - **Debt reports:** Show net debt (outstanding minus advances minus credits)
 - **Payment status flow:** Unpaid → Partly Paid → Paid (Payment Entry created only after bank verification; Paid = verified by definition)
@@ -804,7 +804,7 @@ Consequence:
 ### 10.4 Debt and payment rules ✅ ANSWERED
 
 **Answers:**
-1. Debt calculation: **GL net receivable** (includes invoices, payments, credits, advances) (confirmed)
+1. Debt calculation: **net receivable = unpaid submitted invoices minus unallocated credit not earmarked for another case** (confirmed; the single definition used everywhere)
 2. Unallocated advances: **Yes, reduce debt automatically** (net debt approach) (confirmed)
 3. Payment verification: **Payment Entry created only after bank confirmation — ERPNext "Paid" status means verified. No separate "Approved" step or custom field needed.** (confirmed)
 4. Debt reports show: **Net debt** (outstanding minus advances minus credits) (confirmed)
@@ -1115,7 +1115,9 @@ For each item:
 
 ---
 
-### GL Net Receivable Debt Calculation (SQL Example)
+### Net Receivable Debt Calculation (SQL Example)
+
+> The GL `sum(debit − credit)` formula below is **not** the debt definition in use. The live definition is invoice-based (unpaid submitted invoice outstanding minus unallocated Payment Entry credit not earmarked for another case), implemented in `Scheduled-debt-collection.py`, `task_debt_panel`, `Scheduled-debt-collection-episodes` and `RPT - Clients Exceeding Debt Threshold`. Do not build new reports on the GL formula.
 
 **Query logic for debt reports:**
 ```sql

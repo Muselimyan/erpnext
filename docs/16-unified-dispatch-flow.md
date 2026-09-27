@@ -38,7 +38,7 @@ Stock Entries are created and submitted automatically by server scripts when tas
 The Dispatch Case replaces both the Sales Order and the Surgery Case. It is the single coordinator record for every delivery operation regardless of type.
 
 Key behavioral difference based on the **Return Expected** flag:
-- **Return Expected = No** — after delivery is confirmed, all dispatched items are treated as sold. Invoice is created automatically for full quantities. No returns workflow.
+- **Return Expected = No** — after delivery is confirmed, all dispatched items are treated as sold. An Invoice Preparation task is raised for Accounting, and the Sales Invoice is created and submitted by that task's **Create & Submit Invoice** action. No returns workflow.
 - **Return Expected = Yes** — after delivery, the flow pauses waiting for the client to call about returning items. Returned quantities are inspected and recorded. Invoice covers only the used portion.
 
 ### 2.2 Team User Pattern
@@ -322,7 +322,7 @@ Access to these APIs must remain aligned with Task visibility and Dispatch Case 
 **If `return_expected = No`:**
 - Server script auto-submits **Consumption Stock Entry**: `Client Location Warehouse → (Material Issue / out)` for all dispatched items
 - Sets `used_qty = dispatched_qty` for all Case Items rows
-- Auto-creates draft **Sales Invoice** for full dispatched quantities
+- No Sales Invoice is created here; it is created and submitted by **Create & Submit Invoice** on Task 6.9
 - Case state → `Invoice Pending`
 - **Task 6.9** (Invoice Preparation) created for Accounting Team
 
@@ -411,7 +411,8 @@ Access to these APIs must remain aligned with Task visibility and Dispatch Case 
 
 **On Completion:**
 - Server script auto-submits **Consumption Stock Entry**: `Returns WH → (Material Issue / out)` for `used_qty` of each item (all items were moved to Returns WH by the Return Pickup flow; used items are written off from there). Lost/damaged items remain in Returns WH pending manual review (see §9A).
-- Auto-creates draft **Sales Invoice** for `used_qty` only — lost/damaged quantities are not auto-invoiced
+- Moves `lost_damaged_qty` from Returns WH to `Lost & Damaged - Inmed` and raises a **Write-off Approval** task for Directors (see §9A)
+- No Sales Invoice is created here; Task 6.9 creates and submits it, billing `used_qty` only
 - Case state → `Invoice Pending`
 - **Task 6.8** (Restock) created for Returns Team (if any items have `returned_qty > 0`)
 - **Task 6.9** (Invoice Preparation) created for Accounting Team
@@ -699,9 +700,9 @@ Finance never interacts with ERPNext Payment Entry forms. All Payment Entries ar
 | Trigger | Payment Entry type | Created by | Submit behavior |
 |---|---|---|---|
 | Payment recorded on Debt Collection task | Receive — allocated to invoices by FIFO | Server script on task save | Auto-submitted by the script |
-| Payment Received task Completed (advance) | Receive — Customer Advance (no invoice link) | Server script on task completion | Left as draft for Accounting review/submission |
+| Payment Received task Completed (advance) | Receive — Customer Advance (no invoice link) | Server script on task completion | Submitted by the script |
 
-Finance never opens Payment Entry forms. Accounting reviews/submits draft advance Payment Entries as part of normal accounting work.
+Finance never opens Payment Entry forms. Both paths insert and submit the Payment Entry; no draft is left behind.
 
 ---
 
@@ -716,11 +717,10 @@ Finance never opens Payment Entry forms. Accounting reviews/submits draft advanc
 
 ## 9A. Lost/Damaged Policy
 
-Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-surgery-set-operational-workflow.md` §7.3). Now resolved:
-
-- **Stock write-off:** Only `used_qty` is automatically written off from the Returns warehouse at Returns Inspection completion (Task 6.7). Lost/damaged items remain in Returns WH as tracked inventory pending manual resolution.
-- **Invoicing:** Lost/damaged quantities are **not auto-invoiced**. Each lost/damaged case requires manual review to decide whether to invoice the client, write off internally, or escalate. The auto-created Sales Invoice covers only `used_qty`.
-- **Manual resolution:** After inspection, a coordinator or director reviews the `lost_damaged_qty` on the Dispatch Case and decides the appropriate action (invoice, write-off, replacement, etc.) on a case-by-case basis. Once resolved, the items are manually issued from Returns WH.
+- **Stock:** at Returns Inspection completion (Task 6.7), `used_qty` is issued as consumption from Returns WH, and `lost_damaged_qty` is moved to `Lost & Damaged - Inmed`. Each lost/damaged row must say whether the unit is damaged (in hand) or lost (not recoverable).
+- **Decision:** a **Write-off Approval** task is raised for Directors. Its `writeoff_outcome` decides the units: **Bill Client** invoices them (only possible when every line has a price), **Write Off** absorbs the loss. Either way, completing the task issues the units out of `Lost & Damaged - Inmed`.
+- **Invoicing:** the customer invoice from Task 6.9 covers `used_qty` only; lost/damaged units are billed only through Bill Client.
+- **Cancelled cases:** only Write Off is allowed; the goods never reached the client (§10A).
 - The same policy applies to Lost/Damaged discovered later while a quantity was Held (see `docs/held-at-client-items-plan.md`).
 
 ---
@@ -841,7 +841,8 @@ Sensitive Dispatch Case fields are protected server-side with Frappe field permi
 - `sales_invoice` — now only a convenience pointer; `Sales Invoice.dispatch_case` is authoritative
 - `total_invoice_amount`
 - `outstanding_amount`
-- `profit`
+
+Case profit is not stored on the Dispatch Case; it is recorded on the Debt Closure Approval task (`custom_case_profit`).
 
 `prepaid_amount`, `prepaid_payment_entry`, `total_paid_amount` and
 `advance_payments` were deleted in Group 11 W8 — see §4.3.
@@ -864,6 +865,6 @@ The Dispatch Case form is a **read-only status overview** for managers and coord
 - Case Items table with dispatched / returned / used quantities per item
 - The currently active task and its assignee
 - Payment status: invoice amount, paid amount, outstanding
-- Pack pickup photo and return drop-off photo (see Doc 18)
+- Warehouse pickup and drop-off photos, shown live from the linked Pack and Pickup Returns tasks; there are no photo fields on the Dispatch Case (see Doc 18)
 
 No buttons to click on the form. No workflow transitions to trigger manually.

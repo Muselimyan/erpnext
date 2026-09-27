@@ -55,8 +55,7 @@ To keep everyone aligned, use these concepts consistently:
 - **Committed demand**
   - Quantities you have promised or effectively reserved for near-future operations.
   - Examples:
-    - open sales orders not yet delivered
-    - surgery cases being prepared / dispatched (depending on your workflow)
+    - Dispatch Cases being prepared or dispatched but not yet delivered
 
 - **Expected inbound supply**
   - Quantities that are already ordered and reasonably expected to arrive.

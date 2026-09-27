@@ -15,10 +15,7 @@ The product section on the Task form displays Dispatch Case item rows and provid
 | **Order entry** | Inline editable table: add, edit, remove products |
 | **Pack / prepare items** | Packing table with scan fields and per-row packed checkboxes |
 | **Returns processing / verification** | Returns table with scan fields and returned-qty inputs |
-| **Returns restocking** | Read-only restocking summary (returned rows only) |
-| **Invoice preparation** | Read-only invoice summary (used/damaged rows only) |
-| **Other dispatch tasks** | Read-only packing-style table |
-| **Non-product tasks** | Section hidden entirely |
+| **All other task kinds** (including Returns restocking, Invoice preparation, other dispatch and non-product tasks) | Section hidden: `tfv_is_product_task` is false, so TFV hides the section and PWA renders nothing |
 
 There are **no product buttons** in the page header or mobile sub-header. All product controls are colocated with the product table inside `custom_task_product_summary`.
 
@@ -64,7 +61,7 @@ Products live in Dispatch Case → `case_items` (child table). The Task form nev
 | `item_code` | Order Entry (add) | No (read-only after add) |
 | `item_name` | Server (auto-filled from Item) | No |
 | `dispatched_qty` | Order Entry (inline edit) | Yes (Order Entry only) |
-| `unit_price` | Order Entry (inline edit) | Yes (Order Entry only) |
+| `unit_price` | Server (resolved from Tender Agreement / customer Item Price / Standard Selling) | No: read-only in the editor; any client-sent price is ignored. Not editable after submit |
 | `discount_pct` | Order Entry (inline edit) | Yes (Order Entry only) |
 | `batch_no` | Order Entry (inline edit) or Pack scan | Yes (Order Entry inline, Pack via scan) |
 | `custom_scanned_qty` | Pack scan/checkbox API | No (server-set) |
@@ -104,8 +101,8 @@ All API scripts live in `deploy/test/work/server/` and follow RestrictedPython c
 
 When an accepted Order Entry task has a linked DC, the product section renders an inline editable table:
 
-- **Existing rows**: editable `<input>` for qty, price, discount%, batch. Read-only item name. Red x remove button.
-- **Add row** (bottom): Frappe Link control for item search (autocomplete), qty/price/discount/batch inputs, blue + Add button.
+- **Existing rows**: editable `<input>` for qty, discount%, batch. Read-only item name and unit price (resolved on the server). Red x remove button.
+- **Add row** (bottom): Frappe Link control for item search (autocomplete), qty/discount/batch inputs (the price column shows "auto": it is resolved on the server), blue + Add button.
 - **Empty state** (0 rows): shows the add row so the user can immediately start adding products.
 
 ### 4.2 Editability Check
@@ -127,7 +124,7 @@ Inline edits use debounced auto-save (800ms). When the user stops typing in any 
 ### 4.4 Add Flow
 
 1. User selects an item via the Frappe Link control (autocomplete search)
-2. Price auto-fills from Item's `standard_rate`
+2. Price is not entered: `task_add_dispatch_product` resolves it on the server (active Tender Agreement → customer Item Price on Standard Selling → Standard Selling → refuse) and the row shows it after adding. Discount must be at least 0 and below 100%
 3. User clicks + Add
 4. `task_add_dispatch_product` is called
 5. On success, the product table re-renders (new row appears, add row clears)
@@ -164,9 +161,9 @@ Auto-reload (from `Task-Auto Reload.js`) is **not blocked**. If another user cha
 ### 5.2 Two-Step Scan (items with batch tracking)
 
 1. **REF scan** → identifies item → stored in JS variable `pwa_pending_item_code`
-2. **LOT scan** (via popup dialog or direct scan field) → captures batch/expiry → calls `task_packing_scan` with both item and batch
+2. **LOT scan** (via popup dialog or direct scan field) → captures batch/expiry → calls `dispatch_case_packing_scan` with both item and batch
 
-For items without batch tracking, the REF scan alone triggers `task_packing_scan`.
+For items without batch tracking, the REF scan alone triggers `dispatch_case_packing_scan`.
 
 ### 5.3 Scan State
 

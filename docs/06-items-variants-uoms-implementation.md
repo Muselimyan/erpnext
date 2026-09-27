@@ -16,7 +16,7 @@ It covers:
 
 Non-goals:
 - This guide does not implement reordering rules (Doc 08).
-- This guide does not implement selling workflows (Doc 09) or surgery-case workflows (Doc 12).
+- This guide does not implement selling or Dispatch Case workflows (Doc 16).
 
 ---
 
@@ -298,6 +298,8 @@ Validation:
 ## 9) Tracking configuration (Batch/Expiry and Serial)
 This implements your confirmed tracking policy.
 
+> **Current state:** Batch, serial and expiry tracking is currently switched off on every item (deferred workstream 2). The steps below are the target configuration. Do not apply them piecemeal: enabling tracking on an item makes a batch mandatory on every stock movement of that item, and packing will refuse any row that lacks one.
+
 ### 9.1 Batch + Expiry (implants/consumables where applicable)
 For items that require lot/expiry traceability:
 1) Open the Item.
@@ -330,6 +332,8 @@ Steps:
    - `Reference DocType`: `Stock Entry`
    - `DocType Event`: `Before Submit`
 4) Paste this script:
+
+> **This script is not deployed, and will not run as written.** Server Scripts run under RestrictedPython: `import` statements are refused (`frappe` is pre-injected), and a top-level function cannot call another top-level function. Rewrite it to those rules before use (AGENTS.md, RestrictedPython constraints).
 
 ```python
 import frappe
@@ -450,7 +454,7 @@ Pack-breaking policy test:
 - A batch-tracked implant can be received with expiry recorded.
 - A serial-tracked tool can be received with serial recorded.
 
-FEFO warning test:
+FEFO warning test (only possible once tracking is re-enabled and the FEFO script is deployed; see section 9):
 - Create two batches in `Main - Inmed` for the same item:
   - Batch A expiry sooner
   - Batch B expiry later

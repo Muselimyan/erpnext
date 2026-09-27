@@ -70,6 +70,9 @@ Alternative (if the client is a hospital with no named doctor):
 - `Returns - Inmed`
   - Returns receiving / verification area.
   - Meaning: physically returned and inside your building, but still in the “returns processing” zone (counting, verification, cleaning, repack).
+- `Lost & Damaged - Inmed`
+  - Holds units ruled lost or damaged at returns inspection until a Write-off Approval decides them (Bill Client / Write Off).
+  - It is an accounting location, not a shelf: the decision issues the units out and empties it.
 
 ### 3.2 Client location warehouses (important clarification)
 The client location warehouse concept exists to support company-owned stock that is physically at a client location group:
@@ -90,8 +93,8 @@ Operational simplification:
 - Normal sales should not create long-lived “company-owned at client” positions.
 
 Policy:
-- Client location warehouses are used for company-owned at-client stock only (Dispatch Cases return-expected path and permanent on-site sets).
-- Standard sales must not move stock into client location warehouses.
+- `client_location_warehouse` is required on every Dispatch Case. On delivery, all dispatched stock moves into the client location warehouse; when no return is expected it is consumed from there immediately (Material Issue), so the warehouse keeps no balance.
+- Lasting client-warehouse balances occur only on the return-expected path and for permanent on-site sets.
 
 ---
 
@@ -150,7 +153,7 @@ These rules apply across all warehouses.
   - every movement must record the serial numbers that moved.
 
 Operational control:
-- You must not close a surgery case until every dispatched serial-tracked tool is accounted for:
+- You must not close a Dispatch Case until every dispatched serial-tracked tool is accounted for:
   - returned, or
   - explicitly recorded as missing/damaged (per Doc 12).
 
@@ -163,6 +166,7 @@ Operational control:
 FEFO rule (critical):
 - For expiry-tracked items, batch selection must follow **FEFO** (First-Expiry-First-Out).
 - If a user selects a fresher batch while an older-expiring batch is available in `Main - Inmed`, the system must alert.
+- Current state: Batch, serial and expiry tracking is currently switched off on every item (deferred workstream 2), and no FEFO alert is deployed, so this rule is not enforced today.
 
 Business reason:
 - Recall and traceability is based on stock movements by batch/serial.
@@ -202,7 +206,7 @@ Important:
 - Staging warehouses may be used for standard deliveries and for surgery cases.
 - Client location warehouses are not used for standard deliveries.
 
-### 6.2 Surgery set delivery to client location (Doc 12)
+### 6.2 Dispatch Case delivery to client location (Doc 16)
 Allowed moves:
 1) Dispatch staging:
    - `Main - Inmed` → `Delivery In-Transit - Inmed`
@@ -212,7 +216,7 @@ Allowed moves:
 Control:
 - For tracked items, dispatch must not be considered complete until the dispatch stock movement is submitted with correct serial/batch selection.
 
-### 6.3 Return pickup staging (Doc 12)
+### 6.3 Return pickup staging (Doc 16)
 Allowed move:
 - `<Doctor Code> — <Doctor Name> @ <Hospital Code> — <Hospital/Branch Name> - Inmed` → `Return Pickup In-Transit - Inmed`
 
@@ -225,8 +229,10 @@ Operational intent:
 Allowed moves:
 1) Pickup staging to returns zone:
    - `Return Pickup In-Transit - Inmed` → `Returns - Inmed`
-2) Optional after verification:
+2) After verification (Returns restocking; photo required):
    - `Returns - Inmed` → `Main - Inmed`
+3) Lost or damaged at inspection:
+   - `Returns - Inmed` → `Lost & Damaged - Inmed`, then a Write-off Approval task (Bill Client / Write Off) issues the units out of `Lost & Damaged - Inmed`.
 
 Additional standard-sales return path (rare exception):
 - If goods are returned by a client after a standard sale (ownership already transferred), they must still enter through `Returns - Inmed` for verification before re-entering `Main - Inmed`.
@@ -239,7 +245,7 @@ Why `Returns - Inmed` exists:
 Additional rule (recommended):
 - Only the Returns Team should be allowed to move stock out of `Returns - Inmed`.
 
-### 6.5 Consumption / usage (surgery sets)
+### 6.5 Consumption / usage (Dispatch Cases)
 Operational definition:
 - Used quantities are the difference:
   - delivered to client location
@@ -247,7 +253,7 @@ Operational definition:
   - minus explicit lost/damaged
 
 Allowed rule:
-- Stock for used quantities must be reduced from the client location warehouse.
+- Used quantities are consumed with a Material Issue: from the client location warehouse at delivery when no return is expected, or from `Returns - Inmed` at returns inspection for goods that came back.
 
 Business intent:
 - This supports recall-by-consumed quantities.
@@ -317,7 +323,7 @@ Key gates:
 - Do not mark dispatch as complete until the dispatch stock movement is submitted.
 - Do not start returns processing until warehouse drop-off photo evidence exists.
 - Do not finalize returns until return movements are submitted with correct serial/batch.
-- Do not invoice (surgery) until usage is derived and reconciled.
+- Do not invoice until usage is derived and reconciled.
 
 Posting-time rule (important for pickups):
 - If the driver picks up returns at time T, but the Returns Team posts the stock movement later:
