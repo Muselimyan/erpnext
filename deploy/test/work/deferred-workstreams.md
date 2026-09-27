@@ -138,9 +138,9 @@ That answer decides the shape of the work. The two utilities should be retired a
 
 ---
 
-## 3. The assignment model — two fields, one of which cannot work
+## 3. The assignment model — three records, one wanted
 
-**Open. Needs a decision, not urgent, but do not let anyone "tidy" it.**
+**Direction decided: task-based, no ToDos. Not yet implemented. Do not let anyone "tidy" it piecemeal — see The trap.**
 
 ### What it is
 
@@ -160,16 +160,29 @@ There is a line in `Task-before-save-policy` that tries to sync and silently fai
 
 Delete that line as cleanup and **the role check stops working, with nothing failing visibly.**
 
-### The choice
+### Direction — decided
 
-| | |
-|---|---|
-| Adopt Frappe's mechanism | Use `assign_to.add()`, which also creates the ToDo that drives notifications. More correct; changes how assignment works everywhere |
-| Drop `_assign` entirely | Make `custom_assigned_to` the single source of truth and have the list view filter on it instead |
+**The system is task-based. Assignment lives on the Task, and there are no ToDos.**
 
-Either is defensible. The present state — a sync that cannot work, a list view depending on it, and a permission gate depending on its in-memory side effect — is not.
+That rules out adopting Frappe's `assign_to.add()`, because that mechanism works by creating ToDos. So:
 
-**Whichever is chosen, the role check and the list-view filter must be rewritten in the same change.**
+- **`custom_assigned_to` becomes the single source of truth**, and the Task list filters on it instead of on `_assign`.
+- **`_assign` stops being written**, once the role check and the list-view filter no longer read it.
+- **ToDo creation is removed everywhere.**
+
+The role check and the list-view filter must be rewritten **in the same change** as the removal. Otherwise the load-bearing sync described above goes first and the role check silently stops working.
+
+### The third mechanism: ToDos, which nothing uses
+
+`ToDo` is the record behind Frappe's built-in "Assign To" feature (the assignment sidebar, the "Assigned to me" list, assignment emails). The code creates ToDos **in 12 places across 11 scripts**, in step with task creation:
+
+`Task-after-save-dispatch-flow.py:155` (every `make_task`) · `dispatch_task_accept.py:71` · `Dispatch-Case-after-save.py:35` · `Dispatch Case-packing-problem-alerts.py:47` · `Payment Entry-after-submit-debt-closure-check.py:212` · `Payment Entry-after-submit-distribute-payment.py:54` · `Scheduled-debt-collection.py:36` · `Scheduled-debt-collection-episodes.py:211` · `Task-after-save-account-details-processing.py:50` · `doc15_task_auto_escalation.py:48, 58` · `doc15_norm_reorder_daily_notifications.py:40`
+
+**Nothing in the application uses them.** The only code that reads a ToDo either checks whether one already exists before creating another, or cancels competing ones when a task is accepted. The Task list, which is where people actually work, filters on `_assign` and never on ToDo.
+
+They exist because early code copied Frappe's `assign_to` by hand. That function isn't callable from RestrictedPython (the comment at `Task-after-save-dispatch-flow.py:153` says so), and copying it meant writing both `_assign` and a ToDo. The result is a third record of assignment that nobody reads, and a stream of ToDos that are never closed, including for tasks that are later completed or cancelled.
+
+**The cancel flow creates and touches no ToDos** (`cancel-flow-design.md` §4.3). Once ToDo creation is removed here, there are no leftovers for it to clean up.
 
 ---
 
