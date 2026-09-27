@@ -28,7 +28,9 @@
 | Payment Entry (customer) | `Ops - Finance` + Director visibility |
 | Sales Invoice | `Ops - Accounting` |
 | Stock Entry (any type) | `Ops - Inventory` + Director visibility |
-| Dispatch Case | `System Manager` only (complex linked document) |
+| Dispatch Case — before submit (`Draft`, `Awaiting Approval`) | The person who took the order, or `Ops - Directors` — with the **Cancel Case** button |
+| Dispatch Case — after submit (`Confirmed`, `Packed`, `In Transit`) | `Ops - Directors` — with the **Cancel Case** button |
+| Dispatch Case — delivered or later | Cannot be cancelled. See *Cancelling a Dispatch Case* below |
 
 **When in doubt: stop and ask System Manager before cancelling anything that has stock or financial impacts.**
 
@@ -84,25 +86,37 @@ Dispatch Case
         └─► Payment Entry
 ```
 
-**Important: cancelling individual stock entries without cancelling the Dispatch Case is dangerous — it will leave the case in an inconsistent state. Always involve System Manager for Dispatch Case corrections.**
+**Never cancel the individual Stock Entries of a Dispatch Case by hand.** It leaves the case inconsistent with its stock. To stop an order, cancel the case itself (below). The flow then undoes what needs undoing.
 
-**Most common correction — wrong invoice amount or quantities:**
-1. Cancel the Payment Entry (if any was allocated to this invoice)
-2. Cancel the Sales Invoice
-3. Open the Dispatch Case — correct the `used_qty` or quantities on the Case Items
-4. Save the Dispatch Case — a new draft Sales Invoice will be auto-created
-5. Re-submit the invoice via the Invoice Preparation task
+#### Cancelling a Dispatch Case
 
-**Most common correction — wrong items on the Dispatch Case (before delivery):**
-- If the case is still in `Draft` or `Confirmed` (not yet packed): edit the Case Items, save
-- If the case has been packed but not delivered:
-  1. Complete the delivery in reverse (this requires System Manager involvement to cancel the Dispatch Stock Entry)
-  2. Edit the case
-  3. Re-pack
+Use the **Cancel Case** button on the Dispatch Case form. It only appears when the case can be cancelled and you are allowed to cancel it.
 
-**If the Dispatch Case has gone all the way to `Invoice Pending` or beyond:**
-- Do not attempt to cancel the stock entries yourself
-- Raise with System Manager — this is a complex multi-document reversal
+**When it is available:** until the goods reach the client, that is, in `Draft`, `Awaiting Approval`, `Confirmed`, `Packed` or `In Transit`. Once goods are delivered, the order is no longer cancelled; it is handled by the return flow, and a correction to what was billed is a credit note.
+
+**You must give a reason:** Customer cancelled, Surgery cancelled or postponed, Items unavailable, Duplicate order, Entered in error, or Other. **Other requires a note.**
+
+**What happens:**
+
+| | |
+|---|---|
+| Open tasks on the case | All cancelled. Each one records why, so the person it was assigned to can see it in their task list. |
+| Items a packer already pulled | If Pack had been accepted, that task tells the packer to put the items back on the shelf. At `Confirmed` stock has not moved in the system, only physically. |
+| An advance payment tied to this case | Released to the client's general credit, so it can pay their next invoice and counts against what they owe. A comment on the payment records the release. |
+| Goods that left the warehouse (`Packed`, `In Transit`) | A **Return to warehouse** task is raised: for the driver holding the box if it is `In Transit`, or for the delivery team if it is `Packed`. After the driver hands it over (photo required), **Returns inspection** records what came back and **Returns restocking** puts it on the shelf. |
+| Anything missing when the goods come back | Inspection records it as lost, and it goes to **Write-off Approval**. On a cancelled order only **Write Off** is allowed: the client never received the goods, so they cannot be billed for them. |
+
+**What it will refuse:** if an invoice exists for the case (draft or submitted), cancellation is refused and the invoice is left alone. Deal with the invoice first.
+
+**A cancelled case cannot be reopened.** If the client changes their mind, raise a new case. Cancelled tasks cannot be reopened either, not even by a Director.
+
+**Most common correction — wrong items before delivery:**
+- `Draft`: edit the products on the Order entry task.
+- `Confirmed`, `Packed` or `In Transit`: cancel the case (reason *Entered in error*) and raise a new one with the right items. If the goods had left, they come back through the return tasks above.
+
+**Correcting an invoice that has been submitted:**
+- Invoices are created only by **Create & Submit Invoice** on the Invoice Preparation task. Saving the Dispatch Case does **not** create one.
+- Correcting a submitted invoice means a credit note, and the system does not yet support that for dispatch invoices. Raise it with `Ops - Accounting` and a Director rather than cancelling documents yourself.
 
 ---
 

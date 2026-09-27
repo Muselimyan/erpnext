@@ -126,6 +126,19 @@ else:
         if fn not in SYSTEM_FIELDS:
             userchanged.append(fn)
 
+    # Cancelled is final, and only the cancel API may set it. MUST run before
+    # the system-field allowance below: `status` is on SYSTEM_FIELDS, so a
+    # status-only save would otherwise be allowed unconditionally. The cancel
+    # API writes with frappe.db.set_value and never reaches this script.
+    # KEEP IN SYNC with Dispatch-Case-before-save-access-control.py -- the
+    # reasoning is written out in full there.
+    if doc.has_value_changed("status") and ((before.status or "") == "Cancelled" or (doc.status or "") == "Cancelled"):
+        print(f"[DCACS] {frappe.utils.now()} dc={doc.name} gate=cancelled_final from={before.status} to={doc.status} user={dcuser} result=BLOCKED")
+        if (before.status or "") == "Cancelled":
+            frappe.throw("This case is cancelled, and a cancelled case cannot be reopened. Raise a new case instead.")
+        frappe.throw("A case can only be cancelled with the Cancel button, which also closes its tasks, "
+                     "releases any advance payment and brings back goods that have left the warehouse.")
+
     if not userchanged:
         print(f"[DCACS] {frappe.utils.now()} dc={doc.name} system_write fields={changed} result=ALLOWED")
     else:

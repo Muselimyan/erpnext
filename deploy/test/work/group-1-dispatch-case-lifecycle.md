@@ -96,16 +96,14 @@ Submitted, with warehouse-less rows. Two populations, and the second is worse th
 
 D1 stops new ones being created. It does not repair these. Test data is synthetic and deliberately unreconciled, so this is cleanup scope, not a blocker.
 
-### D11 — Cancel flow
+### D11 — Cancel flow — **IMPLEMENTED**
 
-Not implemented. `Cancelled` is not a Dispatch Case status, there is no cancel handler (confirmed: the only DC server scripts are before-save, the two access-control twins, before-submit and after-save), and native ERPNext cancel reverses no stock.
+A Dispatch Case can be cancelled in `Draft`, `Awaiting Approval`, `Confirmed`, `Packed` or `In Transit`. Specification: `docs/16` §10A. Design: `cancel-flow-design.md`. Verified 62 of 62; full regression 305 of 305.
 
-Deferred by decision. Two things wait on it:
+Two consequences outside the cancel flow itself, both system-wide:
 
-- 77 cases hold stock in transit warehouses and cannot move — 61 have a blank client warehouse, 15 point at `Main - Inmed`. They were stuck before D1 and remain stuck; there is no in-system way to dispose of them.
-- `Return to warehouse (aborted delivery / cancelled order)` was deliberately **kept** in the `task_kind` options as its most likely consumer.
-
-Group 11's trap table notes the mechanism gap: bulk-cancelling tasks needs to write `status` on tasks the user does not own, and `status` cannot go on `SYSTEM_FIELDS` because it is the primary user-editable transition.
+- **`Cancelled` is immutable for every task**, exactly like `Completed`. Before, only the client-side script locked a cancelled task, so a privileged user could reopen one.
+- **Six reports had never run**, because a PowerShell backtick-t had corrupted their table names. `RPT - Dispatch Case Aging` was repaired here; the other five are Group 10 F-032.
 
 ### D12 — `task_mark_items_packed_batch` has no caller — **RESOLVED: kept, documented**
 
@@ -207,7 +205,7 @@ RESTOCK leaves Main valuation unchanged     PASS   6.0 -> 6.0
 | ACT-08 | Fixed D5 — field and both allow-list entries deleted. Report deferred to Group 11 A1 |
 | ACT-09 | Fixed D2 — rows addressed by name |
 | ACT-10 | Fixed D2 — client sends `row_name`; the stale-scan path is gone with it |
-| ACT-11 | **Open — D11** (cancel flow) |
+| ACT-11 | **Closed — D11** (cancel flow implemented) |
 | ACT-12 | Fixed D4 — two retired, two held back on purpose |
 | ACT-13 | Partly fixed D6 — property setter deleted. Two DocFields remain: **D7** |
 | ACT-14 | Fixed D6 — header corrected to `Enabled: 1`, matching the server |

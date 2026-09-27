@@ -1,6 +1,6 @@
 # Dispatch Case — Cancellation Flow — Design
 
-> **Status.** Agreed design. Not implemented.
+> **Status.** Implemented on test (Group 1 D11). Deploy: `deploy/test/deploy/group-1-dispatch-operational/d11-cancel-flow.ps1`. Verification: `d11-verify-cancel-flow.py`, 62 of 62. The full regression set passes, 305 of 305 across 19 suites. The flow specification is `docs/16` §10A.
 >
 > **In one paragraph.** A Dispatch Case can be cancelled until its goods reach the client. Before that point no invoice exists, so cancellation never involves billing, credit notes or tender quantities. If the goods have left Main, they come back through the existing returns chain: inspection records what actually came back, losses go to Write-off Approval, and restocking returns the rest to Main. `Cancelled` is a final state for the case and for every task on it.
 
@@ -178,7 +178,7 @@ There is no uncancel. A client who changes their mind gets a new case.
 
 | Where | Change |
 |---|---|
-| `RPT - Dispatch Case Aging` | Currently filters on `status != 'Closed'`, so cancelled cases would appear as open for ever, with a blank stage. **Change the filter to `NOT IN ('Closed', 'Cancelled')`.** |
+| `RPT - Dispatch Case Aging` | Filter changed to `NOT IN ('Closed', 'Cancelled')`; before that it counted cancelled cases as open for ever. Its `FROM` clause was also repaired: the report had **never run**, because a PowerShell backtick-t had turned `` `tabDispatch Case` `` into a TAB character followed by `abDispatch Case`. Five other reports carry the same corruption (Group 10 F-032). |
 | `RPT — Dispatch Cases — Aging (Open)` | **Retire it.** It duplicates the report above. It already excludes Cancelled while the other doesn't, so leaving both would give two different answers to one question (Group 10 F-004). Keep the richer report, which has the stage column. Its shortcut in `Ops — Reporting Pack` is repointed in the same change (Group 10 F-030). |
 | `Task-before-save-access-control.py` | `Cancelled` becomes immutable (§6) |
 | Both Dispatch Case access-control scripts | `status` cannot change to or from `Cancelled` through a document save (§6) |

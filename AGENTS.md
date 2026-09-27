@@ -199,6 +199,17 @@ Without the first, uploaded content is corrupted — this is the origin of the m
 
 Reference implementation: `deploy/test/deploy/group-11-financial-tail/*.ps1`. Older deploy scripts under `deploy/test/scripts/` have not all been audited for this.
 
+### Never put SQL containing backticks inside a double-quoted string in a `.ps1`
+
+In PowerShell the backtick is the escape character, **inside double-quoted strings and here-strings (`@" ... "@`)**. So `` `t `` is a TAB, `` `n `` a newline, `` `0 `` a null. MariaDB quotes table names with backticks, and every Frappe table starts with `tab`, so `` `tabItem` `` in a double-quoted string arrives on the server as a TAB followed by `abItem`. The query is then a syntax error.
+
+**This broke six deployed reports, and they failed on every run from the day they were deployed.** Saving a Report does not execute it, so nothing noticed. Five are still broken: Group 10 F-032.
+
+- Put SQL in **single-quoted** strings or single-quoted here-strings (`@' ... '@`), where the backtick has no special meaning, or read it from a file.
+- If one has to be built in code, use `[string][char]96` for the backtick.
+- **Verify a report by running it** through `frappe.desk.query_report.run`, never by checking that it saved.
+- Detection: in stored query text, a TAB immediately followed by `ab` is this corruption.
+
 ### Corollary: never put a non-ASCII character inside a double-quoted string in a `.ps1`
 
 The same ANSI misread applies to the deploy script's **own source**. A mangled character inside a double-quoted string is not merely corrupt text — it is a **PowerShell syntax error**, and the script dies before its first line runs.

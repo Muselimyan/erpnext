@@ -173,9 +173,12 @@ var TFV_DISPATCH_FLOW_KINDS = [
     "Returns processing / verification", "Returns restocking",
     "Invoice preparation / create invoice",
     "Discount Approval", "Debt Closure Approval",
-    "Debt Collection", "Distribute Payment", "Payment Received",
-    "Dispatch Cancel Restock"
+    "Debt Collection", "Distribute Payment", "Payment Received"
 ];
+// "Dispatch Cancel Restock" removed: reserved here for a cancel flow that was
+// never built that way. It was never a task_kind option and had no policy.
+// Cancellation uses the existing "Return to warehouse (aborted delivery /
+// cancelled order)" kind instead -- see cancel-flow-design.md section 5.
 
 // ── Main visibility function ──────────────────────────────────
 function tfv_apply(frm) {

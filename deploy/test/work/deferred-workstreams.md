@@ -10,45 +10,19 @@
 
 ## 1. Undoing things — cancel flow, and credit notes / refunds
 
-**Deferred by decision, own workstream. Two halves of one problem, bundled deliberately.**
-
-"Undo before the invoice" and "undo after the invoice" are the same user need at two stages. They share the approval pattern, the stock-return question and the tender-reversal question. Doing them apart risks two different answers to *who may undo what*, so they are one item.
+The two halves of one need, split at delivery. **1a is done. 1b remains deferred.**
 
 ---
 
-### 1a. Cancel flow — there is no way to cancel an order
+### 1a. Cancel flow — **IMPLEMENTED** (Group 1 D11)
 
-**Deferred by decision, own workstream.**
+A Dispatch Case can be cancelled until its goods reach the client, with the **Cancel Case** button. Goods that had left Main come back through the existing returns chain, and `Cancelled` is a final state for the case and for every task on it.
 
-### What it is
+- Specification: `docs/16` §10A. Design and reasoning: `deploy/test/work/cancel-flow-design.md`
+- Deploy: `deploy/test/deploy/group-1-dispatch-operational/d11-cancel-flow.ps1`
+- Verification: `d11-verify-cancel-flow.py`, 62 of 62
 
-A Dispatch Case cannot be cancelled. `Cancelled` is not one of its statuses, there is no cancel handler, and ERPNext's own cancel just marks the record cancelled without reversing anything — leaving stock sitting in a transit warehouse with nothing pointing at it.
-
-### Why it matters
-
-Surgeries get cancelled and orders get raised in error. Today the only options are to push the case all the way through a flow that no longer reflects reality, or have an administrator edit the data directly.
-
-It also interacts with the acceptance model. Completing a task is reserved to the person who accepted it, with no override — deliberately, so the record of who did the work stays honest. **Cancellation was meant to be the escape hatch for a stuck task, and it does not exist.** So a genuinely stuck task has no clean resolution at all.
-
-### The evidence of the gap
-
-77 cases on test currently hold stock in transit warehouses and cannot move — 61 have no client warehouse recorded, 15 point at the main warehouse by mistake. They were stuck before any of this work and they are stuck after it. There is no in-system way to dispose of them.
-
-### What blocks it
-
-Not a coding problem — a design one. Group 11 identified the specific mechanism gap: cancelling in bulk means writing `status` on tasks the current user does not own, and `status` cannot be added to the system-fields allow-list because it is *the* primary field a user edits. That mechanism does not exist yet.
-
-### Related decision already taken
-
-The task kind `Return to warehouse (aborted delivery / cancelled order)` was **deliberately kept** when its siblings were retired, because it is literally the aborted-delivery return and is the most likely thing this flow will use.
-
-### To start
-
-**Design written: `deploy/test/work/cancel-flow-design.md`** (2026-09-25). Six decisions marked for review; everything else is a recommendation with its reasoning. `phase3-cancel-flow-plan.md` is superseded and carries a banner saying why.
-
-The shape it landed on: cancel is available until the goods reach a client, which means **no invoice can ever exist at cancel time** (verified, 0 of 1,104 in-band cases) — so cancellation never touches billing, payments, credit notes or tender consumption. `Packed` and `In Transit` hold stock in the same warehouse because `Picked Up` moves nothing, so one reversal rule covers both, using the `Return to warehouse (aborted delivery / cancelled order)` kind that was retained for it. The "invoice already submitted" case is 1b below.
-
----
+Because cancellation stops at delivery, it never meets an invoice. Everything after delivery is 1b.
 
 ### 1b. Credit notes and refunds — a paid invoice cannot be corrected
 

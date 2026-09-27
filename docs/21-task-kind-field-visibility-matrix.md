@@ -32,7 +32,8 @@
 | **D. Approvals** | Purchase Approval, Write-off Approval | 2 |
 | **E. Account details** | Account Details: Entry, Account Details: Processing | 2 |
 | **F. Other** | Other, Other: Entry, Other: Processing | 3 |
-| **G. Legacy, retained deliberately** | Return drop-off at warehouse, Return to warehouse (aborted delivery / cancelled order) | 2 |
+| **G. Cancellation** | Return to warehouse (aborted delivery / cancelled order) | 1 |
+| **H. Legacy, retained deliberately** | Return drop-off at warehouse | 1 |
 
 **The field default is `Order entry`.** It used to be `Order accepting`, which no code path handled — a Task created outside the UI landed in a kind nothing orchestrated and simply sat there. Changed by Group 1 D4.
 
@@ -40,9 +41,9 @@
 - `Order accepting` — immediately overwritten with `Order entry` by `Task-Accept Start.js`; no server script handled it. `Task-Accept Start.js` still performs that override, harmlessly, for any pre-existing draft.
 - `Dispatch picking / hand-off` — no server reference at all, and absent from `docs/16-unified-dispatch-flow.md`. The unified flow folded picking into `Pack / prepare items`. This document previously listed it under Group A, which was stale.
 
-**Notes on Group G** — both are unused but were deliberately **kept**:
-- `Return drop-off at warehouse` is still gated by `Task-before-save-policy` for legacy tasks with no Dispatch Case.
-- `Return to warehouse (aborted delivery / cancelled order)` is literally the aborted-delivery return kind and is the most likely consumer of the deferred cancel flow (Group 1 D11). Retiring it now and re-adding it later is avoidable churn.
+**Group G — Cancellation.** `Return to warehouse (aborted delivery / cancelled order)` is the first step of bringing back the goods of a cancelled Dispatch Case (`docs/16` §10A). `dispatch_case_cancel` raises it when a `Packed` or `In Transit` case is cancelled. Completion requires a photo, moves the goods `Delivery In-Transit` → `Returns`, and raises `Returns processing / verification`. Visibility is unchanged: it shows `return_pickup_driver`, and the dispatch-case rules via `TFV_DISPATCH_FLOW_KINDS`.
+
+**Group H — legacy, retained deliberately.** `Return drop-off at warehouse` is unused but is still gated by `Task-before-save-policy` for legacy tasks that have no Dispatch Case.
 
 > `Distribute Payment` was retired earlier by Group 11 W10 and has been removed from group C.
 

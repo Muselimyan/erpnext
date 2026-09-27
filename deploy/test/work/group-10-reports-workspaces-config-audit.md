@@ -16,9 +16,9 @@
 
 | Metric | Value |
 |---|---|
-| Reports analyzed | ~~49~~ → **45** (2026-09-25) |
+| Reports analyzed | ~~49~~ → **44** (45 on 2026-09-25; one duplicate retired by D11) |
 | Reports documented and matching | 38 (as at audit date) |
-| Reports duplicated (same purpose, two copies) | ~~8 (4 pairs)~~ → **10 (5 pairs)** — one pair resolved, one was never a pair, three added from §1.4 |
+| Reports duplicated (same purpose, two copies) | ~~8 (4 pairs)~~ → **8 (4 pairs)** — aging pair resolved by D11; originally — one pair resolved, one was never a pair, three added from §1.4 |
 | Reports referencing superseded DocTypes | 1 |
 | Reports documented but missing from prod | ~~3 (KPI dashboards)~~ → **4** (+ Pricing / Manual Rate Edits) |
 | Workspaces analyzed | 22 (3 custom, 19 standard) |
@@ -29,9 +29,9 @@
 | Role profiles for InMED custom roles | 0 (all 6 are ERPNext defaults) |
 | Notifications for InMED operations | 0 (all 5 are system/ERPNext defaults) |
 | Print formats relevant to InMED | 0 (IRS 1099 is US tax form) |
-| Findings total | ~~29~~ → **31** (F-030, F-031 added 2026-09-25) |
+| Findings total | ~~29~~ → **32** (F-030, F-031 added 2026-09-25; F-032 added 2026-09-28) |
 | Critical | 0 |
-| High | ~~5~~ → **6** (F-030) |
+| High | ~~5~~ → **7** (F-030, F-032) |
 | Medium | ~~14~~ → **15** (F-031) |
 | Low | 10 |
 
@@ -140,7 +140,7 @@ Every report deployed in production, mapped to its documentation source. Confide
 |---|---|---|---|
 | 1 | RPT - Risk - Debt Threshold Exceeded (2026-05-08) | RPT - Clients Exceeding Debt Threshold (2026-06-16) | **RESOLVED.** A was retired by Group 11 A7. The two did not merely overlap — they used **different formulas**, A on GL `sum(debit − credit)` and B on invoice outstanding minus advances, so two Director-facing reports could give two answers to one question. B survives, now on the single agreed debt definition |
 | 2 | RPT - Receivables - Unallocated Advances (2026-05-08) | RPT - Unallocated Customer Advances (2026-06-16) | Open. Both active. Note they also compute differently: A derives unallocated as `paid_amount − SUM(allocated)`, B reads `PE.unallocated_amount`. Verified on test that the two agree, because a consumed advance does get a Payment Entry Reference row — but that is a coincidence of implementation, not a shared definition |
-| 3 | RPT - Dispatch Cases - Aging (Open) (2026-05-12) | RPT - Dispatch Case Aging (2026-06-16) | Open. Both active |
+| 3 | RPT - Dispatch Cases - Aging (Open) (2026-05-12) | RPT - Dispatch Case Aging (2026-06-16) | **RESOLVED** by the cancel flow (Group 1 D11). A was retired and B kept, because B has the stage column. B turned out never to have run at all: its `FROM` clause was corrupted (F-032). It was repaired in the same change, and now excludes `Cancelled` as well as `Closed`. A's workspace shortcut was repointed to B before A was deleted |
 | 4 | ~~RPT - Ops - Prepaid Orders Awaiting Delivery~~ | RPT - Prepaid Orders Awaiting Delivery | **NOT A PAIR — A does not exist.** It was deleted at some point after this audit, and nothing updated the workspace that pointed at it. That dead shortcut is the one Group 11 A7 had to repair, and it had been making the whole `Ops — Reporting Pack` workspace unsaveable (see §2.1). This audit's own data explains the origin of a defect found independently a quarter later |
 
 ### 1.3 Reports Documented But Missing from Production
@@ -593,7 +593,7 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 - **Recommendation**: If Surgery Case is truly superseded, either deactivate the workflow (`is_active=0`) or document that Surgery Case remains an active parallel system.
 - **Confidence**: 95%
 
-### F-004: Five duplicate report pairs exist *(revised 2026-09-25)*
+### F-004: Four duplicate report pairs remain *(revised 2026-09-25; aging pair resolved 2026-09-28)*
 - **Type**: RISK
 - **Severity**: HIGH
 - **Evidence**: See §1.2 and the correction in §1.4. Originally recorded as four pairs. The true position: **Debt Threshold is resolved** (Group 11 A7 retired the GL-based copy); **Prepaid Orders was never a pair** — the older report does not exist and its deletion is what left a dead workspace shortcut; and the **three "-Inmed" stock variants ARE duplicates**, contrary to §1.4's original reasoning, because all six queries are identical apart from keyword casing and both hardcode the warehouse. That leaves five open pairs: Unallocated Advances, Dispatch Case Aging, and the three stock variants.
@@ -791,6 +791,25 @@ This is a US Internal Revenue Service 1099 tax reporting form. It is completely 
 - **Do not fix this yet.** Profit is currently costed from a buying price list rather than actual cost, and the purchasing side that would make it correct is not running: zero Purchase Receipts and zero Landed Cost Vouchers on test. A report over a wrong number is worse than no report, because it gets believed. Tracked as `deferred-workstreams.md` item 4 (purchasing and landed cost).
 - **Recommendation**: Build this after the cost basis is trustworthy, not before.
 - **Confidence**: Verified against the 45-report export
+
+### F-032: Five reports have never run — PowerShell corrupted their table names *(added 2026-09-28, Group 1 D11)*
+- **Type**: DEFECT
+- **Severity**: HIGH. Each of these fails with a SQL syntax error every time it is opened.
+- **Evidence**: These reports were deployed through PowerShell double-quoted strings. In those, a backtick followed by `t` is the **TAB escape**. So every table reference written as `` `tabItem` `` arrived as a TAB character followed by `abItem`, and MariaDB rejects the query. Found by running `RPT - Dispatch Case Aging` through Frappe's real report runner during the cancel-flow verification. Saving a report does not execute it, so nothing had ever caught this.
+
+  | Report | Corrupted references |
+  |---|---|
+  | `RPT - Collection Set Readiness` | 4 (`tabItem` ×2, `tabCollection Set Item`, …) |
+  | `RPT - Items by Delivery Person` | 3 (`tabTask`, `tabDispatch Case`, `tabDispatch Case Item`) |
+  | `RPT - Price Override List` | 3 (`tabItem Price` ×2, `tabItem`) |
+  | `RPT - Low Stock by Supplier` | 2 (`tabItem`, `tabBin`) |
+  | `RPT - Unallocated Customer Advances` | 1 (`tabPayment Entry`) |
+
+  A sixth, `RPT - Dispatch Case Aging`, has been **repaired** (D11, see §1.2 pair 3).
+- **Note on F-004**: `RPT - Unallocated Customer Advances` is one half of duplicate pair 2, and it is the half that doesn't work. So pair 2 is not really two reports disagreeing: one of them has never produced an answer.
+- **Recommendation**: Repair each one by replacing TAB + `ab` with a backtick + `tab` in the query. Build both characters from their code points in the deploy script (`[char]96`, `[char]9`), because writing them literally in a double-quoted string is exactly the bug. Then **run each report through `frappe.desk.query_report.run`** as the verification. Saving it proves nothing.
+- **Detection**: in any query, a TAB immediately followed by `ab` is this corruption; real indentation is never followed by those letters. `d11-cancel-flow.ps1` §4a0 has a working repair.
+- **Confidence**: Verified against the export; the repaired report returns 679 rows through the real runner.
 
 ---
 

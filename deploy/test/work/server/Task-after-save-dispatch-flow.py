@@ -308,8 +308,26 @@ else:
             )
             print(f"[Dispatch] {frappe.utils.now()} case={case.name} lost/damaged segregated se={ld_se.name if ld_se else None} rows={len(lost)}")
 
-        frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Invoice Pending")
-        make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review the used quantities, then use Create & Submit Invoice on this task for {case.name}. If nothing was used, use Nothing to Invoice.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+        # A CANCELLED case gets no invoice and keeps its status.
+        #
+        # Inspection is reused as the step that records what came back from a
+        # cancelled delivery (cancel-flow-design.md section 5). Without this
+        # guard, completing it would move a cancelled case back to Invoice
+        # Pending and raise an invoice task for an order that was never
+        # delivered. This is a db.set_value, which the Dispatch Case
+        # access-control scripts do not see -- so their "Cancelled is final"
+        # rule cannot catch it, and the guard has to live here.
+        #
+        # Everything else in this handler is correct for a cancelled case and
+        # runs unchanged: lost units still move to Lost & Damaged and raise
+        # Write-off Approval, and returned units still raise Returns restocking.
+        # Nothing is consumed, because the completion gate requires
+        # returned + lost = dispatched on a cancelled case.
+        if case.status != "Cancelled":
+            frappe.db.set_value("Dispatch Case", doc.dispatch_case, "status", "Invoice Pending")
+            make_task("Invoice preparation / create invoice", f"Invoice: {short_customer(case.customer)} ({case.name})", team_map.get("Invoice preparation / create invoice", ""), f"Review the used quantities, then use Create & Submit Invoice on this task for {case.name}. If nothing was used, use Nothing to Invoice.", "invoice_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name)
+        else:
+            print(f"[Dispatch] {frappe.utils.now()} case={case.name} is Cancelled: inspection complete, no invoice raised, status unchanged")
         u = used_items(case)
         r = returned_items(case)
         if r:
@@ -323,6 +341,36 @@ else:
         if r:
             se = create_se(RETURNS_WH, MAIN_WH, r)
             frappe.db.set_value("Dispatch Case", doc.dispatch_case, "restock_stock_entry", se.name if se else "")
+
+    # Return to warehouse Completed -- step 1 of bringing back the goods of a
+    # CANCELLED case (cancel-flow-design.md section 5).
+    #
+    # The case was cancelled while its goods sat in Delivery In-Transit (it was
+    # Packed or In Transit). The driver has now handed them over, so they move
+    # into Returns and the existing returns chain takes it from there:
+    # inspection records what actually came back (a shortfall goes to Lost &
+    # Damaged and Write-off Approval), and restocking puts the rest back in Main.
+    #
+    # all_items() is the dispatched quantity, which is exactly what Pack moved
+    # into Delivery In-Transit, so this empties it for the case. Nothing is
+    # assumed to have come back intact -- inspection is where that is counted.
+    #
+    # The case stays Cancelled throughout. None of the three handlers in the
+    # chain changes status once the inspection guard above is in place.
+    if is_completing and doc.task_kind == "Return to warehouse (aborted delivery / cancelled order)":
+        case.reload()
+        rw_se = create_se(DELIVERY_TRANSIT_WH, RETURNS_WH, all_items(case))
+        frappe.db.set_value("Dispatch Case", doc.dispatch_case, "return_receive_stock_entry", rw_se.name if rw_se else "")
+        make_task(
+            "Returns processing / verification",
+            f"Inspect returned goods (cancelled order): {short_customer(case.customer)} ({case.name})",
+            team_map.get("Returns processing / verification", ""),
+            "This order was cancelled before delivery and its goods are back in the warehouse. "
+            "Record for each item how many came back, and anything missing or damaged as lost. "
+            "Nothing can have been used: returned plus lost must equal the dispatched quantity.",
+            "returns_inspection_task", doc.dispatch_case, case.customer, source_task=doc.name, parent_task=doc.name,
+        )
+        print(f"[Dispatch] {frappe.utils.now()} case={case.name} cancelled-order goods received into Returns se={rw_se.name if rw_se else None}")
 
     # Invoice Preparation Completed
     if is_completing and doc.task_kind == "Invoice preparation / create invoice":

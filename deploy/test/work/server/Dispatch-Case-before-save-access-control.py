@@ -152,6 +152,27 @@ else:
         if fn not in SYSTEM_FIELDS:
             userchanged.append(fn)
 
+    # ── 1b. Cancelled is final, and only the cancel API may set it ──────
+    #
+    # MUST run before section 2. `status` is on SYSTEM_FIELDS, so a status-only
+    # save counts as bookkeeping and section 2 would allow it unconditionally --
+    # including a save that cancels a case without releasing its credit, closing
+    # its tasks or raising its return, or one that un-cancels a case.
+    #
+    # dispatch_case_cancel writes status with frappe.db.set_value, which does not
+    # run this script, so no bypass flag is needed to let it through (AGENTS.md:
+    # the gates ask what changed, never who is writing).
+    #
+    # KEEP IN SYNC with Dispatch-Case-before-save-submitted-access-control.py --
+    # a case cancelled before submit stays docstatus 0 and is guarded here; one
+    # cancelled after submit is docstatus 1 and guarded by the twin.
+    if doc.has_value_changed("status") and ((before.status or "") == "Cancelled" or (doc.status or "") == "Cancelled"):
+        print(f"[DCAC] {frappe.utils.now()} dc={doc.name} gate=cancelled_final from={before.status} to={doc.status} user={dcuser} result=BLOCKED")
+        if (before.status or "") == "Cancelled":
+            frappe.throw("This case is cancelled, and a cancelled case cannot be reopened. Raise a new case instead.")
+        frappe.throw("A case can only be cancelled with the Cancel button, which also closes its tasks, "
+                     "releases any advance payment and brings back goods that have left the warehouse.")
+
     # ── 2. System-only bookkeeping is always allowed ────────────────────
     # This must be checked BEFORE the submitted-case restriction, because the
     # flow legitimately updates status, financials and stock links on cases

@@ -742,6 +742,39 @@ Previously undecided (see `docs/implementation-questions.md` #17 and `docs/12-su
 | `Invoice Pending` | Inspection done; invoice being prepared by Accounting |
 | `Payment Pending` | Debt Collection task active |
 | `Closed` | Fully paid |
+| `Cancelled` | Cancelled before delivery. Final: cannot be reopened, and cannot be entered or left by an ordinary save |
+
+---
+
+## 10A. Cancellation
+
+Full design and reasoning: `deploy/test/work/cancel-flow-design.md`.
+
+**Available until the goods reach the client:** `Draft`, `Awaiting Approval`, `Confirmed`, `Packed`, `In Transit`. Everything from delivery onward is handled by the return flow, and a billed sale is corrected with a credit note. This line works because the flow creates no invoice before delivery, so cancellation never involves billing, credit notes or tender quantities.
+
+**Who:** before submit, the Order entry accepter or `Ops - Directors`; after submit, `Ops - Directors` only. Done with the **Cancel Case** button on the Dispatch Case form, which calls `dispatch_case_cancel`. A reason is required, and `Other` also requires a note.
+
+**What `dispatch_case_cancel` does, in order:**
+
+1. Locks the case row (`for_update`), so a Pack completing at the same moment cannot move stock after cancellation has decided nothing needs to come back.
+2. Refuses: states outside the cancellable range (the message says what to do instead), unauthorised callers, a missing reason, and any Sales Invoice on the case in any state. A hand-made invoice is refused, not deleted.
+3. Cancels every open task and appends the reason to its description. An accepted Pack task is also told to put back anything already pulled.
+4. Releases advance credit tagged to the case to general credit and adds a Comment to each affected Payment Entry. Otherwise the money would be stranded, because tagged credit is never spent on another case or counted against other debt.
+5. `Packed` / `In Transit`: raises the return chain (below).
+6. Sets `status = Cancelled` last. `docstatus` stays 1, the same as `Closed`.
+
+**Return chain, for goods that left Main.** This reuses the existing returns flow from the point where goods arrive back at the warehouse:
+
+| Step | Task | Stock |
+|---|---|---|
+| 1 | `Return to warehouse (aborted delivery / cancelled order)`. Assigned to the Delivery accepter when `In Transit`, otherwise the team pool. Photo required | `Delivery In-Transit` → `Returns` |
+| 2 | `Returns processing / verification`. On a cancelled case every row must have `returned + lost = dispatched`, because nothing can have been used | lost → `Lost & Damaged` |
+| 3 | `Returns restocking` (unchanged) | `Returns` → `Main` |
+| — | `Write-off Approval` if anything was lost. Only `Write Off` is allowed on a cancelled case | `Lost & Damaged` → written off |
+
+The case stays `Cancelled` throughout. Returns inspection normally moves a case to `Invoice Pending` and raises an invoice task; for a cancelled case it skips both.
+
+**Cancelled is final for tasks too, system-wide.** `Task-before-save-access-control` treats `Cancelled` as immutable, exactly as it treats `Completed`, so nobody can reopen a cancelled task, Directors included.
 
 ---
 

@@ -1,5 +1,5 @@
 ﻿{
-    "count":  198,
+    "count":  199,
     "records":  [
                     {
                         "name":  "Supplier-naming_series-reqd",
@@ -3342,6 +3342,23 @@
                         "property":  "hidden",
                         "property_type":  "Check",
                         "value":  "0",
+                        "doctype":  "Property Setter"
+                    },
+                    {
+                        "name":  "Dispatch Case-status-options",
+                        "owner":  "Administrator",
+                        "creation":  "2026-09-28 00:08:51.621403",
+                        "modified":  "2026-09-28 00:08:51.621403",
+                        "modified_by":  "Administrator",
+                        "docstatus":  0,
+                        "idx":  0,
+                        "is_system_generated":  0,
+                        "doctype_or_field":  "DocField",
+                        "doc_type":  "Dispatch Case",
+                        "field_name":  "status",
+                        "property":  "options",
+                        "property_type":  "Text",
+                        "value":  "Draft\nAwaiting Approval\nConfirmed\nPacked\nIn Transit\nDelivered\nAwaiting Return Pickup\nReturn Pickup Scheduled\nReturn In Transit\nReturns Received\nInvoice Pending\nPayment Pending\nClosed\nCancelled",
                         "doctype":  "Property Setter"
                     }
                 ]

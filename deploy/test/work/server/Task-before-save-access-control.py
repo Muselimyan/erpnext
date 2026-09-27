@@ -107,10 +107,26 @@ else:
     before_status = before.status
     is_completing = (doc.status == "Completed" and before_status != "Completed")
 
-    # ── 1. A completed task is immutable ────────────────────────────────
-    if before_status == "Completed":
-        print(f"[AC] {frappe.utils.now()} task={doc.name} gate=completed_immutable user={acuser} result=BLOCKED")
-        frappe.throw("This task is already completed and cannot be modified.")
+    # ── 1. A completed OR CANCELLED task is immutable ───────────────────
+    #
+    # Cancelled is a final state, exactly like Completed. This used to protect
+    # Completed only, and a cancelled task was locked solely by the client-side
+    # editability script -- which is a convenience, not an enforcement. So a
+    # privileged user could reopen a cancelled task, and its accepter could then
+    # complete it. On a cancelled Dispatch Case that would run the completion
+    # handler for real: a reopened Pack task would move stock into transit and
+    # raise a Delivery task for an order that no longer exists.
+    #
+    # This applies to every task in the system, not only the cancel flow. The
+    # same gap existed for Debt Alerts, approvals and everything else.
+    #
+    # Tasks that must run AFTER a case is cancelled -- the return-to-warehouse,
+    # inspection and restocking steps -- are created as NEW open tasks, so this
+    # does not touch them. The cancel API writes status with frappe.db.set_value,
+    # which does not run this script at all.
+    if before_status in ("Completed", "Cancelled"):
+        print(f"[AC] {frappe.utils.now()} task={doc.name} gate={before_status.lower()}_immutable user={acuser} result=BLOCKED")
+        frappe.throw("This task is already " + before_status.lower() + " and cannot be modified.")
 
     # ── 2. What changed? ────────────────────────────────────────────────
     # Scalars via has_value_changed. Child tables need an explicit signature:

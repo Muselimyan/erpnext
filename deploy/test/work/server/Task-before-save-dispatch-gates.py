@@ -91,6 +91,15 @@ if is_completing and doc.task_kind == "Write-off Approval":
     # failure arrives at the worst possible moment. Checked here as well so it is
     # pre-emptive. Advisory copy, authoritative enforcement: the same split as the
     # client-side hints over the server gates.
+    # A cancelled order cannot be billed for its losses. Cancellation happens
+    # before delivery, so the goods never reached the client and the client
+    # cannot have caused the loss. Billing them would also put an invoice on a
+    # case that never became a sale -- the one thing the cancel flow is built to
+    # guarantee never happens (cancel-flow-design.md section 5).
+    if doc.get("writeoff_outcome") == "Bill Client" and doc.dispatch_case:
+        if frappe.db.get_value("Dispatch Case", doc.dispatch_case, "status") == "Cancelled":
+            frappe.throw("This order was cancelled before delivery, so the client never received these goods "
+                         "and cannot be billed for them. Choose Write Off.")
     if doc.get("writeoff_outcome") == "Bill Client" and doc.dispatch_case:
         wo_case = frappe.get_doc("Dispatch Case", doc.dispatch_case)
         wo_unpriced = []
@@ -311,6 +320,23 @@ else:
         if missing_presence:
             frappe.throw("Say whether each lost/damaged item is damaged (in hand) or lost (not recoverable): "
                          + ", ".join(missing_presence))
+        # On a CANCELLED case nothing can have been used: the goods never
+        # reached the client. So every unit must be accounted for as either
+        # returned or lost. Without this, any gap would be booked as
+        # consumption by the handler -- as though the client had kept and used
+        # goods they never received.
+        if case.status == "Cancelled":
+            unbalanced = []
+            for row in (case.case_items or []):
+                disp = float(row.dispatched_qty or 0)
+                acct = float(row.returned_qty or 0) + float(row.lost_damaged_qty or 0)
+                if abs(disp - acct) > 0.0001:
+                    unbalanced.append(str(row.item_code or row.item_name or "Unknown")
+                                      + " (dispatched " + str(disp) + ", returned + lost " + str(acct) + ")")
+            if unbalanced:
+                frappe.throw("This order was cancelled before delivery, so nothing can have been used. "
+                             "For each item, returned plus lost must equal what was dispatched: "
+                             + "; ".join(unbalanced))
 
     # Returns restocking completion: require a photo.
     #
@@ -331,6 +357,17 @@ else:
         if not has_restock_photo:
             frappe.throw("At least one photo is required before completing Returns restocking. "
                          "It is the record that these units were physically put back on the shelf.")
+
+    # Return to warehouse completion: require a photo -- the driver's handover
+    # record for the goods of a cancelled order. Same rule and same assurance as
+    # Returns restocking and Pickup Returns. Completing this task is what moves
+    # the goods out of Delivery In-Transit, so it must not be a bare click.
+    if is_completing and doc.task_kind == "Return to warehouse (aborted delivery / cancelled order)":
+        has_return_photo = task_has_image(doc.name)
+        print(f"[Photo] {frappe.utils.now()} task={doc.name} Return to warehouse gate: has_image={has_return_photo}, result={'PASS' if has_return_photo else 'BLOCKED'}")
+        if not has_return_photo:
+            frappe.throw("At least one photo is required before completing Return to warehouse. "
+                         "It is the record that these goods were handed back to the warehouse.")
 
     # Invoice Preparation completion: require a submitted invoice for the case.
     #
