@@ -6,3 +6,9 @@ ERPNext-Automation-Reports/*
 test-results/
 tests/e2e/.last-*.log
 **/__pycache__/
+
+# `> nul` is a Windows redirect that discards output in cmd/PowerShell, but Git
+# Bash treats nul as an ordinary filename and creates an empty file instead.
+# Committing a file with this name breaks checkout on Windows, since the OS
+# reserves it as a device name.
+nul
