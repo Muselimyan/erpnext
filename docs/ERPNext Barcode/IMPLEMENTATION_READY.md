@@ -1,5 +1,45 @@
 # GS1 Barcode Implementation Readiness
 
+> **STATUS — superseded 2026-09-30. Do not use as a specification.**
+>
+> The Client Script and all seven custom fields described here **were deployed** to both
+> test and prod. However, the feature is **inert**: it has never executed a second scan,
+> because the scan policy evaluates to false for every item.
+>
+> - `Item.custom_requires_gs1_lot_scan` — the field the policy checks first — **was
+>   never created** on either environment.
+> - The fallback checks `has_batch_no || has_expiry_date || has_serial_no`, and all 500
+>   items have all three set to `0`.
+>
+> So `requires_second_scan` is false everywhere: no LOT popup, no batch capture, no
+> expiry capture, no merge, no date validation.
+>
+> **The "Agreed behavior" section below is incomplete.** It describes only the
+> two-barcode flow. Real scanner output confirms three distinct cases in use, and this
+> document covers one of them:
+>
+> | Case | Example | Covered here? |
+> |---|---|---|
+> | Plain barcode, no LOT/expiry needed | `48515092`, `4630201701480` | No |
+> | REF barcode + separate LOT barcode | `]C10106938250917530` then `]C111...` | Yes |
+> | One barcode with GTIN + production + expiry + LOT | `]C10103760124130249112604241731030110F26043056` | **No — cannot be received at all** |
+>
+> The third case reaches ERPNext's native lookup as a full 46-character string, matches
+> nothing, and fails with "Cannot find Item with this Barcode". The helper written to
+> detect it (`gs1_is_ref_barcode`, checking the `]C101` prefix) exists in the script and
+> **is never called**.
+>
+> Two further defects confirmed against real scanner output:
+>
+> - **Case-sensitive prefix matching.** Real scans show `]c1` (lowercase) in 1 of 35
+>   samples — about 3%. All three parsers use exact-case matching, so those scans fail
+>   silently in both receiving and packing.
+> - **No GTIN normalization.** Identifiers arrive as GTIN-8, GTIN-13 and GTIN-14, which
+>   are one namespace. Without normalizing to 14 digits, the same product fails to
+>   resolve depending on which barcode on the box is scanned.
+>
+> Superseded by the barcode logic design currently in progress.
+
 ## Current implementation status
 
 Prepared locally, not safely confirmed live yet.

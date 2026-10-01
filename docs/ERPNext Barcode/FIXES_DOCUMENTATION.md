@@ -1,5 +1,30 @@
 # ERPNext Barcode Scanner - Fixes & Improvements
 
+> **STATUS — corrected 2026-09-30 after code review against real scanner output.**
+>
+> Two claims in this document were found to be **wrong** and have been corrected in
+> place below (sections 3 and 4). They are kept rather than deleted so the record of
+> what was previously believed is preserved.
+>
+> Summary of what changed:
+>
+> - **Section 3 — "Merge Logic Already Correct" was WRONG.** The merge adds a
+>   hardcoded `+1` and therefore silently loses quantity. See the correction in that
+>   section.
+> - **Section 4 — "Automatic Row Creation" was misleading.** The split path is gated
+>   on `has_serial_no`, which is `0` for all 500 items, and it forces one scan per
+>   physical unit.
+>
+> Scope note: this document describes the **two-barcode flow only** (a plain REF scan
+> followed by a `]C111` LOT scan). Real scanner output confirms two further cases that
+> this document does not cover and that the script does not handle:
+>
+> - a **single GS1 barcode carrying GTIN + production + expiry + LOT** together, which
+>   cannot currently be received at all
+> - a **plain barcode with no LOT/expiry data**, which needs no second scan
+>
+> Do not treat this document as a complete description of required behaviour.
+
 ## Issues Fixed
 
 ### 1. **Missing Validation for Wrong Barcode in Main Scanner**
@@ -20,23 +45,64 @@
 - Plays error sound (400Hz beep)
 - Clears the field and refocuses on barcode input
 
-### 3. **Merge Logic Already Correct**
-**Status:** Your existing merge logic already checks all three variables:
+### 3. **Merge Logic — CORRECTION: NOT correct**
+
+> **This section previously read "Merge Logic Already Correct". That was wrong.**
+
+The merge **key** is correct. It compares all three variables:
 - `item_code` (REF number)
 - `batch_no` (LOT number)
 - `custom_expiry_date` (expiry date)
 
-The code correctly:
-- Finds matching rows with identical REF, LOT, and expiry date
-- Increments quantity on the existing row
-- Deletes the newly created duplicate row
-- Leaves separate rows if any variable differs
+And the duplicate search itself scales correctly — it is an unbounded scan over the
+items table, so the 2nd, 3rd and 100th identical scan all find the accumulated row.
 
-### 4. **Automatic Row Creation**
-**Status:** Your existing `qty` event handler already handles this:
-- When qty > 1, it splits into separate rows
-- Each scan creates a new row automatically via ERPNext's default scan_barcode behavior
-- The pop-up opens automatically for batch entry
+**But the quantity transfer is broken.** The merge does:
+
+```javascript
+'qty', (match.qty || 0) + 1     // hardcoded +1
+```
+
+It adds a hardcoded `1` and ignores the source row's actual `qty`, then deletes the
+source row. So a row carrying qty 5 merges in as **+1** and **four units are silently
+lost**. No error, no warning; the receipt total is simply wrong.
+
+Correct behaviour is `+ (row.qty || 1)`.
+
+Three further gaps in the merge key, all of which cause a silent wrong result:
+
+- **Warehouse is not compared.** Same item + batch + expiry going into two different
+  warehouses on one receipt merges into one row in whichever warehouse came first.
+  Stock is then recorded in the wrong place with no error. Warehouse must join the key.
+- **Rate is not compared.** Differing rates merge silently, keeping the target row's
+  rate and changing valuation.
+- **Production date is not compared.** Harmless in practice (one LOT implies one
+  production date) but it is an assumption, not a guarantee.
+
+Additionally, the merge is guarded by a module-level `gs1_is_merging` boolean that is
+cleared only on the success path and in one `.catch`. If the sequence ends any other
+way the flag stays `true` **permanently**, and every later scan is silently ignored —
+the scanner appears dead with no message, recoverable only by reloading the page.
+
+### 4. **Automatic Row Creation — CORRECTION: misleading**
+
+> **This section previously implied the split behaviour was desirable. It is not.**
+
+The `qty` handler does split rows when `qty > 1` and no batch is set. Two problems:
+
+- **It is gated on serial tracking, which is off everywhere.** All 500 items have
+  `has_serial_no = 0`, `has_batch_no = 0` and `has_expiry_date = 0`, so the split path
+  is driven by a condition that is false for every item in the system.
+- **Where it does apply, it forces one scan per physical unit.** A box of 50 units
+  sharing one LOT requires 50 scans, roughly 2–3 minutes, producing **exactly the same
+  stored data** as one scan plus a quantity. A process that slow gets worked around,
+  and the workaround is typing quantities without scanning — which destroys the LOT
+  capture the feature exists to provide.
+
+Intended behaviour instead: scan once, then a quantity box pre-filled with `1`, so a
+single unit stays one scan plus Enter while a box of 50 takes the same five seconds.
+Scanning each unit individually must remain possible for anyone who wants it, since
+repeated scans of the same LOT accumulate on one row via the merge path.
 
 ## New Features Added
 
